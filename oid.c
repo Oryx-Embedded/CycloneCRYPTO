@@ -41,11 +41,11 @@
 
 
 /**
-* @brief Check whether the specified object identifier is valid
-* @param[in] oid Pointer to the object identifier
-* @param[in] oidLen Length of the OID, in bytes
-* @return Error code
-**/
+ * @brief Check whether the specified object identifier is valid
+ * @param[in] oid Pointer to the object identifier
+ * @param[in] oidLen Length of the OID, in bytes
+ * @return Error code
+ **/
 
 error_t oidCheck(const uint8_t *oid, size_t oidLen)
 {
@@ -360,7 +360,7 @@ error_t oidFromString(const char_t *str,
 char_t *oidToString(const uint8_t *oid,
    size_t oidLen, char_t *str, size_t maxStrLen)
 {
-   static char_t buffer[64];
+   static char_t buffer[128];
    size_t i;
    size_t n;
    uint32_t value;

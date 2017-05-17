@@ -66,7 +66,7 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    uint8_t o[16];
 
    //The parameter must be a multiple of 8
-   if(m % 8)
+   if((m % 8) != 0)
       return ERROR_INVALID_PARAMETER;
 
    //Determine the size, in bytes, of the specific part of
@@ -129,7 +129,7 @@ error_t ctrDecrypt(const CipherAlgo *cipher, void *context, uint_t m,
    uint8_t o[16];
 
    //The parameter must be a multiple of 8
-   if(m % 8)
+   if((m % 8) != 0)
       return ERROR_INVALID_PARAMETER;
 
    //Determine the size, in bytes, of the specific part of

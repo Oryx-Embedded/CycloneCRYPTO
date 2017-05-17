@@ -1056,7 +1056,7 @@ error_t ecAddMod(const EcDomainParameters *params, Mpi *r, const Mpi *a, const M
    //Compute R = (A + B) mod p
    if(mpiComp(r, &params->p) >= 0)
    {
-       MPI_CHECK(mpiSub(r, r, &params->p));
+      MPI_CHECK(mpiSub(r, r, &params->p));
    }
 
 end:
@@ -1084,7 +1084,7 @@ error_t ecSubMod(const EcDomainParameters *params, Mpi *r, const Mpi *a, const M
    //Compute R = (A - B) mod p
    if(mpiCompInt(r, 0) < 0)
    {
-       MPI_CHECK(mpiAdd(r, r, &params->p));
+      MPI_CHECK(mpiAdd(r, r, &params->p));
    }
 
 end:

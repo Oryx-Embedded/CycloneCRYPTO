@@ -475,7 +475,7 @@ error_t dsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    MPI_CHECK(mpiReadRaw(&z, digest, (n + 7) / 8));
 
    //Keep the leftmost N bits of the hash value
-   if(n % 8)
+   if((n % 8) != 0)
    {
       MPI_CHECK(mpiShiftRight(&z, 8 - (n % 8)));
    }
@@ -585,7 +585,7 @@ error_t dsaVerifySignature(const DsaPublicKey *key,
    MPI_CHECK(mpiReadRaw(&z, digest, (n + 7) / 8));
 
    //Keep the leftmost N bits of the hash value
-   if(n % 8)
+   if((n % 8) != 0)
    {
       MPI_CHECK(mpiShiftRight(&z, 8 - (n % 8)));
    }

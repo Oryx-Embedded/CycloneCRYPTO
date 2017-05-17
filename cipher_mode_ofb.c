@@ -67,7 +67,7 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
    uint8_t o[16];
 
    //The parameter must be a multiple of 8
-   if(s % 8)
+   if((s % 8) != 0)
       return ERROR_INVALID_PARAMETER;
 
    //Determine the size, in bytes, of the plaintext and ciphertext segments
@@ -125,7 +125,7 @@ error_t ofbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
    uint8_t o[16];
 
    //The parameter must be a multiple of 8
-   if(s % 8)
+   if((s % 8) != 0)
       return ERROR_INVALID_PARAMETER;
 
    //Determine the size, in bytes, of the plaintext and ciphertext segments

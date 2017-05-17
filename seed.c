@@ -265,7 +265,7 @@ error_t seedInit(SeedContext *context, const uint8_t *key, size_t keyLength)
       context->ks[2 * i + 1] = G(t);
 
       //Odd round?
-      if(i % 2)
+      if((i % 2) != 0)
       {
          t = (key3 << 8) | (key2 >> 24);
          key2 = (key2 << 8) | (key3 >> 24);

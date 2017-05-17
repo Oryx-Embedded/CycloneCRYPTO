@@ -346,6 +346,58 @@ error_t ecdsaReadSignature(const uint8_t *data, size_t length, EcdsaSignature *s
 
 
 /**
+ * @brief ECDSA key pair generation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[out] privateKey ECDSA private key
+ * @param[out] publicKey ECDSA public key
+ * @return Error code
+ **/
+
+error_t ecdsaGenerateKeyPair(const EcDomainParameters *params,
+   const PrngAlgo *prngAlgo, void *prngContext, Mpi *privateKey, EcPoint *publicKey)
+{
+   error_t error;
+   uint_t n;
+
+   //Check parameters
+   if(params == NULL || privateKey == NULL || publicKey == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Debug message
+   TRACE_DEBUG("Generating ECDSA key pair...\r\n");
+
+   //Let N be the bit length of q
+   n = mpiGetBitLength(&params->q);
+
+   //Generated a pseudorandom number
+   MPI_CHECK(mpiRand(privateKey, n, prngAlgo, prngContext));
+
+   //Make sure that 0 < d < q
+   if(mpiComp(privateKey, &params->q) >= 0)
+      mpiShiftRight(privateKey, 1);
+
+   //Debug message
+   TRACE_DEBUG("  Private key:\r\n");
+   TRACE_DEBUG_MPI("    ", privateKey);
+
+   //Compute Q = d.G
+   EC_CHECK(ecMult(params, publicKey, privateKey, &params->g));
+   EC_CHECK(ecAffinify(params, publicKey, publicKey));
+
+   //Debug message
+   TRACE_DEBUG("  Public key X:\r\n");
+   TRACE_DEBUG_MPI("    ", &publicKey->x);
+   TRACE_DEBUG("  Public key Y:\r\n");
+   TRACE_DEBUG_MPI("    ", &publicKey->y);
+
+end:
+   //Return status code
+   return error;
+}
+
+
+/**
  * @brief ECDSA signature generation
  * @param[in] params EC domain parameters
  * @param[in] prngAlgo PRNG algorithm
@@ -405,7 +457,7 @@ error_t ecdsaGenerateSignature(const EcDomainParameters *params,
    MPI_CHECK(mpiReadRaw(&z, digest, (n + 7) / 8));
 
    //Keep the leftmost N bits of the hash value
-   if(n % 8)
+   if((n % 8) != 0)
    {
       MPI_CHECK(mpiShiftRight(&z, 8 - (n % 8)));
    }
@@ -528,7 +580,7 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params, const EcPoint *pu
    MPI_CHECK(mpiReadRaw(&z, digest, (n + 7) / 8));
 
    //Keep the leftmost N bits of the hash value
-   if(n % 8)
+   if((n % 8) != 0)
    {
       MPI_CHECK(mpiShiftRight(&z, 8 - (n % 8)));
    }

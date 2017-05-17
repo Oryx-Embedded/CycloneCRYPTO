@@ -70,9 +70,9 @@
    #define keccak_lane_t uint64_t
    //Rotate left operation
    #define KECCAK_ROL(a, n) ROL64(a, n)
-   //Host byte order to little-endian byte order conversion
+   //Host byte order to little-endian byte order
    #define KECCAK_HTOLE(a) htole64(a)
-   //Little-endian byte order to host byte order conversion
+   //Little-endian byte order to host byte order
    #define KECCAK_LETOH(a) letoh64(a)
 #else
    #error KECCAK_L parameter is not valid
@@ -84,6 +84,13 @@
 #define KECCAK_B (KECCAK_W * 25)
 //The number of rounds for a Keccak-p permutation
 #define KECCAK_NR (12 + 2 * KECCAK_L)
+
+//Keccak padding byte
+#define KECCAK_PAD 0x01
+//SHA-3 padding byte
+#define KECCAK_SHA3_PAD 0x06
+//XOF padding byte
+#define KECCAK_XOF_PAD 0x1F
 
 
 /**

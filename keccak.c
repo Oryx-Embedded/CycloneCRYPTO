@@ -268,7 +268,7 @@ static void chi(keccak_lane_t a[5][5])
  * @param[index] round Round index
  **/
 
-static iota(keccak_lane_t a[5][5], uint_t index)
+static void iota(keccak_lane_t a[5][5], uint_t index)
 {
    //The iota transformation is parameterized by the round index
    a[0][0] ^= rc[index];
@@ -296,7 +296,7 @@ error_t keccakInit(KeccakContext *context, uint_t capacity)
    rate = KECCAK_B - capacity;
 
    //The rate must be multiple of the lane size
-   if(rate % KECCAK_W)
+   if((rate % KECCAK_W) != 0)
       return ERROR_INVALID_PARAMETER;
 
    //Save the block size, in bytes

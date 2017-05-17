@@ -1416,7 +1416,7 @@ error_t secp192r1Mod(Mpi *a, const Mpi *p)
    //Compute (T + S1 + S2 + S3) mod p
    while(mpiComp(&t, p) >= 0)
    {
-       MPI_CHECK(mpiSub(&t, &t, p));
+      MPI_CHECK(mpiSub(&t, &t, p));
    }
 
    //Save result
@@ -1533,12 +1533,12 @@ error_t secp224r1Mod(Mpi *a, const Mpi *p)
    //Compute (T + S1 + S2 - D1 - D2) mod p
    while(mpiComp(&t, p) >= 0)
    {
-       MPI_CHECK(mpiSub(&t, &t, p));
+      MPI_CHECK(mpiSub(&t, &t, p));
    }
 
    while(mpiCompInt(&t, 0) < 0)
    {
-       MPI_CHECK(mpiAdd(&t, &t, p));
+      MPI_CHECK(mpiAdd(&t, &t, p));
    }
 
    //Save result
@@ -1696,12 +1696,12 @@ error_t secp256r1Mod(Mpi *a, const Mpi *p)
    //Compute (T + 2 * S1 + 2 * S2 + S3 + S4 - D1 - D2 - D3 - D4) mod p
    while(mpiComp(&t, p) >= 0)
    {
-       MPI_CHECK(mpiSub(&t, &t, p));
+      MPI_CHECK(mpiSub(&t, &t, p));
    }
 
    while(mpiCompInt(&t, 0) < 0)
    {
-       MPI_CHECK(mpiAdd(&t, &t, p));
+      MPI_CHECK(mpiAdd(&t, &t, p));
    }
 
    //Save result
@@ -1809,12 +1809,12 @@ error_t secp384r1Mod(Mpi *a, const Mpi *p)
    //Compute (T + 2 * S1 + S2 + S3 + S4 + S5 + S6 - D1 - D2 - D3) mod p
    while(mpiComp(&t, p) >= 0)
    {
-       MPI_CHECK(mpiSub(&t, &t, p));
+      MPI_CHECK(mpiSub(&t, &t, p));
    }
 
    while(mpiCompInt(&t, 0) < 0)
    {
-       MPI_CHECK(mpiAdd(&t, &t, p));
+      MPI_CHECK(mpiAdd(&t, &t, p));
    }
 
    //Save result
@@ -1862,7 +1862,7 @@ error_t secp521r1Mod(Mpi *a, const Mpi *p)
    //Compute (A0 + A1) mod p
    while(mpiComp(a, p) >= 0)
    {
-       MPI_CHECK(mpiSub(a, a, p));
+      MPI_CHECK(mpiSub(a, a, p));
    }
 
 end:

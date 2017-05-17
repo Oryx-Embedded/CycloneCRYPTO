@@ -96,7 +96,7 @@ error_t chacha20Poly1305Encrypt(const uint8_t *k, size_t kLen,
 
    //If the length of the AAD is not an integral multiple of 16 bytes,
    //then padding is required
-   if(aLen % 16)
+   if((aLen % 16) != 0)
    {
       //Compute the number of padding bytes
       paddingLen = 16 - (aLen % 16);
@@ -114,7 +114,7 @@ error_t chacha20Poly1305Encrypt(const uint8_t *k, size_t kLen,
 
    //If the length of the ciphertext is not an integral multiple of 16 bytes,
    //then padding is required
-   if(length % 16)
+   if((length % 16) != 0)
    {
       //Compute the number of padding bytes
       paddingLen = 16 - (length % 16);
@@ -196,7 +196,7 @@ error_t chacha20Poly1305Decrypt(const uint8_t *k, size_t kLen,
 
    //If the length of the AAD is not an integral multiple of 16 bytes,
    //then padding is required
-   if(aLen % 16)
+   if((aLen % 16) != 0)
    {
       //Compute the number of padding bytes
       paddingLen = 16 - (aLen % 16);
@@ -214,7 +214,7 @@ error_t chacha20Poly1305Decrypt(const uint8_t *k, size_t kLen,
 
    //If the length of the ciphertext is not an integral multiple of 16 bytes,
    //then padding is required
-   if(length % 16)
+   if((length % 16) != 0)
    {
       //Compute the number of padding bytes
       paddingLen = 16 - (length % 16);

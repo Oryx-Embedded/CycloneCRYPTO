@@ -85,7 +85,7 @@ error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n, si
    if(nLen < 7 || nLen > 13)
       return ERROR_INVALID_LENGTH;
    //Check the length of the MAC
-   if(tLen < 4 || tLen > 16 || tLen % 2)
+   if(tLen < 4 || tLen > 16 || (tLen % 2) != 0)
       return ERROR_INVALID_LENGTH;
 
    //Q is the bit string representation of the octet length of P
@@ -252,7 +252,7 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n, si
    if(nLen < 7 || nLen > 13)
       return ERROR_INVALID_LENGTH;
    //Check the length of the MAC
-   if(tLen < 4 || tLen > 16 || tLen % 2)
+   if(tLen < 4 || tLen > 16 || (tLen % 2) != 0)
       return ERROR_INVALID_LENGTH;
 
    //Q is the bit string representation of the octet length of C

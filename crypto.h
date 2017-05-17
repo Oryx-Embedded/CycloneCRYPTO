@@ -168,6 +168,20 @@
    #error SHA3_512_SUPPORT parameter is not valid
 #endif
 
+//SHAKE128 support
+#ifndef SHAKE128_SUPPORT
+   #define SHAKE128_SUPPORT DISABLED
+#elif (SHAKE128_SUPPORT != ENABLED && SHAKE128_SUPPORT != DISABLED)
+   #error SHAKE128_SUPPORT parameter is not valid
+#endif
+
+//SHAKE256 support
+#ifndef SHAKE256_SUPPORT
+   #define SHAKE256_SUPPORT DISABLED
+#elif (SHAKE256_SUPPORT != ENABLED && SHAKE256_SUPPORT != DISABLED)
+   #error SHAKE256_SUPPORT parameter is not valid
+#endif
+
 //Keccak support
 #ifndef KECCAK_SUPPORT
    #define KECCAK_SUPPORT DISABLED

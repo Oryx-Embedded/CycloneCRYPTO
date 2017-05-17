@@ -649,7 +649,7 @@ error_t mpiAddInt(Mpi *r, const Mpi *a, int_t b)
    t.data = &value;
 
    //Perform addition
-   return mpiAdd(r, a ,&t);
+   return mpiAdd(r, a, &t);
 }
 
 
@@ -722,7 +722,7 @@ error_t mpiSubInt(Mpi *r, const Mpi *a, int_t b)
    t.data = &value;
 
    //Perform subtraction
-   return mpiSub(r, a ,&t);
+   return mpiSub(r, a, &t);
 }
 
 
@@ -1747,7 +1747,7 @@ void mpiDump(FILE *stream, const char_t *prepend, const Mpi *a)
       fprintf(stream, "%08X ", a->data[a->size - 1 - i]);
 
       //End of current line?
-      if(!((a->size - i - 1) % 8) || i == (a->size - 1))
+      if(((a->size - i - 1) % 8) == 0 || i == (a->size - 1))
          fprintf(stream, "\r\n");
    }
 }

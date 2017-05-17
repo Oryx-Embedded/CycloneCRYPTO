@@ -145,7 +145,7 @@ error_t base64Decode(const char_t *input, size_t inputLength, void *output, size
    i = 0;
 
    //The length of the string to decode must be a multiple of 4
-   if(inputLength % 4)
+   if((inputLength % 4) != 0)
       return ERROR_INVALID_LENGTH;
 
    //Process the Base64 encoded string

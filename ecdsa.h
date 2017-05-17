@@ -63,6 +63,9 @@ void ecdsaFreeSignature(EcdsaSignature *signature);
 error_t ecdsaWriteSignature(const EcdsaSignature *signature, uint8_t *data, size_t *length);
 error_t ecdsaReadSignature(const uint8_t *data, size_t length, EcdsaSignature *signature);
 
+error_t ecdsaGenerateKeyPair(const EcDomainParameters *params,
+   const PrngAlgo *prngAlgo, void *prngContext, Mpi *privateKey, EcPoint *publicKey);
+
 error_t ecdsaGenerateSignature(const EcDomainParameters *params,
    const PrngAlgo *prngAlgo, void *prngContext, const Mpi *privateKey,
    const uint8_t *digest, size_t digestLength, EcdsaSignature *signature);

@@ -127,8 +127,8 @@ void sha3_384Update(Sha3_384Context *context, const void *data, size_t length)
 
 void sha3_384Final(Sha3_384Context *context, uint8_t *digest)
 {
-   //Finish absorbing phase (SHA-3 padding differs from Keccak)
-   keccakFinal(context, 0x06);
+   //Finish absorbing phase (padding byte is 0x06 for SHA-3)
+   keccakFinal(context, KECCAK_SHA3_PAD);
    //Extract data from the squeezing phase
    keccakSqueeze(context, digest, SHA3_384_DIGEST_SIZE);
 }
