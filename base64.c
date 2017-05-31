@@ -29,7 +29,7 @@
  * for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 //Switch to the appropriate trace level
@@ -73,53 +73,104 @@ static const uint8_t base64DecTable[128] =
  * @param[out] outputLength Length of the encoded string (optional parameter)
  **/
 
-void base64Encode(const void *input, size_t inputLength, char_t *output, size_t *outputLength)
+void base64Encode(const void *input, size_t inputLength,
+   char_t *output, size_t *outputLength)
 {
-   size_t i;
+   size_t n;
+   uint8_t a;
+   uint8_t b;
+   uint8_t c;
+   uint8_t d;
    const uint8_t *p;
 
-   //Point to the first byte of the input stream
-   p = input;
-   //Length of the encoded string
-   i = 0;
+   //Point to the first byte of the input data
+   p = (const uint8_t *) input;
 
    //Divide the input stream into blocks of 3 bytes
-   while(inputLength >= 3)
+   n = inputLength / 3;
+
+   //A full encoding quantum is always completed at the end of a quantity
+   if(inputLength == (n * 3 + 1))
    {
-      //Map each 3-byte block to 4 printable characters using the Base64 character set
-      output[i++] = base64EncTable[(p[0] & 0xFC) >> 2];
-      output[i++] = base64EncTable[((p[0] & 0x03) << 4) | ((p[1] & 0xF0) >> 4)];
-      output[i++] = base64EncTable[((p[1] & 0x0F) << 2) | ((p[2] & 0xC0) >> 6)];
-      output[i++] = base64EncTable[p[2] & 0x3F];
-      //Point to the next 3-byte block
-      p += 3;
-      //Remaining bytes to process
-      inputLength -= 3;
+      //The final quantum of encoding input is exactly 8 bits
+      if(input != NULL && output != NULL)
+      {
+         //Read input data
+         a = (p[n * 3] & 0xFC) >> 2;
+         b = (p[n * 3] & 0x03) << 4;
+
+         //The final unit of encoded output will be two characters followed
+         //by two "=" padding characters
+         output[n * 4] = base64EncTable[a];
+         output[n * 4 + 1] = base64EncTable[b];
+         output[n * 4 + 2] = '=';
+         output[n * 4 + 3] = '=';
+         output[n * 4 + 4] = '\0';
+      }
+
+      //Length of the encoded string (excluding the terminating NULL)
+      if(outputLength != NULL)
+         *outputLength = n * 4 + 4;
+   }
+   else if(inputLength == (n * 3 + 2))
+   {
+      //The final quantum of encoding input is exactly 16 bits
+      if(input != NULL && output != NULL)
+      {
+         //Read input data
+         a = (p[n * 3] & 0xFC) >> 2;
+         b = ((p[n * 3] & 0x03) << 4) | ((p[n * 3 + 1] & 0xF0) >> 4);
+         c = (p[n * 3 + 1] & 0x0F) << 2;
+
+         //The final unit of encoded output will be three characters followed
+         //by one "=" padding character
+         output[n * 4] = base64EncTable[a];
+         output[n * 4 + 1] = base64EncTable[b];
+         output[n * 4 + 2] = base64EncTable[c];
+         output[n * 4 + 3] = '=';
+         output[n * 4 + 4] = '\0';
+      }
+
+      //Length of the encoded string (excluding the terminating NULL)
+      if(outputLength != NULL)
+         *outputLength = n * 4 + 4;
+   }
+   else
+   {
+      //The final quantum of encoding input is an integral multiple of 24 bits
+      if(output != NULL)
+      {
+         //The final unit of encoded output will be an integral multiple of 4
+         //characters with no "=" padding
+         output[n * 4] = '\0';
+      }
+
+      //Length of the encoded string (excluding the terminating NULL)
+      if(outputLength != NULL)
+         *outputLength = n * 4;
    }
 
-   //The last block contains only 1 byte?
-   if(inputLength == 1)
+   //If the output parameter is NULL, then the function calculates the
+   //length of the resulting Base64 string without copying any data
+   if(input != NULL && output != NULL)
    {
-      output[i++] = base64EncTable[(p[0] & 0xFC) >> 2];
-      output[i++] = base64EncTable[(p[0] & 0x03) << 4];
-      output[i++] = '=';
-      output[i++] = '=';
-   }
-   //The last block contains only 2 bytes?
-   else if(inputLength == 2)
-   {
-      output[i++] = base64EncTable[(p[0] & 0xFC) >> 2];
-      output[i++] = base64EncTable[((p[0] & 0x03) << 4) | ((p[1] & 0xF0) >> 4)];
-      output[i++] = base64EncTable[(p[1] & 0x0F) << 2];
-      output[i++] = '=';
-   }
+      //The input data is processed block by block
+      while(n-- > 0)
+      {
+         //Read input data
+         a = (p[n * 3] & 0xFC) >> 2;
+         b = ((p[n * 3] & 0x03) << 4) | ((p[n * 3 + 1] & 0xF0) >> 4);
+         c = ((p[n * 3 + 1] & 0x0F) << 2) | ((p[n * 3 + 2] & 0xC0) >> 6);
+         d = p[n * 3 + 2] & 0x3F;
 
-   //Properly terminate the resulting string
-   output[i] = '\0';
-
-   //Return the length of the encoded string (excluding the terminating NULL)
-   if(outputLength != NULL)
-      *outputLength = i;
+         //Map each 3-byte block to 4 printable characters using the Base64
+         //character set
+         output[n * 4] = base64EncTable[a];
+         output[n * 4 + 1] = base64EncTable[b];
+         output[n * 4 + 2] = base64EncTable[c];
+         output[n * 4 + 3] = base64EncTable[d];
+      }
+   }
 }
 
 
@@ -132,16 +183,23 @@ void base64Encode(const void *input, size_t inputLength, char_t *output, size_t 
  * @return Error code
  **/
 
-error_t base64Decode(const char_t *input, size_t inputLength, void *output, size_t *outputLength)
+error_t base64Decode(const char_t *input, size_t inputLength,
+   void *output, size_t *outputLength)
 {
    size_t i;
    size_t j;
    uint32_t value;
    uint8_t *p;
 
-   //Point to the first byte of the output stream
-   p = output;
-   //Length of the decoded stream
+   //Check parameters
+   if(input == NULL && inputLength != 0)
+      return ERROR_INVALID_PARAMETER;
+   if(outputLength == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Point to the buffer where to write the decoded data
+   p = (uint8_t *) output;
+   //Length of the decoded data
    i = 0;
 
    //The length of the string to decode must be a multiple of 4
@@ -158,25 +216,34 @@ error_t base64Decode(const char_t *input, size_t inputLength, void *output, size
          if(inputLength == 2 && input[0] == '=' && input[1] == '=')
          {
             //Decode the last byte
-            p[i++] = (value >> 4) & 0xFF;
+            if(p != NULL)
+               p[i] = (value >> 4) & 0xFF;
+
             //Return the length of the decoded data
-            *outputLength = i;
+            *outputLength = i + 1;
+
             //Decoding is now complete
             return NO_ERROR;
          }
          //The "=" sequence indicates that the last block contains only 2 bytes
-         else if(inputLength == 1 && *input == '=')
+         else if(inputLength == 1 && input[0] == '=')
          {
             //Decode the last two bytes
-            p[i++] = (value >> 10) & 0xFF;
-            p[i++] = (value >> 2) & 0xFF;
+            if(p != NULL)
+            {
+               p[i] = (value >> 10) & 0xFF;
+               p[i + 1] = (value >> 2) & 0xFF;
+            }
+
             //Return the length of the decoded data
-            *outputLength = i;
+            *outputLength = i + 2;
+
             //Decoding is now complete
             return NO_ERROR;
          }
+
          //Ensure the current character belongs to the Base64 character set
-         else if(((uint8_t) *input) > 127 || base64DecTable[(uint8_t) *input] > 63)
+         if(((uint8_t) *input) > 127 || base64DecTable[(uint8_t) *input] > 63)
          {
             //Decoding failed
             return ERROR_INVALID_CHARACTER;
@@ -184,6 +251,7 @@ error_t base64Decode(const char_t *input, size_t inputLength, void *output, size
 
          //Decode the current character
          value = (value << 6) | base64DecTable[(uint8_t) *input];
+
          //Point to the next character to decode
          input++;
          //Remaining bytes to process
@@ -191,13 +259,20 @@ error_t base64Decode(const char_t *input, size_t inputLength, void *output, size
       }
 
       //Map each 4-character block to 3 bytes
-      p[i++] = (value >> 16) & 0xFF;
-      p[i++] = (value >> 8) & 0xFF;
-      p[i++] = value  & 0xFF;
+      if(p != NULL)
+      {
+         p[i] = (value >> 16) & 0xFF;
+         p[i + 1] = (value >> 8) & 0xFF;
+         p[i + 2] = value  & 0xFF;
+      }
+
+      //Next block
+      i += 3;
    }
 
    //Return the length of the decoded data
    *outputLength = i;
+
    //Decoding is now complete
    return NO_ERROR;
 }

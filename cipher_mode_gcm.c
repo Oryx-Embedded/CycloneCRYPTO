@@ -29,7 +29,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 //Switch to the appropriate trace level
@@ -155,7 +155,9 @@ error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo, void *cipherC
          //If the highest term of the result is equal to one,
          //then perform reduction
          if(c != 0)
+         {
             h[3] ^= r[reverseInt4(1)];
+         }
       }
 
       //Save M(i)
@@ -202,6 +204,7 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv, size_t ivLen, const u
    //The length of the IV shall meet SP 800-38D requirements
    if(ivLen < 1)
       return ERROR_INVALID_PARAMETER;
+
    //Check the length of the authentication tag
    if(tLen < 4 || tLen > 16)
       return ERROR_INVALID_PARAMETER;
@@ -347,6 +350,7 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv, size_t ivLen, const u
    //The length of the IV shall meet SP 800-38D requirements
    if(ivLen < 1)
       return ERROR_INVALID_PARAMETER;
+
    //Check the length of the authentication tag
    if(tLen < 4 || tLen > 16)
       return ERROR_INVALID_PARAMETER;
@@ -542,7 +546,9 @@ void gcmXorBlock(uint8_t *x, const uint8_t *a, const uint8_t *b, size_t n)
 
    //Perform XOR operation
    for(i = 0; i < n; i++)
+   {
       x[i] = a[i] ^ b[i];
+   }
 }
 
 
@@ -561,7 +567,9 @@ void gcmIncCounter(uint8_t *x)
    {
       //Increment the current byte and propagate the carry if necessary
       if(++(x[15 - i]) != 0)
+      {
          break;
+      }
    }
 }
 

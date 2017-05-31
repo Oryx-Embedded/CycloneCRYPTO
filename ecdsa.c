@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 //Switch to the appropriate trace level
@@ -44,7 +44,7 @@
 const uint8_t ECDSA_WITH_SHA1_OID[7] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x01};
 //ECDSA with SHA-224 OID (1.2.840.10045.4.3.1)
 const uint8_t ECDSA_WITH_SHA224_OID[8] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x01};
-//ECDSA with SHA-224 OID (1.2.840.10045.4.3.2)
+//ECDSA with SHA-256 OID (1.2.840.10045.4.3.2)
 const uint8_t ECDSA_WITH_SHA256_OID[8] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x02};
 //ECDSA with SHA-384 OID (1.2.840.10045.4.3.3)
 const uint8_t ECDSA_WITH_SHA384_OID[8] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03, 0x03};
@@ -347,6 +347,7 @@ error_t ecdsaReadSignature(const uint8_t *data, size_t length, EcdsaSignature *s
 
 /**
  * @brief ECDSA key pair generation
+ * @param[in] params EC domain parameters
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
  * @param[out] privateKey ECDSA private key

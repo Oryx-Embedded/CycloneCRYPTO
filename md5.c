@@ -28,7 +28,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1321
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 //Switch to the appropriate trace level

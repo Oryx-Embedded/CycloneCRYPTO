@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 #ifndef _SHAKE128_H
@@ -40,6 +40,9 @@
 
 typedef KeccakContext Shake128Context;
 
+
+//SHAKE128 related constants
+extern const uint8_t shake128Oid[9];
 
 //SHAKE128 related functions
 error_t shake128Compute(const void *input, size_t inputLen,

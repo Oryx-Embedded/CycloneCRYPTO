@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 #ifndef _X509_H
@@ -47,6 +47,36 @@ typedef enum
    X509_VERSION_2 = 0x01,
    X509_VERSION_3 = 0x02,
 } X509Version;
+
+
+/**
+ * @brief Key usage
+ **/
+
+typedef enum
+{
+   X509_KEY_USAGE_DIGITAL_SIGNATURE = 0x0001,
+   X509_KEY_USAGE_NON_REPUDIATION   = 0x0002,
+   X509_KEY_USAGE_KEY_ENCIPHERMENT  = 0x0004,
+   X509_KEY_USAGE_DATA_ENCIPHERMENT = 0x0008,
+   X509_KEY_USAGE_KEY_AGREEMENT     = 0x0010,
+   X509_KEY_USAGE_KEY_CERT_SIGN     = 0x0020,
+   X509_KEY_USAGE_CRL_SIGN          = 0x0040,
+   X509_KEY_USAGE_ENCIPHER_ONLY     = 0x0080,
+   X509_KEY_USAGE_DECIPHER_ONLY     = 0x0100
+} X509KeyUsage;
+
+
+/**
+ * @brief Netscape certificate types
+ **/
+
+typedef enum
+{
+   X509_NS_CERT_TYPE_SSL_CLIENT = 0x01,
+   X509_NS_CERT_TYPE_SSL_SERVER = 0x02,
+   X509_NS_CERT_TYPE_SSL_CA     = 0x20
+} X509NsCertType;
 
 
 /**
@@ -196,6 +226,22 @@ typedef struct
 
 
 /**
+ * @brief Extensions
+ **/
+
+typedef struct
+{
+   X509BasicContraints basicConstraints;
+   uint16_t keyUsage;
+   const uint8_t *subjectKeyId;
+   size_t subjectKeyIdLen;
+   const uint8_t *authorityKeyId;
+   size_t authorityKeyIdLen;
+   uint8_t nsCertType;
+} X509Extensions;
+
+
+/**
  * @brief X.509 certificate
  **/
 
@@ -210,7 +256,7 @@ typedef struct
    X509Validity validity;
    X509Name subject;
    X509SubjectPublicKeyInfo subjectPublicKeyInfo;
-   X509BasicContraints basicConstraints;
+   X509Extensions extensions;
    const uint8_t *signatureAlgo;
    size_t signatureAlgoLen;
    const uint8_t *signatureValue;
@@ -250,6 +296,8 @@ extern const uint8_t X509_POLICY_CONSTRAINTS_OID[3];
 extern const uint8_t X509_EXTENDED_KEY_USAGE_OID[3];
 extern const uint8_t X509_FRESHEST_CRL_OID[3];
 extern const uint8_t X509_INHIBIT_ANY_POLICY_OID[3];
+
+extern const uint8_t X509_NS_CERT_TYPE_OID[9];
 
 //X.509 related functions
 error_t x509ParseCertificate(const uint8_t *data, size_t length,
@@ -306,8 +354,23 @@ error_t x509ParseSubjectUniqueId(const uint8_t *data, size_t length,
 error_t x509ParseExtensions(const uint8_t *data, size_t length,
    size_t *totalLength, X509CertificateInfo *certInfo);
 
-error_t x509ParseBasicConstraints(const uint8_t *data,
-   size_t length, X509CertificateInfo *certInfo);
+error_t x509ParseBasicConstraints(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo);
+
+error_t x509ParseKeyUsage(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo);
+
+error_t x509ParseExtendedKeyUsage(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo);
+
+error_t x509ParseSubjectKeyId(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo);
+
+error_t x509ParseAuthorityKeyId(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo);
+
+error_t x509ParseNsCertType(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo);
 
 error_t x509ParseSignatureAlgo(const uint8_t *data, size_t length,
    size_t *totalLength, X509CertificateInfo *certInfo);
@@ -317,8 +380,11 @@ error_t x509ParseSignatureValue(const uint8_t *data, size_t length,
 
 error_t x509ParseInt(const uint8_t *data, size_t length, uint_t *value);
 
-error_t x509ReadRsaPublicKey(const X509CertificateInfo *certInfo, RsaPublicKey *key);
-error_t x509ReadDsaPublicKey(const X509CertificateInfo *certInfo, DsaPublicKey *key);
+error_t x509ReadRsaPublicKey(const X509CertificateInfo *certInfo,
+   RsaPublicKey *key);
+
+error_t x509ReadDsaPublicKey(const X509CertificateInfo *certInfo,
+   DsaPublicKey *key);
 
 error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
    const X509CertificateInfo *issuerCertInfo);

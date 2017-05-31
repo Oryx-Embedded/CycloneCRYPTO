@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 //Switch to the appropriate trace level
@@ -112,6 +112,9 @@ const uint8_t X509_FRESHEST_CRL_OID[3] = {0x55, 0x1D, 0x2E};
 //Inhibit Any-Policy OID (2.5.29.54)
 const uint8_t X509_INHIBIT_ANY_POLICY_OID[3] = {0x55, 0x1D, 0x36};
 
+//Netscape Certificate Type OID (2.16.840.1.113730.1.1)
+const uint8_t X509_NS_CERT_TYPE_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x86, 0xF8, 0x42, 0x01, 0x01};
+
 
 /**
  * @brief Parse a X.509 certificate
@@ -130,6 +133,7 @@ error_t x509ParseCertificate(const uint8_t *data, size_t length,
 
    //Debug message
    TRACE_DEBUG("Parsing X.509 certificate...\r\n");
+
    //Clear the certificate information structure
    memset(certInfo, 0, sizeof(X509CertificateInfo));
 
@@ -202,7 +206,8 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
    //Save the total length of the field
    *totalLength = tag.totalLength;
 
-   //The ASN.1 DER encoded tbsCertificate is used as the input to the signature function
+   //The ASN.1 DER encoded TBSCertificate is used as the input to the
+   //signature function
    certInfo->tbsCertificate = data;
    certInfo->tbsCertificateLen = tag.totalLength;
 
@@ -272,7 +277,7 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
 
    //Read SubjectPublicKeyInfo field
    error = x509ParseSubjectPublicKeyInfo(data, length, &n, certInfo);
-   //Failed to parse Version field?
+   //Failed to parse SubjectPublicKeyInfo field?
    if(error)
       return error;
 
@@ -282,7 +287,7 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
 
    //Read IssuerUniqueID field (optional)
    error = x509ParseIssuerUniqueId(data, length, &n, certInfo);
-   //Failed to parse Version field?
+   //Failed to parse IssuerUniqueID field?
    if(error)
       return error;
 
@@ -292,7 +297,7 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
 
    //Read SubjectUniqueID field (optional)
    error = x509ParseSubjectUniqueId(data, length, &n, certInfo);
-   //Failed to parse Version field?
+   //Failed to parse SubjectUniqueID field?
    if(error)
       return error;
 
@@ -300,9 +305,9 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
    data += n;
    length -= n;
 
-   //Read SubjectUniqueID field (optional)
+   //Read Extensions field (optional)
    error = x509ParseExtensions(data, length, &n, certInfo);
-   //Failed to parse Version field?
+   //Failed to parse Extensions field?
    if(error)
       return error;
 
@@ -460,7 +465,8 @@ error_t x509ParseSignature(const uint8_t *data, size_t length,
       return error;
 
    //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_OBJECT_IDENTIFIER);
+   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
+      ASN1_TYPE_OBJECT_IDENTIFIER);
    //The tag does not match the criteria?
    if(error)
       return error;
@@ -568,99 +574,110 @@ error_t x509ParseName(const uint8_t *data, size_t length,
       if(error)
          return error;
 
-      //Check the length of the OID
-      if(attrType.length == 3)
+      //Common Name attribute found?
+      if(!oidComp(attrType.value, attrType.length,
+         X509_COMMON_NAME_OID, sizeof(X509_COMMON_NAME_OID)))
       {
-         //Common Name attribute found?
-         if(!memcmp(attrType.value, X509_COMMON_NAME_OID, 3))
-         {
-            name->commonName = (const char_t *) attrValue.value;
-            name->commonNameLen = attrValue.length;
-         }
-         //Surname attribute found?
-         else if(!memcmp(attrType.value, X509_SURNAME_OID, 3))
-         {
-            name->surname = (const char_t *) attrValue.value;
-            name->surnameLen = attrValue.length;
-         }
-         //Serial Number attribute found?
-         else if(!memcmp(attrType.value, X509_SERIAL_NUMBER_OID, 3))
-         {
-            name->serialNumber = (const char_t *) attrValue.value;
-            name->serialNumberLen = attrValue.length;
-         }
-         //Country Name attribute found?
-         else if(!memcmp(attrType.value, X509_COUNTRY_NAME_OID, 3))
-         {
-            name->countryName = (const char_t *) attrValue.value;
-            name->countryNameLen = attrValue.length;
-         }
-         //Locality Name attribute found?
-         else if(!memcmp(attrType.value, X509_LOCALITY_NAME_OID, 3))
-         {
-            name->localityName = (const char_t *) attrValue.value;
-            name->localityNameLen = attrValue.length;
-         }
-         //State Or Province Name attribute found?
-         else if(!memcmp(attrType.value, X509_STATE_OR_PROVINCE_NAME_OID, 3))
-         {
-            name->stateOrProvinceName = (const char_t *) attrValue.value;
-            name->stateOrProvinceNameLen = attrValue.length;
-         }
-         //Organization Name attribute found?
-         else if(!memcmp(attrType.value, X509_ORGANIZATION_NAME_OID, 3))
-         {
-            name->organizationName = (const char_t *) attrValue.value;
-            name->organizationNameLen = attrValue.length;
-         }
-         //Organizational Unit Name attribute found?
-         else if(!memcmp(attrType.value, X509_ORGANIZATIONAL_UNIT_NAME_OID, 3))
-         {
-            name->organizationalUnitName = (const char_t *) attrValue.value;
-            name->organizationalUnitNameLen = attrValue.length;
-         }
-         //Title attribute found?
-         else if(!memcmp(attrType.value, X509_TITLE_OID, 3))
-         {
-            name->title = (const char_t *) attrValue.value;
-            name->titleLen = attrValue.length;
-         }
-         //Name attribute found?
-         else if(!memcmp(attrType.value, X509_NAME_OID, 3))
-         {
-            name->name = (const char_t *) attrValue.value;
-            name->nameLen = attrValue.length;
-         }
-         //Given Name attribute found?
-         else if(!memcmp(attrType.value, X509_GIVEN_NAME_OID, 3))
-         {
-            name->givenName = (const char_t *) attrValue.value;
-            name->givenNameLen = attrValue.length;
-         }
-         //Initials attribute OID (2.5.4.43)
-         else if(!memcmp(attrType.value, X509_INITIALS_OID, 3))
-         {
-            name->initials = (const char_t *) attrValue.value;
-            name->initialsLen = attrValue.length;
-         }
-         //Generation Qualifier attribute found?
-         else if(!memcmp(attrType.value, X509_GENERATION_QUALIFIER_OID, 3))
-         {
-            name->generationQualifier = (const char_t *) attrValue.value;
-            name->generationQualifierLen = attrValue.length;
-         }
-         //DN Qualifier attribute found?
-         else if(!memcmp(attrType.value, X509_DN_QUALIFIER_OID, 3))
-         {
-            name->dnQualifier = (const char_t *) attrValue.value;
-            name->dnQualifierLen = attrValue.length;
-         }
-         //Pseudonym attribute found?
-         else if(!memcmp(attrType.value, X509_PSEUDONYM_OID, 3))
-         {
-            name->pseudonym = (const char_t *) attrValue.value;
-            name->pseudonymLen = attrValue.length;
-         }
+         name->commonName = (const char_t *) attrValue.value;
+         name->commonNameLen = attrValue.length;
+      }
+      //Surname attribute found?
+      else if(!oidComp(attrType.value, attrType.length,
+         X509_SURNAME_OID, sizeof(X509_SURNAME_OID)))
+      {
+         name->surname = (const char_t *) attrValue.value;
+         name->surnameLen = attrValue.length;
+      }
+      //Serial Number attribute found?
+      else if(!oidComp(attrType.value, attrType.length,
+         X509_SERIAL_NUMBER_OID, sizeof(X509_SERIAL_NUMBER_OID)))
+      {
+         name->serialNumber = (const char_t *) attrValue.value;
+         name->serialNumberLen = attrValue.length;
+      }
+      //Country Name attribute found?
+      else if(!oidComp(attrType.value, attrType.length,
+         X509_COUNTRY_NAME_OID, sizeof(X509_COUNTRY_NAME_OID)))
+      {
+         name->countryName = (const char_t *) attrValue.value;
+         name->countryNameLen = attrValue.length;
+      }
+      //Locality Name attribute found?
+      else if(!oidComp(attrType.value, attrType.length,
+         X509_LOCALITY_NAME_OID, sizeof(X509_LOCALITY_NAME_OID)))
+      {
+         name->localityName = (const char_t *) attrValue.value;
+         name->localityNameLen = attrValue.length;
+      }
+      //State Or Province Name attribute found?
+      else if(!oidComp(attrType.value, attrType.length,
+         X509_STATE_OR_PROVINCE_NAME_OID, sizeof(X509_STATE_OR_PROVINCE_NAME_OID)))
+      {
+         name->stateOrProvinceName = (const char_t *) attrValue.value;
+         name->stateOrProvinceNameLen = attrValue.length;
+      }
+      //Organization Name attribute found?
+      else if(!oidComp(attrType.value, attrType.length,
+         X509_ORGANIZATION_NAME_OID, sizeof(X509_ORGANIZATION_NAME_OID)))
+      {
+         name->organizationName = (const char_t *) attrValue.value;
+         name->organizationNameLen = attrValue.length;
+      }
+      //Organizational Unit Name attribute found?
+      else if(!oidComp(attrType.value, attrType.length,
+         X509_ORGANIZATIONAL_UNIT_NAME_OID, sizeof(X509_ORGANIZATIONAL_UNIT_NAME_OID)))
+      {
+         name->organizationalUnitName = (const char_t *) attrValue.value;
+         name->organizationalUnitNameLen = attrValue.length;
+      }
+      //Title attribute found?
+      else if(!oidComp(attrType.value, attrType.length,
+         X509_TITLE_OID, sizeof(X509_TITLE_OID)))
+      {
+         name->title = (const char_t *) attrValue.value;
+         name->titleLen = attrValue.length;
+      }
+      //Name attribute found?
+      else if(!oidComp(attrType.value, attrType.length,
+         X509_NAME_OID, sizeof(X509_NAME_OID)))
+      {
+         name->name = (const char_t *) attrValue.value;
+         name->nameLen = attrValue.length;
+      }
+      //Given Name attribute found?
+      else if(!oidComp(attrType.value, attrType.length,
+         X509_GIVEN_NAME_OID, sizeof(X509_GIVEN_NAME_OID)))
+      {
+         name->givenName = (const char_t *) attrValue.value;
+         name->givenNameLen = attrValue.length;
+      }
+      //Initials attribute OID (2.5.4.43)
+      else if(!oidComp(attrType.value, attrType.length,
+         X509_INITIALS_OID, sizeof(X509_INITIALS_OID)))
+      {
+         name->initials = (const char_t *) attrValue.value;
+         name->initialsLen = attrValue.length;
+      }
+      //Generation Qualifier attribute found?
+      else if(!oidComp(attrType.value, attrType.length,
+         X509_GENERATION_QUALIFIER_OID, sizeof(X509_GENERATION_QUALIFIER_OID)))
+      {
+         name->generationQualifier = (const char_t *) attrValue.value;
+         name->generationQualifierLen = attrValue.length;
+      }
+      //DN Qualifier attribute found?
+      else if(!oidComp(attrType.value, attrType.length,
+         X509_DN_QUALIFIER_OID, sizeof(X509_DN_QUALIFIER_OID)))
+      {
+         name->dnQualifier = (const char_t *) attrValue.value;
+         name->dnQualifierLen = attrValue.length;
+      }
+      //Pseudonym attribute found?
+      else if(!oidComp(attrType.value, attrType.length,
+         X509_PSEUDONYM_OID, sizeof(X509_PSEUDONYM_OID)))
+      {
+         name->pseudonym = (const char_t *) attrValue.value;
+         name->pseudonymLen = attrValue.length;
       }
    }
 
@@ -670,7 +687,7 @@ error_t x509ParseName(const uint8_t *data, size_t length,
 
 
 /**
- * @brief Parse Validity field
+ * @brief Parse Validity structure
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
  * @param[out] totalLength Number of bytes that have been parsed
@@ -688,7 +705,7 @@ error_t x509ParseValidity(const uint8_t *data, size_t length,
    //Debug message
    TRACE_DEBUG("    Parsing Validity...\r\n");
 
-   //Read current ASN.1 tag
+   //Read the contents of the Validity structure
    error = asn1ReadTag(data, length, &tag);
    //Failed to decode ASN.1 tag?
    if(error)
@@ -707,7 +724,7 @@ error_t x509ParseValidity(const uint8_t *data, size_t length,
    data = tag.value;
    length = tag.length;
 
-   //NotBefore field may be encoded as UTCTime or GeneralizedTime
+   //The NotBefore field may be encoded as UTCTime or GeneralizedTime
    error = x509ParseTime(data, length, &n, &certInfo->validity.notBefore);
    //Failed to decode ASN.1 tag?
    if(error)
@@ -717,7 +734,7 @@ error_t x509ParseValidity(const uint8_t *data, size_t length,
    data += n;
    length -= n;
 
-   //NotAfter field may be encoded as UTCTime or GeneralizedTime
+   //The NotAfter field may be encoded as UTCTime or GeneralizedTime
    error = x509ParseTime(data, length, &n, &certInfo->validity.notAfter);
    //Failed to decode ASN.1 tag?
    if(error)
@@ -729,7 +746,7 @@ error_t x509ParseValidity(const uint8_t *data, size_t length,
 
 
 /**
- * @brief Parse UTCTime or GeneralizedTime structure
+ * @brief Parse UTCTime or GeneralizedTime field
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
  * @param[out] totalLength Number of bytes that have been parsed
@@ -760,7 +777,7 @@ error_t x509ParseTime(const uint8_t *data, size_t length,
    if(!asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_UTC_TIME))
    {
       //Check the length of the UTCTime field
-      if(tag.length < 12)
+      if(tag.length != 13)
          return ERROR_INVALID_SYNTAX;
 
       //The UTCTime uses a 2-digit representation of the year
@@ -782,7 +799,7 @@ error_t x509ParseTime(const uint8_t *data, size_t length,
    else if(!asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_GENERALIZED_TIME))
    {
       //Check the length of the GeneralizedTime field
-      if(tag.length < 14)
+      if(tag.length != 15)
          return ERROR_INVALID_SYNTAX;
 
       //The GeneralizedTime uses a 4-digit representation of the year
@@ -841,6 +858,10 @@ error_t x509ParseTime(const uint8_t *data, size_t length,
    //Any error to report?
    if(error)
       return error;
+
+   //The encoding shall terminate with a "Z"
+   if(data[10] != 'Z')
+      return ERROR_INVALID_SYNTAX;
 
    //Save the resulting value
    dateTime->seconds = value;
@@ -913,8 +934,8 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
    if(error)
       return error;
 
-   //The bit string shall contain an initial octet which encodes
-   //the number of unused bits in the final subsequent octet
+   //The bit string shall contain an initial octet which encodes the number
+   //of unused bits in the final subsequent octet
    if(tag.length < 1 || tag.value[0] != 0x00)
       return ERROR_FAILURE;
 
@@ -1003,7 +1024,8 @@ error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
       return error;
 
    //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_OBJECT_IDENTIFIER);
+   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
+      ASN1_TYPE_OBJECT_IDENTIFIER);
    //The tag does not match the criteria?
    if(error)
       return error;
@@ -1300,7 +1322,8 @@ error_t x509ParseEcParameters(const uint8_t *data,
       return error;
 
    //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_OBJECT_IDENTIFIER);
+   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
+      ASN1_TYPE_OBJECT_IDENTIFIER);
    //The tag does not match the criteria?
    if(error)
       return error;
@@ -1339,7 +1362,7 @@ error_t x509ParseEcPublicKey(const uint8_t *data,
    if(!length)
       return ERROR_BAD_CERTIFICATE;
 
-   //Save the EC public value
+   //Save the EC public key
    certInfo->subjectPublicKeyInfo.ecPublicKey.q = data;
    certInfo->subjectPublicKeyInfo.ecPublicKey.qLen = length;
 
@@ -1565,7 +1588,8 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
          return error;
 
       //Enforce encoding, class and type
-      error = asn1CheckTag(&oidTag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_OBJECT_IDENTIFIER);
+      error = asn1CheckTag(&oidTag, FALSE, ASN1_CLASS_UNIVERSAL,
+         ASN1_TYPE_OBJECT_IDENTIFIER);
       //The tag does not match the criteria?
       if(error)
          return error;
@@ -1590,8 +1614,8 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
          if(tag.length != 1)
             return ERROR_INVALID_LENGTH;
 
-         //Each extension in a certificate is designated as either
-         //critical or non-critical
+         //Each extension in a certificate is designated as either critical
+         //or non-critical
          critical = tag.value[0] ? TRUE : FALSE;
 
          //Next item
@@ -1611,29 +1635,53 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
          return error;
 
       //Enforce encoding, class and type
-      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_OCTET_STRING);
+      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
+         ASN1_TYPE_OCTET_STRING);
       //The tag does not match the criteria?
       if(error)
          return error;
 
-      //The current extension matches the BasicConstraints OID?
-      if(!oidComp(oidTag.value, oidTag.length, X509_BASIC_CONSTRAINTS_OID, 3))
+      //BasicConstraints extension found?
+      if(!oidComp(oidTag.value, oidTag.length,
+         X509_BASIC_CONSTRAINTS_OID, sizeof(X509_BASIC_CONSTRAINTS_OID)))
       {
          //Parse BasicConstraints extension
          error = x509ParseBasicConstraints(tag.value, tag.length, certInfo);
-         //Any error to report?
-         if(error)
-            return error;
       }
-      //The current extension matches the KeyUsage OID?
-      else if(!oidComp(oidTag.value, oidTag.length, X509_KEY_USAGE_OID, 3))
+      //KeyUsage extension found?
+      else if(!oidComp(oidTag.value, oidTag.length,
+         X509_KEY_USAGE_OID, sizeof(X509_KEY_USAGE_OID)))
       {
          //Parse KeyUsage extension
+         error = x509ParseKeyUsage(tag.value, tag.length, certInfo);
       }
-      //The current extension matches the ExtendedKeyUsage OID?
-      else if(!oidComp(oidTag.value, oidTag.length, X509_EXTENDED_KEY_USAGE_OID, 3))
+      //ExtendedKeyUsage extension found?
+      else if(!oidComp(oidTag.value, oidTag.length,
+         X509_EXTENDED_KEY_USAGE_OID, sizeof(X509_EXTENDED_KEY_USAGE_OID)))
       {
          //Parse ExtendedKeyUsage extension
+         error = x509ParseExtendedKeyUsage(tag.value, tag.length, certInfo);
+      }
+      //SubjectKeyIdentifier extension found?
+      else if(!oidComp(oidTag.value, oidTag.length,
+         X509_SUBJECT_KEY_ID_OID, sizeof(X509_SUBJECT_KEY_ID_OID)))
+      {
+         //Parse SubjectKeyIdentifier extension
+         error = x509ParseSubjectKeyId(tag.value, tag.length, certInfo);
+      }
+      //AuthorityKeyIdentifier extension found?
+      else if(!oidComp(oidTag.value, oidTag.length,
+         X509_AUTHORITY_KEY_ID_OID, sizeof(X509_AUTHORITY_KEY_ID_OID)))
+      {
+         //Parse AuthorityKeyIdentifier extension
+         error = x509ParseAuthorityKeyId(tag.value, tag.length, certInfo);
+      }
+      //NetscapeCertType extension found?
+      else if(!oidComp(oidTag.value, oidTag.length,
+         X509_NS_CERT_TYPE_OID, sizeof(X509_NS_CERT_TYPE_OID)))
+      {
+         //Parse NetscapeCertType extension
+         error = x509ParseNsCertType(tag.value, tag.length, certInfo);
       }
       //The current extension is marked as critical?
       else if(critical)
@@ -1641,8 +1689,12 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
          //A certificate-using system must reject the certificate if it encounters
          //a critical extension it does not recognize or a critical extension that
          //contains information that it cannot process
-         return ERROR_UNSUPPORTED_EXTENSION;
+         error = ERROR_UNSUPPORTED_EXTENSION;
       }
+
+      //Any error to report?
+      if(error)
+         return error;
    }
 
    //Successful processing
@@ -1651,17 +1703,18 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
 
 
 /**
- * @brief Parse BasicConstraints structure
+ * @brief Parse BasicConstraints extension
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
  * @param[out] certInfo Information resulting from the parsing process
  * @return Error code
  **/
 
-error_t x509ParseBasicConstraints(const uint8_t *data,
-   size_t length, X509CertificateInfo *certInfo)
+error_t x509ParseBasicConstraints(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo)
 {
    error_t error;
+   int32_t value;
    Asn1Tag tag;
 
    //Debug message
@@ -1683,11 +1736,11 @@ error_t x509ParseBasicConstraints(const uint8_t *data,
    data = tag.value;
    length = tag.length;
 
-   //The cA boolean is optional...
+   //The cA field is optional
    if(length > 0)
    {
-      //The cA boolean indicates whether the certified public key
-      //may be used to verify certificate signatures
+      //The cA boolean indicates whether the certified public key may be used
+      //to verify certificate signatures
       error = asn1ReadTag(data, length, &tag);
       //Failed to decode ASN.1 tag?
       if(error)
@@ -1696,15 +1749,15 @@ error_t x509ParseBasicConstraints(const uint8_t *data,
       //Enforce encoding, class and type
       error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_BOOLEAN);
 
-      //The cA field is present?
+      //Check status code
       if(!error)
       {
-         //The tag should be 1-byte long
+         //Make sure the length of the boolean is valid
          if(tag.length != 1)
             return ERROR_INVALID_LENGTH;
 
          //Get boolean value
-         certInfo->basicConstraints.ca = tag.value ? TRUE : FALSE;
+         certInfo->extensions.basicConstraints.ca = tag.value[0] ? TRUE : FALSE;
 
          //Point to the next item
          data += tag.totalLength;
@@ -1712,26 +1765,249 @@ error_t x509ParseBasicConstraints(const uint8_t *data,
       }
    }
 
-   //The pathLenConstraint field is optional...
+   //The pathLenConstraint field is optional
    if(length > 0)
    {
+      //Read the pathLenConstraint field
+      error = asn1ReadInt32(data, length, &tag, &value);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         return error;
+
       //The pathLenConstraint field gives the maximum number of non-self-issued
       //intermediate certificates that may follow this certificate in a valid
       //certification path
+      certInfo->extensions.basicConstraints.pathLenConstraint = value;
+   }
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Parse KeyUsage extension
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] certInfo Information resulting from the parsing process
+ * @return Error code
+ **/
+
+error_t x509ParseKeyUsage(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo)
+{
+   error_t error;
+   Asn1Tag tag;
+
+   //Debug message
+   TRACE_DEBUG("      Parsing KeyUsage...\r\n");
+
+   //The key usage extension defines the purpose of the key contained in the
+   //certificate
+   error = asn1ReadTag(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Enforce encoding, class and type
+   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_BIT_STRING);
+   //The tag does not match the criteria?
+   if(error)
+      return error;
+
+   //The bit string shall contain an initial octet which encodes the number
+   //of unused bits in the final subsequent octet
+   if(tag.length < 1)
+      return ERROR_INVALID_SYNTAX;
+
+   //Sanity check
+   if(tag.value[0] >= 8)
+      return ERROR_INVALID_SYNTAX;
+
+   //Clear bit string
+   certInfo->extensions.keyUsage = 0;
+
+   //Read bits b0 to b7
+   if(tag.length >= 2)
+      certInfo->extensions.keyUsage |= reverseInt8(tag.value[1]);
+
+   //Read bits b8 to b15
+   if(tag.length >= 3)
+      certInfo->extensions.keyUsage |= reverseInt8(tag.value[2]) << 8;
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Parse ExtendedKeyUsage extension
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] certInfo Information resulting from the parsing process
+ * @return Error code
+ **/
+
+error_t x509ParseExtendedKeyUsage(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo)
+{
+   //Debug message
+   TRACE_DEBUG("      Parsing ExtendedKeyUsage...\r\n");
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Parse SubjectKeyIdentifier extension
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] certInfo Information resulting from the parsing process
+ * @return Error code
+ **/
+
+error_t x509ParseSubjectKeyId(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo)
+{
+   error_t error;
+   Asn1Tag tag;
+
+   //Debug message
+   TRACE_DEBUG("      Parsing SubjectKeyIdentifier...\r\n");
+
+   //The subject key identifier extension provides a means of identifying
+   //certificates that contain a particular public key
+   error = asn1ReadTag(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Enforce encoding, class and type
+   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_OCTET_STRING);
+   //The tag does not match the criteria?
+   if(error)
+      return error;
+
+   //Save the subject key identifier
+   certInfo->extensions.subjectKeyId = tag.value;
+   certInfo->extensions.subjectKeyIdLen = tag.length;
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Parse AuthorityKeyIdentifier extension
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] certInfo Information resulting from the parsing process
+ * @return Error code
+ **/
+
+error_t x509ParseAuthorityKeyId(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo)
+{
+   error_t error;
+   Asn1Tag tag;
+
+   //Debug message
+   TRACE_DEBUG("      Parsing AuthorityKeyIdentifier...\r\n");
+
+   //The AuthorityKeyIdentifier structure shall contain a valid sequence
+   error = asn1ReadTag(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Enforce encoding, class and type
+   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
+   //The tag does not match the criteria?
+   if(error)
+      return error;
+
+   //Point to the first item of the sequence
+   data = tag.value;
+   length = tag.length;
+
+   //Parse the content of the sequence
+   while(length > 0)
+   {
+      //Read current item
       error = asn1ReadTag(data, length, &tag);
       //Failed to decode ASN.1 tag?
       if(error)
          return error;
 
-      //Enforce encoding, class and type
-      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
-      //The tag does not match the criteria?
-      if(error)
-         return error;
+      //Enforce encoding and class
+      if(tag.constructed)
+         return ERROR_WRONG_ENCODING;
+      if(tag.objClass != ASN1_CLASS_CONTEXT_SPECIFIC)
+         return ERROR_INVALID_CLASS;
 
-      //The pathLenConstraint field is not supported
-      certInfo->basicConstraints.pathLenConstraint = 0;
+      //keyIdentifier object found?
+      if(tag.objType == 0)
+      {
+         //Save the authority key identifier
+         certInfo->extensions.authorityKeyId= tag.value;
+         certInfo->extensions.authorityKeyIdLen = tag.length;
+      }
+
+      //Next item
+      data += tag.totalLength;
+      length -= tag.totalLength;
    }
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Parse NetscapeCertType extension
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] certInfo Information resulting from the parsing process
+ * @return Error code
+ **/
+
+error_t x509ParseNsCertType(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo)
+{
+   error_t error;
+   Asn1Tag tag;
+
+   //Debug message
+   TRACE_DEBUG("      Parsing NetscapeCertType...\r\n");
+
+   //The NetscapeCertType extension limit the use of a certificate
+   error = asn1ReadTag(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Enforce encoding, class and type
+   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_BIT_STRING);
+   //The tag does not match the criteria?
+   if(error)
+      return error;
+
+   //The bit string shall contain an initial octet which encodes the number
+   //of unused bits in the final subsequent octet
+   if(tag.length < 1)
+      return ERROR_INVALID_SYNTAX;
+
+   //Sanity check
+   if(tag.value[0] >= 8)
+      return ERROR_INVALID_SYNTAX;
+
+   //Clear bit string
+   certInfo->extensions.nsCertType = 0;
+
+   //Read bits b0 to b7
+   if(tag.length >= 2)
+      certInfo->extensions.nsCertType |= reverseInt8(tag.value[1]);
 
    //Successful processing
    return NO_ERROR;
@@ -1777,9 +2053,10 @@ error_t x509ParseSignatureAlgo(const uint8_t *data, size_t length,
    if(error)
       return error;
 
-   //This field must contain the same algorithm identifier
-   //as the signature field in the TBSCertificate sequence
-   error = asn1CheckOid(&tag, certInfo->signatureAlgo, certInfo->signatureAlgoLen);
+   //This field must contain the same algorithm identifier as the signature
+   //field in the TBSCertificate sequence
+   error = asn1CheckOid(&tag, certInfo->signatureAlgo,
+      certInfo->signatureAlgoLen);
    //The tag does not match the criteria?
    if(error)
       return error;
@@ -1876,7 +2153,8 @@ error_t x509ParseInt(const uint8_t *data, size_t length, uint_t *value)
  * @return Error code
  **/
 
-error_t x509ReadRsaPublicKey(const X509CertificateInfo *certInfo, RsaPublicKey *key)
+error_t x509ReadRsaPublicKey(const X509CertificateInfo *certInfo,
+   RsaPublicKey *key)
 {
 #if (RSA_SUPPORT == ENABLED)
    error_t error;
@@ -1926,7 +2204,8 @@ error_t x509ReadRsaPublicKey(const X509CertificateInfo *certInfo, RsaPublicKey *
  * @return Error code
  **/
 
-error_t x509ReadDsaPublicKey(const X509CertificateInfo *certInfo, DsaPublicKey *key)
+error_t x509ReadDsaPublicKey(const X509CertificateInfo *certInfo,
+   DsaPublicKey *key)
 {
 #if (DSA_SUPPORT == ENABLED)
    error_t error;
@@ -2038,9 +2317,13 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
    if(memcmp(certInfo->issuer.rawData, issuerCertInfo->subject.rawData, certInfo->issuer.rawDataLen))
       return ERROR_BAD_CERTIFICATE;
 
-   //Ensure that the issuer certificate is a CA certificate
-   if(issuerCertInfo->version >= X509_VERSION_3 && !issuerCertInfo->basicConstraints.ca)
-      return ERROR_BAD_CERTIFICATE;
+   //X.509 version 3 certificate?
+   if(issuerCertInfo->version >= X509_VERSION_3)
+   {
+      //Ensure that the issuer certificate is a CA certificate
+      if(!issuerCertInfo->extensions.basicConstraints.ca)
+         return ERROR_BAD_CERTIFICATE;
+   }
 
    //Retrieve the signature algorithm that has been used to sign the certificate
 #if (RSA_SUPPORT == ENABLED && MD5_SUPPORT == ENABLED)
@@ -2270,13 +2553,15 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
          issuerCertInfo->subjectPublicKeyInfo.ecParams.namedCurveLen);
 
       //Make sure the specified elliptic curve is supported
-      error = (curveInfo == NULL) ? ERROR_BAD_CERTIFICATE : NO_ERROR;
-
-      //Check status code
-      if(!error)
+      if(curveInfo != NULL)
       {
          //Load EC domain parameters
          error = ecLoadDomainParameters(&params, curveInfo);
+      }
+      else
+      {
+         //Invalid EC domain parameters
+         error = ERROR_BAD_CERTIFICATE;
       }
 
       //Check status code
@@ -2317,6 +2602,7 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
 
    //Release hash algorithm context
    cryptoFreeMem(hashContext);
+
    //Return status code
    return error;
 }

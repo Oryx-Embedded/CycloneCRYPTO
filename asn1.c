@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 //Switch to the appropriate trace level
@@ -582,7 +582,7 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
          //UTC time?
          case ASN1_TYPE_UTC_TIME:
             //Check length
-            if(tag.length < 13)
+            if(tag.length != 13)
                return ERROR_WRONG_ENCODING;
             //The encoding shall terminate with a "Z"
             if(tag.value[tag.length - 1] != 'Z')
@@ -602,7 +602,7 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
          //Generalized time?
          case ASN1_TYPE_GENERALIZED_TIME:
             //Check length
-            if(tag.length < 13)
+            if(tag.length != 15)
                return ERROR_WRONG_ENCODING;
             //The encoding shall terminate with a "Z"
             if(tag.value[tag.length - 1] != 'Z')

@@ -28,7 +28,7 @@
  * in length, and produces a message digest of 512 bits
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 //Switch to the appropriate trace level

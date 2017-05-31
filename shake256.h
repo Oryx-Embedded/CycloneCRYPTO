@@ -23,15 +23,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 #ifndef _SHAKE256_H
 #define _SHAKE256_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 //Dependencies
 #include "crypto.h"
@@ -45,6 +41,9 @@ extern "C" {
 typedef KeccakContext Shake256Context;
 
 
+//SHAKE256 related constants
+extern const uint8_t shake256Oid[9];
+
 //SHAKE256 related functions
 error_t shake256Compute(const void *input, size_t inputLen,
    uint8_t *output, size_t outputLen);
@@ -53,9 +52,5 @@ void shake256Init(Shake256Context *context);
 void shake256Absorb(Shake256Context *context, const void *input, size_t length);
 void shake256Final(Shake256Context *context);
 void shake256Squeeze(Shake256Context *context, uint8_t *output, size_t length);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

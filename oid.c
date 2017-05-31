@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 //Switch to the appropriate trace level
@@ -279,7 +279,7 @@ error_t oidFromString(const char_t *str,
             }
 
             //Encode the second sub-identifier
-            temp[0] |= value;
+            temp[0] += value;
             //Prepare to decode the next node
             value = 0;
             //Write the first two sub-identifiers

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.7.6
+ * @version 1.7.8
  **/
 
 #ifndef _BASE64_H
@@ -33,7 +33,10 @@
 #include "crypto.h"
 
 //Base64 encoding related functions
-void base64Encode(const void *input, size_t inputLength, char_t *output, size_t *outputLength);
-error_t base64Decode(const char_t *input, size_t inputLength, void *output, size_t *outputLength);
+void base64Encode(const void *input, size_t inputLength,
+   char_t *output, size_t *outputLength);
+
+error_t base64Decode(const char_t *input, size_t inputLength,
+   void *output, size_t *outputLength);
 
 #endif
