@@ -37,6 +37,11 @@
 //Common interface for encryption algorithms
 #define CAMELLIA_CIPHER_ALGO (&camelliaCipherAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Structure describing subkey generation
@@ -70,5 +75,10 @@ extern const CipherAlgo camelliaCipherAlgo;
 error_t camelliaInit(CamelliaContext *context, const uint8_t *key, size_t keyLength);
 void camelliaEncryptBlock(CamelliaContext *context, const uint8_t *input, uint8_t *output);
 void camelliaDecryptBlock(CamelliaContext *context, const uint8_t *input, uint8_t *output);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

@@ -39,6 +39,11 @@
 //Common interface for hash algorithms
 #define MD4_HASH_ALGO (&md4HashAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief MD4 algorithm context
@@ -70,5 +75,10 @@ void md4Init(Md4Context *context);
 void md4Update(Md4Context *context, const void *data, size_t length);
 void md4Final(Md4Context *context, uint8_t *digest);
 void md4ProcessBlock(Md4Context *context);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

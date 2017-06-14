@@ -127,6 +127,11 @@
 //Outer padding (opad)
 #define HMAC_OPAD 0x5C
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief HMAC algorithm context
@@ -164,5 +169,10 @@ void hmacInit(HmacContext *context, const HashAlgo *hash,
 
 void hmacUpdate(HmacContext *context, const void *data, size_t length);
 void hmacFinal(HmacContext *context, uint8_t *digest);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

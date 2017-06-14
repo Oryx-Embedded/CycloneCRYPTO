@@ -32,6 +32,11 @@
 //Dependencies
 #include "crypto.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 //PKCS #5 related constants
 extern const uint8_t PKCS5_OID[8];
 extern const uint8_t PBKDF2_OID[9];
@@ -42,5 +47,10 @@ error_t pbkdf1(const HashAlgo *hash, const uint8_t *p, size_t pLen,
 
 error_t pbkdf2(const HashAlgo *hash, const uint8_t *p, size_t pLen,
    const uint8_t *s, size_t sLen, uint_t c, uint8_t *dk, size_t dkLen);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

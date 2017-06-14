@@ -42,6 +42,11 @@
 //Common interface for encryption algorithms
 #define RC6_CIPHER_ALGO (&rc6CipherAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief RC6 algorithm context
@@ -61,5 +66,10 @@ extern const CipherAlgo rc6CipherAlgo;
 error_t rc6Init(Rc6Context *context, const uint8_t *key, size_t keyLength);
 void rc6EncryptBlock(Rc6Context *context, const uint8_t *input, uint8_t *output);
 void rc6DecryptBlock(Rc6Context *context, const uint8_t *input, uint8_t *output);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

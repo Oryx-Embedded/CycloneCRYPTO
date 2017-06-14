@@ -39,6 +39,11 @@
 //Common interface for hash algorithms
 #define SHA1_HASH_ALGO (&sha1HashAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief SHA-1 algorithm context
@@ -70,5 +75,10 @@ void sha1Init(Sha1Context *context);
 void sha1Update(Sha1Context *context, const void *data, size_t length);
 void sha1Final(Sha1Context *context, uint8_t *digest);
 void sha1ProcessBlock(Sha1Context *context);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

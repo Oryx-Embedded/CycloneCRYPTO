@@ -39,6 +39,11 @@
 //Common interface for hash algorithms
 #define SHA256_HASH_ALGO (&sha256HashAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief SHA-256 algorithm context
@@ -70,5 +75,10 @@ void sha256Init(Sha256Context *context);
 void sha256Update(Sha256Context *context, const void *data, size_t length);
 void sha256Final(Sha256Context *context, uint8_t *digest);
 void sha256ProcessBlock(Sha256Context *context);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

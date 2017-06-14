@@ -32,6 +32,11 @@
 //Dependencies
 #include "crypto.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief GCM context
@@ -57,5 +62,10 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv, size_t ivLen, const u
 void gcmMul(GcmContext *context, uint8_t *x);
 void gcmXorBlock(uint8_t *x, const uint8_t *a, const uint8_t *b, size_t n);
 void gcmIncCounter(uint8_t *x);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

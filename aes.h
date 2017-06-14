@@ -37,6 +37,11 @@
 //Common interface for encryption algorithms
 #define AES_CIPHER_ALGO (&aesCipherAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief AES algorithm context
@@ -57,5 +62,10 @@ extern const CipherAlgo aesCipherAlgo;
 error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLength);
 void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output);
 void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

@@ -33,6 +33,11 @@
 #include "crypto.h"
 #include "mpi.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Diffie-Hellman parameters
@@ -69,5 +74,10 @@ error_t dhCheckPublicKey(DhParameters *params, const Mpi *publicKey);
 
 error_t dhComputeSharedSecret(DhContext *context,
    uint8_t *output, size_t outputSize, size_t *outputLength);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

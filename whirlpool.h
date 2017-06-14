@@ -39,6 +39,11 @@
 //Common interface for hash algorithms
 #define WHIRLPOOL_HASH_ALGO (&whirlpoolHashAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Whirlpool algorithm context
@@ -75,5 +80,10 @@ void whirlpoolInit(WhirlpoolContext *context);
 void whirlpoolUpdate(WhirlpoolContext *context, const void *data, size_t length);
 void whirlpoolFinal(WhirlpoolContext *context, uint8_t *digest);
 void whirlpoolProcessBlock(WhirlpoolContext *context);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

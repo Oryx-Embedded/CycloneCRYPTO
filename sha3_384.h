@@ -40,6 +40,11 @@
 //Common interface for hash algorithms
 #define SHA3_384_HASH_ALGO (&sha3_384HashAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief SHA3-384 algorithm context
@@ -56,5 +61,10 @@ error_t sha3_384Compute(const void *data, size_t length, uint8_t *digest);
 void sha3_384Init(Sha3_384Context *context);
 void sha3_384Update(Sha3_384Context *context, const void *data, size_t length);
 void sha3_384Final(Sha3_384Context *context, uint8_t *digest);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

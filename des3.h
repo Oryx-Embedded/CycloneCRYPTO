@@ -38,6 +38,11 @@
 //Common interface for encryption algorithms
 #define DES3_CIPHER_ALGO (&des3CipherAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Triple DES algorithm context
@@ -58,5 +63,10 @@ extern const CipherAlgo des3CipherAlgo;
 error_t des3Init(Des3Context *context, const uint8_t *key, size_t keyLength);
 void des3EncryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output);
 void des3DecryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

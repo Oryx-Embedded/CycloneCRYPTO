@@ -562,12 +562,19 @@ error_t dsaVerifySignature(const DsaPublicKey *key,
    TRACE_DEBUG("  s:\r\n");
    TRACE_DEBUG_MPI("    ", &signature->s);
 
-   //The verifier shall check that 0 < r < q and 0 < s < q. If either
-   //condition is violated, the signature shall be rejected as invalid
+   //The verifier shall check that 0 < r < q
    if(mpiCompInt(&signature->r, 0) <= 0 || mpiComp(&signature->r, &key->q) >= 0)
+   {
+      //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
+   }
+
+   //The verifier shall check that 0 < s < q
    if(mpiCompInt(&signature->s, 0) <= 0 || mpiComp(&signature->s, &key->q) >= 0)
+   {
+      //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
+   }
 
    //Initialize multiple precision integers
    mpiInit(&w);

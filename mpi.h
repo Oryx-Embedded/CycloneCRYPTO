@@ -43,6 +43,11 @@
 #define mpiIsEven(a) !mpiGetBitValue(a, 0)
 #define mpiIsOdd(a) mpiGetBitValue(a, 0)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Arbitrary precision integer
@@ -112,5 +117,10 @@ error_t mpiMontgomeryRed(Mpi *r, const Mpi *a, uint_t k, const Mpi *p, Mpi *t);
 void mpiMulAccCore(uint_t *r, const uint_t *a, int_t m, const uint_t b);
 
 void mpiDump(FILE *stream, const char_t *prepend, const Mpi *a);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

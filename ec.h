@@ -36,6 +36,11 @@
 //Error code checking
 #define EC_CHECK(f) if((error = f) != NO_ERROR) goto end
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Elliptic curve point
@@ -105,5 +110,10 @@ error_t ecAddMod(const EcDomainParameters *params, Mpi *r, const Mpi *a, const M
 error_t ecSubMod(const EcDomainParameters *params, Mpi *r, const Mpi *a, const Mpi *b);
 error_t ecMulMod(const EcDomainParameters *params, Mpi *r, const Mpi *a, const Mpi *b);
 error_t ecSqrMod(const EcDomainParameters *params, Mpi *r, const Mpi *a);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

@@ -59,6 +59,11 @@
 #define BRAINPOOLP384R1_CURVE (&brainpoolP384r1Curve)
 #define BRAINPOOLP512R1_CURVE (&brainpoolP512r1Curve)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Elliptic curve type
@@ -174,5 +179,10 @@ error_t secp384r1Mod(Mpi *a, const Mpi *p);
 error_t secp521r1Mod(Mpi *a, const Mpi *p);
 
 const EcCurveInfo *ecGetCurveInfo(const uint8_t *oid, size_t length);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

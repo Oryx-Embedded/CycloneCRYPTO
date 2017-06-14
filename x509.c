@@ -1662,6 +1662,13 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
          //Parse ExtendedKeyUsage extension
          error = x509ParseExtendedKeyUsage(tag.value, tag.length, certInfo);
       }
+      //SubjectAltName extension found?
+      else if(!oidComp(oidTag.value, oidTag.length,
+         X509_SUBJECT_ALT_NAME_OID, sizeof(X509_SUBJECT_ALT_NAME_OID)))
+      {
+         //Parse SubjectAltName extension
+         error = x509ParseSubjectAltName(tag.value, tag.length, certInfo);
+      }
       //SubjectKeyIdentifier extension found?
       else if(!oidComp(oidTag.value, oidTag.length,
          X509_SUBJECT_KEY_ID_OID, sizeof(X509_SUBJECT_KEY_ID_OID)))
@@ -1860,6 +1867,79 @@ error_t x509ParseExtendedKeyUsage(const uint8_t *data, size_t length,
 
 
 /**
+ * @brief Parse SubjectAltName extension
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] certInfo Information resulting from the parsing process
+ * @return Error code
+ **/
+
+error_t x509ParseSubjectAltName(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo)
+{
+   uint_t i;
+   error_t error;
+   Asn1Tag tag;
+   X509SubjectAltName *subjectAltName;
+
+   //Debug message
+   TRACE_DEBUG("      Parsing SubjectAltName...\r\n");
+
+   //Point to the SubjectAltName extension
+   subjectAltName = &certInfo->extensions.subjectAltName;
+
+   //The SubjectAltName structure shall contain a valid sequence
+   error = asn1ReadTag(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Enforce encoding, class and type
+   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
+   //The tag does not match the criteria?
+   if(error)
+      return error;
+
+   //Point to the first item of the sequence
+   data = tag.value;
+   length = tag.length;
+
+   //The subject alternative name extension allows identities to be bound to the
+   //subject of the certificate. These identities may be included in addition
+   //to or in place of the identity in the subject field of the certificate
+   for(i = 0; i < X509_MAX_SUBJECT_ALT_NAMES && length > 0; i++)
+   {
+      //Read current item
+      error = asn1ReadTag(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         return error;
+
+      //Enforce encoding and class
+      if(tag.constructed)
+         return ERROR_WRONG_ENCODING;
+      if(tag.objClass != ASN1_CLASS_CONTEXT_SPECIFIC)
+         return ERROR_INVALID_CLASS;
+
+      //Save subject alternative name
+      subjectAltName->generalNames[i].type = tag.objType;
+      subjectAltName->generalNames[i].value = tag.value;
+      subjectAltName->generalNames[i].length = tag.length;
+
+      //Next item
+      data += tag.totalLength;
+      length -= tag.totalLength;
+   }
+
+   //Save the number of subject alternative names
+   subjectAltName->numGeneralNames = i;
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
  * @brief Parse SubjectKeyIdentifier extension
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
@@ -1940,9 +2020,7 @@ error_t x509ParseAuthorityKeyId(const uint8_t *data, size_t length,
       if(error)
          return error;
 
-      //Enforce encoding and class
-      if(tag.constructed)
-         return ERROR_WRONG_ENCODING;
+      //Enforce class
       if(tag.objClass != ASN1_CLASS_CONTEXT_SPECIFIC)
          return ERROR_INVALID_CLASS;
 

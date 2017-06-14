@@ -39,6 +39,11 @@
 //Common interface for hash algorithms
 #define MD5_HASH_ALGO (&md5HashAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief MD5 algorithm context
@@ -70,5 +75,10 @@ void md5Init(Md5Context *context);
 void md5Update(Md5Context *context, const void *data, size_t length);
 void md5Final(Md5Context *context, uint8_t *digest);
 void md5ProcessBlock(Md5Context *context);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

@@ -39,6 +39,11 @@
 //Common interface for hash algorithms
 #define TIGER_HASH_ALGO (&tigerHashAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Tiger algorithm context
@@ -70,5 +75,10 @@ void tigerInit(TigerContext *context);
 void tigerUpdate(TigerContext *context, const void *data, size_t length);
 void tigerFinal(TigerContext *context, uint8_t *digest);
 void tigerProcessBlock(TigerContext *context);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

@@ -36,6 +36,11 @@
 #include "dsa.h"
 #include "ec.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 //PEM format decoding functions
 error_t pemReadDhParameters(const char_t *input, size_t length, DhParameters *params);
 
@@ -49,5 +54,10 @@ error_t pemReadCertificate(const char_t **input, size_t *inputLength,
    uint8_t **output, size_t *outputSize, size_t *outputLength);
 
 int_t pemSearchTag(const char_t *s, size_t sLen, const char_t *tag, size_t tagLen);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

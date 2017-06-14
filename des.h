@@ -37,6 +37,11 @@
 //Common interface for encryption algorithms
 #define DES_CIPHER_ALGO (&desCipherAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief DES algorithm context
@@ -55,5 +60,10 @@ extern const CipherAlgo desCipherAlgo;
 error_t desInit(DesContext *context, const uint8_t *key, size_t keyLength);
 void desEncryptBlock(DesContext *context, const uint8_t *input, uint8_t *output);
 void desDecryptBlock(DesContext *context, const uint8_t *input, uint8_t *output);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

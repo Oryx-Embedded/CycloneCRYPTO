@@ -37,6 +37,11 @@
 //Common interface for encryption algorithms
 #define ARIA_CIPHER_ALGO (&ariaCipherAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief ARIA algorithm context
@@ -58,5 +63,10 @@ extern const CipherAlgo ariaCipherAlgo;
 error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLength);
 void ariaEncryptBlock(AriaContext *context, const uint8_t *input, uint8_t *output);
 void ariaDecryptBlock(AriaContext *context, const uint8_t *input, uint8_t *output);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

@@ -35,6 +35,11 @@
 //Common interface for encryption algorithms
 #define RC4_CIPHER_ALGO (&rc4CipherAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief RC4 algorithm context
@@ -54,5 +59,10 @@ extern const CipherAlgo rc4CipherAlgo;
 //RC4 related functions
 error_t rc4Init(Rc4Context *context, const uint8_t *key, size_t length);
 void rc4Cipher(Rc4Context *context, const uint8_t *input, uint8_t *output, size_t length);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

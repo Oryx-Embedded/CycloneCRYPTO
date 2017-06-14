@@ -32,6 +32,11 @@
 //Dependencies
 #include "crypto.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 //ChaCha20Poly1305 related functions
 error_t chacha20Poly1305Encrypt(const uint8_t *k, size_t kLen,
    const uint8_t *n, size_t nLen, const uint8_t *a, size_t aLen,
@@ -40,5 +45,10 @@ error_t chacha20Poly1305Encrypt(const uint8_t *k, size_t kLen,
 error_t chacha20Poly1305Decrypt(const uint8_t *k, size_t kLen,
    const uint8_t *n, size_t nLen, const uint8_t *a, size_t aLen,
    const uint8_t *c, uint8_t *p, size_t length, const uint8_t *t, size_t tLen);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

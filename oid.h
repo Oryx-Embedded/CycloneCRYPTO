@@ -36,6 +36,11 @@
 #define OID_MORE_FLAG  0x80
 #define OID_VALUE_MASK 0x7F
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 //OID related functions
 error_t oidCheck(const uint8_t *oid, size_t oidLen);
 
@@ -53,5 +58,10 @@ error_t oidFromString(const char_t *str,
 
 char_t *oidToString(const uint8_t *oid,
    size_t oidLen, char_t *str, size_t maxStrLen);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

@@ -33,6 +33,11 @@
 #include "crypto.h"
 #include "keccak.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief SHAKE256 algorithm context
@@ -52,5 +57,10 @@ void shake256Init(Shake256Context *context);
 void shake256Absorb(Shake256Context *context, const void *input, size_t length);
 void shake256Final(Shake256Context *context);
 void shake256Squeeze(Shake256Context *context, uint8_t *output, size_t length);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

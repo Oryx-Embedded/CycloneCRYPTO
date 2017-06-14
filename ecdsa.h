@@ -33,6 +33,11 @@
 #include "crypto.h"
 #include "ec.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief ECDSA signature
@@ -72,5 +77,10 @@ error_t ecdsaGenerateSignature(const EcDomainParameters *params,
 
 error_t ecdsaVerifySignature(const EcDomainParameters *params, const EcPoint *publicKey,
    const uint8_t *digest, size_t digestLength, const EcdsaSignature *signature);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

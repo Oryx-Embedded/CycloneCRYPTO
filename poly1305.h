@@ -33,6 +33,11 @@
 #include "crypto.h"
 #include "mpi.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Poly1305 context
@@ -54,5 +59,10 @@ void poly1305Update(Poly1305Context *context, const void *data, size_t length);
 void poly1305Final(Poly1305Context *context, uint8_t *tag);
 
 void poly1305ProcessBlock(Poly1305Context *context);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

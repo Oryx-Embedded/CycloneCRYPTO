@@ -37,6 +37,11 @@
 //Common interface for encryption algorithms
 #define SEED_CIPHER_ALGO (&seedCipherAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief SEED algorithm context
@@ -55,5 +60,10 @@ extern const CipherAlgo seedCipherAlgo;
 error_t seedInit(SeedContext *context, const uint8_t *key, size_t keyLength);
 void seedEncryptBlock(SeedContext *context, const uint8_t *input, uint8_t *output);
 void seedDecryptBlock(SeedContext *context, const uint8_t *input, uint8_t *output);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

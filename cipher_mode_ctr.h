@@ -32,11 +32,21 @@
 //Dependencies
 #include "crypto.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 //CTR encryption and decryption routines
 error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    uint8_t *t, const uint8_t *p, uint8_t *c, size_t length);
 
 error_t ctrDecrypt(const CipherAlgo *cipher, void *context, uint_t m,
    uint8_t *t, const uint8_t *c, uint8_t *p, size_t length);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

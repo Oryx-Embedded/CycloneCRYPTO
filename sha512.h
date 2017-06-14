@@ -39,6 +39,11 @@
 //Common interface for hash algorithms
 #define SHA512_HASH_ALGO (&sha512HashAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief SHA-512 algorithm context
@@ -70,5 +75,10 @@ void sha512Init(Sha512Context *context);
 void sha512Update(Sha512Context *context, const void *data, size_t length);
 void sha512Final(Sha512Context *context, uint8_t *digest);
 void sha512ProcessBlock(Sha512Context *context);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

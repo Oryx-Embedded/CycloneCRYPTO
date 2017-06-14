@@ -32,11 +32,21 @@
 //Dependencies
 #include "crypto.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 //CFB encryption and decryption routines
 error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
    uint8_t *iv, const uint8_t *p, uint8_t *c, size_t length);
 
 error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
    uint8_t *iv, const uint8_t *c, uint8_t *p, size_t length);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

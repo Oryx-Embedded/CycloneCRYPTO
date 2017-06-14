@@ -47,6 +47,11 @@
 #define ASN1_CLASS_CONTEXT_SPECIFIC 0x80
 #define ASN1_CLASS_PRIVATE          0xC0
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief ASN.1 data types
@@ -108,5 +113,10 @@ error_t asn1CheckTag(const Asn1Tag *tag, bool_t constructed, uint_t objClass, ui
 error_t asn1CheckOid(const Asn1Tag *tag, const uint8_t *oid, size_t length);
 
 error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

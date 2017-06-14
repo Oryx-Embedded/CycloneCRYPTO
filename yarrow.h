@@ -48,6 +48,11 @@
 #define YARROW_FAST_THRESHOLD 100
 #define YARROW_SLOW_THRESHOLD 160
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Yarrow PRNG context
@@ -86,5 +91,10 @@ error_t yarrowRead(YarrowContext *context, uint8_t *output, size_t length);
 void yarrowGenerateBlock(YarrowContext *context, uint8_t *output);
 void yarrowFastReseed(YarrowContext *context);
 void yarrowSlowReseed(YarrowContext *context);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

@@ -33,6 +33,11 @@
 #include "crypto.h"
 #include "mpi.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief DSA public key
@@ -102,5 +107,10 @@ error_t dsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
 
 error_t dsaVerifySignature(const DsaPublicKey *key,
    const uint8_t *digest, size_t digestLength, const DsaSignature *signature);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

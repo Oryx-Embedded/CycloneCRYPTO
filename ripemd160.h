@@ -39,6 +39,11 @@
 //Common interface for hash algorithms
 #define RIPEMD160_HASH_ALGO (&ripemd160HashAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief RIPEMD-160 algorithm context
@@ -70,5 +75,10 @@ void ripemd160Init(Ripemd160Context *context);
 void ripemd160Update(Ripemd160Context *context, const void *data, size_t length);
 void ripemd160Final(Ripemd160Context *context, uint8_t *digest);
 void ripemd160ProcessBlock(Ripemd160Context *context);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

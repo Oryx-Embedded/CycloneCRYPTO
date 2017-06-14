@@ -32,6 +32,11 @@
 //Dependencies
 #include "crypto.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 //CCM related functions
 error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n, size_t nLen,
    const uint8_t *a, size_t aLen, const uint8_t *p, uint8_t *c, size_t length, uint8_t *t, size_t tLen);
@@ -41,5 +46,10 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n, si
 
 void ccmXorBlock(uint8_t *x, const uint8_t *a, const uint8_t *b, size_t n);
 void ccmIncCounter(uint8_t *x, size_t n);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

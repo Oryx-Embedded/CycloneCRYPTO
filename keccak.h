@@ -39,6 +39,11 @@
 
 //Check lane size
 #if (KECCAK_L == 3)
+
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
    //Base type that represents a lane
    typedef uint8_t keccak_lane_t;
    //Rotate left operation
@@ -120,5 +125,10 @@ void keccakAbsorb(KeccakContext *context, const void *input, size_t length);
 void keccakFinal(KeccakContext *context, uint8_t pad);
 void keccakSqueeze(KeccakContext *context, uint8_t *output, size_t length);
 void keccakPermutBlock(KeccakContext *context);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

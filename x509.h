@@ -36,6 +36,18 @@
 #include "dsa.h"
 #include "ec.h"
 
+//Maximum number of subject alternative names
+#ifndef X509_MAX_SUBJECT_ALT_NAMES
+   #define X509_MAX_SUBJECT_ALT_NAMES 4
+#elif (X509_MAX_SUBJECT_ALT_NAMES < 1)
+   #error X509_MAX_SUBJECT_ALT_NAMES parameter is not valid
+#endif
+
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief X.509 versions
@@ -65,6 +77,24 @@ typedef enum
    X509_KEY_USAGE_ENCIPHER_ONLY     = 0x0080,
    X509_KEY_USAGE_DECIPHER_ONLY     = 0x0100
 } X509KeyUsage;
+
+
+/**
+ * @brief General name types
+ **/
+
+typedef enum
+{
+   X509_GENERAL_NAME_TYPE_OTHER         = 0,
+   X509_GENERAL_NAME_TYPE_RFC822        = 1,
+   X509_GENERAL_NAME_TYPE_DNS           = 2,
+   X509_GENERAL_NAME_TYPE_X400_ADDRESS  = 3,
+   X509_GENERAL_NAME_TYPE_DIRECTORY     = 4,
+   X509_GENERAL_NAME_TYPE_EDI_PARTY     = 5,
+   X509_GENERAL_NAME_TYPE_URI           = 6,
+   X509_GENERAL_NAME_TYPE_IP_ADDRESS    = 7,
+   X509_GENERAL_NAME_TYPE_REGISTERED_ID = 8
+} X509GeneralNameType;
 
 
 /**
@@ -226,6 +256,29 @@ typedef struct
 
 
 /**
+ * @brief General name
+ **/
+
+typedef struct
+{
+   X509GeneralNameType type;
+   const char_t *value;
+   size_t length;
+} X509GeneralName;
+
+
+/**
+ * @brief Subject alternative name
+ **/
+
+typedef struct
+{
+   uint_t numGeneralNames;
+   X509GeneralName generalNames[X509_MAX_SUBJECT_ALT_NAMES];
+} X509SubjectAltName;
+
+
+/**
  * @brief Extensions
  **/
 
@@ -233,6 +286,7 @@ typedef struct
 {
    X509BasicContraints basicConstraints;
    uint16_t keyUsage;
+   X509SubjectAltName subjectAltName;
    const uint8_t *subjectKeyId;
    size_t subjectKeyIdLen;
    const uint8_t *authorityKeyId;
@@ -363,6 +417,9 @@ error_t x509ParseKeyUsage(const uint8_t *data, size_t length,
 error_t x509ParseExtendedKeyUsage(const uint8_t *data, size_t length,
    X509CertificateInfo *certInfo);
 
+error_t x509ParseSubjectAltName(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo);
+
 error_t x509ParseSubjectKeyId(const uint8_t *data, size_t length,
    X509CertificateInfo *certInfo);
 
@@ -388,5 +445,10 @@ error_t x509ReadDsaPublicKey(const X509CertificateInfo *certInfo,
 
 error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
    const X509CertificateInfo *issuerCertInfo);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

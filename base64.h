@@ -32,11 +32,21 @@
 //Dependencies
 #include "crypto.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 //Base64 encoding related functions
 void base64Encode(const void *input, size_t inputLength,
    char_t *output, size_t *outputLength);
 
 error_t base64Decode(const char_t *input, size_t inputLength,
    void *output, size_t *outputLength);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

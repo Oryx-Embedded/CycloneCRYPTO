@@ -39,6 +39,11 @@
 //Common interface for hash algorithms
 #define MD2_HASH_ALGO (&md2HashAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief MD2 algorithm context
@@ -67,5 +72,10 @@ void md2Init(Md2Context *context);
 void md2Update(Md2Context *context, const void *data, size_t length);
 void md2Final(Md2Context *context, uint8_t *digest);
 void md2ProcessBlock(const uint8_t *m, uint8_t *x, uint8_t *c);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

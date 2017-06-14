@@ -33,6 +33,11 @@
 #include "crypto.h"
 #include "mpi.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief RSA public key
@@ -104,5 +109,10 @@ error_t emsaPkcs1v15Encode(const HashAlgo *hash,
 
 error_t emsaPkcs1v15Decode(const uint8_t *em, size_t emLength, const uint8_t **oid,
    size_t *oidLength, const uint8_t **digest, size_t *digestLength);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

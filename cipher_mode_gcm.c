@@ -491,37 +491,41 @@ void gcmMul(GcmContext *context, uint8_t *x)
    //Fast table-driven implementation
    for(i = 15; i >= 0; i--)
    {
-      //Process the lower nibble
+      //Get the lower nibble
       b = x[i] & 0x0F;
 
+      //Multiply 4 bits at a time
       c = z[0] & 0x0F;
       z[0] = (z[0] >> 4) | (z[1] << 28);
       z[1] = (z[1] >> 4) | (z[2] << 28);
       z[2] = (z[2] >> 4) | (z[3] << 28);
       z[3] >>= 4;
 
-      z[3] ^= r[c];
-
       z[0] ^= context->m[b][0];
       z[1] ^= context->m[b][1];
       z[2] ^= context->m[b][2];
       z[3] ^= context->m[b][3];
 
-      //Process the upper nibble
+      //Perform reduction
+      z[3] ^= r[c];
+
+      //Get the upper nibble
       b = (x[i] >> 4) & 0x0F;
 
+      //Multiply 4 bits at a time
       c = z[0] & 0x0F;
       z[0] = (z[0] >> 4) | (z[1] << 28);
       z[1] = (z[1] >> 4) | (z[2] << 28);
       z[2] = (z[2] >> 4) | (z[3] << 28);
       z[3] >>= 4;
 
-      z[3] ^= r[c];
-
       z[0] ^= context->m[b][0];
       z[1] ^= context->m[b][1];
       z[2] ^= context->m[b][2];
       z[3] ^= context->m[b][3];
+
+      //Perform reduction
+      z[3] ^= r[c];
    }
 
    //Save the result

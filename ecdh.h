@@ -33,6 +33,11 @@
 #include "crypto.h"
 #include "ec.h"
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief ECDH context
@@ -58,5 +63,10 @@ error_t ecdhCheckPublicKey(const EcDomainParameters *params, EcPoint *publicKey)
 
 error_t ecdhComputeSharedSecret(EcdhContext *context,
    uint8_t *output, size_t outputSize, size_t *outputLength);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

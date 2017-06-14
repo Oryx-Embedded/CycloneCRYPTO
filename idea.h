@@ -37,6 +37,11 @@
 //Common interface for encryption algorithms
 #define IDEA_CIPHER_ALGO (&ideaCipherAlgo)
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief IDEA algorithm context
@@ -56,5 +61,10 @@ extern const CipherAlgo ideaCipherAlgo;
 error_t ideaInit(IdeaContext *context, const uint8_t *key, size_t keyLength);
 void ideaEncryptBlock(IdeaContext *context, const uint8_t *input, uint8_t *output);
 void ideaDecryptBlock(IdeaContext *context, const uint8_t *input, uint8_t *output);
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif

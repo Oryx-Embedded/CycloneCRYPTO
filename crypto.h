@@ -618,6 +618,11 @@
 #define SHR32(a, n) ((a) >> (n))
 #define SHR64(a, n) ((a) >> (n))
 
+//C++ guard
+#ifdef __cplusplus
+   extern "C" {
+#endif
+
 
 /**
  * @brief Encryption algorithm type
@@ -731,5 +736,10 @@ typedef struct
    PrngAlgoAddEntropy addEntropy;
    PrngAlgoRead read;
 } PrngAlgo;
+
+//C++ guard
+#ifdef __cplusplus
+   }
+#endif
 
 #endif
