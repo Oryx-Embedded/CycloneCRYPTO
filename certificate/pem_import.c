@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -120,14 +120,8 @@ error_t pemImportDhParameters(const char_t *input, size_t length, DhParameters *
          break;
 
       //The Diffie-Hellman parameters are encapsulated within a sequence
-      error = asn1ReadTag(data, length, &tag);
+      error = asn1ReadSequence(data, length, &tag);
       //Failed to decode ASN.1 tag?
-      if(error)
-         break;
-
-      //Enforce encoding, class and type
-      error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-      //The tag does not match the criteria?
       if(error)
          break;
 
@@ -319,14 +313,8 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length, RsaPrivateKey
       if(pkcs8Format)
       {
          //PKCS #8 describes a generic syntax for encoding private keys
-         error = asn1ReadTag(data, length, &tag);
+         error = asn1ReadSequence(data, length, &tag);
          //Failed to decode ASN.1 tag?
-         if(error)
-            break;
-
-         //Enforce encoding, class and type
-         error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-         //The tag does not match the criteria?
          if(error)
             break;
 
@@ -351,14 +339,8 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length, RsaPrivateKey
          length -= tag.totalLength;
 
          //Read the privateKeyAlgorithm field
-         error = asn1ReadTag(data, length, &tag);
+         error = asn1ReadSequence(data, length, &tag);
          //Failed to decode ASN.1 tag?
-         if(error)
-            break;
-
-         //Enforce encoding, class and type
-         error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-         //The tag does not match the criteria?
          if(error)
             break;
 
@@ -402,14 +384,8 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length, RsaPrivateKey
       }
 
       //Read the contents of the privateKey structure
-      error = asn1ReadTag(data, length, &tag);
+      error = asn1ReadSequence(data, length, &tag);
       //Failed to decode ASN.1 tag?
-      if(error)
-         break;
-
-      //Enforce encoding, class and type
-      error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-      //The tag does not match the criteria?
       if(error)
          break;
 
@@ -671,6 +647,10 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length, DsaPrivateKey
    if(key == NULL)
       return ERROR_INVALID_PARAMETER;
 
+   //Initialize private key
+   privateKey = NULL;
+   privateKeyLen = 0;
+
    //PKCS #8 format?
    if(pemSearchTag(input, length, "-----BEGIN PRIVATE KEY-----", 27) >= 0)
    {
@@ -759,14 +739,8 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length, DsaPrivateKey
       if(pkcs8Format)
       {
          //PKCS #8 describes a generic syntax for encoding private keys
-         error = asn1ReadTag(data, length, &tag);
+         error = asn1ReadSequence(data, length, &tag);
          //Failed to decode ASN.1 tag?
-         if(error)
-            break;
-
-         //Enforce encoding, class and type
-         error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-         //The tag does not match the criteria?
          if(error)
             break;
 
@@ -791,14 +765,8 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length, DsaPrivateKey
          length -= tag.totalLength;
 
          //Read the privateKeyAlgorithm field
-         error = asn1ReadTag(data, length, &tag);
+         error = asn1ReadSequence(data, length, &tag);
          //Failed to decode ASN.1 tag?
-         if(error)
-            break;
-
-         //Enforce encoding, class and type
-         error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-         //The tag does not match the criteria?
          if(error)
             break;
 
@@ -827,14 +795,8 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length, DsaPrivateKey
          length -= tag.totalLength;
 
          //The DSA parameters are encapsulated within a sequence
-         error = asn1ReadTag(data, length, &tag);
+         error = asn1ReadSequence(data, length, &tag);
          //Failed to decode ASN.1 tag?
-         if(error)
-            break;
-
-         //Enforce encoding, class and type
-         error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-         //The tag does not match the criteria?
          if(error)
             break;
 
@@ -845,14 +807,8 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length, DsaPrivateKey
       else
       {
          //The DSA parameters and keys are encapsulated within a sequence
-         error = asn1ReadTag(data, length, &tag);
+         error = asn1ReadSequence(data, length, &tag);
          //Failed to decode ASN.1 tag?
-         if(error)
-            break;
-
-         //Enforce encoding, class and type
-         error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-         //The tag does not match the criteria?
          if(error)
             break;
 
@@ -1150,14 +1106,8 @@ error_t pemImportEcParameters(const char_t *input, size_t length, EcDomainParame
       if(pkcs8Format)
       {
          //PKCS #8 describes a generic syntax for encoding private keys
-         error = asn1ReadTag(data, length, &tag);
+         error = asn1ReadSequence(data, length, &tag);
          //Failed to decode ASN.1 tag?
-         if(error)
-            break;
-
-         //Enforce encoding, class and type
-         error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-         //The tag does not match the criteria?
          if(error)
             break;
 
@@ -1182,14 +1132,8 @@ error_t pemImportEcParameters(const char_t *input, size_t length, EcDomainParame
          length -= tag.totalLength;
 
          //Read the privateKeyAlgorithm field
-         error = asn1ReadTag(data, length, &tag);
+         error = asn1ReadSequence(data, length, &tag);
          //Failed to decode ASN.1 tag?
-         if(error)
-            break;
-
-         //Enforce encoding, class and type
-         error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-         //The tag does not match the criteria?
          if(error)
             break;
 
@@ -1377,14 +1321,8 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length, Mpi *key)
       if(pkcs8Format)
       {
          //PKCS #8 describes a generic syntax for encoding private keys
-         error = asn1ReadTag(data, length, &tag);
+         error = asn1ReadSequence(data, length, &tag);
          //Failed to decode ASN.1 tag?
-         if(error)
-            break;
-
-         //Enforce encoding, class and type
-         error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-         //The tag does not match the criteria?
          if(error)
             break;
 
@@ -1409,14 +1347,8 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length, Mpi *key)
          length -= tag.totalLength;
 
          //Read the privateKeyAlgorithm field
-         error = asn1ReadTag(data, length, &tag);
+         error = asn1ReadSequence(data, length, &tag);
          //Failed to decode ASN.1 tag?
-         if(error)
-            break;
-
-         //Enforce encoding, class and type
-         error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-         //The tag does not match the criteria?
          if(error)
             break;
 
@@ -1460,14 +1392,8 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length, Mpi *key)
       }
 
       //Read the contents of the privateKey structure
-      error = asn1ReadTag(data, length, &tag);
+      error = asn1ReadSequence(data, length, &tag);
       //Failed to decode ASN.1 tag?
-      if(error)
-         break;
-
-      //Enforce encoding, class and type
-      error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-      //The tag does not match the criteria?
       if(error)
          break;
 

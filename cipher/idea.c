@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -262,7 +262,7 @@ void ideaDecryptBlock(IdeaContext *context, const uint8_t *input, uint8_t *outpu
    uint16_t f;
    uint16_t *k;
 
-   //The plaintext is divided into four 16-bit registers
+   //The ciphertext is divided into four 16-bit registers
    uint16_t a = LOAD16BE(input + 0);
    uint16_t b = LOAD16BE(input + 2);
    uint16_t c = LOAD16BE(input + 4);

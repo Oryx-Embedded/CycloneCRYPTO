@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 #ifndef _X509_CERT_PARSE_H
@@ -67,58 +67,53 @@ error_t x509ParseTime(const uint8_t *data, size_t length,
    size_t *totalLength, DateTime *dateTime);
 
 error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
-   size_t *totalLength, X509CertificateInfo *certInfo);
+   size_t *totalLength, X509SubjectPublicKeyInfo *subjectPublicKeyInfo);
 
 error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
-   size_t *totalLength, X509CertificateInfo *certInfo);
+   size_t *totalLength, X509SubjectPublicKeyInfo *subjectPublicKeyInfo);
 
-error_t x509ParseRsaPublicKey(const uint8_t *data,
-   size_t length, X509CertificateInfo *certInfo);
+error_t x509ParseRsaPublicKey(const uint8_t *data, size_t length,
+   X509RsaPublicKey *rsaPublicKey);
 
-error_t x509ParseDsaParameters(const uint8_t *data,
-   size_t length, X509CertificateInfo *certInfo);
+error_t x509ParseDsaParameters(const uint8_t *data, size_t length,
+   X509DsaParameters *dsaParams);
 
-error_t x509ParseDsaPublicKey(const uint8_t *data,
-   size_t length, X509CertificateInfo *certInfo);
+error_t x509ParseDsaPublicKey(const uint8_t *data, size_t length,
+   X509DsaPublicKey *dsaPublicKey);
 
-error_t x509ParseEcParameters(const uint8_t *data,
-   size_t length, X509CertificateInfo *certInfo);
+error_t x509ParseEcParameters(const uint8_t *data, size_t length,
+   X509EcParameters *ecParams);
 
-error_t x509ParseEcPublicKey(const uint8_t *data,
-   size_t length, X509CertificateInfo *certInfo);
+error_t x509ParseEcPublicKey(const uint8_t *data, size_t length,
+   X509EcPublicKey *ecPublicKey);
 
 error_t x509ParseIssuerUniqueId(const uint8_t *data, size_t length,
-   size_t *totalLength, X509CertificateInfo *certInfo);
+   size_t *totalLength);
 
 error_t x509ParseSubjectUniqueId(const uint8_t *data, size_t length,
-   size_t *totalLength, X509CertificateInfo *certInfo);
+   size_t *totalLength);
 
 error_t x509ParseExtensions(const uint8_t *data, size_t length,
-   size_t *totalLength, X509CertificateInfo *certInfo);
+   size_t *totalLength, X509Extensions *extensions);
 
 error_t x509ParseBasicConstraints(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo);
+   X509BasicConstraints *basicConstraints);
 
 error_t x509ParseNameConstraints(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo);
+   X509NameConstraints *nameConstraints);
 
-error_t x509ParsePolicyConstraints(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo);
-
-error_t x509ParsePolicyMappings(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo);
-
-error_t x509ParseInhibitAnyPolicy(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo);
+error_t x509ParsePolicyConstraints(const uint8_t *data, size_t length);
+error_t x509ParsePolicyMappings(const uint8_t *data, size_t length);
+error_t x509ParseInhibitAnyPolicy(const uint8_t *data, size_t length);
 
 error_t x509ParseKeyUsage(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo);
+   uint16_t *keyUsage);
 
 error_t x509ParseExtendedKeyUsage(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo);
+   uint8_t *extKeyUsage);
 
 error_t x509ParseSubjectAltName(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo);
+   X509SubjectAltName *subjectAltName);
 
 error_t x509ParseGeneralSubtrees(const uint8_t *data, size_t length);
 
@@ -129,13 +124,13 @@ error_t x509ParseGeneralName(const uint8_t *data, size_t length,
    size_t *totalLength, X509GeneralName *generalName);
 
 error_t x509ParseSubjectKeyId(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo);
+   X509SubjectKeyId *subjectKeyId);
 
 error_t x509ParseAuthorityKeyId(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo);
+   X509AuthorityKeyId *authorityKeyId);
 
 error_t x509ParseNsCertType(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo);
+   uint8_t *nsCertType);
 
 error_t x509ParseSignatureAlgo(const uint8_t *data, size_t length,
    size_t *totalLength, X509SignatureId *signatureAlgo);

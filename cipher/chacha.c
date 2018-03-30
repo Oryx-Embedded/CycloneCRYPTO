@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -196,7 +196,9 @@ void chachaCipher(ChachaContext *context, const uint8_t *input,
 
          //Propagate the carry if necessary
          if(context->state[12] == 0)
+         {
             context->state[13]++;
+         }
 
          //Rewind to the beginning of the keystream block
          context->pos = 0;
@@ -216,7 +218,9 @@ void chachaCipher(ChachaContext *context, const uint8_t *input,
          {
             //XOR the input data with the keystream
             for(i = 0; i < n; i++)
+            {
                output[i] = input[i] ^ k[i];
+            }
 
             //Advance input pointer
             input += n;
@@ -225,7 +229,9 @@ void chachaCipher(ChachaContext *context, const uint8_t *input,
          {
             //Output the keystream
             for(i = 0; i < n; i++)
+            {
                output[i] = k[i];
+            }
          }
 
          //Advance output pointer
@@ -255,10 +261,12 @@ void chachaProcessBlock(ChachaContext *context)
 
    //Copy the state to the working state
    for(i = 0; i < 16; i++)
+   {
       w[i] = context->state[i];
+   }
 
-   //ChaCha runs 8, 12 or 20 rounds, alternating between column rounds
-   //and diagonal rounds
+   //ChaCha runs 8, 12 or 20 rounds, alternating between column rounds and
+   //diagonal rounds
    for(i = 0; i < context->nr; i += 2)
    {
       //The column rounds apply the quarter-round function to the four
@@ -279,12 +287,16 @@ void chachaProcessBlock(ChachaContext *context)
 
    //Add the original input words to the output words
    for(i = 0; i < 16; i++)
+   {
       w[i] += context->state[i];
+   }
 
-   //Serialize the result by sequencing the words one-by-one in
-   //little-endian order
+   //Serialize the result by sequencing the words one-by-one in little-endian
+   //order
    for(i = 0; i < 16; i++)
+   {
       w[i] = htole32(w[i]);
+   }
 }
 
 #endif

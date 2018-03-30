@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -155,7 +155,7 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
 
    //Parse Version field
    error = x509ParseVersion(data, length, &n, &certInfo->version);
-   //Failed to parse Version field?
+   //Any parsing error?
    if(error)
       return error;
 
@@ -163,9 +163,9 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
    data += n;
    length -= n;
 
-   //Read SerialNumber field
+   //Parse SerialNumber field
    error = x509ParseSerialNumber(data, length, &n, &certInfo->serialNumber);
-   //Failed to parse SerialNumber field?
+   //Any parsing error?
    if(error)
       return error;
 
@@ -173,9 +173,9 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
    data += n;
    length -= n;
 
-   //Read Signature field
+   //Parse Signature field
    error = x509ParseSignature(data, length, &n, &certInfo->signatureAlgo);
-   //Failed to parse Signature field?
+   //Any parsing error?
    if(error)
       return error;
 
@@ -183,9 +183,9 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
    data += n;
    length -= n;
 
-   //Read Issuer field
+   //Parse Issuer field
    error = x509ParseName(data, length, &n, &certInfo->issuer);
-   //Failed to parse Issuer field?
+   //Any parsing error?
    if(error)
       return error;
 
@@ -193,9 +193,9 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
    data += n;
    length -= n;
 
-   //Read Validity field
+   //Parse Validity field
    error = x509ParseValidity(data, length, &n, &certInfo->validity);
-   //Failed to parse Validity field?
+   //Any parsing error?
    if(error)
       return error;
 
@@ -203,9 +203,9 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
    data += n;
    length -= n;
 
-   //Read Subject field
+   //Parse Subject field
    error = x509ParseName(data, length, &n, &certInfo->subject);
-   //Failed to parse Subject field?
+   //Any parsing error?
    if(error)
       return error;
 
@@ -213,9 +213,10 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
    data += n;
    length -= n;
 
-   //Read SubjectPublicKeyInfo field
-   error = x509ParseSubjectPublicKeyInfo(data, length, &n, certInfo);
-   //Failed to parse SubjectPublicKeyInfo field?
+   //Parse SubjectPublicKeyInfo field
+   error = x509ParseSubjectPublicKeyInfo(data, length, &n,
+      &certInfo->subjectPublicKeyInfo);
+   //Any parsing error?
    if(error)
       return error;
 
@@ -223,31 +224,55 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
    data += n;
    length -= n;
 
-   //Read IssuerUniqueID field (optional)
-   error = x509ParseIssuerUniqueId(data, length, &n, certInfo);
-   //Failed to parse IssuerUniqueID field?
+   //Parse IssuerUniqueID field
+   error = x509ParseIssuerUniqueId(data, length, &n);
+   //Any parsing error?
    if(error)
       return error;
+
+   //The IssuerUniqueID field is optional
+   if(n > 0)
+   {
+      //This field must only appear if the version is 2 or 3
+      if(certInfo->version < X509_VERSION_2)
+         return ERROR_INVALID_VERSION;
+   }
 
    //Point to the next field
    data += n;
    length -= n;
 
-   //Read SubjectUniqueID field (optional)
-   error = x509ParseSubjectUniqueId(data, length, &n, certInfo);
-   //Failed to parse SubjectUniqueID field?
+   //Parse SubjectUniqueID field
+   error = x509ParseSubjectUniqueId(data, length, &n);
+   //Any parsing error?
    if(error)
       return error;
+
+   //The SubjectUniqueID field is optional
+   if(n > 0)
+   {
+      //This field must only appear if the version is 2 or 3
+      if(certInfo->version < X509_VERSION_2)
+         return ERROR_INVALID_VERSION;
+   }
 
    //Point to the next field
    data += n;
    length -= n;
 
-   //Read Extensions field (optional)
-   error = x509ParseExtensions(data, length, &n, certInfo);
-   //Failed to parse Extensions field?
+   //Parse Extensions field
+   error = x509ParseExtensions(data, length, &n, &certInfo->extensions);
+   //Any parsing error?
    if(error)
       return error;
+
+   //The Extensions field is optional
+   if(n > 0)
+   {
+      //This field must only appear if the version is 3
+      if(certInfo->version < X509_VERSION_3)
+         return ERROR_INVALID_VERSION;
+   }
 
    //No error to report
    return NO_ERROR;
@@ -383,19 +408,13 @@ error_t x509ParseSignature(const uint8_t *data, size_t length,
    TRACE_DEBUG("    Parsing Signature...\r\n");
 
    //Read the contents of the Signature structure
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
    if(error)
       return error;
 
    //Save the total length of the field
    *totalLength = tag.totalLength;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
-   if(error)
-      return error;
 
    //Read the inner tag
    error = asn1ReadTag(tag.value, tag.length, &tag);
@@ -440,7 +459,7 @@ error_t x509ParseName(const uint8_t *data, size_t length,
    TRACE_DEBUG("    Parsing Name...\r\n");
 
    //Read the contents of the Name structure
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
    if(error)
       return error;
@@ -451,12 +470,6 @@ error_t x509ParseName(const uint8_t *data, size_t length,
    //Raw ASN.1 sequence
    name->rawData = data;
    name->rawDataLen = tag.totalLength;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
-   if(error)
-      return error;
 
    //The Name describes a hierarchical name composed of attributes
    data = tag.value;
@@ -623,14 +636,8 @@ error_t x509ParseNameAttribute(const uint8_t *data, size_t length,
    *totalLength = tag.totalLength;
 
    //Read the first field of the set
-   error = asn1ReadTag(tag.value, tag.length, &tag);
+   error = asn1ReadSequence(tag.value, tag.length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -694,19 +701,13 @@ error_t x509ParseValidity(const uint8_t *data, size_t length,
    TRACE_DEBUG("    Parsing Validity...\r\n");
 
    //Read the contents of the Validity structure
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
    if(error)
       return error;
 
    //Save the total length of the field
    *totalLength = tag.totalLength;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
-   if(error)
-      return error;
 
    //Point to the very first field of the sequence
    data = tag.value;
@@ -870,12 +871,12 @@ error_t x509ParseTime(const uint8_t *data, size_t length,
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
  * @param[out] totalLength Number of bytes that have been parsed
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] subjectPublicKeyInfo Information resulting from the parsing process
  * @return Error code
  **/
 
 error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
-   size_t *totalLength, X509CertificateInfo *certInfo)
+   size_t *totalLength, X509SubjectPublicKeyInfo *subjectPublicKeyInfo)
 {
    error_t error;
    size_t n;
@@ -885,7 +886,7 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
    TRACE_DEBUG("    Parsing SubjectPublicKeyInfo...\r\n");
 
    //Read SubjectPublicKeyInfo field
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
    if(error)
       return error;
@@ -893,18 +894,16 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
    //Save the total length of the field
    *totalLength = tag.totalLength;
 
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
-   if(error)
-      return error;
+   //Raw ASN.1 sequence
+   subjectPublicKeyInfo->rawData = data;
+   subjectPublicKeyInfo->rawDataLen = tag.totalLength;
 
    //Point to the first field
    data = tag.value;
    length = tag.length;
 
    //Read AlgorithmIdentifier field
-   error = x509ParseAlgorithmIdentifier(data, length, &n, certInfo);
+   error = x509ParseAlgorithmIdentifier(data, length, &n, subjectPublicKeyInfo);
    //Any error to report?
    if(error)
       return error;
@@ -932,31 +931,34 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
 
 #if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
    //RSA algorithm identifier?
-   if(!oidComp(certInfo->subjectPublicKeyInfo.oid, certInfo->subjectPublicKeyInfo.oidLen,
+   if(!oidComp(subjectPublicKeyInfo->oid, subjectPublicKeyInfo->oidLen,
       RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)))
    {
       //Read RSAPublicKey structure
-      error = x509ParseRsaPublicKey(tag.value + 1, tag.length - 1, certInfo);
+      error = x509ParseRsaPublicKey(tag.value + 1, tag.length - 1,
+         &subjectPublicKeyInfo->rsaPublicKey);
    }
    else
 #endif
 #if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
    //DSA algorithm identifier?
-   if(!oidComp(certInfo->subjectPublicKeyInfo.oid, certInfo->subjectPublicKeyInfo.oidLen,
+   if(!oidComp(subjectPublicKeyInfo->oid, subjectPublicKeyInfo->oidLen,
       DSA_OID, sizeof(DSA_OID)))
    {
       //Read DSAPublicKey structure
-      error = x509ParseDsaPublicKey(tag.value + 1, tag.length - 1, certInfo);
+      error = x509ParseDsaPublicKey(tag.value + 1, tag.length - 1,
+         &subjectPublicKeyInfo->dsaPublicKey);
    }
    else
 #endif
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
    //EC public key identifier?
-   if(!oidComp(certInfo->subjectPublicKeyInfo.oid, certInfo->subjectPublicKeyInfo.oidLen,
+   if(!oidComp(subjectPublicKeyInfo->oid, subjectPublicKeyInfo->oidLen,
       EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
    {
       //Read ECPublicKey structure
-      error = x509ParseEcPublicKey(tag.value + 1, tag.length - 1, certInfo);
+      error = x509ParseEcPublicKey(tag.value + 1, tag.length - 1,
+         &subjectPublicKeyInfo->ecPublicKey);
    }
    else
 #endif
@@ -976,12 +978,12 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
  * @param[out] totalLength Number of bytes that have been parsed
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] subjectPublicKeyInfo Information resulting from the parsing process
  * @return Error code
  **/
 
 error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
-   size_t *totalLength, X509CertificateInfo *certInfo)
+   size_t *totalLength, X509SubjectPublicKeyInfo *subjectPublicKeyInfo)
 {
    error_t error;
    Asn1Tag tag;
@@ -990,19 +992,13 @@ error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
    TRACE_DEBUG("      Parsing AlgorithmIdentifier...\r\n");
 
    //Read AlgorithmIdentifier field
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
    if(error)
       return error;
 
    //Save the total length of the field
    *totalLength = tag.totalLength;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
-   if(error)
-      return error;
 
    //Point to the first field
    data = tag.value;
@@ -1022,8 +1018,8 @@ error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
       return error;
 
    //Save the algorithm identifier
-   certInfo->subjectPublicKeyInfo.oid = tag.value;
-   certInfo->subjectPublicKeyInfo.oidLen = tag.length;
+   subjectPublicKeyInfo->oid = tag.value;
+   subjectPublicKeyInfo->oidLen = tag.length;
 
    //Point to the next field (if any)
    data += tag.totalLength;
@@ -1043,7 +1039,8 @@ error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
    if(!asn1CheckOid(&tag, DSA_OID, sizeof(DSA_OID)))
    {
       //Read DsaParameters structure
-      error = x509ParseDsaParameters(data, length, certInfo);
+      error = x509ParseDsaParameters(data, length,
+         &subjectPublicKeyInfo->dsaParams);
    }
    else
 #endif
@@ -1052,7 +1049,8 @@ error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
    if(!asn1CheckOid(&tag, EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
    {
       //Read ECParameters structure
-      error = x509ParseEcParameters(data, length, certInfo);
+      error = x509ParseEcParameters(data, length,
+         &subjectPublicKeyInfo->ecParams);
    }
    else
 #endif
@@ -1071,12 +1069,12 @@ error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
  * @brief Parse RSAPublicKey structure
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] rsaPublicKey Information resulting from the parsing process
  * @return Error code
  **/
 
-error_t x509ParseRsaPublicKey(const uint8_t *data,
-   size_t length, X509CertificateInfo *certInfo)
+error_t x509ParseRsaPublicKey(const uint8_t *data, size_t length,
+   X509RsaPublicKey *rsaPublicKey)
 {
 #if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
    error_t error;
@@ -1086,14 +1084,8 @@ error_t x509ParseRsaPublicKey(const uint8_t *data,
    TRACE_DEBUG("      Parsing RSAPublicKey...\r\n");
 
    //Read RSAPublicKey structure
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -1114,8 +1106,8 @@ error_t x509ParseRsaPublicKey(const uint8_t *data,
       return error;
 
    //Get the modulus
-   certInfo->subjectPublicKeyInfo.rsaPublicKey.n = tag.value;
-   certInfo->subjectPublicKeyInfo.rsaPublicKey.nLen = tag.length;
+   rsaPublicKey->n = tag.value;
+   rsaPublicKey->nLen = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -1134,8 +1126,8 @@ error_t x509ParseRsaPublicKey(const uint8_t *data,
       return error;
 
    //Get the public exponent
-   certInfo->subjectPublicKeyInfo.rsaPublicKey.e = tag.value;
-   certInfo->subjectPublicKeyInfo.rsaPublicKey.eLen = tag.length;
+   rsaPublicKey->e = tag.value;
+   rsaPublicKey->eLen = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -1150,12 +1142,12 @@ error_t x509ParseRsaPublicKey(const uint8_t *data,
  * @brief Parse DSA domain parameters
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] dsaParams Information resulting from the parsing process
  * @return Error code
  **/
 
-error_t x509ParseDsaParameters(const uint8_t *data,
-   size_t length, X509CertificateInfo *certInfo)
+error_t x509ParseDsaParameters(const uint8_t *data, size_t length,
+   X509DsaParameters *dsaParams)
 {
 #if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
    error_t error;
@@ -1165,14 +1157,8 @@ error_t x509ParseDsaParameters(const uint8_t *data,
    TRACE_DEBUG("        Parsing DSAParameters...\r\n");
 
    //Read DSAParameters structure
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -1193,8 +1179,8 @@ error_t x509ParseDsaParameters(const uint8_t *data,
       return error;
 
    //Save the parameter p
-   certInfo->subjectPublicKeyInfo.dsaParams.p = tag.value;
-   certInfo->subjectPublicKeyInfo.dsaParams.pLen = tag.length;
+   dsaParams->p = tag.value;
+   dsaParams->pLen = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -1213,8 +1199,8 @@ error_t x509ParseDsaParameters(const uint8_t *data,
       return error;
 
    //Save the parameter q
-   certInfo->subjectPublicKeyInfo.dsaParams.q = tag.value;
-   certInfo->subjectPublicKeyInfo.dsaParams.qLen = tag.length;
+   dsaParams->q = tag.value;
+   dsaParams->qLen = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -1233,8 +1219,8 @@ error_t x509ParseDsaParameters(const uint8_t *data,
       return error;
 
    //Save the parameter g
-   certInfo->subjectPublicKeyInfo.dsaParams.g = tag.value;
-   certInfo->subjectPublicKeyInfo.dsaParams.gLen = tag.length;
+   dsaParams->g = tag.value;
+   dsaParams->gLen = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -1249,12 +1235,12 @@ error_t x509ParseDsaParameters(const uint8_t *data,
  * @brief Parse DSAPublicKey structure
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] dsaPublicKey Information resulting from the parsing process
  * @return Error code
  **/
 
-error_t x509ParseDsaPublicKey(const uint8_t *data,
-   size_t length, X509CertificateInfo *certInfo)
+error_t x509ParseDsaPublicKey(const uint8_t *data, size_t length,
+   X509DsaPublicKey *dsaPublicKey)
 {
 #if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
    error_t error;
@@ -1276,8 +1262,8 @@ error_t x509ParseDsaPublicKey(const uint8_t *data,
       return error;
 
    //Save the DSA public value
-   certInfo->subjectPublicKeyInfo.dsaPublicKey.y = tag.value;
-   certInfo->subjectPublicKeyInfo.dsaPublicKey.yLen = tag.length;
+   dsaPublicKey->y = tag.value;
+   dsaPublicKey->yLen = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -1292,12 +1278,12 @@ error_t x509ParseDsaPublicKey(const uint8_t *data,
  * @brief Parse ECParameters structure
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] ecParams Information resulting from the parsing process
  * @return Error code
  **/
 
-error_t x509ParseEcParameters(const uint8_t *data,
-   size_t length, X509CertificateInfo *certInfo)
+error_t x509ParseEcParameters(const uint8_t *data, size_t length,
+   X509EcParameters *ecParams)
 {
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
    error_t error;
@@ -1322,8 +1308,8 @@ error_t x509ParseEcParameters(const uint8_t *data,
    //The namedCurve field identifies all the required values for a particular
    //set of elliptic curve domain parameters to be represented by an object
    //identifier
-   certInfo->subjectPublicKeyInfo.ecParams.namedCurve = tag.value;
-   certInfo->subjectPublicKeyInfo.ecParams.namedCurveLen = tag.length;
+   ecParams->namedCurve = tag.value;
+   ecParams->namedCurveLen = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -1338,12 +1324,12 @@ error_t x509ParseEcParameters(const uint8_t *data,
  * @brief Parse ECPublicKey structure
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] ecPublicKey Information resulting from the parsing process
  * @return Error code
  **/
 
-error_t x509ParseEcPublicKey(const uint8_t *data,
-   size_t length, X509CertificateInfo *certInfo)
+error_t x509ParseEcPublicKey(const uint8_t *data, size_t length,
+   X509EcPublicKey *ecPublicKey)
 {
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
    //Debug message
@@ -1354,8 +1340,8 @@ error_t x509ParseEcPublicKey(const uint8_t *data,
       return ERROR_BAD_CERTIFICATE;
 
    //Save the EC public key
-   certInfo->subjectPublicKeyInfo.ecPublicKey.q = data;
-   certInfo->subjectPublicKeyInfo.ecPublicKey.qLen = length;
+   ecPublicKey->q = data;
+   ecPublicKey->qLen = length;
 
    //Successful processing
    return NO_ERROR;
@@ -1371,12 +1357,11 @@ error_t x509ParseEcPublicKey(const uint8_t *data,
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
  * @param[out] totalLength Number of bytes that have been parsed
- * @param[out] certInfo Information resulting from the parsing process
  * @return Error code
  **/
 
 error_t x509ParseIssuerUniqueId(const uint8_t *data, size_t length,
-   size_t *totalLength, X509CertificateInfo *certInfo)
+   size_t *totalLength)
 {
    error_t error;
    Asn1Tag tag;
@@ -1390,7 +1375,7 @@ error_t x509ParseIssuerUniqueId(const uint8_t *data, size_t length,
       return NO_ERROR;
    }
 
-   //Explicit tagging is used to encode the IssuerUniqueID field
+   //Implicit tagging is used to encode the IssuerUniqueID field
    error = asn1ReadTag(data, length, &tag);
    //Failed to decode ASN.1 tag?
    if(error)
@@ -1413,11 +1398,9 @@ error_t x509ParseIssuerUniqueId(const uint8_t *data, size_t length,
    //Debug message
    TRACE_DEBUG("    Parsing IssuerUniqueID...\r\n");
 
-   //This field must only appear if the version is 2 or 3
-   if(certInfo->version < X509_VERSION_2)
-      return ERROR_INVALID_VERSION;
-
-   //Successful processing
+   //Conforming applications should be capable of parsing certificates that
+   //include unique identifiers, but there are no processing requirements
+   //associated with the unique identifiers
    return NO_ERROR;
 }
 
@@ -1427,12 +1410,11 @@ error_t x509ParseIssuerUniqueId(const uint8_t *data, size_t length,
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
  * @param[out] totalLength Number of bytes that have been parsed
- * @param[out] certInfo Information resulting from the parsing process
  * @return Error code
  **/
 
 error_t x509ParseSubjectUniqueId(const uint8_t *data, size_t length,
-   size_t *totalLength, X509CertificateInfo *certInfo)
+   size_t *totalLength)
 {
    error_t error;
    Asn1Tag tag;
@@ -1446,7 +1428,7 @@ error_t x509ParseSubjectUniqueId(const uint8_t *data, size_t length,
       return NO_ERROR;
    }
 
-   //Explicit tagging is used to encode the SubjectUniqueID field
+   //Implicit tagging is used to encode the SubjectUniqueID field
    error = asn1ReadTag(data, length, &tag);
    //Failed to decode ASN.1 tag?
    if(error)
@@ -1469,11 +1451,9 @@ error_t x509ParseSubjectUniqueId(const uint8_t *data, size_t length,
    //Debug message
    TRACE_DEBUG("    Parsing SubjectUniqueID...\r\n");
 
-   //This field must only appear if the version is 2 or 3
-   if(certInfo->version < X509_VERSION_2)
-      return ERROR_INVALID_VERSION;
-
-   //Successful processing
+   //Conforming applications should be capable of parsing certificates that
+   //include unique identifiers, but there are no processing requirements
+   //associated with the unique identifiers
    return NO_ERROR;
 }
 
@@ -1483,12 +1463,12 @@ error_t x509ParseSubjectUniqueId(const uint8_t *data, size_t length,
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
  * @param[out] totalLength Number of bytes that have been parsed
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] extensions Information resulting from the parsing process
  * @return Error code
  **/
 
 error_t x509ParseExtensions(const uint8_t *data, size_t length,
-   size_t *totalLength, X509CertificateInfo *certInfo)
+   size_t *totalLength, X509Extensions *extensions)
 {
    error_t error;
    bool_t critical;
@@ -1529,19 +1509,9 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
    //Debug message
    TRACE_DEBUG("    Parsing Extensions...\r\n");
 
-   //This field must only appear if the version is 3
-   if(certInfo->version < X509_VERSION_3)
-      return ERROR_INVALID_VERSION;
-
    //Read inner tag
-   error = asn1ReadTag(tag.value, tag.length, &tag);
+   error = asn1ReadSequence(tag.value, tag.length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -1553,14 +1523,8 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
    while(length > 0)
    {
       //Read current extension
-      error = asn1ReadTag(data, length, &tag);
+      error = asn1ReadSequence(data, length, &tag);
       //Failed to decode ASN.1 tag?
-      if(error)
-         return error;
-
-      //Enforce encoding, class and type
-      error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-      //The tag does not match the criteria?
       if(error)
          return error;
 
@@ -1637,14 +1601,16 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
          X509_BASIC_CONSTRAINTS_OID, sizeof(X509_BASIC_CONSTRAINTS_OID)))
       {
          //Parse BasicConstraints extension
-         error = x509ParseBasicConstraints(tag.value, tag.length, certInfo);
+         error = x509ParseBasicConstraints(tag.value, tag.length,
+            &extensions->basicConstraints);
       }
       //NameConstraints extension found?
       else if(!oidComp(oidTag.value, oidTag.length,
          X509_NAME_CONSTRAINTS_OID, sizeof(X509_NAME_CONSTRAINTS_OID)))
       {
          //Parse NameConstraints extension
-         error = x509ParseNameConstraints(tag.value, tag.length, certInfo);
+         error = x509ParseNameConstraints(tag.value, tag.length,
+            &extensions->nameConstraints);
       }
 #if 0
       //PolicyConstraints extension found?
@@ -1652,21 +1618,21 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
          X509_POLICY_CONSTRAINTS_OID, sizeof(X509_POLICY_CONSTRAINTS_OID)))
       {
          //Parse PolicyConstraints extension
-         error = x509ParsePolicyConstraints(tag.value, tag.length, certInfo);
+         error = x509ParsePolicyConstraints(tag.value, tag.length);
       }
       //PolicyMappings extension found?
       else if(!oidComp(oidTag.value, oidTag.length,
          X509_POLICY_MAPPINGS_OID, sizeof(X509_POLICY_MAPPINGS_OID)))
       {
          //Parse PolicyMappings extension
-         error = x509ParsePolicyMappings(tag.value, tag.length, certInfo);
+         error = x509ParsePolicyMappings(tag.value, tag.length);
       }
       //InhibitAnyPolicy extension found?
       else if(!oidComp(oidTag.value, oidTag.length,
          X509_INHIBIT_ANY_POLICY_OID, sizeof(X509_INHIBIT_ANY_POLICY_OID)))
       {
          //Parse InhibitAnyPolicy extension
-         error = x509ParseInhibitAnyPolicy(tag.value, tag.length, certInfo);
+         error = x509ParseInhibitAnyPolicy(tag.value, tag.length);
       }
 #endif
       //KeyUsage extension found?
@@ -1674,42 +1640,48 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
          X509_KEY_USAGE_OID, sizeof(X509_KEY_USAGE_OID)))
       {
          //Parse KeyUsage extension
-         error = x509ParseKeyUsage(tag.value, tag.length, certInfo);
+         error = x509ParseKeyUsage(tag.value, tag.length,
+            &extensions->keyUsage);
       }
       //ExtendedKeyUsage extension found?
       else if(!oidComp(oidTag.value, oidTag.length,
          X509_EXTENDED_KEY_USAGE_OID, sizeof(X509_EXTENDED_KEY_USAGE_OID)))
       {
          //Parse ExtendedKeyUsage extension
-         error = x509ParseExtendedKeyUsage(tag.value, tag.length, certInfo);
+         error = x509ParseExtendedKeyUsage(tag.value, tag.length,
+            &extensions->extKeyUsage);
       }
       //SubjectAltName extension found?
       else if(!oidComp(oidTag.value, oidTag.length,
          X509_SUBJECT_ALT_NAME_OID, sizeof(X509_SUBJECT_ALT_NAME_OID)))
       {
          //Parse SubjectAltName extension
-         error = x509ParseSubjectAltName(tag.value, tag.length, certInfo);
+         error = x509ParseSubjectAltName(tag.value, tag.length,
+            &extensions->subjectAltName);
       }
       //SubjectKeyIdentifier extension found?
       else if(!oidComp(oidTag.value, oidTag.length,
          X509_SUBJECT_KEY_ID_OID, sizeof(X509_SUBJECT_KEY_ID_OID)))
       {
          //Parse SubjectKeyIdentifier extension
-         error = x509ParseSubjectKeyId(tag.value, tag.length, certInfo);
+         error = x509ParseSubjectKeyId(tag.value, tag.length,
+            &extensions->subjectKeyId);
       }
       //AuthorityKeyIdentifier extension found?
       else if(!oidComp(oidTag.value, oidTag.length,
          X509_AUTHORITY_KEY_ID_OID, sizeof(X509_AUTHORITY_KEY_ID_OID)))
       {
          //Parse AuthorityKeyIdentifier extension
-         error = x509ParseAuthorityKeyId(tag.value, tag.length, certInfo);
+         error = x509ParseAuthorityKeyId(tag.value, tag.length,
+            &extensions->authorityKeyId);
       }
       //NetscapeCertType extension found?
       else if(!oidComp(oidTag.value, oidTag.length,
          X509_NS_CERT_TYPE_OID, sizeof(X509_NS_CERT_TYPE_OID)))
       {
          //Parse NetscapeCertType extension
-         error = x509ParseNsCertType(tag.value, tag.length, certInfo);
+         error = x509ParseNsCertType(tag.value, tag.length,
+            &extensions->nsCertType);
       }
       //Unknown extension?
       else
@@ -1730,12 +1702,12 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
    }
 
    //Check wether the keyCertSign bit is asserted
-   if(certInfo->extensions.keyUsage & X509_KEY_USAGE_KEY_CERT_SIGN)
+   if(extensions->keyUsage & X509_KEY_USAGE_KEY_CERT_SIGN)
    {
       //If the keyCertSign bit is asserted, then the cA bit in the basic
       //constraints extension must also be asserted (refer to RFC 5280,
       //section 4.2.1.3)
-      if(!certInfo->extensions.basicConstraints.cA)
+      if(!extensions->basicConstraints.cA)
          return ERROR_INVALID_SYNTAX;
    }
 
@@ -1748,12 +1720,12 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
  * @brief Parse BasicConstraints extension
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] basicConstraints Information resulting from the parsing process
  * @return Error code
  **/
 
 error_t x509ParseBasicConstraints(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo)
+   X509BasicConstraints *basicConstraints)
 {
    error_t error;
    int32_t value;
@@ -1763,14 +1735,8 @@ error_t x509ParseBasicConstraints(const uint8_t *data, size_t length,
    TRACE_DEBUG("      Parsing BasicConstraints...\r\n");
 
    //The BasicConstraints structure shall contain a valid sequence
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -1799,7 +1765,7 @@ error_t x509ParseBasicConstraints(const uint8_t *data, size_t length,
             return ERROR_INVALID_LENGTH;
 
          //Get boolean value
-         certInfo->extensions.basicConstraints.cA = tag.value[0] ? TRUE : FALSE;
+         basicConstraints->cA = tag.value[0] ? TRUE : FALSE;
 
          //Point to the next item
          data += tag.totalLength;
@@ -1818,7 +1784,7 @@ error_t x509ParseBasicConstraints(const uint8_t *data, size_t length,
 
       //The pathLenConstraint field is meaningful only if the cA boolean is
       //asserted (refer to RFC 5280, section 4.2.1.9)
-      if(!certInfo->extensions.basicConstraints.cA)
+      if(!basicConstraints->cA)
          return ERROR_INVALID_SYNTAX;
 
       //Where it appears, the pathLenConstraint field must be greater than or
@@ -1829,7 +1795,7 @@ error_t x509ParseBasicConstraints(const uint8_t *data, size_t length,
       //The pathLenConstraint field gives the maximum number of non-self-issued
       //intermediate certificates that may follow this certificate in a valid
       //certification path
-      certInfo->extensions.basicConstraints.pathLenConstraint = value;
+      basicConstraints->pathLenConstraint = value;
    }
 
    //Successful processing
@@ -1841,12 +1807,12 @@ error_t x509ParseBasicConstraints(const uint8_t *data, size_t length,
  * @brief Parse NameConstraints extension
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] nameConstraints Information resulting from the parsing process
  * @return Error code
  **/
 
 error_t x509ParseNameConstraints(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo)
+   X509NameConstraints *nameConstraints)
 {
    error_t error;
    Asn1Tag tag;
@@ -1855,14 +1821,8 @@ error_t x509ParseNameConstraints(const uint8_t *data, size_t length,
    TRACE_DEBUG("      Parsing NameConstraints...\r\n");
 
    //The NameConstraints structure shall contain a valid sequence
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -1904,8 +1864,8 @@ error_t x509ParseNameConstraints(const uint8_t *data, size_t length,
             return error;
 
          //Raw contents of the ASN.1 sequence
-         certInfo->extensions.nameConstraints.permittedSubtrees = tag.value;
-         certInfo->extensions.nameConstraints.permittedSubtreesLen = tag.length;
+         nameConstraints->permittedSubtrees = tag.value;
+         nameConstraints->permittedSubtreesLen = tag.length;
       }
       else if(tag.objType == 1)
       {
@@ -1916,8 +1876,8 @@ error_t x509ParseNameConstraints(const uint8_t *data, size_t length,
             return error;
 
          //Raw contents of the ASN.1 sequence
-         certInfo->extensions.nameConstraints.excludedSubtrees = tag.value;
-         certInfo->extensions.nameConstraints.excludedSubtreesLen = tag.length;
+         nameConstraints->excludedSubtrees = tag.value;
+         nameConstraints->excludedSubtreesLen = tag.length;
       }
       else
       {
@@ -1939,12 +1899,10 @@ error_t x509ParseNameConstraints(const uint8_t *data, size_t length,
  * @brief Parse PolicyConstraints extension
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
  * @return Error code
  **/
 
-error_t x509ParsePolicyConstraints(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo)
+error_t x509ParsePolicyConstraints(const uint8_t *data, size_t length)
 {
    error_t error;
    Asn1Tag tag;
@@ -1953,14 +1911,8 @@ error_t x509ParsePolicyConstraints(const uint8_t *data, size_t length,
    TRACE_DEBUG("      Parsing PolicyConstraints...\r\n");
 
    //The PolicyConstraints structure shall contain a valid sequence
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -1978,12 +1930,10 @@ error_t x509ParsePolicyConstraints(const uint8_t *data, size_t length,
  * @brief Parse PolicyMappings extension
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
  * @return Error code
  **/
 
-error_t x509ParsePolicyMappings(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo)
+error_t x509ParsePolicyMappings(const uint8_t *data, size_t length)
 {
    error_t error;
    Asn1Tag tag;
@@ -1992,14 +1942,8 @@ error_t x509ParsePolicyMappings(const uint8_t *data, size_t length,
    TRACE_DEBUG("      Parsing PolicyMappings...\r\n");
 
    //The PolicyMappings structure shall contain a valid sequence
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -2016,12 +1960,10 @@ error_t x509ParsePolicyMappings(const uint8_t *data, size_t length,
  * @brief Parse InhibitAnyPolicy extension
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
  * @return Error code
  **/
 
-error_t x509ParseInhibitAnyPolicy(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo)
+error_t x509ParseInhibitAnyPolicy(const uint8_t *data, size_t length)
 {
    //Debug message
    TRACE_DEBUG("      Parsing InhibitAnyPolicy...\r\n");
@@ -2035,12 +1977,12 @@ error_t x509ParseInhibitAnyPolicy(const uint8_t *data, size_t length,
  * @brief Parse KeyUsage extension
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] keyUsage Information resulting from the parsing process
  * @return Error code
  **/
 
 error_t x509ParseKeyUsage(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo)
+   uint16_t *keyUsage)
 {
    error_t error;
    Asn1Tag tag;
@@ -2050,7 +1992,7 @@ error_t x509ParseKeyUsage(const uint8_t *data, size_t length,
 
    //A certificate must not include more than one instance of a particular
    //extension (refer to RFC 5280, section 4.2)
-   if(certInfo->extensions.keyUsage != 0)
+   if(*keyUsage != 0)
       return ERROR_INVALID_SYNTAX;
 
    //The key usage extension defines the purpose of the key contained in the
@@ -2076,19 +2018,19 @@ error_t x509ParseKeyUsage(const uint8_t *data, size_t length,
       return ERROR_INVALID_SYNTAX;
 
    //Clear bit string
-   certInfo->extensions.keyUsage = 0;
+   *keyUsage = 0;
 
    //Read bits b0 to b7
    if(tag.length >= 2)
-      certInfo->extensions.keyUsage |= reverseInt8(tag.value[1]);
+      *keyUsage |= reverseInt8(tag.value[1]);
 
    //Read bits b8 to b15
    if(tag.length >= 3)
-      certInfo->extensions.keyUsage |= reverseInt8(tag.value[2]) << 8;
+      *keyUsage |= reverseInt8(tag.value[2]) << 8;
 
    //When the key usage extension appears in a certificate, at least one of
    //the bits must be set to 1 (refer to RFC 5280, section 4.2.1.3)
-   if(certInfo->extensions.keyUsage == 0)
+   if(*keyUsage == 0)
       return ERROR_INVALID_SYNTAX;
 
    //Successful processing
@@ -2100,12 +2042,12 @@ error_t x509ParseKeyUsage(const uint8_t *data, size_t length,
  * @brief Parse ExtendedKeyUsage extension
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] extKeyUsage Information resulting from the parsing process
  * @return Error code
  **/
 
 error_t x509ParseExtendedKeyUsage(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo)
+   uint8_t *extKeyUsage)
 {
    error_t error;
    Asn1Tag tag;
@@ -2115,18 +2057,12 @@ error_t x509ParseExtendedKeyUsage(const uint8_t *data, size_t length,
 
    //A certificate must not include more than one instance of a particular
    //extension (refer to RFC 5280, section 4.2)
-   if(certInfo->extensions.extKeyUsage != 0)
+   if(*extKeyUsage != 0)
       return ERROR_INVALID_SYNTAX;
 
    //The ExtendedKeyUsage structure shall contain a valid sequence
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -2162,49 +2098,49 @@ error_t x509ParseExtendedKeyUsage(const uint8_t *data, size_t length,
          //If a CA includes extended key usages to satisfy such applications,
          //but does not wish to restrict usages of the key, the CA can include
          //the special KeyPurposeId anyExtendedKeyUsage
-         certInfo->extensions.extKeyUsage |= X509_EXT_KEY_USAGE_ANY;
+         *extKeyUsage |= X509_EXT_KEY_USAGE_ANY;
       }
       //id-kp-serverAuth?
       else if(!oidComp(tag.value, tag.length,
          X509_KP_SERVER_AUTH_OID, sizeof(X509_KP_SERVER_AUTH_OID)))
       {
          //TLS WWW server authentication
-         certInfo->extensions.extKeyUsage |= X509_EXT_KEY_USAGE_SERVER_AUTH;
+         *extKeyUsage |= X509_EXT_KEY_USAGE_SERVER_AUTH;
       }
       //id-kp-clientAuth?
       else if(!oidComp(tag.value, tag.length,
          X509_KP_CLIENT_AUTH_OID, sizeof(X509_KP_CLIENT_AUTH_OID)))
       {
          //TLS WWW client authentication
-         certInfo->extensions.extKeyUsage |= X509_EXT_KEY_USAGE_CLIENT_AUTH;
+         *extKeyUsage |= X509_EXT_KEY_USAGE_CLIENT_AUTH;
       }
       //id-kp-codeSigning?
       else if(!oidComp(tag.value, tag.length,
          X509_KP_CODE_SIGNING_OID, sizeof(X509_KP_CODE_SIGNING_OID)))
       {
          //Signing of downloadable executable code
-         certInfo->extensions.extKeyUsage |= X509_EXT_KEY_USAGE_CODE_SIGNING;
+         *extKeyUsage |= X509_EXT_KEY_USAGE_CODE_SIGNING;
       }
       //id-kp-emailProtection?
       else if(!oidComp(tag.value, tag.length,
          X509_KP_EMAIL_PROTECTION_OID, sizeof(X509_KP_EMAIL_PROTECTION_OID)))
       {
          //Email protection
-         certInfo->extensions.extKeyUsage |= X509_EXT_KEY_USAGE_EMAIL_PROTECTION;
+         *extKeyUsage |= X509_EXT_KEY_USAGE_EMAIL_PROTECTION;
       }
       //id-kp-timeStamping?
       else if(!oidComp(tag.value, tag.length,
          X509_KP_TIME_STAMPING_OID, sizeof(X509_KP_TIME_STAMPING_OID)))
       {
          //Binding the hash of an object to a time
-         certInfo->extensions.extKeyUsage |= X509_EXT_KEY_USAGE_TIME_STAMPING;
+         *extKeyUsage |= X509_EXT_KEY_USAGE_TIME_STAMPING;
       }
       //id-kp-OCSPSigning?
       else if(!oidComp(tag.value, tag.length,
          X509_KP_OCSP_SIGNING_OID, sizeof(X509_KP_OCSP_SIGNING_OID)))
       {
          //Signing OCSP responses
-         certInfo->extensions.extKeyUsage |= X509_EXT_KEY_USAGE_OCSP_SIGNING;
+         *extKeyUsage |= X509_EXT_KEY_USAGE_OCSP_SIGNING;
       }
       //Unknown key purpose?
       else
@@ -2226,35 +2162,25 @@ error_t x509ParseExtendedKeyUsage(const uint8_t *data, size_t length,
  * @brief Parse SubjectAltName extension
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] subjectAltName Information resulting from the parsing process
  * @return Error code
  **/
 
 error_t x509ParseSubjectAltName(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo)
+   X509SubjectAltName *subjectAltName)
 {
    error_t error;
    uint_t i;
    size_t n;
    Asn1Tag tag;
-   X509SubjectAltName *subjectAltName;
    X509GeneralName generalName;
 
    //Debug message
    TRACE_DEBUG("      Parsing SubjectAltName...\r\n");
 
-   //Point to the SubjectAltName extension
-   subjectAltName = &certInfo->extensions.subjectAltName;
-
    //The SubjectAltName structure shall contain a valid sequence
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -2351,14 +2277,8 @@ error_t x509ParseGeneralSubtree(const uint8_t *data, size_t length,
    Asn1Tag tag;
 
    //The GeneralSubtrees structure shall contain a valid sequence
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -2423,12 +2343,12 @@ error_t x509ParseGeneralName(const uint8_t *data, size_t length,
  * @brief Parse SubjectKeyIdentifier extension
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] subjectKeyId Information resulting from the parsing process
  * @return Error code
  **/
 
 error_t x509ParseSubjectKeyId(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo)
+   X509SubjectKeyId *subjectKeyId)
 {
    error_t error;
    Asn1Tag tag;
@@ -2450,8 +2370,8 @@ error_t x509ParseSubjectKeyId(const uint8_t *data, size_t length,
       return error;
 
    //Save the subject key identifier
-   certInfo->extensions.subjectKeyId = tag.value;
-   certInfo->extensions.subjectKeyIdLen = tag.length;
+   subjectKeyId->value = tag.value;
+   subjectKeyId->length = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -2462,12 +2382,12 @@ error_t x509ParseSubjectKeyId(const uint8_t *data, size_t length,
  * @brief Parse AuthorityKeyIdentifier extension
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] authorityKeyId Information resulting from the parsing process
  * @return Error code
  **/
 
 error_t x509ParseAuthorityKeyId(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo)
+   X509AuthorityKeyId *authorityKeyId)
 {
    error_t error;
    Asn1Tag tag;
@@ -2476,14 +2396,8 @@ error_t x509ParseAuthorityKeyId(const uint8_t *data, size_t length,
    TRACE_DEBUG("      Parsing AuthorityKeyIdentifier...\r\n");
 
    //The AuthorityKeyIdentifier structure shall contain a valid sequence
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -2508,8 +2422,8 @@ error_t x509ParseAuthorityKeyId(const uint8_t *data, size_t length,
       if(tag.objType == 0)
       {
          //Save the authority key identifier
-         certInfo->extensions.authorityKeyId= tag.value;
-         certInfo->extensions.authorityKeyIdLen = tag.length;
+         authorityKeyId->value = tag.value;
+         authorityKeyId->length = tag.length;
       }
 
       //Next item
@@ -2526,12 +2440,12 @@ error_t x509ParseAuthorityKeyId(const uint8_t *data, size_t length,
  * @brief Parse NetscapeCertType extension
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] certInfo Information resulting from the parsing process
+ * @param[out] nsCertType Information resulting from the parsing process
  * @return Error code
  **/
 
 error_t x509ParseNsCertType(const uint8_t *data, size_t length,
-   X509CertificateInfo *certInfo)
+   uint8_t *nsCertType)
 {
    error_t error;
    Asn1Tag tag;
@@ -2561,11 +2475,11 @@ error_t x509ParseNsCertType(const uint8_t *data, size_t length,
       return ERROR_INVALID_SYNTAX;
 
    //Clear bit string
-   certInfo->extensions.nsCertType = 0;
+   *nsCertType = 0;
 
    //Read bits b0 to b7
    if(tag.length >= 2)
-      certInfo->extensions.nsCertType |= reverseInt8(tag.value[1]);
+      *nsCertType |= reverseInt8(tag.value[1]);
 
    //Successful processing
    return NO_ERROR;
@@ -2591,19 +2505,13 @@ error_t x509ParseSignatureAlgo(const uint8_t *data, size_t length,
    TRACE_DEBUG("  Parsing SignatureAlgorithm...\r\n");
 
    //Read the contents of the SignatureAlgorithm field
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?
    if(error)
       return error;
 
    //Save the total length of the field
    *totalLength = tag.totalLength;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-   //The tag does not match the criteria?
-   if(error)
-      return error;
 
    //Read the inner tag
    error = asn1ReadTag(tag.value, tag.length, &tag);

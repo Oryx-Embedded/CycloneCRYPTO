@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -30,7 +30,7 @@
  * key. Refer to RFC 2104 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -145,7 +145,9 @@ void hmacInit(HmacContext *context, const HashAlgo *hash,
 
    //XOR the resulting key with ipad
    for(i = 0; i < hash->blockSize; i++)
+   {
       context->key[i] ^= HMAC_IPAD;
+   }
 
    //Initialize context for the first pass
    hash->init(context->hashContext);
@@ -190,7 +192,9 @@ void hmacFinal(HmacContext *context, uint8_t *digest)
 
    //XOR the original key with opad
    for(i = 0; i < hash->blockSize; i++)
+   {
       context->key[i] ^= HMAC_IPAD ^ HMAC_OPAD;
+   }
 
    //Initialize context for the second pass
    hash->init(context->hashContext);

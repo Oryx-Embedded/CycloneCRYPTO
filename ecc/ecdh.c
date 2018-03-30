@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -32,6 +32,8 @@
 //Dependencies
 #include "core/crypto.h"
 #include "ecc/ecdh.h"
+#include "ecc/x25519.h"
+#include "ecc/x448.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -47,6 +49,7 @@ void ecdhInit(EcdhContext *context)
 {
    //Initialize EC domain parameters
    ecInitDomainParameters(&context->params);
+
    //Initialize private and public keys
    mpiInit(&context->da);
    ecInit(&context->qa);
@@ -63,6 +66,7 @@ void ecdhFree(EcdhContext *context)
 {
    //Release EC domain parameters
    ecFreeDomainParameters(&context->params);
+
    //Release private and public keys
    mpiFree(&context->da);
    ecFree(&context->qa);
@@ -82,36 +86,175 @@ error_t ecdhGenerateKeyPair(EcdhContext *context,
    const PrngAlgo *prngAlgo, void *prngContext)
 {
    error_t error;
-   uint_t n;
 
    //Debug message
    TRACE_DEBUG("Generating ECDH key pair...\r\n");
 
-   //Let N be the bit length of q
-   n = mpiGetBitLength(&context->params.q);
+   //Weierstrass elliptic curve?
+   if(context->params.type == EC_CURVE_TYPE_SECT_K1 ||
+      context->params.type == EC_CURVE_TYPE_SECT_R1 ||
+      context->params.type == EC_CURVE_TYPE_SECT_R2 ||
+      context->params.type == EC_CURVE_TYPE_SECP_K1 ||
+      context->params.type == EC_CURVE_TYPE_SECP_R1 ||
+      context->params.type == EC_CURVE_TYPE_SECP_R2 ||
+      context->params.type == EC_CURVE_TYPE_BRAINPOOLP_R1)
+   {
+      uint_t n;
 
-   //Generated a pseudorandom number
-   MPI_CHECK(mpiRand(&context->da, n, prngAlgo, prngContext));
+      //Let N be the bit length of q
+      n = mpiGetBitLength(&context->params.q);
 
-   //Make sure that 0 < da < q
-   if(mpiComp(&context->da, &context->params.q) >= 0)
-      mpiShiftRight(&context->da, 1);
+      //Generated a pseudorandom number
+      error = mpiRand(&context->da, n, prngAlgo, prngContext);
 
-   //Debug message
-   TRACE_DEBUG("  Private key:\r\n");
-   TRACE_DEBUG_MPI("    ", &context->da);
+      //Check status code
+      if(!error)
+      {
+         //Make sure that 0 < da < q
+         if(mpiComp(&context->da, &context->params.q) >= 0)
+         {
+            error = mpiShiftRight(&context->da, 1);
+         }
+      }
 
-   //Compute Qa = da.G
-   EC_CHECK(ecMult(&context->params, &context->qa, &context->da, &context->params.g));
-   EC_CHECK(ecAffinify(&context->params, &context->qa, &context->qa));
+      //Check status code
+      if(!error)
+      {
+         //Debug message
+         TRACE_DEBUG("  Private key:\r\n");
+         TRACE_DEBUG_MPI("    ", &context->da);
 
-   //Debug message
-   TRACE_DEBUG("  Public key X:\r\n");
-   TRACE_DEBUG_MPI("    ", &context->qa.x);
-   TRACE_DEBUG("  Public key Y:\r\n");
-   TRACE_DEBUG_MPI("    ", &context->qa.y);
+         //Compute Qa = da.G
+         error = ecMult(&context->params, &context->qa, &context->da,
+            &context->params.g);
+      }
 
-end:
+      //Check status code
+      if(!error)
+      {
+         //Convert the public key to affine representation
+         error = ecAffinify(&context->params, &context->qa, &context->qa);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Debug message
+         TRACE_DEBUG("  Public key X:\r\n");
+         TRACE_DEBUG_MPI("    ", &context->qa.x);
+         TRACE_DEBUG("  Public key Y:\r\n");
+         TRACE_DEBUG_MPI("    ", &context->qa.y);
+      }
+   }
+#if (CURVE25519_SUPPORT == ENABLED)
+   //Curve25519 elliptic curve?
+   else if(context->params.type == EC_CURVE_TYPE_X25519)
+   {
+      uint8_t da[CURVE25519_BYTE_LEN];
+      uint8_t qa[CURVE25519_BYTE_LEN];
+      uint8_t g[CURVE25519_BYTE_LEN];
+
+      //Generate 32 random bytes
+      error = prngAlgo->read(prngContext, da, CURVE25519_BYTE_LEN);
+
+      //Check status code
+      if(!error)
+      {
+         //Debug message
+         TRACE_DEBUG("  Private key:\r\n");
+         TRACE_DEBUG_ARRAY("    ", da, CURVE25519_BYTE_LEN);
+
+         //Get the u-coordinate of the base point
+         error = mpiExport(&context->params.g.x, g, CURVE25519_BYTE_LEN,
+            MPI_FORMAT_LITTLE_ENDIAN);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Generate the public value using X25519 function
+         error = x25519(qa, da, g);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Save private key
+         error = mpiImport(&context->da, da, CURVE25519_BYTE_LEN,
+            MPI_FORMAT_LITTLE_ENDIAN);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Debug message
+         TRACE_DEBUG("  Public key:\r\n");
+         TRACE_DEBUG_ARRAY("    ", qa, CURVE25519_BYTE_LEN);
+
+         //Save public key
+         error = mpiImport(&context->qa.x, qa, CURVE25519_BYTE_LEN,
+            MPI_FORMAT_LITTLE_ENDIAN);
+      }
+   }
+#endif
+#if (CURVE448_SUPPORT == ENABLED)
+   //Curve448 elliptic curve?
+   else if(context->params.type == EC_CURVE_TYPE_X448)
+   {
+      uint8_t da[CURVE448_BYTE_LEN];
+      uint8_t qa[CURVE448_BYTE_LEN];
+      uint8_t g[CURVE448_BYTE_LEN];
+
+      //Generate 56 random bytes
+      error = prngAlgo->read(prngContext, da, CURVE448_BYTE_LEN);
+
+      //Check status code
+      if(!error)
+      {
+         //Debug message
+         TRACE_DEBUG("  Private key:\r\n");
+         TRACE_DEBUG_ARRAY("    ", da, CURVE448_BYTE_LEN);
+
+         //Get the u-coordinate of the base point
+         error = mpiExport(&context->params.g.x, g, CURVE448_BYTE_LEN,
+            MPI_FORMAT_LITTLE_ENDIAN);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Generate the public value using X448 function
+         error = x448(qa, da, g);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Save private key
+         error = mpiImport(&context->da, da, CURVE448_BYTE_LEN,
+            MPI_FORMAT_LITTLE_ENDIAN);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Debug message
+         TRACE_DEBUG("  Public key:\r\n");
+         TRACE_DEBUG_ARRAY("    ", qa, CURVE448_BYTE_LEN);
+
+         //Save public key
+         error = mpiImport(&context->qa.x, qa, CURVE448_BYTE_LEN,
+            MPI_FORMAT_LITTLE_ENDIAN);
+      }
+   }
+#endif
+   //Invalid elliptic curve?
+   else
+   {
+      //Report an error
+      error = ERROR_INVALID_TYPE;
+   }
+
    //Return status code
    return error;
 }
@@ -128,26 +271,103 @@ error_t ecdhCheckPublicKey(const EcDomainParameters *params, EcPoint *publicKey)
 {
    bool_t valid;
 
-   //Verify that 0 <= Qx < p
-   if(mpiCompInt(&publicKey->x, 0) < 0)
-      return ERROR_ILLEGAL_PARAMETER;
-   else if(mpiComp(&publicKey->x, &params->p) >= 0)
-      return ERROR_ILLEGAL_PARAMETER;
+   //Initialize flag
+   valid = FALSE;
 
-   //Verify that 0 <= Qy < p
-   if(mpiCompInt(&publicKey->y, 0) < 0)
-      return ERROR_ILLEGAL_PARAMETER;
-   else if(mpiComp(&publicKey->y, &params->p) >= 0)
-      return ERROR_ILLEGAL_PARAMETER;
+   //Weierstrass elliptic curve?
+   if(params->type == EC_CURVE_TYPE_SECT_K1 ||
+      params->type == EC_CURVE_TYPE_SECT_R1 ||
+      params->type == EC_CURVE_TYPE_SECT_R2 ||
+      params->type == EC_CURVE_TYPE_SECP_K1 ||
+      params->type == EC_CURVE_TYPE_SECP_R1 ||
+      params->type == EC_CURVE_TYPE_SECP_R2 ||
+      params->type == EC_CURVE_TYPE_BRAINPOOLP_R1)
+   {
+      //Verify that 0 <= Qx < p
+      if(mpiCompInt(&publicKey->x, 0) >= 0 &&
+         mpiComp(&publicKey->x, &params->p) < 0)
+      {
+         //Verify that 0 <= Qy < p
+         if(mpiCompInt(&publicKey->y, 0) >= 0 &&
+            mpiComp(&publicKey->y, &params->p) < 0)
+         {
+            //Check whether the point is on the curve
+            valid = ecIsPointAffine(params, publicKey);
+         }
+      }
 
-   //Check whether the point is on the curve
-   valid = ecIsPointAffine(params, publicKey);
+      //Valid point?
+      if(valid)
+      {
+         //If the cofactor is not 1, the implementation must verify that n.Q
+         //is the point at the infinity
+         if(params->h != 1)
+         {
+            error_t error;
+            EcPoint r;
+
+            //Initialize flag
+            valid = FALSE;
+            //Initialize EC points
+            ecInit(&r);
+
+            //Convert the peer's public key to projective representation
+            error = ecProjectify(params, publicKey, publicKey);
+
+            //Check status code
+            if(!error)
+            {
+               //Compute R = n.Q
+               error = ecMult(params, &r, &params->q, publicKey);
+            }
+
+            //Check status code
+            if(!error)
+            {
+               //Verify that the result is the point at the infinity
+               if(mpiCompInt(&r.z, 0) == 0)
+               {
+                  valid = TRUE;
+               }
+            }
+
+            //Release EC point
+            ecFree(&r);
+         }
+      }
+   }
+#if (CURVE25519_SUPPORT == ENABLED)
+   //Curve25519 elliptic curve?
+   else if(params->type == EC_CURVE_TYPE_X25519)
+   {
+      //The public key does not need to be validated
+      valid = TRUE;
+   }
+#endif
+#if (CURVE448_SUPPORT == ENABLED)
+   //Curve448 elliptic curve?
+   else if(params->type == EC_CURVE_TYPE_X448)
+   {
+      //The public key does not need to be validated
+      valid = TRUE;
+   }
+#endif
+   //Invalid elliptic curve?
+   else
+   {
+      //Just for sanity
+      valid = FALSE;
+   }
 
    //Return status code
    if(valid)
+   {
       return NO_ERROR;
+   }
    else
+   {
       return ERROR_ILLEGAL_PARAMETER;
+   }
 }
 
 
@@ -164,40 +384,197 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
    uint8_t *output, size_t outputSize, size_t *outputLen)
 {
    error_t error;
-   size_t k;
-   EcPoint z;
 
    //Debug message
    TRACE_DEBUG("Computing Diffie-Hellman shared secret...\r\n");
 
-   //Get the length in octets of the prime modulus
-   k = mpiGetByteLength(&context->params.p);
+   //Weierstrass elliptic curve?
+   if(context->params.type == EC_CURVE_TYPE_SECT_K1 ||
+      context->params.type == EC_CURVE_TYPE_SECT_R1 ||
+      context->params.type == EC_CURVE_TYPE_SECT_R2 ||
+      context->params.type == EC_CURVE_TYPE_SECP_K1 ||
+      context->params.type == EC_CURVE_TYPE_SECP_R1 ||
+      context->params.type == EC_CURVE_TYPE_SECP_R2 ||
+      context->params.type == EC_CURVE_TYPE_BRAINPOOLP_R1)
+   {
+      size_t k;
+      EcPoint z;
 
-   //Make sure that the output buffer is large enough
-   if(outputSize < k)
-      return ERROR_INVALID_LENGTH;
+      //Get the length in octets of the prime modulus
+      k = mpiGetByteLength(&context->params.p);
 
-   //Initialize EC points
-   ecInit(&z);
+      //Make sure that the output buffer is large enough
+      if(outputSize >= k)
+      {
+         //Length of the resulting shared secret
+         *outputLen = k;
 
-   //Compute Z = da.Qb
-   EC_CHECK(ecProjectify(&context->params, &context->qb, &context->qb));
-   EC_CHECK(ecMult(&context->params, &z, &context->da, &context->qb));
-   EC_CHECK(ecAffinify(&context->params, &z, &z));
+         //Initialize EC points
+         ecInit(&z);
 
-   //Convert the x-coordinate of Z to an octet string
-   MPI_CHECK(mpiWriteRaw(&z.x, output, k));
+         //Convert the peer's public key to projective representation
+         error = ecProjectify(&context->params, &context->qb, &context->qb);
 
-   //Length of the resulting shared secret
-   *outputLen = k;
+         //Check status code
+         if(!error)
+         {
+            //Compute Z = da.Qb
+            error = ecMult(&context->params, &z, &context->da, &context->qb);
+         }
 
-   //Debug message
-   TRACE_DEBUG("  Shared secret (%" PRIuSIZE " bytes):\r\n", *outputLen);
-   TRACE_DEBUG_ARRAY("    ", output, *outputLen);
+         //Check status code
+         if(!error)
+         {
+            //Convert Z to affine representation
+            error = ecAffinify(&context->params, &z, &z);
+         }
 
-end:
-   //Release EC points
-   ecFree(&z);
+         //Check status code
+         if(!error)
+         {
+            //The shared secret is the x-coordinate of Z
+            error = mpiExport(&z.x, output, k, MPI_FORMAT_BIG_ENDIAN);
+         }
+
+         //Release EC point
+         ecFree(&z);
+      }
+      else
+      {
+         //Report an error
+         error = ERROR_INVALID_LENGTH;
+      }
+   }
+#if (CURVE25519_SUPPORT == ENABLED)
+   //Curve25519 elliptic curve?
+   else if(context->params.type == EC_CURVE_TYPE_X25519)
+   {
+      uint_t i;
+      uint8_t mask;
+      uint8_t da[CURVE25519_BYTE_LEN];
+      uint8_t qb[CURVE25519_BYTE_LEN];
+
+      //Make sure that the output buffer is large enough
+      if(outputSize >= CURVE25519_BYTE_LEN)
+      {
+         //Length of the resulting shared secret
+         *outputLen = CURVE25519_BYTE_LEN;
+
+         //Retrieve private key
+         error = mpiExport(&context->da, da, CURVE25519_BYTE_LEN,
+            MPI_FORMAT_LITTLE_ENDIAN);
+
+         //Check status code
+         if(!error)
+         {
+            //Get peer's public key
+            error = mpiExport(&context->qb.x, qb, CURVE25519_BYTE_LEN,
+               MPI_FORMAT_LITTLE_ENDIAN);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Generate shared secret K using X25519 function
+            error = x25519(output, da, qb);
+         }
+
+         //Since Curve25519 has a cofactor of 8, an input point of small order
+         //will eliminate any contribution from the other party's private key
+         if(!error)
+         {
+            //This situation can be detected by checking for the all-zero output
+            for(mask = 0, i = 0; i < CURVE25519_BYTE_LEN; i++)
+            {
+               mask |= output[i];
+            }
+
+            //Check whether K is the all-zero value and abort if so
+            if(mask == 0)
+            {
+               error = ERROR_DECODING_FAILED;
+            }
+         }
+      }
+      else
+      {
+         //Report an error
+         error = ERROR_INVALID_LENGTH;
+      }
+   }
+#endif
+#if (CURVE448_SUPPORT == ENABLED)
+   //Curve448 elliptic curve?
+   else if(context->params.type == EC_CURVE_TYPE_X448)
+   {
+      uint_t i;
+      uint8_t mask;
+      uint8_t da[CURVE448_BYTE_LEN];
+      uint8_t qb[CURVE448_BYTE_LEN];
+
+      //Make sure that the output buffer is large enough
+      if(outputSize >= CURVE448_BYTE_LEN)
+      {
+         //Length of the resulting shared secret
+         *outputLen = CURVE448_BYTE_LEN;
+
+         //Retrieve private key
+         error = mpiExport(&context->da, da, CURVE448_BYTE_LEN,
+            MPI_FORMAT_LITTLE_ENDIAN);
+
+         //Check status code
+         if(!error)
+         {
+            //Get peer's public key
+            error = mpiExport(&context->qb.x, qb, CURVE448_BYTE_LEN,
+               MPI_FORMAT_LITTLE_ENDIAN);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Generate shared secret K using X448 function
+            error = x448(output, da, qb);
+         }
+
+         //Since Curve448 has a cofactor of 4, an input point of small order
+         //will eliminate any contribution from the other party's private key
+         if(!error)
+         {
+            //This situation can be detected by checking for the all-zero output
+            for(mask = 0, i = 0; i < CURVE448_BYTE_LEN; i++)
+            {
+               mask |= output[i];
+            }
+
+            //Check whether K is the all-zero value and abort if so
+            if(mask == 0)
+            {
+               error = ERROR_DECODING_FAILED;
+            }
+         }
+      }
+      else
+      {
+         //Report an error
+         error = ERROR_INVALID_LENGTH;
+      }
+   }
+#endif
+   //Invalid elliptic curve?
+   else
+   {
+      //Report an error
+      error = ERROR_INVALID_TYPE;
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Debug message
+      TRACE_DEBUG("  Shared secret (%" PRIuSIZE " bytes):\r\n", *outputLen);
+      TRACE_DEBUG_ARRAY("    ", output, *outputLen);
+   }
 
    //Return status code
    return error;

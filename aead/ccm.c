@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -31,7 +31,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -62,8 +62,9 @@
  * @return Error code
  **/
 
-error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n, size_t nLen,
-   const uint8_t *a, size_t aLen, const uint8_t *p, uint8_t *c, size_t length, uint8_t *t, size_t tLen)
+error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
+   size_t nLen, const uint8_t *a, size_t aLen, const uint8_t *p, uint8_t *c,
+   size_t length, uint8_t *t, size_t tLen)
 {
    size_t m;
    size_t q;
@@ -83,6 +84,7 @@ error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n, si
    //Check the length of the nonce
    if(nLen < 7 || nLen > 13)
       return ERROR_INVALID_LENGTH;
+
    //Check the length of the MAC
    if(tLen < 4 || tLen > 16 || (tLen % 2) != 0)
       return ERROR_INVALID_LENGTH;
@@ -228,8 +230,9 @@ error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n, si
  * @return Error code
  **/
 
-error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n, size_t nLen,
-   const uint8_t *a, size_t aLen, const uint8_t *c, uint8_t *p, size_t length, const uint8_t *t, size_t tLen)
+error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
+   size_t nLen, const uint8_t *a, size_t aLen, const uint8_t *c, uint8_t *p,
+   size_t length, const uint8_t *t, size_t tLen)
 {
    size_t m;
    size_t q;
@@ -250,6 +253,7 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n, si
    //Check the length of the nonce
    if(nLen < 7 || nLen > 13)
       return ERROR_INVALID_LENGTH;
+
    //Check the length of the MAC
    if(tLen < 4 || tLen > 16 || (tLen % 2) != 0)
       return ERROR_INVALID_LENGTH;
@@ -398,7 +402,9 @@ void ccmXorBlock(uint8_t *x, const uint8_t *a, const uint8_t *b, size_t n)
 
    //Perform XOR operation
    for(i = 0; i < n; i++)
+   {
       x[i] = a[i] ^ b[i];
+   }
 }
 
 
@@ -418,7 +424,9 @@ void ccmIncCounter(uint8_t *x, size_t n)
    {
       //Increment the current byte and propagate the carry if necessary
       if(++(x[15 - i]) != 0)
+      {
          break;
+      }
    }
 }
 

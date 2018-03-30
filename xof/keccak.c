@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -288,7 +288,7 @@ error_t keccakInit(KeccakContext *context, uint_t capacity)
    cryptoMemset(context, 0, sizeof(KeccakContext));
 
    //The capacity cannot exceed the width of a Keccak-p permutation
-   if(capacity > KECCAK_B)
+   if(capacity >= KECCAK_B)
       return ERROR_INVALID_PARAMETER;
 
    //The rate depends on the capacity of the sponge function
@@ -344,7 +344,9 @@ void keccakAbsorb(KeccakContext *context, const void *input, size_t length)
       {
          //Absorb the current block
          for(i = 0; i < context->blockSize / sizeof(keccak_lane_t); i++)
+         {
             a[i] ^= KECCAK_LETOH(context->block[i]);
+         }
 
          //Apply block permutation function
          keccakPermutBlock(context);
@@ -381,14 +383,18 @@ void keccakFinal(KeccakContext *context, uint8_t pad)
 
    //Absorb the final block
    for(i = 0; i < context->blockSize / sizeof(keccak_lane_t); i++)
+   {
       a[i] ^= KECCAK_LETOH(context->block[i]);
+   }
 
    //Apply block permutation function
    keccakPermutBlock(context);
 
    //Convert lanes to little-endian byte order
    for(i = 0; i < context->blockSize / sizeof(keccak_lane_t); i++)
+   {
       a[i] = KECCAK_HTOLE(a[i]);
+   }
 
    //Number of bytes available in the output buffer
    context->length = context->blockSize;
@@ -419,14 +425,18 @@ void keccakSqueeze(KeccakContext *context, uint8_t *output, size_t length)
       {
          //Convert lanes to host byte order
          for(i = 0; i < context->blockSize / sizeof(keccak_lane_t); i++)
+         {
             a[i] = KECCAK_LETOH(a[i]);
+         }
 
          //Apply block permutation function
          keccakPermutBlock(context);
 
          //Convert lanes to little-endian byte order
          for(i = 0; i < context->blockSize / sizeof(keccak_lane_t); i++)
+         {
             a[i] = KECCAK_HTOLE(a[i]);
+         }
 
          //Number of bytes available in the output buffer
          context->length = context->blockSize;
@@ -437,7 +447,10 @@ void keccakSqueeze(KeccakContext *context, uint8_t *output, size_t length)
 
       //Copy the output string
       if(output != NULL)
-         cryptoMemcpy(output, context->digest + context->blockSize - context->length, n);
+      {
+         cryptoMemcpy(output, context->digest + context->blockSize -
+            context->length, n);
+      }
 
       //Number of bytes available in the output buffer
       context->length -= n;

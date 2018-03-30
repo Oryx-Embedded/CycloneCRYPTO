@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -29,7 +29,7 @@
  * documents. Refer to FIPS 186-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -339,14 +339,8 @@ error_t dsaReadSignature(const uint8_t *data, size_t length, DsaSignature *signa
          break;
 
       //Read the contents of the ASN.1 structure
-      error = asn1ReadTag(data, length, &tag);
+      error = asn1ReadSequence(data, length, &tag);
       //Failed to decode ASN.1 tag?
-      if(error)
-         break;
-
-      //Enforce encoding, class and type
-      error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-      //The tag does not match the criteria?
       if(error)
          break;
 

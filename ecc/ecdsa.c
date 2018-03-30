@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -93,7 +93,8 @@ void ecdsaFreeSignature(EcdsaSignature *signature)
  * @return Error code
  **/
 
-error_t ecdsaWriteSignature(const EcdsaSignature *signature, uint8_t *data, size_t *length)
+error_t ecdsaWriteSignature(const EcdsaSignature *signature, uint8_t *data,
+   size_t *length)
 {
    error_t error;
    size_t k;
@@ -249,7 +250,8 @@ error_t ecdsaWriteSignature(const EcdsaSignature *signature, uint8_t *data, size
  * @return Error code
  **/
 
-error_t ecdsaReadSignature(const uint8_t *data, size_t length, EcdsaSignature *signature)
+error_t ecdsaReadSignature(const uint8_t *data, size_t length,
+   EcdsaSignature *signature)
 {
    error_t error;
    Asn1Tag tag;
@@ -271,14 +273,8 @@ error_t ecdsaReadSignature(const uint8_t *data, size_t length, EcdsaSignature *s
          break;
 
       //Read the contents of the ASN.1 structure
-      error = asn1ReadTag(data, length, &tag);
+      error = asn1ReadSequence(data, length, &tag);
       //Failed to decode ASN.1 tag?
-      if(error)
-         break;
-
-      //Enforce encoding, class and type
-      error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
-      //The tag does not match the criteria?
       if(error)
          break;
 
@@ -355,7 +351,8 @@ error_t ecdsaReadSignature(const uint8_t *data, size_t length, EcdsaSignature *s
  **/
 
 error_t ecdsaGenerateKeyPair(const EcDomainParameters *params,
-   const PrngAlgo *prngAlgo, void *prngContext, Mpi *privateKey, EcPoint *publicKey)
+   const PrngAlgo *prngAlgo, void *prngContext, Mpi *privateKey,
+   EcPoint *publicKey)
 {
    error_t error;
    uint_t n;
@@ -524,8 +521,9 @@ end:
  * @return Error code
  **/
 
-error_t ecdsaVerifySignature(const EcDomainParameters *params, const EcPoint *publicKey,
-   const uint8_t *digest, size_t digestLen, const EcdsaSignature *signature)
+error_t ecdsaVerifySignature(const EcDomainParameters *params,
+   const EcPoint *publicKey, const uint8_t *digest, size_t digestLen,
+   const EcdsaSignature *signature)
 {
    error_t error;
    uint_t n;

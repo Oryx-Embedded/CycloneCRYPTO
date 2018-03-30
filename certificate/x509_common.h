@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 #ifndef _X509_COMMON_H
@@ -97,6 +97,34 @@
    #define X509_SHA512_SUPPORT ENABLED
 #elif (X509_SHA512_SUPPORT != ENABLED && X509_SHA512_SUPPORT != DISABLED)
    #error X509_SHA512_SUPPORT parameter is not valid
+#endif
+
+//SHA3-224 hash support
+#ifndef X509_SHA3_224_SUPPORT
+   #define X509_SHA3_224_SUPPORT DISABLED
+#elif (X509_SHA3_224_SUPPORT != ENABLED && X509_SHA3_224_SUPPORT != DISABLED)
+   #error X509_SHA3_224_SUPPORT parameter is not valid
+#endif
+
+//SHA3-256 hash support
+#ifndef X509_SHA3_256_SUPPORT
+   #define X509_SHA3_256_SUPPORT DISABLED
+#elif (X509_SHA3_256_SUPPORT != ENABLED && X509_SHA3_256_SUPPORT != DISABLED)
+   #error X509_SHA3_256_SUPPORT parameter is not valid
+#endif
+
+//SHA3-384 hash support
+#ifndef X509_SHA3_384_SUPPORT
+   #define X509_SHA3_384_SUPPORT DISABLED
+#elif (X509_SHA3_384_SUPPORT != ENABLED && X509_SHA3_384_SUPPORT != DISABLED)
+   #error X509_SHA3_384_SUPPORT parameter is not valid
+#endif
+
+//SHA3-512 hash support
+#ifndef X509_SHA3_512_SUPPORT
+   #define X509_SHA3_512_SUPPORT DISABLED
+#elif (X509_SHA3_512_SUPPORT != ENABLED && X509_SHA3_512_SUPPORT != DISABLED)
+   #error X509_SHA3_512_SUPPORT parameter is not valid
 #endif
 
 //secp112r1 elliptic curve support (weak)
@@ -371,6 +399,18 @@ typedef enum
 
 
 /**
+ * @brief Signature algorithms
+ **/
+
+typedef enum
+{
+   X509_SIGN_ALGO_RSA   = 1,
+   X509_SIGN_ALGO_DSA   = 2,
+   X509_SIGN_ALGO_ECDSA = 3
+} X509SignatureAlgo;
+
+
+/**
  * @brief Serial number
  **/
 
@@ -513,6 +553,8 @@ typedef struct
 
 typedef struct
 {
+   const uint8_t *rawData;
+   size_t rawDataLen;
    const uint8_t *oid;
    size_t oidLen;
 #if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
@@ -537,7 +579,7 @@ typedef struct
 {
    bool_t cA;
    int_t pathLenConstraint;
-} X509BasicContraints;
+} X509BasicConstraints;
 
 
 /**
@@ -550,7 +592,7 @@ typedef struct
    size_t permittedSubtreesLen;
    const uint8_t *excludedSubtrees;
    size_t excludedSubtreesLen;
-} X509NameContraints;
+} X509NameConstraints;
 
 
 /**
@@ -579,20 +621,40 @@ typedef struct
 
 
 /**
+ * @brief Subject key identifier
+ **/
+
+typedef struct
+{
+   const uint8_t *value;
+   size_t length;
+} X509SubjectKeyId;
+
+
+/**
+ * @brief Authority key identifier
+ **/
+
+typedef struct
+{
+   const uint8_t *value;
+   size_t length;
+} X509AuthorityKeyId;
+
+
+/**
  * @brief Extensions
  **/
 
 typedef struct
 {
-   X509BasicContraints basicConstraints;
-   X509NameContraints nameConstraints;
+   X509BasicConstraints basicConstraints;
+   X509NameConstraints nameConstraints;
    uint16_t keyUsage;
    uint8_t extKeyUsage;
    X509SubjectAltName subjectAltName;
-   const uint8_t *subjectKeyId;
-   size_t subjectKeyIdLen;
-   const uint8_t *authorityKeyId;
-   size_t authorityKeyIdLen;
+   X509SubjectKeyId subjectKeyId;
+   X509AuthorityKeyId authorityKeyId;
    uint8_t nsCertType;
 } X509Extensions;
 
@@ -715,11 +777,14 @@ extern const uint8_t X509_KP_OCSP_SIGNING_OID[8];
 //X.509 related functions
 error_t x509ReadInt(const uint8_t *data, size_t length, uint_t *value);
 
-error_t x509ReadRsaPublicKey(const X509CertificateInfo *certInfo,
+error_t x509ReadRsaPublicKey(const X509SubjectPublicKeyInfo *subjectPublicKeyInfo,
    RsaPublicKey *key);
 
-error_t x509ReadDsaPublicKey(const X509CertificateInfo *certInfo,
+error_t x509ReadDsaPublicKey(const X509SubjectPublicKeyInfo *subjectPublicKeyInfo,
    DsaPublicKey *key);
+
+error_t x509GetSignHashAlgo(const uint8_t *oid, size_t length,
+   X509SignatureAlgo *signAlgo, const HashAlgo **hashAlgo);
 
 const EcCurveInfo *x509GetCurveInfo(const uint8_t *oid, size_t length);
 

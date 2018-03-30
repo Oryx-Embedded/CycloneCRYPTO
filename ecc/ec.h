@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 #ifndef _EC_H
@@ -66,6 +66,7 @@ typedef struct
    Mpi b;             ///<Curve parameter b
    EcPoint g;         ///<Base point G
    Mpi q;             ///<Order of the point G
+   uint32_t h;        ///<Cofactor h
    EcFastModAlgo mod; ///<Fast modular reduction
 } EcDomainParameters;
 
@@ -77,38 +78,55 @@ extern const uint8_t EC_PUBLIC_KEY_OID[7];
 void ecInitDomainParameters(EcDomainParameters *params);
 void ecFreeDomainParameters(EcDomainParameters *params);
 
-error_t ecLoadDomainParameters(EcDomainParameters *params, const EcCurveInfo *curveInfo);
+error_t ecLoadDomainParameters(EcDomainParameters *params,
+   const EcCurveInfo *curveInfo);
 
 void ecInit(EcPoint *r);
 void ecFree(EcPoint *r);
 
 error_t ecCopy(EcPoint *r, const EcPoint *s);
 
-error_t ecImport(const EcDomainParameters *params,
-   EcPoint *r, const uint8_t *data, size_t length);
+error_t ecImport(const EcDomainParameters *params, EcPoint *r,
+   const uint8_t *data, size_t length);
 
-error_t ecExport(const EcDomainParameters *params,
-   const EcPoint *a, uint8_t *data, size_t *length);
+error_t ecExport(const EcDomainParameters *params, const EcPoint *a,
+   uint8_t *data, size_t *length);
 
-error_t ecProjectify(const EcDomainParameters *params, EcPoint *r, const EcPoint *s);
-error_t ecAffinify(const EcDomainParameters *params, EcPoint *r, const EcPoint *s);
+error_t ecProjectify(const EcDomainParameters *params, EcPoint *r,
+   const EcPoint *s);
+
+error_t ecAffinify(const EcDomainParameters *params, EcPoint *r,
+   const EcPoint *s);
 
 bool_t ecIsPointAffine(const EcDomainParameters *params, const EcPoint *s);
 
-error_t ecDouble(const EcDomainParameters *params, EcPoint *r, const EcPoint *s);
+error_t ecDouble(const EcDomainParameters *params, EcPoint *r,
+   const EcPoint *s);
 
-error_t ecAdd(const EcDomainParameters *params, EcPoint *r, const EcPoint *s, const EcPoint *t);
-error_t ecFullAdd(const EcDomainParameters *params, EcPoint *r, const EcPoint *s, const EcPoint *t);
-error_t ecFullSub(const EcDomainParameters *params, EcPoint *r, const EcPoint *s, const EcPoint *t);
+error_t ecAdd(const EcDomainParameters *params, EcPoint *r,
+   const EcPoint *s, const EcPoint *t);
 
-error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d, const EcPoint *s);
+error_t ecFullAdd(const EcDomainParameters *params, EcPoint *r,
+   const EcPoint *s, const EcPoint *t);
+
+error_t ecFullSub(const EcDomainParameters *params, EcPoint *r,
+   const EcPoint *s, const EcPoint *t);
+
+error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
+   const EcPoint *s);
 
 error_t ecTwinMult(const EcDomainParameters *params, EcPoint *r,
    const Mpi *d0, const EcPoint *s, const Mpi *d1, const EcPoint *t);
 
-error_t ecAddMod(const EcDomainParameters *params, Mpi *r, const Mpi *a, const Mpi *b);
-error_t ecSubMod(const EcDomainParameters *params, Mpi *r, const Mpi *a, const Mpi *b);
-error_t ecMulMod(const EcDomainParameters *params, Mpi *r, const Mpi *a, const Mpi *b);
+error_t ecAddMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
+   const Mpi *b);
+
+error_t ecSubMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
+   const Mpi *b);
+
+error_t ecMulMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
+   const Mpi *b);
+
 error_t ecSqrMod(const EcDomainParameters *params, Mpi *r, const Mpi *a);
 
 //C++ guard

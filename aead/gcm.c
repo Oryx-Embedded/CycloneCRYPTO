@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -29,7 +29,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -73,7 +73,8 @@ static const uint32_t r[16] =
  * @return Error code
  **/
 
-error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo, void *cipherContext)
+error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
+   void *cipherContext)
 {
    uint_t i;
    uint_t j;
@@ -184,8 +185,9 @@ error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo, void *cipherC
  * @return Error code
  **/
 
-error_t gcmEncrypt(GcmContext *context, const uint8_t *iv, size_t ivLen, const uint8_t *a,
-   size_t aLen, const uint8_t *p, uint8_t *c, size_t length, uint8_t *t, size_t tLen)
+error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
+   size_t ivLen, const uint8_t *a, size_t aLen, const uint8_t *p,
+   uint8_t *c, size_t length, uint8_t *t, size_t tLen)
 {
    size_t k;
    size_t n;
@@ -328,8 +330,9 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv, size_t ivLen, const u
  * @return Error code
  **/
 
-error_t gcmDecrypt(GcmContext *context, const uint8_t *iv, size_t ivLen, const uint8_t *a,
-   size_t aLen, const uint8_t *c, uint8_t *p, size_t length, const uint8_t *t, size_t tLen)
+error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
+   size_t ivLen, const uint8_t *a, size_t aLen, const uint8_t *c,
+   uint8_t *p, size_t length, const uint8_t *t, size_t tLen)
 {
    size_t k;
    size_t n;

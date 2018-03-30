@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 #ifndef _ASN1_H
@@ -104,6 +104,7 @@ typedef struct
 
 //ASN.1 related functions
 error_t asn1ReadTag(const uint8_t *data, size_t length, Asn1Tag *tag);
+error_t asn1ReadSequence(const uint8_t *data, size_t length, Asn1Tag *tag);
 error_t asn1ReadInt32(const uint8_t *data, size_t length, Asn1Tag *tag, int32_t *value);
 
 error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data, size_t *written);

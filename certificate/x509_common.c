@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -35,7 +35,27 @@
 #include "encoding/oid.h"
 #include "pkc/rsa.h"
 #include "pkc/dsa.h"
+#include "hash/md5.h"
+#include "hash/sha1.h"
+#include "hash/sha224.h"
+#include "hash/sha256.h"
+#include "hash/sha384.h"
+#include "hash/sha512.h"
 #include "debug.h"
+
+//SHA-3 dependencies
+#if (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
+   #include "hash/sha3_224.h"
+#endif
+#if (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
+   #include "hash/sha3_256.h"
+#endif
+#if (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
+   #include "hash/sha3_384.h"
+#endif
+#if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
+   #include "hash/sha3_512.h"
+#endif
 
 //Check crypto library configuration
 #if (X509_SUPPORT == ENABLED)
@@ -156,35 +176,35 @@ error_t x509ReadInt(const uint8_t *data, size_t length, uint_t *value)
 
 /**
  * @brief Read a RSA public key
- * @param[in] certInfo X.509 certificate
+ * @param[in] subjectPublicKeyInfo Pointer to the SubjectPublicKeyInfo structure
  * @param[out] key RSA public key
  * @return Error code
  **/
 
-error_t x509ReadRsaPublicKey(const X509CertificateInfo *certInfo,
+error_t x509ReadRsaPublicKey(const X509SubjectPublicKeyInfo *subjectPublicKeyInfo,
    RsaPublicKey *key)
 {
 #if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
    error_t error;
 
    //The certificate shall contain a valid RSA public key
-   if(!certInfo->subjectPublicKeyInfo.rsaPublicKey.n ||
-      !certInfo->subjectPublicKeyInfo.rsaPublicKey.e)
+   if(subjectPublicKeyInfo->rsaPublicKey.n == NULL ||
+      subjectPublicKeyInfo->rsaPublicKey.e == NULL)
    {
       //Report an error
       return ERROR_INVALID_KEY;
    }
 
    //Convert the modulus to a big number
-   error = mpiReadRaw(&key->n, certInfo->subjectPublicKeyInfo.rsaPublicKey.n,
-      certInfo->subjectPublicKeyInfo.rsaPublicKey.nLen);
+   error = mpiReadRaw(&key->n, subjectPublicKeyInfo->rsaPublicKey.n,
+      subjectPublicKeyInfo->rsaPublicKey.nLen);
    //Convertion failed?
    if(error)
       return error;
 
    //Convert the public exponent to a big number
-   error = mpiReadRaw(&key->e, certInfo->subjectPublicKeyInfo.rsaPublicKey.e,
-      certInfo->subjectPublicKeyInfo.rsaPublicKey.eLen);
+   error = mpiReadRaw(&key->e, subjectPublicKeyInfo->rsaPublicKey.e,
+      subjectPublicKeyInfo->rsaPublicKey.eLen);
    //Convertion failed?
    if(error)
       return error;
@@ -207,51 +227,51 @@ error_t x509ReadRsaPublicKey(const X509CertificateInfo *certInfo,
 
 /**
  * @brief Read a DSA public key
- * @param[in] certInfo X.509 certificate
+ * @param[in] subjectPublicKeyInfo Pointer to the SubjectPublicKeyInfo structure
  * @param[out] key DSA public key
  * @return Error code
  **/
 
-error_t x509ReadDsaPublicKey(const X509CertificateInfo *certInfo,
+error_t x509ReadDsaPublicKey(const X509SubjectPublicKeyInfo *subjectPublicKeyInfo,
    DsaPublicKey *key)
 {
 #if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
    error_t error;
 
    //The certificate shall contain a valid DSA public key
-   if(!certInfo->subjectPublicKeyInfo.dsaParams.p ||
-      !certInfo->subjectPublicKeyInfo.dsaParams.q ||
-      !certInfo->subjectPublicKeyInfo.dsaParams.g ||
-      !certInfo->subjectPublicKeyInfo.dsaPublicKey.y)
+   if(subjectPublicKeyInfo->dsaParams.p == NULL ||
+      subjectPublicKeyInfo->dsaParams.q == NULL ||
+      subjectPublicKeyInfo->dsaParams.g == NULL ||
+      subjectPublicKeyInfo->dsaPublicKey.y == NULL)
    {
       //Report an error
       return ERROR_INVALID_KEY;
    }
 
    //Convert the parameter p to a big number
-   error = mpiReadRaw(&key->p, certInfo->subjectPublicKeyInfo.dsaParams.p,
-      certInfo->subjectPublicKeyInfo.dsaParams.pLen);
+   error = mpiReadRaw(&key->p, subjectPublicKeyInfo->dsaParams.p,
+      subjectPublicKeyInfo->dsaParams.pLen);
    //Convertion failed?
    if(error)
       return error;
 
    //Convert the parameter q to a big number
-   error = mpiReadRaw(&key->q, certInfo->subjectPublicKeyInfo.dsaParams.q,
-      certInfo->subjectPublicKeyInfo.dsaParams.qLen);
+   error = mpiReadRaw(&key->q, subjectPublicKeyInfo->dsaParams.q,
+      subjectPublicKeyInfo->dsaParams.qLen);
    //Convertion failed?
    if(error)
       return error;
 
    //Convert the parameter g to a big number
-   error = mpiReadRaw(&key->g, certInfo->subjectPublicKeyInfo.dsaParams.g,
-      certInfo->subjectPublicKeyInfo.dsaParams.gLen);
+   error = mpiReadRaw(&key->g, subjectPublicKeyInfo->dsaParams.g,
+      subjectPublicKeyInfo->dsaParams.gLen);
    //Convertion failed?
    if(error)
       return error;
 
    //Convert the public value to a big number
-   error = mpiReadRaw(&key->y, certInfo->subjectPublicKeyInfo.dsaPublicKey.y,
-      certInfo->subjectPublicKeyInfo.dsaPublicKey.yLen);
+   error = mpiReadRaw(&key->y, subjectPublicKeyInfo->dsaPublicKey.y,
+      subjectPublicKeyInfo->dsaPublicKey.yLen);
    //Convertion failed?
    if(error)
       return error;
@@ -273,6 +293,310 @@ error_t x509ReadDsaPublicKey(const X509CertificateInfo *certInfo,
    //Not implemented
    return ERROR_NOT_IMPLEMENTED;
 #endif
+}
+
+
+/**
+ * @brief Get the signature and hash algorithms that match the specified OID
+ * @param[in] oid Object identifier
+ * @param[in] length OID length
+ * @param[out] signAlgo Signature algorithm
+ * @param[out] hashAlgo Hash algorithm
+ * @return Error code
+ **/
+
+error_t x509GetSignHashAlgo(const uint8_t *oid, size_t length,
+   X509SignatureAlgo *signAlgo, const HashAlgo **hashAlgo)
+{
+   error_t error;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Check the OID against registered objects
+#if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
+#if (X509_MD5_SUPPORT == ENABLED && MD5_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, MD5_WITH_RSA_ENCRYPTION_OID,
+      sizeof(MD5_WITH_RSA_ENCRYPTION_OID)))
+   {
+      //RSA with MD5 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_RSA;
+      *hashAlgo = MD5_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, SHA1_WITH_RSA_ENCRYPTION_OID,
+      sizeof(SHA1_WITH_RSA_ENCRYPTION_OID)))
+   {
+      //RSA with SHA-1 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_RSA;
+      *hashAlgo = SHA1_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, SHA256_WITH_RSA_ENCRYPTION_OID,
+      sizeof(SHA256_WITH_RSA_ENCRYPTION_OID)))
+   {
+      //RSA with SHA-256 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_RSA;
+      *hashAlgo = SHA256_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, SHA384_WITH_RSA_ENCRYPTION_OID,
+      sizeof(SHA384_WITH_RSA_ENCRYPTION_OID)))
+   {
+      //RSA with SHA-384 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_RSA;
+      *hashAlgo = SHA384_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, SHA512_WITH_RSA_ENCRYPTION_OID,
+      sizeof(SHA512_WITH_RSA_ENCRYPTION_OID)))
+   {
+      //RSA with SHA-512 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_RSA;
+      *hashAlgo = SHA512_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, RSASSA_PKCS1_V1_5_WITH_SHA3_224_OID,
+      sizeof(RSASSA_PKCS1_V1_5_WITH_SHA3_224_OID)))
+   {
+      //RSA with SHA3-224 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_RSA;
+      *hashAlgo = SHA3_224_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, RSASSA_PKCS1_V1_5_WITH_SHA3_256_OID,
+      sizeof(RSASSA_PKCS1_V1_5_WITH_SHA3_256_OID)))
+   {
+      //RSA with SHA3-256 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_RSA;
+      *hashAlgo = SHA3_256_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, RSASSA_PKCS1_V1_5_WITH_SHA3_384_OID,
+      sizeof(RSASSA_PKCS1_V1_5_WITH_SHA3_384_OID)))
+   {
+      //RSA with SHA3-384 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_RSA;
+      *hashAlgo = SHA3_384_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, RSASSA_PKCS1_V1_5_WITH_SHA3_512_OID,
+      sizeof(RSASSA_PKCS1_V1_5_WITH_SHA3_512_OID)))
+   {
+      //RSA with SHA3-512 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_RSA;
+      *hashAlgo = SHA3_512_HASH_ALGO;
+   }
+   else
+#endif
+#endif
+#if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
+#if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, DSA_WITH_SHA1_OID,
+      sizeof(DSA_WITH_SHA1_OID)))
+   {
+      //DSA with SHA-1 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_DSA;
+      *hashAlgo = SHA1_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA224_SUPPORT == ENABLED && SHA224_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, DSA_WITH_SHA224_OID,
+      sizeof(DSA_WITH_SHA224_OID)))
+   {
+      //DSA with SHA-224 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_DSA;
+      *hashAlgo = SHA224_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, DSA_WITH_SHA256_OID,
+      sizeof(DSA_WITH_SHA256_OID)))
+   {
+      //DSA with SHA-256 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_DSA;
+      *hashAlgo = SHA256_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, DSA_WITH_SHA384_OID,
+      sizeof(DSA_WITH_SHA384_OID)))
+   {
+      //DSA with SHA-384 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_DSA;
+      *hashAlgo = SHA384_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, DSA_WITH_SHA512_OID,
+      sizeof(DSA_WITH_SHA512_OID)))
+   {
+      //DSA with SHA-512 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_DSA;
+      *hashAlgo = SHA512_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, DSA_WITH_SHA3_224_OID,
+      sizeof(DSA_WITH_SHA3_224_OID)))
+   {
+      //DSA with SHA3-224 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_DSA;
+      *hashAlgo = SHA3_224_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, DSA_WITH_SHA3_256_OID,
+      sizeof(DSA_WITH_SHA3_256_OID)))
+   {
+      //DSA with SHA3-256 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_DSA;
+      *hashAlgo = SHA3_256_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, DSA_WITH_SHA3_384_OID,
+      sizeof(DSA_WITH_SHA3_384_OID)))
+   {
+      //DSA with SHA3-384 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_DSA;
+      *hashAlgo = SHA3_384_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, DSA_WITH_SHA3_512_OID,
+      sizeof(DSA_WITH_SHA3_512_OID)))
+   {
+      //DSA with SHA3-512 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_DSA;
+      *hashAlgo = SHA3_512_HASH_ALGO;
+   }
+   else
+#endif
+#endif
+#if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
+#if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, ECDSA_WITH_SHA1_OID,
+      sizeof(ECDSA_WITH_SHA1_OID)))
+   {
+      //ECDSA with SHA-1 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_ECDSA;
+      *hashAlgo = SHA1_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA224_SUPPORT == ENABLED && SHA224_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, ECDSA_WITH_SHA224_OID,
+      sizeof(ECDSA_WITH_SHA224_OID)))
+   {
+      //ECDSA with SHA-224 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_ECDSA;
+      *hashAlgo = SHA224_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, ECDSA_WITH_SHA256_OID,
+      sizeof(ECDSA_WITH_SHA256_OID)))
+   {
+      //ECDSA with SHA-256 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_ECDSA;
+      *hashAlgo = SHA256_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, ECDSA_WITH_SHA384_OID,
+      sizeof(ECDSA_WITH_SHA384_OID)))
+   {
+      //ECDSA with SHA-384 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_ECDSA;
+      *hashAlgo = SHA384_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, ECDSA_WITH_SHA512_OID,
+      sizeof(ECDSA_WITH_SHA512_OID)))
+   {
+      //ECDSA with SHA-512 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_ECDSA;
+      *hashAlgo = SHA512_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, ECDSA_WITH_SHA3_224_OID,
+      sizeof(ECDSA_WITH_SHA3_224_OID)))
+   {
+      //ECDSA with SHA3-224 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_ECDSA;
+      *hashAlgo = SHA3_224_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, ECDSA_WITH_SHA3_256_OID,
+      sizeof(ECDSA_WITH_SHA3_256_OID)))
+   {
+      //ECDSA with SHA3-256 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_ECDSA;
+      *hashAlgo = SHA3_256_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, ECDSA_WITH_SHA3_384_OID,
+      sizeof(ECDSA_WITH_SHA3_384_OID)))
+   {
+      //ECDSA with SHA3-384 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_ECDSA;
+      *hashAlgo = SHA3_384_HASH_ALGO;
+   }
+   else
+#endif
+#if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
+   if(!oidComp(oid, length, ECDSA_WITH_SHA3_512_OID,
+      sizeof(ECDSA_WITH_SHA3_512_OID)))
+   {
+      //ECDSA with SHA3-512 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_ECDSA;
+      *hashAlgo = SHA3_512_HASH_ALGO;
+   }
+   else
+#endif
+#endif
+   {
+      //The specified signature algorithm is not supported
+      error = ERROR_UNSUPPORTED_SIGNATURE_ALGO;
+   }
+
+   //Return status code
+   return error;
 }
 
 

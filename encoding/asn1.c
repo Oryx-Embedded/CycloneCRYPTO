@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -144,6 +144,33 @@ error_t asn1ReadTag(const uint8_t *data, size_t length, Asn1Tag *tag)
    tag->totalLength = i + tag->length;
    //ASN.1 tag successfully decoded
    return NO_ERROR;
+}
+
+
+/**
+ * @brief Read an ASN.1 sequence from the input stream
+ * @param[in] data Input stream where to read the tag
+ * @param[in] length Number of bytes available in the input stream
+ * @param[out] tag Structure describing the ASN.1 tag
+ * @return Error code
+ **/
+
+error_t asn1ReadSequence(const uint8_t *data, size_t length, Asn1Tag *tag)
+{
+   error_t error;
+
+   //Read ASN.1 tag
+   error = asn1ReadTag(data, length, tag);
+
+   //Check status code
+   if(!error)
+   {
+      //Enforce encoding, class and type
+      error = asn1CheckTag(tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SEQUENCE);
+   }
+
+   //Return status code
+   return error;
 }
 
 
@@ -494,7 +521,7 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
    };
 
    //Prefix used to format the structure
-   static const char_t *prefix[8] =
+   static const char_t *prefix[10] =
    {
       "",
       "  ",
@@ -503,7 +530,9 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
       "        ",
       "          ",
       "            ",
-      "              "
+      "              ",
+      "                ",
+      "                  "
    };
 
    //Parse ASN.1 object
@@ -529,7 +558,7 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
       if(tag.constructed)
       {
          //Check whether the maximum level of recursion is reached
-         if(level < 7)
+         if(level < 8)
          {
             //Recursive decoding of the ASN.1 tag
             error = asn1DumpObject(tag.value, tag.length, level + 1);

@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -65,50 +65,47 @@ error_t pbkdf1(const HashAlgo *hash, const uint8_t *p, size_t pLen,
    const uint8_t *s, size_t sLen, uint_t c, uint8_t *dk, size_t dkLen)
 {
    uint_t i;
-   uint8_t *t;
-   HashContext *context;
+   HashContext *hashContext;
+   uint8_t t[MAX_HASH_DIGEST_SIZE];
 
-   //Check input parameters
-   if(c < 1 || dkLen > hash->digestSize)
+   //Check parameters
+   if(hash == NULL || p == NULL || s == NULL || dk == NULL)
       return ERROR_INVALID_PARAMETER;
 
+   //The iteration count must be a positive integer
+   if(c < 1)
+      return ERROR_INVALID_PARAMETER;
+
+   //Check the intended length of the derived key
+   if(dkLen > hash->digestSize)
+      return ERROR_INVALID_LENGTH;
+
    //Allocate a memory buffer to hold the hash context
-   context = cryptoAllocMem(hash->contextSize);
-   //Allocate a temporary buffer
-   t = cryptoAllocMem(hash->digestSize);
-
+   hashContext = cryptoAllocMem(hash->contextSize);
    //Failed to allocate memory?
-   if(!context || !t)
-   {
-      //Free previously allocated memory
-      cryptoFreeMem(context);
-      cryptoFreeMem(t);
-
-      //Report an error
+   if(hashContext == NULL)
       return ERROR_OUT_OF_MEMORY;
-   }
 
    //Apply the hash function to the concatenation of P and S
-   hash->init(context);
-   hash->update(context, p, pLen);
-   hash->update(context, s, sLen);
-   hash->final(context, t);
+   hash->init(hashContext);
+   hash->update(hashContext, p, pLen);
+   hash->update(hashContext, s, sLen);
+   hash->final(hashContext, t);
 
    //Iterate as many times as required
    for(i = 1; i < c; i++)
    {
       //Apply the hash function to T(i - 1)
-      hash->init(context);
-      hash->update(context, t, hash->digestSize);
-      hash->final(context, t);
+      hash->init(hashContext);
+      hash->update(hashContext, t, hash->digestSize);
+      hash->final(hashContext, t);
    }
 
    //Output the derived key DK
    cryptoMemcpy(dk, t, dkLen);
 
    //Free previously allocated memory
-   cryptoFreeMem(context);
-   cryptoFreeMem(t);
+   cryptoFreeMem(hashContext);
 
    //Successful processing
    return NO_ERROR;
@@ -138,47 +135,36 @@ error_t pbkdf2(const HashAlgo *hash, const uint8_t *p, size_t pLen,
    uint_t i;
    uint_t j;
    uint_t k;
-   uint8_t *u;
-   uint8_t *t;
-   HmacContext *context;
+   HmacContext *hashContext;
    uint8_t a[4];
+   uint8_t t[MAX_HASH_DIGEST_SIZE];
+   uint8_t u[MAX_HASH_DIGEST_SIZE];
 
-   //Iteration count must be a positive integer
+   //Check parameters
+   if(hash == NULL || p == NULL || s == NULL || dk == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //The iteration count must be a positive integer
    if(c < 1)
       return ERROR_INVALID_PARAMETER;
 
    //Allocate a memory buffer to hold the HMAC context
-   context = cryptoAllocMem(sizeof(HmacContext));
-   //Allocate temporary buffers
-   u = cryptoAllocMem(hash->digestSize);
-   t = cryptoAllocMem(hash->digestSize);
-
+   hashContext = cryptoAllocMem(sizeof(HmacContext));
    //Failed to allocate memory?
-   if(!context || !u || !t)
-   {
-      //Free previously allocated memory
-      cryptoFreeMem(context);
-      cryptoFreeMem(u);
-      cryptoFreeMem(t);
-
-      //Report an error
+   if(hashContext == NULL)
       return ERROR_OUT_OF_MEMORY;
-   }
 
    //For each block of the derived key apply the function F
    for(i = 1; dkLen > 0; i++)
    {
       //Calculate the 4-octet encoding of the integer i (MSB first)
-      a[0] = (i >> 24) & 0xFF;
-      a[1] = (i >> 16) & 0xFF;
-      a[2] = (i >> 8) & 0xFF;
-      a[3] = i & 0xFF;
+      STORE32BE(i, a);
 
       //Compute U1 = PRF(P, S || INT(i))
-      hmacInit(context, hash, p, pLen);
-      hmacUpdate(context, s, sLen);
-      hmacUpdate(context, a, 4);
-      hmacFinal(context, u);
+      hmacInit(hashContext, hash, p, pLen);
+      hmacUpdate(hashContext, s, sLen);
+      hmacUpdate(hashContext, a, 4);
+      hmacFinal(hashContext, u);
 
       //Save the resulting HMAC value
       cryptoMemcpy(t, u, hash->digestSize);
@@ -187,13 +173,15 @@ error_t pbkdf2(const HashAlgo *hash, const uint8_t *p, size_t pLen,
       for(j = 1; j < c; j++)
       {
          //Compute U(j) = PRF(P, U(j-1))
-         hmacInit(context, hash, p, pLen);
-         hmacUpdate(context, u, hash->digestSize);
-         hmacFinal(context, u);
+         hmacInit(hashContext, hash, p, pLen);
+         hmacUpdate(hashContext, u, hash->digestSize);
+         hmacFinal(hashContext, u);
 
          //Compute T = U(1) xor U(2) xor ... xor U(c)
          for(k = 0; k < hash->digestSize; k++)
+         {
             t[k] ^= u[k];
+         }
       }
 
       //Number of octets in the current block
@@ -207,9 +195,7 @@ error_t pbkdf2(const HashAlgo *hash, const uint8_t *p, size_t pLen,
    }
 
    //Free previously allocated memory
-   cryptoFreeMem(context);
-   cryptoFreeMem(u);
-   cryptoFreeMem(t);
+   cryptoFreeMem(hashContext);
 
    //Successful processing
    return NO_ERROR;

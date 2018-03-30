@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 #ifndef _CMAC_H
@@ -31,6 +31,11 @@
 
 //Dependencies
 #include "core/crypto.h"
+
+//RC2 support?
+#if (RC2_SUPPORT == ENABLED)
+   #include "cipher/rc2.h"
+#endif
 
 //RC6 support?
 #if (RC6_SUPPORT == ENABLED)

@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -84,7 +84,8 @@ void ecFreeDomainParameters(EcDomainParameters *params)
  * @return Error code
  **/
 
-error_t ecLoadDomainParameters(EcDomainParameters *params, const EcCurveInfo *curveInfo)
+error_t ecLoadDomainParameters(EcDomainParameters *params,
+   const EcCurveInfo *curveInfo)
 {
    error_t error;
 
@@ -110,6 +111,8 @@ error_t ecLoadDomainParameters(EcDomainParameters *params, const EcCurveInfo *cu
    //Normalize base point G
    MPI_CHECK(mpiSetValue(&params->g.z, 1));
 
+   //Cofactor h
+   params->h = curveInfo->h;
    //Fast modular reduction
    params->mod = curveInfo->mod;
 
@@ -196,8 +199,8 @@ end:
  * @return Error code
  **/
 
-error_t ecImport(const EcDomainParameters *params,
-   EcPoint *r, const uint8_t *data, size_t length)
+error_t ecImport(const EcDomainParameters *params, EcPoint *r,
+   const uint8_t *data, size_t length)
 {
    error_t error;
    size_t k;
@@ -205,25 +208,43 @@ error_t ecImport(const EcDomainParameters *params,
    //Get the length in octets of the prime
    k = mpiGetByteLength(&params->p);
 
-   //Check the length of the octet string
-   if(length != (k * 2 + 1))
-      return ERROR_DECODING_FAILED;
+   //Montgomery curve?
+   if(params->type == EC_CURVE_TYPE_X25519 ||
+      params->type == EC_CURVE_TYPE_X448)
+   {
+      //Check the length of the octet string
+      if(length != k)
+         return ERROR_DECODING_FAILED;
 
-   //Compressed point representation is not supported
-   if(data[0] != 0x04)
-      return ERROR_ILLEGAL_PARAMETER;
+      //Convert the u-coordinate to a multiple precision integer
+      error = mpiImport(&r->x, data, k, MPI_FORMAT_LITTLE_ENDIAN);
+      //Any error to report?
+      if(error)
+         return error;
+   }
+   //Weierstrass curve?
+   else
+   {
+      //Check the length of the octet string
+      if(length != (k * 2 + 1))
+         return ERROR_DECODING_FAILED;
 
-   //Convert the x-coordinate to a multiple precision integer
-   error = mpiReadRaw(&r->x, data + 1, k);
-   //Any error to report?
-   if(error)
-      return error;
+      //Compressed point representation is not supported
+      if(data[0] != 0x04)
+         return ERROR_ILLEGAL_PARAMETER;
 
-   //Convert the y-coordinate to a multiple precision integer
-   error = mpiReadRaw(&r->y, data + k + 1, k);
-   //Any error to report?
-   if(error)
-      return error;
+      //Convert the x-coordinate to a multiple precision integer
+      error = mpiImport(&r->x, data + 1, k, MPI_FORMAT_BIG_ENDIAN);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //Convert the y-coordinate to a multiple precision integer
+      error = mpiImport(&r->y, data + k + 1, k, MPI_FORMAT_BIG_ENDIAN);
+      //Any error to report?
+      if(error)
+         return error;
+   }
 
    //Successful processing
    return NO_ERROR;
@@ -239,8 +260,8 @@ error_t ecImport(const EcDomainParameters *params,
  * @return Error code
  **/
 
-error_t ecExport(const EcDomainParameters *params,
-   const EcPoint *a, uint8_t *data, size_t *length)
+error_t ecExport(const EcDomainParameters *params, const EcPoint *a,
+   uint8_t *data, size_t *length)
 {
    error_t error;
    size_t k;
@@ -248,23 +269,41 @@ error_t ecExport(const EcDomainParameters *params,
    //Get the length in octets of the prime
    k = mpiGetByteLength(&params->p);
 
-   //Point compression is not used
-   data[0] = 0x04;
+   //Montgomery curve?
+   if(params->type == EC_CURVE_TYPE_X25519 ||
+      params->type == EC_CURVE_TYPE_X448)
+   {
+      //Convert the u-coordinate to an octet string
+      error = mpiExport(&a->x, data, k, MPI_FORMAT_LITTLE_ENDIAN);
+      //Conversion failed?
+      if(error)
+         return error;
 
-   //Convert the x-coordinate to an octet string
-   error = mpiWriteRaw(&a->x, data + 1, k);
-   //Conversion failed?
-   if(error)
-      return error;
+      //Return the total number of bytes that have been written
+      *length = k;
+   }
+   //Weierstrass curve?
+   else
+   {
+      //Point compression is not used
+      data[0] = 0x04;
 
-   //Convert the y-coordinate to an octet string
-   error = mpiWriteRaw(&a->y, data + k + 1, k);
-   //Conversion failed?
-   if(error)
-      return error;
+      //Convert the x-coordinate to an octet string
+      error = mpiExport(&a->x, data + 1, k, MPI_FORMAT_BIG_ENDIAN);
+      //Conversion failed?
+      if(error)
+         return error;
 
-   //Return the total number of bytes that have been written
-   *length = k * 2 + 1;
+      //Convert the y-coordinate to an octet string
+      error = mpiExport(&a->y, data + k + 1, k, MPI_FORMAT_BIG_ENDIAN);
+      //Conversion failed?
+      if(error)
+         return error;
+
+      //Return the total number of bytes that have been written
+      *length = k * 2 + 1;
+   }
+
    //Successful processing
    return NO_ERROR;
 }
@@ -278,7 +317,8 @@ error_t ecExport(const EcDomainParameters *params,
  * @return Error code
  **/
 
-error_t ecProjectify(const EcDomainParameters *params, EcPoint *r, const EcPoint *s)
+error_t ecProjectify(const EcDomainParameters *params, EcPoint *r,
+   const EcPoint *s)
 {
    error_t error;
 
@@ -301,14 +341,15 @@ end:
  * @return Error code
  **/
 
-error_t ecAffinify(const EcDomainParameters *params, EcPoint *r, const EcPoint *s)
+error_t ecAffinify(const EcDomainParameters *params, EcPoint *r,
+   const EcPoint *s)
 {
    error_t error;
    Mpi a;
    Mpi b;
 
    //Point at the infinity?
-   if(!mpiCompInt(&s->z, 0))
+   if(mpiCompInt(&s->z, 0) == 0)
       return ERROR_INVALID_PARAMETER;
 
    //Initialize multiple precision integers
@@ -367,7 +408,7 @@ bool_t ecIsPointAffine(const EcDomainParameters *params, const EcPoint *s)
    EC_CHECK(ecSqrMod(params, &t2, &s->y));
 
    //Check whether the point is on the elliptic curve
-   if(mpiComp(&t1, &t2))
+   if(mpiComp(&t1, &t2) != 0)
       error = ERROR_FAILURE;
 
 end:
@@ -388,7 +429,8 @@ end:
  * @return Error code
  **/
 
-error_t ecDouble(const EcDomainParameters *params, EcPoint *r, const EcPoint *s)
+error_t ecDouble(const EcDomainParameters *params, EcPoint *r,
+   const EcPoint *s)
 {
    error_t error;
    Mpi t1;
@@ -412,7 +454,7 @@ error_t ecDouble(const EcDomainParameters *params, EcPoint *r, const EcPoint *s)
    MPI_CHECK(mpiCopy(&t3, &s->z));
 
    //Point at the infinity?
-   if(!mpiCompInt(&t3, 0))
+   if(mpiCompInt(&t3, 0) == 0)
    {
       //Set R = (1, 1, 0)
       MPI_CHECK(mpiSetValue(&r->x, 1));
@@ -519,7 +561,8 @@ end:
  * @return Error code
  **/
 
-error_t ecAdd(const EcDomainParameters *params, EcPoint *r, const EcPoint *s, const EcPoint *t)
+error_t ecAdd(const EcDomainParameters *params, EcPoint *r,
+   const EcPoint *s, const EcPoint *t)
 {
    error_t error;
    Mpi t1;
@@ -551,7 +594,7 @@ error_t ecAdd(const EcDomainParameters *params, EcPoint *r, const EcPoint *s, co
    MPI_CHECK(mpiCopy(&t5, &t->y));
 
    //Check whether Tz != 1
-   if(mpiCompInt(&t->z, 1))
+   if(mpiCompInt(&t->z, 1) != 0)
    {
       //Compute t6 = Tz
       MPI_CHECK(mpiCopy(&t6, &t->z));
@@ -579,10 +622,10 @@ error_t ecAdd(const EcDomainParameters *params, EcPoint *r, const EcPoint *s, co
    EC_CHECK(ecSubMod(params, &t5, &t2, &t5));
 
    //Check whether t4 == 0
-   if(!mpiCompInt(&t4, 0))
+   if(mpiCompInt(&t4, 0) == 0)
    {
       //Check whether t5 == 0
-      if(!mpiCompInt(&t5, 0))
+      if(mpiCompInt(&t5, 0) == 0)
       {
          //Set R = (0, 0, 0)
          MPI_CHECK(mpiSetValue(&r->x, 0));
@@ -607,7 +650,7 @@ error_t ecAdd(const EcDomainParameters *params, EcPoint *r, const EcPoint *s, co
       EC_CHECK(ecSubMod(params, &t2, &t2, &t5));
 
       //Check whether Tz != 1
-      if(mpiCompInt(&t->z, 1))
+      if(mpiCompInt(&t->z, 1) != 0)
       {
          //Compute t3 = t3 * t6
          EC_CHECK(ecMulMod(params, &t3, &t3, &t6));
@@ -678,12 +721,13 @@ end:
  * @return Error code
  **/
 
-error_t ecFullAdd(const EcDomainParameters *params, EcPoint *r, const EcPoint *s, const EcPoint *t)
+error_t ecFullAdd(const EcDomainParameters *params, EcPoint *r,
+   const EcPoint *s, const EcPoint *t)
 {
    error_t error;
 
    //Check whether Sz == 0
-   if(!mpiCompInt(&s->z, 0))
+   if(mpiCompInt(&s->z, 0) == 0)
    {
       //Set R = T
       MPI_CHECK(mpiCopy(&r->x, &t->x));
@@ -691,7 +735,7 @@ error_t ecFullAdd(const EcDomainParameters *params, EcPoint *r, const EcPoint *s
       MPI_CHECK(mpiCopy(&r->z, &t->z));
    }
    //Check whether Tz == 0
-   else if(!mpiCompInt(&t->z, 0))
+   else if(mpiCompInt(&t->z, 0) == 0)
    {
       //Set R = S
       MPI_CHECK(mpiCopy(&r->x, &s->x));
@@ -704,7 +748,9 @@ error_t ecFullAdd(const EcDomainParameters *params, EcPoint *r, const EcPoint *s
       EC_CHECK(ecAdd(params, r, s, t));
 
       //Check whether R == (0, 0, 0)
-      if(!mpiCompInt(&r->x, 0) && !mpiCompInt(&r->y, 0) && !mpiCompInt(&r->z, 0))
+      if(mpiCompInt(&r->x, 0) == 0 &&
+         mpiCompInt(&r->y, 0) == 0 &&
+         mpiCompInt(&r->z, 0) == 0)
       {
          //Compute R = 2 * S
          EC_CHECK(ecDouble(params, r, s));
@@ -726,7 +772,8 @@ end:
  * @return Error code
  **/
 
-error_t ecFullSub(const EcDomainParameters *params, EcPoint *r, const EcPoint *s, const EcPoint *t)
+error_t ecFullSub(const EcDomainParameters *params, EcPoint *r,
+   const EcPoint *s, const EcPoint *t)
 {
    error_t error;
    EcPoint u;
@@ -761,7 +808,8 @@ end:
  * @return Error code
  **/
 
-error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d, const EcPoint *s)
+error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
+   const EcPoint *s)
 {
    error_t error;
    uint_t i;
@@ -771,7 +819,7 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d, const
    mpiInit(&h);
 
    //Check whether d == 0
-   if(!mpiCompInt(d, 0))
+   if(mpiCompInt(d, 0) == 0)
    {
       //Set R = (1, 1, 0)
       MPI_CHECK(mpiSetValue(&r->x, 1));
@@ -779,7 +827,7 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d, const
       MPI_CHECK(mpiSetValue(&r->z, 0));
    }
    //Check whether d == 1
-   else if(!mpiCompInt(d, 1))
+   else if(mpiCompInt(d, 1) == 0)
    {
       //Set R = S
       MPI_CHECK(mpiCopy(&r->x, &s->x));
@@ -787,7 +835,7 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d, const
       MPI_CHECK(mpiCopy(&r->z, &s->z));
    }
    //Check whether Sz == 0
-   else if(!mpiCompInt(&s->z, 0))
+   else if(mpiCompInt(&s->z, 0) == 0)
    {
       //Set R = (1, 1, 0)
       MPI_CHECK(mpiSetValue(&r->x, 1));
@@ -797,7 +845,7 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d, const
    else
    {
       //Check whether Sz != 1
-      if(mpiCompInt(&s->z, 1))
+      if(mpiCompInt(&s->z, 1) != 0)
       {
          //Normalize S
          EC_CHECK(ecAffinify(params, r, s));
@@ -869,16 +917,32 @@ end:
 
 uint_t ecTwinMultF(uint_t t)
 {
+   uint_t h;
+
+   //Check the value of T
    if(18 <= t && t < 22)
-      return 9;
+   {
+      h = 9;
+   }
    else if(14 <= t && t < 18)
-      return 10;
+   {
+      h = 10;
+   }
    else if(22 <= t && t < 24)
-      return 11;
+   {
+      h = 11;
+   }
    else if(4 <= t && t < 12)
-      return 14;
+   {
+      h = 14;
+   }
    else
-      return 12;
+   {
+      h = 12;
+   }
+
+   //Return value
+   return h;
 }
 
 
@@ -946,31 +1010,49 @@ error_t ecTwinMult(const EcDomainParameters *params, EcPoint *r,
    {
       //Compute h(0) = 16 * c(0,1) + 8 * c(0,2) + 4 * c(0,3) + 2 * c(0,4) + c(0,5)
       h0 = c0 & 0x1F;
+
       //Check whether c(0,0) == 1
       if(c0 & 0x20)
+      {
          h0 = 31 - h0;
+      }
 
       //Compute h(1) = 16 * c(1,1) + 8 * c(1,2) + 4 * c(1,3) + 2 * c(1,4) + c(1,5)
       h1 = c1 & 0x1F;
+
       //Check whether c(1,0) == 1
       if(c1 & 0x20)
+      {
          h1 = 31 - h1;
+      }
 
       //Compute u(0)
       if(h0 < ecTwinMultF(h1))
+      {
          u0 = 0;
+      }
       else if(c0 & 0x20)
+      {
          u0 = -1;
+      }
       else
+      {
          u0 = 1;
+      }
 
       //Compute u(1)
       if(h1 < ecTwinMultF(h0))
+      {
          u1 = 0;
+      }
       else if(c1 & 0x20)
+      {
          u1 = -1;
+      }
       else
+      {
          u1 = 1;
+      }
 
       //Update c matrix
       c0 <<= 1;
@@ -1045,7 +1127,8 @@ end:
  * @return Error code
  **/
 
-error_t ecAddMod(const EcDomainParameters *params, Mpi *r, const Mpi *a, const Mpi *b)
+error_t ecAddMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
+   const Mpi *b)
 {
    error_t error;
 
@@ -1073,7 +1156,8 @@ end:
  * @return Error code
  **/
 
-error_t ecSubMod(const EcDomainParameters *params, Mpi *r, const Mpi *a, const Mpi *b)
+error_t ecSubMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
+   const Mpi *b)
 {
    error_t error;
 
@@ -1101,7 +1185,8 @@ end:
  * @return Error code
  **/
 
-error_t ecMulMod(const EcDomainParameters *params, Mpi *r, const Mpi *a, const Mpi *b)
+error_t ecMulMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
+   const Mpi *b)
 {
    error_t error;
 

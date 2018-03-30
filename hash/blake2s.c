@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -29,7 +29,7 @@
  * for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -155,7 +155,9 @@ error_t blake2sInit(Blake2sContext *context, const void *key,
 
    //Initialize state vector
    for(i = 0; i < 8; i++)
+   {
       context->h[i] = iv[i];
+   }
 
    //The first byte of the parameter block is the hash size in bytes
    context->h[0] ^= digestLen;
@@ -242,18 +244,24 @@ void blake2sFinal(Blake2sContext *context, uint8_t *digest)
 
    //The last block is padded with zeros to full block size, if required
    for(i = context->size; i < 64; i++)
+   {
       context->buffer[i] = 0;
+   }
 
    //Compress the last block
    blake2sProcessBlock(context, TRUE);
 
    //Convert from host byte order to big-endian byte order
    for(i = 0; i < 8; i++)
+   {
       context->h[i] = htole32(context->h[i]);
+   }
 
    //Copy the resulting digest
    if(digest != NULL)
+   {
       cryptoMemcpy(digest, context->digest, context->digestSize);
+   }
 }
 
 
@@ -283,7 +291,9 @@ void blake2sProcessBlock(Blake2sContext *context, bool_t last)
 
    //Propagate the carry if necessary
    if(context->totalSize[0] < context->size)
+   {
       context->totalSize[1]++;
+   }
 
    //Low word of the offset
    v[12] ^= context->totalSize[0];
@@ -302,7 +312,9 @@ void blake2sProcessBlock(Blake2sContext *context, bool_t last)
 
    //Convert from little-endian byte order to host byte order
    for(i = 0; i < 16; i++)
+   {
       m[i] = letoh32(m[i]);
+   }
 
    //Cryptographic mixing
    for(i = 0; i < 10; i++)
@@ -325,7 +337,9 @@ void blake2sProcessBlock(Blake2sContext *context, bool_t last)
 
    //XOR the two halves
    for(i = 0; i < 8; i++)
+   {
       context->h[i] ^= v[i] ^ v[i + 8];
+   }
 }
 
 #endif

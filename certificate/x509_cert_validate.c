@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -38,12 +38,6 @@
 #include "pkc/rsa.h"
 #include "pkc/dsa.h"
 #include "ecc/ecdsa.h"
-#include "hash/md5.h"
-#include "hash/sha1.h"
-#include "hash/sha224.h"
-#include "hash/sha256.h"
-#include "hash/sha384.h"
-#include "hash/sha512.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -63,19 +57,9 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
 {
    error_t error;
    time_t currentTime;
+   X509SignatureAlgo signAlgo;
    const HashAlgo *hashAlgo;
    HashContext *hashContext;
-
-   //Use RSA, DSA or ECDSA signature algorithm?
-#if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
-   bool_t rsaSignAlgo = FALSE;
-#endif
-#if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
-   bool_t dsaSignAlgo = FALSE;
-#endif
-#if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
-   bool_t ecdsaSignAlgo = FALSE;
-#endif
 
    //Retrieve current time
    currentTime = getCurrentUnixTime();
@@ -133,147 +117,12 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
          return ERROR_BAD_CERTIFICATE;
    }
 
-   //Retrieve the signature algorithm that has been used to sign the certificate
-#if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
-#if (X509_MD5_SUPPORT == ENABLED && MD5_SUPPORT == ENABLED)
-   if(!oidComp(certInfo->signatureAlgo.data, certInfo->signatureAlgo.length,
-      MD5_WITH_RSA_ENCRYPTION_OID, sizeof(MD5_WITH_RSA_ENCRYPTION_OID)))
-   {
-      //MD5 with RSA signature algorithm
-      rsaSignAlgo = TRUE;
-      hashAlgo = MD5_HASH_ALGO;
-   }
-   else
-#endif
-#if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
-   if(!oidComp(certInfo->signatureAlgo.data, certInfo->signatureAlgo.length,
-      SHA1_WITH_RSA_ENCRYPTION_OID, sizeof(SHA1_WITH_RSA_ENCRYPTION_OID)))
-   {
-      //SHA-1 with RSA signature algorithm
-      rsaSignAlgo = TRUE;
-      hashAlgo = SHA1_HASH_ALGO;
-   }
-   else
-#endif
-#if (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
-   if(!oidComp(certInfo->signatureAlgo.data, certInfo->signatureAlgo.length,
-      SHA256_WITH_RSA_ENCRYPTION_OID, sizeof(SHA256_WITH_RSA_ENCRYPTION_OID)))
-   {
-      //SHA-256 with RSA signature algorithm
-      rsaSignAlgo = TRUE;
-      hashAlgo = SHA256_HASH_ALGO;
-   }
-   else
-#endif
-#if (X509_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
-   if(!oidComp(certInfo->signatureAlgo.data, certInfo->signatureAlgo.length,
-      SHA384_WITH_RSA_ENCRYPTION_OID, sizeof(SHA384_WITH_RSA_ENCRYPTION_OID)))
-   {
-      //SHA-384 with RSA signature algorithm
-      rsaSignAlgo = TRUE;
-      hashAlgo = SHA384_HASH_ALGO;
-   }
-   else
-#endif
-#if (X509_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
-   if(!oidComp(certInfo->signatureAlgo.data, certInfo->signatureAlgo.length,
-      SHA512_WITH_RSA_ENCRYPTION_OID, sizeof(SHA512_WITH_RSA_ENCRYPTION_OID)))
-   {
-      //SHA-512 with RSA signature algorithm
-      rsaSignAlgo = TRUE;
-      hashAlgo = SHA512_HASH_ALGO;
-   }
-   else
-#endif
-#endif
-#if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
-#if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
-   if(!oidComp(certInfo->signatureAlgo.data, certInfo->signatureAlgo.length,
-      DSA_WITH_SHA1_OID, sizeof(DSA_WITH_SHA1_OID)))
-   {
-      //DSA with SHA-1 signature algorithm
-      dsaSignAlgo = TRUE;
-      hashAlgo = SHA1_HASH_ALGO;
-   }
-   else
-#endif
-#if (X509_SHA224_SUPPORT == ENABLED && SHA224_SUPPORT == ENABLED)
-   if(!oidComp(certInfo->signatureAlgo.data, certInfo->signatureAlgo.length,
-      DSA_WITH_SHA224_OID, sizeof(DSA_WITH_SHA224_OID)))
-   {
-      //DSA with SHA-224 signature algorithm
-      dsaSignAlgo = TRUE;
-      hashAlgo = SHA224_HASH_ALGO;
-   }
-   else
-#endif
-#if (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
-   if(!oidComp(certInfo->signatureAlgo.data, certInfo->signatureAlgo.length,
-      DSA_WITH_SHA256_OID, sizeof(DSA_WITH_SHA256_OID)))
-   {
-      //DSA with SHA-256 signature algorithm
-      dsaSignAlgo = TRUE;
-      hashAlgo = SHA256_HASH_ALGO;
-   }
-   else
-#endif
-#endif
-#if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
-#if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
-   if(!oidComp(certInfo->signatureAlgo.data, certInfo->signatureAlgo.length,
-      ECDSA_WITH_SHA1_OID, sizeof(ECDSA_WITH_SHA1_OID)))
-   {
-      //ECDSA with SHA-1 signature algorithm
-      ecdsaSignAlgo = TRUE;
-      hashAlgo = SHA1_HASH_ALGO;
-   }
-   else
-#endif
-#if (X509_SHA224_SUPPORT == ENABLED && SHA224_SUPPORT == ENABLED)
-   if(!oidComp(certInfo->signatureAlgo.data, certInfo->signatureAlgo.length,
-      ECDSA_WITH_SHA224_OID, sizeof(ECDSA_WITH_SHA224_OID)))
-   {
-      //ECDSA with SHA-224 signature algorithm
-      ecdsaSignAlgo = TRUE;
-      hashAlgo = SHA224_HASH_ALGO;
-   }
-   else
-#endif
-#if (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
-   if(!oidComp(certInfo->signatureAlgo.data, certInfo->signatureAlgo.length,
-      ECDSA_WITH_SHA256_OID, sizeof(ECDSA_WITH_SHA256_OID)))
-   {
-      //ECDSA with SHA-256 signature algorithm
-      ecdsaSignAlgo = TRUE;
-      hashAlgo = SHA256_HASH_ALGO;
-   }
-   else
-#endif
-#if (X509_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
-   if(!oidComp(certInfo->signatureAlgo.data, certInfo->signatureAlgo.length,
-      ECDSA_WITH_SHA384_OID, sizeof(ECDSA_WITH_SHA384_OID)))
-   {
-      //ECDSA with SHA-384 signature algorithm
-      ecdsaSignAlgo = TRUE;
-      hashAlgo = SHA384_HASH_ALGO;
-   }
-   else
-#endif
-#if (X509_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
-   if(!oidComp(certInfo->signatureAlgo.data, certInfo->signatureAlgo.length,
-      ECDSA_WITH_SHA512_OID, sizeof(ECDSA_WITH_SHA512_OID)))
-   {
-      //ECDSA with SHA-512 signature algorithm
-      ecdsaSignAlgo = TRUE;
-      hashAlgo = SHA512_HASH_ALGO;
-   }
-   else
-#endif
-#endif
-   {
-      //The specified signature algorithm is not supported
-      return ERROR_UNSUPPORTED_SIGNATURE_ALGO;
-   }
+   //Retrieve the signature algorithm that was used to sign the certificate
+   error = x509GetSignHashAlgo(certInfo->signatureAlgo.data,
+      certInfo->signatureAlgo.length, &signAlgo, &hashAlgo);
+   //Unsupported signature algorithm?
+   if(error)
+      return error;
 
    //Allocate a memory buffer to hold the hash context
    hashContext = cryptoAllocMem(hashAlgo->contextSize);
@@ -288,7 +137,7 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
 
    //Check signature algorithm
 #if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
-   if(rsaSignAlgo)
+   if(signAlgo == X509_SIGN_ALGO_RSA)
    {
       uint_t k;
       RsaPublicKey publicKey;
@@ -297,7 +146,8 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
       rsaInitPublicKey(&publicKey);
 
       //Get the RSA public key
-      error = x509ReadRsaPublicKey(issuerCertInfo, &publicKey);
+      error = x509ReadRsaPublicKey(&issuerCertInfo->subjectPublicKeyInfo,
+         &publicKey);
 
       //Check status code
       if(!error)
@@ -327,7 +177,7 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
    else
 #endif
 #if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
-   if(dsaSignAlgo)
+   if(signAlgo == X509_SIGN_ALGO_DSA)
    {
       uint_t k;
       DsaPublicKey publicKey;
@@ -339,7 +189,8 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
       dsaInitSignature(&signature);
 
       //Get the DSA public key
-      error = x509ReadDsaPublicKey(issuerCertInfo, &publicKey);
+      error = x509ReadDsaPublicKey(&issuerCertInfo->subjectPublicKeyInfo,
+         &publicKey);
 
       //Check status code
       if(!error)
@@ -378,7 +229,7 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
    else
 #endif
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
-   if(ecdsaSignAlgo)
+   if(signAlgo == X509_SIGN_ALGO_ECDSA)
    {
       const EcCurveInfo *curveInfo;
       EcDomainParameters params;

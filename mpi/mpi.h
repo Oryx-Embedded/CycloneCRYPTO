@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 #ifndef _MPI_H
@@ -47,6 +47,17 @@
 #ifdef __cplusplus
    extern "C" {
 #endif
+
+
+/**
+ * @brief MPI import/export format
+ **/
+
+typedef enum
+{
+   MPI_FORMAT_LITTLE_ENDIAN = 0,
+   MPI_FORMAT_BIG_ENDIAN    = 1
+} MpiFormat;
 
 
 /**
@@ -83,8 +94,8 @@ error_t mpiSetValue(Mpi *a, int_t b);
 
 error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo, void *prngContext);
 
-error_t mpiReadRaw(Mpi *r, const uint8_t *data, uint_t length);
-error_t mpiWriteRaw(const Mpi *a, uint8_t *data, uint_t length);
+error_t mpiImport(Mpi *r, const uint8_t *data, uint_t length, MpiFormat format);
+error_t mpiExport(const Mpi *a, uint8_t *data, uint_t length, MpiFormat format);
 
 error_t mpiAdd(Mpi *r, const Mpi *a, const Mpi *b);
 error_t mpiAddInt(Mpi *r, const Mpi *a, int_t b);
@@ -111,7 +122,9 @@ error_t mpiMulMod(Mpi *r, const Mpi *a, const Mpi *b, const Mpi *p);
 error_t mpiInvMod(Mpi *r, const Mpi *a, const Mpi *p);
 error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p);
 
-error_t mpiMontgomeryMul(Mpi *r, const Mpi *a, const Mpi *b, uint_t k, const Mpi *p, Mpi *t);
+error_t mpiMontgomeryMul(Mpi *r, const Mpi *a, const Mpi *b, uint_t k,
+   const Mpi *p, Mpi *t);
+
 error_t mpiMontgomeryRed(Mpi *r, const Mpi *a, uint_t k, const Mpi *p, Mpi *t);
 
 void mpiMulAccCore(uint_t *r, const uint_t *a, int_t m, const uint_t b);

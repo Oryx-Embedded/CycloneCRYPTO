@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 #ifndef _RSA_H
@@ -75,10 +75,10 @@ extern const uint8_t SHA1_WITH_RSA_ENCRYPTION_OID[9];
 extern const uint8_t SHA256_WITH_RSA_ENCRYPTION_OID[9];
 extern const uint8_t SHA384_WITH_RSA_ENCRYPTION_OID[9];
 extern const uint8_t SHA512_WITH_RSA_ENCRYPTION_OID[9];
-extern const uint8_t RSASSA_PKCS1_v1_5_WITH_SHA3_224_OID[9];
-extern const uint8_t RSASSA_PKCS1_v1_5_WITH_SHA3_256_OID[9];
-extern const uint8_t RSASSA_PKCS1_v1_5_WITH_SHA3_384_OID[9];
-extern const uint8_t RSASSA_PKCS1_v1_5_WITH_SHA3_512_OID[9];
+extern const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_224_OID[9];
+extern const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_256_OID[9];
+extern const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_384_OID[9];
+extern const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_512_OID[9];
 
 //RSA related functions
 void rsaInitPublicKey(RsaPublicKey *key);

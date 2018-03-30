@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 //Switch to the appropriate trace level
@@ -236,7 +236,7 @@ error_t mpiSetBitValue(Mpi *r, uint_t index, uint_t value)
    n2 = index % (MPI_INT_SIZE * 8);
 
    //Ajust the size of the multiple precision integer if necessary
-   error = mpiGrow(r, (index + (MPI_INT_SIZE * 8) - 1) / (MPI_INT_SIZE * 8));
+   error = mpiGrow(r, n1 + 1);
    //Failed to adjust the size?
    if(error)
       return error;
@@ -487,7 +487,9 @@ error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo, void *prngConte
 
    //Remove the meaningless bits in the most significant word
    if(n > 0 && m > 0)
+   {
       r->data[n - 1] &= (1 << m) - 1;
+   }
 
    //Successful operation
    return NO_ERROR;
@@ -502,42 +504,80 @@ error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo, void *prngConte
  * @param[out] r Non-negative integer resulting from the conversion
  * @param[in] data Octet string to be converted
  * @param[in] length Length of the octet string
+ * @param[in] format Input format
  * @return Error code
  **/
 
-error_t mpiReadRaw(Mpi *r, const uint8_t *data, uint_t length)
+error_t mpiImport(Mpi *r, const uint8_t *data, uint_t length, MpiFormat format)
 {
    error_t error;
    uint_t i;
 
-   //Skip leading zeroes
-   while(length > 1 && *data == 0)
+   //Check input format
+   if(format == MPI_FORMAT_LITTLE_ENDIAN)
    {
-      //Advance read pointer
-      data++;
-      length--;
+      //Skip trailing zeroes
+      while(length > 0 && data[length - 1] == 0)
+      {
+         length--;
+      }
+
+      //Ajust the size of the multiple precision integer
+      error = mpiGrow(r, (length + MPI_INT_SIZE - 1) / MPI_INT_SIZE);
+
+      //Check status code
+      if(!error)
+      {
+         //Clear the contents of the multiple precision integer
+         cryptoMemset(r->data, 0, r->size * MPI_INT_SIZE);
+         //Set sign
+         r->sign = 1;
+
+         //Import data
+         for(i = 0; i < length; i++, data++)
+         {
+            r->data[i / MPI_INT_SIZE] |= *data << ((i % MPI_INT_SIZE) * 8);
+         }
+      }
+   }
+   else if(format == MPI_FORMAT_BIG_ENDIAN)
+   {
+      //Skip leading zeroes
+      while(length > 1 && *data == 0)
+      {
+         data++;
+         length--;
+      }
+
+      //Ajust the size of the multiple precision integer
+      error = mpiGrow(r, (length + MPI_INT_SIZE - 1) / MPI_INT_SIZE);
+
+      //Check status code
+      if(!error)
+      {
+         //Clear the contents of the multiple precision integer
+         cryptoMemset(r->data, 0, r->size * MPI_INT_SIZE);
+         //Set sign
+         r->sign = 1;
+
+         //Start from the least significant byte
+         data += length - 1;
+
+         //Import data
+         for(i = 0; i < length; i++, data--)
+         {
+            r->data[i / MPI_INT_SIZE] |= *data << ((i % MPI_INT_SIZE) * 8);
+         }
+      }
+   }
+   else
+   {
+      //Report an error
+      error = ERROR_INVALID_PARAMETER;
    }
 
-   //Ajust the size of the multiple precision integer
-   error = mpiGrow(r, (length + MPI_INT_SIZE - 1) / MPI_INT_SIZE);
-   //Failed to adjust the size?
-   if(error)
-      return error;
-
-   //Clear the contents of the multiple precision integer
-   cryptoMemset(r->data, 0, r->size * MPI_INT_SIZE);
-   //Set sign
-   r->sign = 1;
-
-   //Start from the least significant byte
-   data += length - 1;
-
-   //Copy data
-   for(i = 0; i < length; i++, data--)
-      r->data[i / MPI_INT_SIZE] |= *data << ((i % MPI_INT_SIZE) * 8);
-
-   //The conversion succeeded
-   return NO_ERROR;
+   //Return status code
+   return error;
 }
 
 
@@ -549,32 +589,77 @@ error_t mpiReadRaw(Mpi *r, const uint8_t *data, uint_t length)
  * @param[in] a Non-negative integer to be converted
  * @param[out] data Octet string resulting from the conversion
  * @param[in] length Intended length of the resulting octet string
+ * @param[in] format Output format
  * @return Error code
  **/
 
-error_t mpiWriteRaw(const Mpi *a, uint8_t *data, uint_t length)
+error_t mpiExport(const Mpi *a, uint8_t *data, uint_t length, MpiFormat format)
 {
    uint_t i;
+   uint_t n;
+   error_t error;
 
-   //Get the actual length in bytes
-   uint_t n = mpiGetByteLength(a);
+   //Initialize status code
+   error = NO_ERROR;
 
-   //Make sure the output buffer is large enough
-   if(n > length)
-      return ERROR_INVALID_LENGTH;
+   //Check input format
+   if(format == MPI_FORMAT_LITTLE_ENDIAN)
+   {
+      //Get the actual length in bytes
+      n = mpiGetByteLength(a);
 
-   //Clear output buffer
-   cryptoMemset(data, 0, length);
+      //Make sure the output buffer is large enough
+      if(n <= length)
+      {
+         //Clear output buffer
+         cryptoMemset(data, 0, length);
 
-   //Start from the least significant word
-   data += length - 1;
+         //Export data
+         for(i = 0; i < n; i++, data++)
+         {
+            *data = a->data[i / MPI_INT_SIZE] >> ((i % MPI_INT_SIZE) * 8);
+         }
+      }
+      else
+      {
+         //Report an error
+         error = ERROR_INVALID_LENGTH;
+      }
+   }
+   else if(format == MPI_FORMAT_BIG_ENDIAN)
+   {
+      //Get the actual length in bytes
+      n = mpiGetByteLength(a);
 
-   //Copy data
-   for(i = 0; i < n; i++, data--)
-      *data = a->data[i / MPI_INT_SIZE] >> ((i % MPI_INT_SIZE) * 8);
+      //Make sure the output buffer is large enough
+      if(n <= length)
+      {
+         //Clear output buffer
+         cryptoMemset(data, 0, length);
 
-   //The conversion succeeded
-   return NO_ERROR;
+         //Point to the least significant word
+         data += length - 1;
+
+         //Export data
+         for(i = 0; i < n; i++, data--)
+         {
+            *data = a->data[i / MPI_INT_SIZE] >> ((i % MPI_INT_SIZE) * 8);
+         }
+      }
+      else
+      {
+         //Report an error
+         error = ERROR_INVALID_LENGTH;
+      }
+   }
+   else
+   {
+      //Report an error
+      error = ERROR_INVALID_PARAMETER;
+   }
+
+   //Return status code
+   return error;
 }
 
 
@@ -1448,7 +1533,7 @@ error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
       //Let R = 1
       MPI_CHECK(mpiSetValue(r, 1));
 
-      //The exponent is processed in a right-to-left fashion
+      //The exponent is processed in a left-to-right fashion
       i = mpiGetBitLength(e) - 1;
 
       //Perform sliding window exponentiation
@@ -1523,7 +1608,7 @@ error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
       MPI_CHECK(mpiCopy(r, &c2));
       MPI_CHECK(mpiMontgomeryRed(r, r, k, p, &t));
 
-      //The exponent is processed in a right-to-left fashion
+      //The exponent is processed in a left-to-right fashion
       i = mpiGetBitLength(e) - 1;
 
       //Perform sliding window exponentiation
@@ -1592,7 +1677,8 @@ end:
  * @return Error code
  **/
 
-error_t mpiMontgomeryMul(Mpi *r, const Mpi *a, const Mpi *b, uint_t k, const Mpi *p, Mpi *t)
+error_t mpiMontgomeryMul(Mpi *r, const Mpi *a, const Mpi *b, uint_t k,
+   const Mpi *p, Mpi *t)
 {
    error_t error;
    uint_t i;

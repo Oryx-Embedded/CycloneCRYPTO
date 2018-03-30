@@ -4,7 +4,7 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2017 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.0
+ * @version 1.8.2
  **/
 
 #ifndef _CRYPTO_H
@@ -32,6 +32,7 @@
 //Dependencies
 #include "os_port.h"
 #include "crypto_config.h"
+#include "crypto_legacy.h"
 #include "cpu_endian.h"
 #include "error.h"
 
@@ -294,6 +295,13 @@
    #error GMAC_SUPPORT parameter is not valid
 #endif
 
+//RC2 encryption support
+#ifndef RC2_SUPPORT
+   #define RC2_SUPPORT DISABLED
+#elif (RC2_SUPPORT != ENABLED && RC2_SUPPORT != DISABLED)
+   #error RC2_SUPPORT parameter is not valid
+#endif
+
 //RC4 encryption support
 #ifndef RC4_SUPPORT
    #define RC4_SUPPORT ENABLED
@@ -481,6 +489,13 @@
    #define ECDSA_SUPPORT ENABLED
 #elif (ECDSA_SUPPORT != ENABLED && ECDSA_SUPPORT != DISABLED)
    #error ECDSA_SUPPORT parameter is not valid
+#endif
+
+//HKDF support
+#ifndef HKDF_SUPPORT
+   #define HKDF_SUPPORT DISABLED
+#elif (HKDF_SUPPORT != ENABLED && HKDF_SUPPORT != DISABLED)
+   #error HKDF_SUPPORT parameter is not valid
 #endif
 
 //PKCS #5 support
@@ -773,6 +788,8 @@
    #define MAX_CIPHER_CONTEXT_SIZE sizeof(DesContext)
 #elif (SEED_SUPPORT == ENABLED)
    #define MAX_CIPHER_CONTEXT_SIZE sizeof(SeedContext)
+#elif (RC2_SUPPORT == ENABLED)
+   #define MAX_CIPHER_CONTEXT_SIZE sizeof(Rc2Context)
 #endif
 
 //Maximum block size (block cipher algorithms)
@@ -794,6 +811,8 @@
    #define MAX_CIPHER_BLOCK_SIZE IDEA_BLOCK_SIZE
 #elif (PRESENT_SUPPORT == ENABLED)
    #define MAX_CIPHER_BLOCK_SIZE PRESENT_BLOCK_SIZE
+#elif (RC2_SUPPORT == ENABLED)
+   #define MAX_CIPHER_BLOCK_SIZE RC2_BLOCK_SIZE
 #endif
 
 //Rotate left operation
