@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -880,6 +880,8 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
 {
    error_t error;
    size_t n;
+   size_t oidLen;
+   const uint8_t *oid;
    Asn1Tag tag;
 
    //Debug message
@@ -929,10 +931,13 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
    if(tag.length < 1 || tag.value[0] != 0x00)
       return ERROR_FAILURE;
 
+   //Retrieve signature algorithm identifier
+   oid = subjectPublicKeyInfo->oid;
+   oidLen = subjectPublicKeyInfo->oidLen;
+
 #if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
    //RSA algorithm identifier?
-   if(!oidComp(subjectPublicKeyInfo->oid, subjectPublicKeyInfo->oidLen,
-      RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)))
+   if(!oidComp(oid, oidLen, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)))
    {
       //Read RSAPublicKey structure
       error = x509ParseRsaPublicKey(tag.value + 1, tag.length - 1,
@@ -942,8 +947,7 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
 #endif
 #if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
    //DSA algorithm identifier?
-   if(!oidComp(subjectPublicKeyInfo->oid, subjectPublicKeyInfo->oidLen,
-      DSA_OID, sizeof(DSA_OID)))
+   if(!oidComp(oid, oidLen, DSA_OID, sizeof(DSA_OID)))
    {
       //Read DSAPublicKey structure
       error = x509ParseDsaPublicKey(tag.value + 1, tag.length - 1,
@@ -953,8 +957,29 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
 #endif
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
    //EC public key identifier?
-   if(!oidComp(subjectPublicKeyInfo->oid, subjectPublicKeyInfo->oidLen,
-      EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
+   if(!oidComp(oid, oidLen, EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
+   {
+      //Read ECPublicKey structure
+      error = x509ParseEcPublicKey(tag.value + 1, tag.length - 1,
+         &subjectPublicKeyInfo->ecPublicKey);
+   }
+   else
+#endif
+#if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
+   //X25519 or Ed25519 algorithm identifier?
+   if(!oidComp(oid, oidLen, X25519_OID, sizeof(X25519_OID)) ||
+      !oidComp(oid, oidLen, ED25519_OID, sizeof(ED25519_OID)))
+   {
+      //Read ECPublicKey structure
+      error = x509ParseEcPublicKey(tag.value + 1, tag.length - 1,
+         &subjectPublicKeyInfo->ecPublicKey);
+   }
+   else
+#endif
+#if (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED)
+   //X448 or Ed448 algorithm identifier?
+   if(!oidComp(oid, oidLen, X448_OID, sizeof(X448_OID)) ||
+      !oidComp(oid, oidLen, ED448_OID, sizeof(ED448_OID)))
    {
       //Read ECPublicKey structure
       error = x509ParseEcPublicKey(tag.value + 1, tag.length - 1,
@@ -1051,6 +1076,26 @@ error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
       //Read ECParameters structure
       error = x509ParseEcParameters(data, length,
          &subjectPublicKeyInfo->ecParams);
+   }
+   else
+#endif
+#if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
+   //X25519 or Ed25519 algorithm identifier?
+   if(!asn1CheckOid(&tag, X25519_OID, sizeof(X25519_OID)) ||
+      !asn1CheckOid(&tag, ED25519_OID, sizeof(ED25519_OID)))
+   {
+      //For all of the OIDs, the parameters are absent
+      error = NO_ERROR;
+   }
+   else
+#endif
+#if (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED)
+   //X448 or Ed448 algorithm identifier?
+   if(!asn1CheckOid(&tag, X448_OID, sizeof(X448_OID)) ||
+      !asn1CheckOid(&tag, ED448_OID, sizeof(ED448_OID)))
+   {
+      //For all of the OIDs, the parameters are absent
+      error = NO_ERROR;
    }
    else
 #endif
@@ -1331,12 +1376,14 @@ error_t x509ParseEcParameters(const uint8_t *data, size_t length,
 error_t x509ParseEcPublicKey(const uint8_t *data, size_t length,
    X509EcPublicKey *ecPublicKey)
 {
-#if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
+#if ((X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED) || \
+   (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED) || \
+   (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED))
    //Debug message
    TRACE_DEBUG("      Parsing ECPublicKey...\r\n");
 
    //Make sure the EC public key is valid
-   if(!length)
+   if(length == 0)
       return ERROR_BAD_CERTIFICATE;
 
    //Save the EC public key
@@ -1367,7 +1414,7 @@ error_t x509ParseIssuerUniqueId(const uint8_t *data, size_t length,
    Asn1Tag tag;
 
    //No more data to process?
-   if(!length)
+   if(length == 0)
    {
       //The IssuerUniqueID field is optional
       *totalLength = 0;
@@ -1420,7 +1467,7 @@ error_t x509ParseSubjectUniqueId(const uint8_t *data, size_t length,
    Asn1Tag tag;
 
    //No more data to process?
-   if(!length)
+   if(length == 0)
    {
       //The SubjectUniqueID field is optional
       *totalLength = 0;
@@ -1478,7 +1525,7 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
    Asn1Tag oidTag;
 
    //No more data to process?
-   if(!length)
+   if(length == 0)
    {
       //The Extensions field is optional
       *totalLength = 0;
@@ -1701,7 +1748,7 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
          return error;
    }
 
-   //Check wether the keyCertSign bit is asserted
+   //Check whether the keyCertSign bit is asserted
    if(extensions->keyUsage & X509_KEY_USAGE_KEY_CERT_SIGN)
    {
       //If the keyCertSign bit is asserted, then the cA bit in the basic

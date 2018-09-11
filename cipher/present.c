@@ -27,7 +27,7 @@
  * PRESENT is an ultra-lightweight block cipher
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -293,7 +293,7 @@ void presentEncryptBlock(PresentContext *context, const uint8_t *input, uint8_t 
    //Initial round key addition
    state ^= context->ks[0];
 
-   //The encrpytion consists of 31 rounds
+   //The encryption consists of 31 rounds
    for(i = 1; i <= 31; i++)
    {
       //Apply S-box and bit permutation
@@ -339,7 +339,7 @@ void presentDecryptBlock(PresentContext *context, const uint8_t *input, uint8_t 
    //Copy the ciphertext to the 64-bit state
    state = LOAD64BE(input);
 
-   //The decrpytion consists of 31 rounds
+   //The decryption consists of 31 rounds
    for(i = 31; i > 0; i--)
    {
       //Add round key

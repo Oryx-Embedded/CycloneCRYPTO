@@ -25,10 +25,13 @@
  * @section Description
  *
  * RSA is an algorithm for public-key cryptography which is suitable for signing
- * as well as encryption. Refer to PKCS #1 (RSA Cryptography Standard)
+ * as well as encryption. Refer to the following RFCs for complete details:
+ * - RFC 2313: PKCS #1: RSA Encryption Version 1.5
+ * - RFC 3447: PKCS #1: RSA Cryptography Specifications Version 2.1
+ * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -36,6 +39,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "mac/hmac.h"
 #include "pkc/rsa.h"
 #include "mpi/mpi.h"
 #include "encoding/asn1.h"
@@ -49,24 +53,40 @@
 const uint8_t PKCS1_OID[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01};
 //RSA encryption OID (1.2.840.113549.1.1.1)
 const uint8_t RSA_ENCRYPTION_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x01};
+
+//MD2 with RSA encryption OID (1.2.840.113549.1.1.2)
+const uint8_t MD2_WITH_RSA_ENCRYPTION_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x02};
 //MD5 with RSA encryption OID (1.2.840.113549.1.1.4)
 const uint8_t MD5_WITH_RSA_ENCRYPTION_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x04};
 //SHA-1 with RSA encryption OID (1.2.840.113549.1.1.5)
 const uint8_t SHA1_WITH_RSA_ENCRYPTION_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x05};
+//SHA-224 with RSA encryption OID (1.2.840.113549.1.1.14)
+const uint8_t SHA224_WITH_RSA_ENCRYPTION_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0E};
 //SHA-256 with RSA encryption OID (1.2.840.113549.1.1.11)
 const uint8_t SHA256_WITH_RSA_ENCRYPTION_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0B};
 //SHA-384 with RSA encryption OID (1.2.840.113549.1.1.12)
 const uint8_t SHA384_WITH_RSA_ENCRYPTION_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0C};
 //SHA-512 with RSA encryption OID (1.2.840.113549.1.1.13)
 const uint8_t SHA512_WITH_RSA_ENCRYPTION_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0D};
-//RSA PKCS #1 v1.5 signature with SHA-3-224 OID (2.16.840.1.101.3.4.3.13)
+//SHA-512/224 with RSA encryption OID (1.2.840.113549.1.1.15)
+const uint8_t SHA512_224_WITH_RSA_ENCRYPTION_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0F};
+//SHA-512/256 with RSA encryption OID (1.2.840.113549.1.1.16)
+const uint8_t SHA512_256_WITH_RSA_ENCRYPTION_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x10};
+
+//RSASSA-PKCS1-v1_5 signature with SHA-3-224 OID (2.16.840.1.101.3.4.3.13)
 const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_224_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0D};
-//RSA PKCS #1 v1.5 signature with SHA-3-256 OID (2.16.840.1.101.3.4.3.14)
+//RSASSA-PKCS1-v1_5 signature with SHA-3-256 OID (2.16.840.1.101.3.4.3.14)
 const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_256_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0E};
-//RSA PKCS #1 v1.5 signature with SHA-3-384 OID (2.16.840.1.101.3.4.3.15)
+//RSASSA-PKCS1-v1_5 signature with SHA-3-384 OID (2.16.840.1.101.3.4.3.15)
 const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_384_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0F};
-//RSA PKCS #1 v1.5 signature with SHA-3-512 OID (2.16.840.1.101.3.4.3.16)
+//RSASSA-PKCS1-v1_5 signature with SHA-3-512 OID (2.16.840.1.101.3.4.3.16)
 const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_512_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x10};
+
+//Padding string
+static const uint8_t padding[] =
+{
+   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
 
 
 /**
@@ -134,6 +154,953 @@ void rsaFreePrivateKey(RsaPrivateKey *key)
 
 
 /**
+ * @brief RSAES-PKCS1-v1_5 encryption operation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[in] key Recipient's RSA public key
+ * @param[in] message Message to be encrypted
+ * @param[in] messageLen Length of the message to be encrypted
+ * @param[out] ciphertext Ciphertext resulting from the encryption operation
+ * @param[out] ciphertextLen Length of the resulting ciphertext
+ * @return Error code
+ **/
+
+error_t rsaesPkcs1v15Encrypt(const PrngAlgo *prngAlgo, void *prngContext,
+   const RsaPublicKey *key, const uint8_t *message, size_t messageLen,
+   uint8_t *ciphertext, size_t *ciphertextLen)
+{
+   error_t error;
+   uint_t k;
+   uint8_t *em;
+   Mpi m;
+   Mpi c;
+
+   //Check parameters
+   if(prngAlgo == NULL || prngContext == NULL)
+      return ERROR_INVALID_PARAMETER;
+   if(key == NULL || message == NULL)
+      return ERROR_INVALID_PARAMETER;
+   if(ciphertext == NULL || ciphertextLen == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Debug message
+   TRACE_DEBUG("RSAES-PKCS1-v1_5 encryption...\r\n");
+   TRACE_DEBUG("  Modulus:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->n);
+   TRACE_DEBUG("  Public exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->e);
+   TRACE_DEBUG("  Message:\r\n");
+   TRACE_DEBUG_ARRAY("    ", message, messageLen);
+
+   //Initialize multiple-precision integers
+   mpiInit(&m);
+   mpiInit(&c);
+
+   //Get the length in octets of the modulus n
+   k = mpiGetByteLength(&key->n);
+
+   //Point to the buffer where the encoded message EM will be formatted
+   em = ciphertext;
+
+   //EME-PKCS1-v1_5 encoding
+   error = emePkcs1v15Encode(prngAlgo, prngContext, message, messageLen, em, k);
+   //Any error to report?
+   if(error)
+      return error;
+
+   //Debug message
+   TRACE_DEBUG("  Encoded message:\r\n");
+   TRACE_DEBUG_ARRAY("    ", em, k);
+
+   //Start of exception handling block
+   do
+   {
+      //Convert the encoded message EM to an integer message representative m
+      error = mpiReadRaw(&m, em, k);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Apply the RSAEP encryption primitive
+      error = rsaep(key, &m, &c);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Convert the ciphertext representative c to a ciphertext of length k octets
+      error = mpiWriteRaw(&c, ciphertext, k);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Length of the resulting ciphertext
+      *ciphertextLen = k;
+
+      //Debug message
+      TRACE_DEBUG("  Ciphertext:\r\n");
+      TRACE_DEBUG_ARRAY("    ", ciphertext, *ciphertextLen);
+
+      //End of exception handling block
+   } while(0);
+
+   //Free previously allocated memory
+   mpiFree(&m);
+   mpiFree(&c);
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief RSAES-PKCS1-v1_5 decryption operation
+ * @param[in] key Recipient's RSA private key
+ * @param[in] ciphertext Ciphertext to be decrypted
+ * @param[in] ciphertextLen Length of the ciphertext to be decrypted
+ * @param[out] message Output buffer where to store the decrypted message
+ * @param[in] messageSize Size of the output buffer
+ * @param[out] messageLen Length of the decrypted message
+ * @return Error code
+ **/
+
+error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key, const uint8_t *ciphertext,
+   size_t ciphertextLen, uint8_t *message, size_t messageSize, size_t *messageLen)
+{
+   error_t error;
+   uint_t k;
+   size_t n;
+   uint8_t *p;
+   uint8_t *em;
+   Mpi c;
+   Mpi m;
+
+   //Check parameters
+   if(key == NULL || ciphertext == NULL)
+      return ERROR_INVALID_PARAMETER;
+   if(message == NULL || messageLen == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Debug message
+   TRACE_DEBUG("RSAES-PKCS1-v1_5 decryption...\r\n");
+   TRACE_DEBUG("  Modulus:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->n);
+   TRACE_DEBUG("  Public exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->e);
+   TRACE_DEBUG("  Private exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->d);
+   TRACE_DEBUG("  Prime 1:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->p);
+   TRACE_DEBUG("  Prime 2:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->q);
+   TRACE_DEBUG("  Prime exponent 1:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->dp);
+   TRACE_DEBUG("  Prime exponent 2:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->dq);
+   TRACE_DEBUG("  Coefficient:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->qinv);
+   TRACE_DEBUG("  Ciphertext:\r\n");
+   TRACE_DEBUG_ARRAY("    ", ciphertext, ciphertextLen);
+
+   //Initialize multiple-precision integers
+   mpiInit(&c);
+   mpiInit(&m);
+
+   //Get the length in octets of the modulus n
+   k = mpiGetByteLength(&key->n);
+
+   //Check the length of the ciphertext
+   if(ciphertextLen != k || ciphertextLen < 11)
+      return ERROR_INVALID_LENGTH;
+
+   //Allocate a buffer to store the encoded message EM
+   em = cryptoAllocMem(k);
+   //Failed to allocate memory?
+   if(em == NULL)
+      return ERROR_OUT_OF_MEMORY;
+
+   //Start of exception handling block
+   do
+   {
+      //Convert the ciphertext to an integer ciphertext representative c
+      error = mpiReadRaw(&c, ciphertext, ciphertextLen);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Apply the RSADP decryption primitive
+      error = rsadp(key, &c, &m);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Convert the message representative m to an encoded message EM of
+      //length k octets
+      error = mpiWriteRaw(&m, em, k);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Debug message
+      TRACE_DEBUG("  Encoded message:\r\n");
+      TRACE_DEBUG_ARRAY("    ", em, k);
+
+      //EME-PKCS1-v1_5 decoding
+      error = emePkcs1v15Decode(em, k, &p, &n);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Ensure that the output buffer is large enough
+      if(messageSize < n)
+      {
+         //Report an error
+         error = ERROR_INVALID_LENGTH;
+         break;
+      }
+
+      //Recover the length of the message
+      *messageLen = n;
+      //Copy the message contents
+      cryptoMemcpy(message, p, n);
+
+      //Debug message
+      TRACE_DEBUG("  Message:\r\n");
+      TRACE_DEBUG_ARRAY("    ", message, *messageLen);
+
+      //End of exception handling block
+   } while(0);
+
+   //Release the encoded message
+   cryptoFreeMem(em);
+
+   //Release multiple precision integers
+   mpiFree(&c);
+   mpiFree(&m);
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief RSAES-OAEP encryption operation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[in] key Recipient's RSA public key
+ * @param[in] hash Underlying hash function
+ * @param[in] label Optional label to be associated with the message
+ * @param[in] message Message to be encrypted
+ * @param[in] messageLen Length of the message to be encrypted
+ * @param[out] ciphertext Ciphertext resulting from the encryption operation
+ * @param[out] ciphertextLen Length of the resulting ciphertext
+ * @return Error code
+ **/
+
+error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo, void *prngContext,
+   const RsaPublicKey *key, const HashAlgo *hash, const char_t *label,
+   const uint8_t *message, size_t messageLen, uint8_t *ciphertext,
+   size_t *ciphertextLen)
+{
+   error_t error;
+   uint_t k;
+   uint8_t *em;
+   Mpi m;
+   Mpi c;
+
+   //Check parameters
+   if(prngAlgo == NULL || prngContext == NULL)
+      return ERROR_INVALID_PARAMETER;
+   if(key == NULL || message == NULL)
+      return ERROR_INVALID_PARAMETER;
+   if(ciphertext == NULL || ciphertextLen == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Debug message
+   TRACE_DEBUG("RSAES-OAEP encryption...\r\n");
+   TRACE_DEBUG("  Modulus:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->n);
+   TRACE_DEBUG("  Public exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->e);
+   TRACE_DEBUG("  Message:\r\n");
+   TRACE_DEBUG_ARRAY("    ", message, messageLen);
+
+   //Initialize multiple-precision integers
+   mpiInit(&m);
+   mpiInit(&c);
+
+   //Get the length in octets of the modulus n
+   k = mpiGetByteLength(&key->n);
+
+   //Make sure the modulus is valid
+   if(k == 0)
+      return ERROR_INVALID_PARAMETER;
+
+   //Point to the buffer where the encoded message EM will be formatted
+   em = ciphertext;
+
+   //EME-OAEP encoding
+   error = emeOaepEncode(prngAlgo, prngContext, hash, label, message,
+      messageLen, em, k);
+   //Any error to report?
+   if(error)
+      return error;
+
+   //Debug message
+   TRACE_DEBUG("  Encoded message:\r\n");
+   TRACE_DEBUG_ARRAY("    ", em, k);
+
+   //Start of exception handling block
+   do
+   {
+      //Convert the encoded message EM to an integer message representative m
+      error = mpiReadRaw(&m, em, k);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Apply the RSAEP encryption primitive
+      error = rsaep(key, &m, &c);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Convert the ciphertext representative c to a ciphertext of length k octets
+      error = mpiWriteRaw(&c, ciphertext, k);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Length of the resulting ciphertext
+      *ciphertextLen = k;
+
+      //Debug message
+      TRACE_DEBUG("  Ciphertext:\r\n");
+      TRACE_DEBUG_ARRAY("    ", ciphertext, *ciphertextLen);
+
+      //End of exception handling block
+   } while(0);
+
+   //Free previously allocated memory
+   mpiFree(&m);
+   mpiFree(&c);
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief RSAES-OAEP decryption operation
+ * @param[in] key Recipient's RSA private key
+ * @param[in] hash Underlying hash function
+ * @param[in] label Optional label to be associated with the message
+ * @param[in] ciphertext Ciphertext to be decrypted
+ * @param[in] ciphertextLen Length of the ciphertext to be decrypted
+ * @param[out] message Output buffer where to store the decrypted message
+ * @param[in] messageSize Size of the output buffer
+ * @param[out] messageLen Length of the decrypted message
+ * @return Error code
+ **/
+
+error_t rsaesOaepDecrypt(const RsaPrivateKey *key, const HashAlgo *hash,
+   const char_t *label, const uint8_t *ciphertext, size_t ciphertextLen,
+   uint8_t *message, size_t messageSize, size_t *messageLen)
+{
+   error_t error;
+   uint_t k;
+   size_t n;
+   uint8_t *p;
+   uint8_t *em;
+   Mpi c;
+   Mpi m;
+
+   //Check parameters
+   if(key == NULL || ciphertext == NULL)
+      return ERROR_INVALID_PARAMETER;
+   if(message == NULL || messageLen == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Debug message
+   TRACE_DEBUG("RSAES-OAEP decryption...\r\n");
+   TRACE_DEBUG("  Modulus:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->n);
+   TRACE_DEBUG("  Public exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->e);
+   TRACE_DEBUG("  Private exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->d);
+   TRACE_DEBUG("  Prime 1:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->p);
+   TRACE_DEBUG("  Prime 2:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->q);
+   TRACE_DEBUG("  Prime exponent 1:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->dp);
+   TRACE_DEBUG("  Prime exponent 2:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->dq);
+   TRACE_DEBUG("  Coefficient:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->qinv);
+   TRACE_DEBUG("  Ciphertext:\r\n");
+   TRACE_DEBUG_ARRAY("    ", ciphertext, ciphertextLen);
+
+   //Initialize multiple-precision integers
+   mpiInit(&c);
+   mpiInit(&m);
+
+   //Get the length in octets of the modulus n
+   k = mpiGetByteLength(&key->n);
+
+   //Check the length of the modulus
+   if(k < (2 * hash->digestSize + 2))
+      return ERROR_INVALID_PARAMETER;
+
+   //Check the length of the ciphertext
+   if(ciphertextLen != k)
+      return ERROR_INVALID_LENGTH;
+
+   //Allocate a buffer to store the encoded message EM
+   em = cryptoAllocMem(k);
+   //Failed to allocate memory?
+   if(em == NULL)
+      return ERROR_OUT_OF_MEMORY;
+
+   //Start of exception handling block
+   do
+   {
+      //Convert the ciphertext to an integer ciphertext representative c
+      error = mpiReadRaw(&c, ciphertext, ciphertextLen);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Apply the RSADP decryption primitive
+      error = rsadp(key, &c, &m);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Convert the message representative m to an encoded message EM of
+      //length k octets
+      error = mpiWriteRaw(&m, em, k);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Debug message
+      TRACE_DEBUG("  Encoded message:\r\n");
+      TRACE_DEBUG_ARRAY("    ", em, k);
+
+      //EME-OAEP decoding
+      error = emeOaepDecode(hash, label, em, k, &p, &n);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Ensure that the output buffer is large enough
+      if(messageSize < n)
+      {
+         //Report an error
+         error = ERROR_INVALID_LENGTH;
+         break;
+      }
+
+      //Recover the length of the message
+      *messageLen = n;
+      //Copy the message contents
+      cryptoMemcpy(message, p, n);
+
+      //Debug message
+      TRACE_DEBUG("  Message:\r\n");
+      TRACE_DEBUG_ARRAY("    ", message, *messageLen);
+
+      //End of exception handling block
+   } while(0);
+
+   //Release the encoded message
+   cryptoFreeMem(em);
+
+   //Release multiple precision integers
+   mpiFree(&c);
+   mpiFree(&m);
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief RSASSA-PKCS1-v1_5 signature generation operation
+ * @param[in] key Signer's RSA private key
+ * @param[in] hash Hash function used to digest the message
+ * @param[in] digest Digest of the message to be signed
+ * @param[out] signature Resulting signature
+ * @param[out] signatureLen Length of the resulting signature
+ * @return Error code
+ **/
+
+error_t rsassaPkcs1v15Sign(const RsaPrivateKey *key, const HashAlgo *hash,
+   const uint8_t *digest, uint8_t *signature, size_t *signatureLen)
+{
+   error_t error;
+   uint_t k;
+   uint8_t *em;
+   Mpi m;
+   Mpi s;
+   Mpi t;
+
+   //Check parameters
+   if(key == NULL || hash == NULL || digest == NULL)
+      return ERROR_INVALID_PARAMETER;
+   if(signature == NULL || signatureLen == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Debug message
+   TRACE_DEBUG("RSASSA-PKCS1-v1_5 signature generation...\r\n");
+   TRACE_DEBUG("  Modulus:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->n);
+   TRACE_DEBUG("  Public exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->e);
+   TRACE_DEBUG("  Private exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->d);
+   TRACE_DEBUG("  Prime 1:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->p);
+   TRACE_DEBUG("  Prime 2:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->q);
+   TRACE_DEBUG("  Prime exponent 1:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->dp);
+   TRACE_DEBUG("  Prime exponent 2:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->dq);
+   TRACE_DEBUG("  Coefficient:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->qinv);
+   TRACE_DEBUG("  Message digest:\r\n");
+   TRACE_DEBUG_ARRAY("    ", digest, hash->digestSize);
+
+   //Initialize multiple-precision integers
+   mpiInit(&m);
+   mpiInit(&s);
+   mpiInit(&t);
+
+   //Get the length in octets of the modulus n
+   k = mpiGetByteLength(&key->n);
+   //Point to the buffer where the encoded message EM will be formatted
+   em = signature;
+
+   //Apply the EMSA-PKCS1-v1.5 encoding operation
+   error = emsaPkcs1v15Encode(hash, digest, em, k);
+   //Any error to report?
+   if(error)
+      return error;
+
+   //Debug message
+   TRACE_DEBUG("  Encoded message:\r\n");
+   TRACE_DEBUG_ARRAY("    ", em, k);
+
+   //Start of exception handling block
+   do
+   {
+      //Convert the encoded message EM to an integer message representative m
+      error = mpiReadRaw(&m, em, k);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Apply the RSASP1 signature primitive
+      error = rsasp1(key, &m, &s);
+      //Any error to report?
+      if(error)
+         break;
+
+      //When unprotected, RSA–CRT is vulnerable to the Bellcore attack
+      if(key->n.size && key->e.size && key->p.size && key->q.size &&
+         key->dp.size && key->dq.size && key->qinv.size)
+      {
+         RsaPublicKey publicKey;
+
+         //Retrieve modulus and public exponent
+         publicKey.n = key->n;
+         publicKey.e = key->e;
+
+         //Apply the RSAVP1 verification primitive
+         error = rsavp1(&publicKey, &s, &t);
+         //Any error to report?
+         if(error)
+            break;
+
+         //Verify the RSA signature in order to protect against RSA-CRT key leak
+         if(mpiComp(&t, &m) != 0)
+         {
+            //A signature fault has been detected
+            error = ERROR_FAILURE;
+            break;
+         }
+      }
+
+      //Convert the signature representative s to a signature of length k octets
+      error = mpiWriteRaw(&s, signature, k);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Length of the resulting signature
+      *signatureLen = k;
+
+      //Debug message
+      TRACE_DEBUG("  Signature:\r\n");
+      TRACE_DEBUG_ARRAY("    ", signature, *signatureLen);
+
+      //End of exception handling block
+   } while(0);
+
+   //Free previously allocated memory
+   mpiFree(&m);
+   mpiFree(&s);
+   mpiFree(&t);
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief RSASSA-PKCS1-v1_5 signature verification operation
+ * @param[in] key Signer's RSA public key
+ * @param[in] hash Hash function used to digest the message
+ * @param[in] digest Digest of the message whose signature is to be verified
+ * @param[in] signature Signature to be verified
+ * @param[in] signatureLen Length of the signature to be verified
+ * @return Error code
+ **/
+
+error_t rsassaPkcs1v15Verify(const RsaPublicKey *key, const HashAlgo *hash,
+   const uint8_t *digest, const uint8_t *signature, size_t signatureLen)
+{
+   error_t error;
+   uint_t k;
+   uint8_t *em;
+   Mpi s;
+   Mpi m;
+
+   //Check parameters
+   if(key == NULL || hash == NULL || digest == NULL || signature == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Debug message
+   TRACE_DEBUG("RSASSA-PKCS1-v1_5 signature verification...\r\n");
+   TRACE_DEBUG("  Modulus:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->n);
+   TRACE_DEBUG("  Public exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->e);
+   TRACE_DEBUG("  Message digest:\r\n");
+   TRACE_DEBUG_ARRAY("    ", digest, hash->digestSize);
+   TRACE_DEBUG("  Signature:\r\n");
+   TRACE_DEBUG_ARRAY("    ", signature, signatureLen);
+
+   //Initialize multiple-precision integers
+   mpiInit(&s);
+   mpiInit(&m);
+
+   //Get the length in octets of the modulus n
+   k = mpiGetByteLength(&key->n);
+
+   //Make sure the modulus is valid
+   if(k == 0)
+      return ERROR_INVALID_PARAMETER;
+
+   //Check the length of the signature
+   if(signatureLen != k)
+      return ERROR_INVALID_SIGNATURE;
+
+   //Allocate a memory buffer to hold the encoded message
+   em = cryptoAllocMem(k);
+   //Failed to allocate memory?
+   if(em == NULL)
+      return ERROR_OUT_OF_MEMORY;
+
+   //Start of exception handling block
+   do
+   {
+      //Convert the signature to an integer signature representative s
+      error = mpiReadRaw(&s, signature, signatureLen);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Apply the RSAVP1 verification primitive
+      error = rsavp1(key, &s, &m);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Convert the message representative m to an encoded message EM of
+      //length k octets
+      error = mpiWriteRaw(&m, em, k);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Debug message
+      TRACE_DEBUG("  Encoded message:\r\n");
+      TRACE_DEBUG_ARRAY("    ", em, k);
+
+      //Verify the encoded message EM
+      error = emsaPkcs1v15Verify(hash, digest, em, k);
+      //Any error to report?
+      if(error)
+      {
+         //The signature is not valid
+         error = ERROR_INVALID_SIGNATURE;
+         break;
+      }
+
+      //End of exception handling block
+   } while(0);
+
+   //Release the encoded message
+   cryptoFreeMem(em);
+
+   //Release multiple precision integers
+   mpiFree(&s);
+   mpiFree(&m);
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief RSASSA-PSS signature generation operation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[in] key Signer's RSA private key
+ * @param[in] hash Hash function used to digest the message
+ * @param[in] saltLen Length of the salt, in bytes
+ * @param[in] digest Digest of the message to be signed
+ * @param[out] signature Resulting signature
+ * @param[out] signatureLen Length of the resulting signature
+ * @return Error code
+ **/
+
+error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
+   const RsaPrivateKey *key, const HashAlgo *hash, size_t saltLen,
+   const uint8_t *digest, uint8_t *signature, size_t *signatureLen)
+{
+   error_t error;
+   uint_t k;
+   uint_t modBits;
+   uint8_t *em;
+   Mpi m;
+   Mpi s;
+
+   //Check parameters
+   if(prngAlgo == NULL || prngContext == NULL)
+      return ERROR_INVALID_PARAMETER;
+   if(key == NULL || hash == NULL || digest == NULL)
+      return ERROR_INVALID_PARAMETER;
+   if(signature == NULL || signatureLen == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Debug message
+   TRACE_DEBUG("RSASSA-PSS signature generation...\r\n");
+   TRACE_DEBUG("  Modulus:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->n);
+   TRACE_DEBUG("  Public exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->e);
+   TRACE_DEBUG("  Private exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->d);
+   TRACE_DEBUG("  Prime 1:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->p);
+   TRACE_DEBUG("  Prime 2:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->q);
+   TRACE_DEBUG("  Prime exponent 1:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->dp);
+   TRACE_DEBUG("  Prime exponent 2:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->dq);
+   TRACE_DEBUG("  Coefficient:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->qinv);
+   TRACE_DEBUG("  Message digest:\r\n");
+   TRACE_DEBUG_ARRAY("    ", digest, hash->digestSize);
+
+   //Initialize multiple-precision integers
+   mpiInit(&m);
+   mpiInit(&s);
+
+   //modBits is the length in bits of the modulus n
+   modBits = mpiGetBitLength(&key->n);
+
+   //Make sure the modulus is valid
+   if(modBits == 0)
+      return ERROR_INVALID_PARAMETER;
+
+   //Calculate the length in octets of the modulus n
+   k = (modBits + 7) / 8;
+
+   //Point to the buffer where the encoded message EM will be formatted
+   em = signature;
+
+   //Apply the EMSA-PSS encoding operation to the message M to produce an
+   //encoded message EM of length ceil((modBits - 1) / 8) octets
+   error = emsaPssEncode(prngAlgo, prngContext, hash, saltLen, digest,
+      em, modBits - 1);
+   //Any error to report?
+   if(error)
+      return error;
+
+   //Debug message
+   TRACE_DEBUG("  Encoded message:\r\n");
+   TRACE_DEBUG_ARRAY("    ", em, (modBits + 6) / 8);
+
+   //Start of exception handling block
+   do
+   {
+      //Convert the encoded message EM to an integer message representative m
+      error = mpiReadRaw(&m, em, (modBits + 6) / 8);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Apply the RSASP1 signature primitive
+      error = rsasp1(key, &m, &s);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Convert the signature representative s to a signature of length k octets
+      error = mpiWriteRaw(&s, signature, k);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Length of the resulting signature
+      *signatureLen = k;
+
+      //Debug message
+      TRACE_DEBUG("  Signature:\r\n");
+      TRACE_DEBUG_ARRAY("    ", signature, *signatureLen);
+
+      //End of exception handling block
+   } while(0);
+
+   //Free previously allocated memory
+   mpiFree(&m);
+   mpiFree(&s);
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief RSASSA-PSS signature verification operation
+ * @param[in] key Signer's RSA public key
+ * @param[in] hash Hash function used to digest the message
+ * @param[in] saltLen Length of the salt, in bytes
+ * @param[in] digest Digest of the message whose signature is to be verified
+ * @param[in] signature Signature to be verified
+ * @param[in] signatureLen Length of the signature to be verified
+ * @return Error code
+ **/
+
+error_t rsassaPssVerify(const RsaPublicKey *key, const HashAlgo *hash,
+   size_t saltLen, const uint8_t *digest, const uint8_t *signature,
+   size_t signatureLen)
+{
+   error_t error;
+   uint_t k;
+   uint_t modBits;
+   uint8_t *em;
+   Mpi s;
+   Mpi m;
+
+   //Check parameters
+   if(key == NULL || hash == NULL || digest == NULL || signature == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Debug message
+   TRACE_DEBUG("RSASSA-PSS signature verification...\r\n");
+   TRACE_DEBUG("  Modulus:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->n);
+   TRACE_DEBUG("  Public exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &key->e);
+   TRACE_DEBUG("  Message digest:\r\n");
+   TRACE_DEBUG_ARRAY("    ", digest, hash->digestSize);
+   TRACE_DEBUG("  Signature:\r\n");
+   TRACE_DEBUG_ARRAY("    ", signature, signatureLen);
+
+   //Initialize multiple-precision integers
+   mpiInit(&s);
+   mpiInit(&m);
+
+   //modBits is the length in bits of the modulus n
+   modBits = mpiGetBitLength(&key->n);
+
+   //Make sure the modulus is valid
+   if(modBits == 0)
+      return ERROR_INVALID_PARAMETER;
+
+   //Calculate the length in octets of the modulus n
+   k = (modBits + 7) / 8;
+
+   //Check the length of the signature
+   if(signatureLen != k)
+      return ERROR_INVALID_SIGNATURE;
+
+   //Allocate a memory buffer to hold the encoded message
+   em = cryptoAllocMem(k);
+   //Failed to allocate memory?
+   if(em == NULL)
+      return ERROR_OUT_OF_MEMORY;
+
+   //Start of exception handling block
+   do
+   {
+      //Convert the signature to an integer signature representative s
+      error = mpiReadRaw(&s, signature, signatureLen);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Apply the RSAVP1 verification primitive
+      error = rsavp1(key, &s, &m);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Convert the message representative m to an encoded message EM of
+      //length emLen = ceil((modBits - 1) / 8) octets
+      error = mpiWriteRaw(&m, em, (modBits + 6) / 8);
+      //Conversion failed?
+      if(error)
+         break;
+
+      //Debug message
+      TRACE_DEBUG("  Encoded message:\r\n");
+      TRACE_DEBUG_ARRAY("    ", em, (modBits + 6) / 8);
+
+      //Apply the EMSA-PSS verification operation to the message M and the
+      //encoded message EM to determine whether they are consistent
+      error = emsaPssVerify(hash, saltLen, digest, em, modBits - 1);
+      //Any error to report?
+      if(error)
+      {
+         //The signature is not valid
+         error = ERROR_INVALID_SIGNATURE;
+         break;
+      }
+
+      //End of exception handling block
+   } while(0);
+
+   //Release the encoded message
+   cryptoFreeMem(em);
+
+   //Release multiple precision integers
+   mpiFree(&s);
+   mpiFree(&m);
+
+   //Return status code
+   return error;
+}
+
+
+   /**
  * @brief RSA encryption primitive
  *
  * The RSA encryption primitive produces a ciphertext representative from
@@ -241,9 +1208,9 @@ end:
 
 error_t rsasp1(const RsaPrivateKey *key, const Mpi *m, Mpi *s)
 {
-   //RSASP1 primitive is the same as RSADP except for the names of its
-   //input and output arguments. They are distinguished as they are
-   //intended for different purposes
+   //RSASP1 primitive is the same as RSADP except for the names of its input
+   //and output arguments. They are distinguished as they are intended for
+   //different purposes
    return rsadp(key, m, s);
 }
 
@@ -262,76 +1229,50 @@ error_t rsasp1(const RsaPrivateKey *key, const Mpi *m, Mpi *s)
 
 error_t rsavp1(const RsaPublicKey *key, const Mpi *s, Mpi *m)
 {
-   //RSAVP1 primitive is the same as RSAEP except for the names of its
-   //input and output arguments. They are distinguished as they are
-   //intended for different purposes
+   //RSAVP1 primitive is the same as RSAEP except for the names of its input
+   //and output arguments. They are distinguished as they are intended for
+   //different purposes
    return rsaep(key, s, m);
 }
 
 
 /**
- * @brief PKCS #1 v1.5 encryption operation
+ * @brief EME-PKCS1-v1_5 encoding operation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] key Recipient's RSA public key
  * @param[in] message Message to be encrypted
  * @param[in] messageLen Length of the message to be encrypted
- * @param[out] ciphertext Ciphertext resulting from the encryption operation
- * @param[out] ciphertextLen Length of the resulting ciphertext
+ * @param[out] em Encoded message
+ * @param[in] k Length of the encoded message
  * @return Error code
  **/
 
-error_t rsaesPkcs1v15Encrypt(const PrngAlgo *prngAlgo, void *prngContext, const RsaPublicKey *key,
-   const uint8_t *message, size_t messageLen, uint8_t *ciphertext, size_t *ciphertextLen)
+error_t emePkcs1v15Encode(const PrngAlgo *prngAlgo, void *prngContext,
+   const uint8_t *message, size_t messageLen, uint8_t *em, size_t k)
 {
    error_t error;
-   uint_t i;
-   uint_t j;
-   uint_t k;
-   uint_t n;
+   size_t i;
+   size_t j;
+   size_t n;
    uint8_t *p;
-   Mpi m;
-   Mpi c;
-
-   //Check parameters
-   if(key == NULL || message == NULL)
-      return ERROR_INVALID_PARAMETER;
-   if(ciphertext == NULL || ciphertextLen == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Debug message
-   TRACE_DEBUG("RSA PKCS #1 v1.5 encryption...\r\n");
-   TRACE_DEBUG("  Modulus:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->n);
-   TRACE_DEBUG("  Public exponent:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->e);
-   TRACE_DEBUG("  Message:\r\n");
-   TRACE_DEBUG_ARRAY("    ", message, messageLen);
-
-   //Initialize multiple-precision integers
-   mpiInit(&m);
-   mpiInit(&c);
-
-   //Get the length in octets of the modulus n
-   k = mpiGetByteLength(&key->n);
 
    //Check the length of the message
    if((messageLen + 11) > k)
       return ERROR_INVALID_LENGTH;
 
-   //Point to the buffer where the encoded message EM will be formatted
-   p = ciphertext;
-
-   //The leading 0x00 octet ensures that the encoded message,
-   //converted to an integer, is less than the modulus
-   *(p++) = 0x00;
+   //The leading 0x00 octet ensures that the encoded message, converted to
+   //an integer, is less than the modulus
+   em[0] = 0x00;
    //For a public-key operation, the block type BT shall be 0x02
-   *(p++) = 0x02;
+   em[1] = 0x02;
 
-   //Length of the padding string PS
+   //Point to the buffer where to format the padding string PS
+   p = em + 2;
+   //Determine the length of the padding string
    n = k - messageLen - 3;
 
-   //Generate the padding string (pseudo-randomly generated non-zero octets)
+   //Generate an octet string PS of length k - mLen - 3 consisting of
+   //pseudo-randomly generated nonzero octets
    while(n > 0)
    {
       //Generate random data
@@ -345,7 +1286,9 @@ error_t rsaesPkcs1v15Encrypt(const PrngAlgo *prngAlgo, void *prngContext, const 
       {
          //Strip any byte with a value of zero
          if(p[j] != 0)
+         {
             p[i++] = p[j];
+         }
       }
 
       //Advance data pointer
@@ -354,418 +1297,246 @@ error_t rsaesPkcs1v15Encrypt(const PrngAlgo *prngAlgo, void *prngContext, const 
    }
 
    //Append a 0x00 octet to the padding string
-   *(p++) = 0x00;
+   *p = 0x00;
+
    //Copy the message to be encrypted
-   cryptoMemcpy(p, message, messageLen);
+   cryptoMemcpy(p + 1, message, messageLen);
 
-   //Rewind to the beginning of the encoded message
-   p = ciphertext;
-
-   //Debug message
-   TRACE_DEBUG("  Encoded message\r\n");
-   TRACE_DEBUG_ARRAY("    ", p, k);
-
-   //Start of exception handling block
-   do
-   {
-      //Convert the encoded message EM to an integer message representative m
-      error = mpiReadRaw(&m, p, k);
-      //Conversion failed?
-      if(error)
-         break;
-
-      //Apply the RSAEP encryption primitive
-      error = rsaep(key, &m, &c);
-      //Any error to report?
-      if(error)
-         break;
-
-      //Convert the ciphertext representative c to a ciphertext of length k octets
-      error = mpiWriteRaw(&c, ciphertext, k);
-      //Conversion failed?
-      if(error)
-         break;
-
-      //Length of the resulting ciphertext
-      *ciphertextLen = k;
-
-      //Debug message
-      TRACE_DEBUG("  Ciphertext:\r\n");
-      TRACE_DEBUG_ARRAY("    ", ciphertext, *ciphertextLen);
-
-      //End of exception handling block
-   } while(0);
-
-   //Free previously allocated memory
-   mpiFree(&m);
-   mpiFree(&c);
-
-   //Return status code
-   return error;
+   //Successful processing
+   return NO_ERROR;
 }
 
 
 /**
- * @brief PKCS #1 v1.5 decryption operation
- * @param[in] key Recipient's RSA private key
- * @param[in] ciphertext Ciphertext to be decrypted
- * @param[in] ciphertextLen Length of the ciphertext to be decrypted
- * @param[out] message Output buffer where to store the decrypted message
- * @param[in] messageSize Size of the output buffer
+ * @brief EME-PKCS1-v1_5 decoding operation
+ * @param[in] em Encoded message
+ * @param[in] k Length of the encoded message
+ * @param[out] message Pointer to the decrypted message
  * @param[out] messageLen Length of the decrypted message
  * @return Error code
  **/
 
-error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key, const uint8_t *ciphertext,
-   size_t ciphertextLen, uint8_t *message, size_t messageSize, size_t *messageLen)
+error_t emePkcs1v15Decode(uint8_t *em, size_t k, uint8_t **message,
+   size_t *messageLen)
 {
-   error_t error;
-   uint_t i;
-   uint_t k;
-   uint8_t *em;
-   Mpi c;
-   Mpi m;
+   size_t i;
+   size_t m;
+   uint32_t c;
+   uint32_t bad;
 
-   //Check parameters
-   if(key == NULL || ciphertext == NULL)
-      return ERROR_INVALID_PARAMETER;
-   if(message == NULL || messageLen == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Debug message
-   TRACE_DEBUG("RSA PKCS #1 v1.5 decryption...\r\n");
-   TRACE_DEBUG("  Modulus:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->n);
-   TRACE_DEBUG("  Public exponent:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->e);
-   TRACE_DEBUG("  Private exponent:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->d);
-   TRACE_DEBUG("  Prime 1:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->p);
-   TRACE_DEBUG("  Prime 2:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->q);
-   TRACE_DEBUG("  Prime exponent 1:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->dp);
-   TRACE_DEBUG("  Prime exponent 2:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->dq);
-   TRACE_DEBUG("  Coefficient:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->qinv);
-   TRACE_DEBUG("  Ciphertext:\r\n");
-   TRACE_DEBUG_ARRAY("    ", ciphertext, ciphertextLen);
-
-   //Initialize multiple-precision integers
-   mpiInit(&c);
-   mpiInit(&m);
-
-   //Get the length in octets of the modulus n
-   k = mpiGetByteLength(&key->n);
-
-   //Check the length of the ciphertext
-   if(ciphertextLen != k || ciphertextLen < 11)
-      return ERROR_INVALID_LENGTH;
-
-   //Allocate a buffer to store the encoded message EM
-   em = cryptoAllocMem(k);
-   //Failed to allocate memory?
-   if(em == NULL)
-      return ERROR_OUT_OF_MEMORY;
-
-   //Start of exception handling block
-   do
+   //Separate the encoded message EM into an octet string PS consisting of
+   //nonzero octets and a message M
+   for(m = 0, i = 2; i < k; i++)
    {
-      //Convert the ciphertext to an integer ciphertext representative c
-      error = mpiReadRaw(&c, ciphertext, ciphertextLen);
-      //Conversion failed?
-      if(error)
-         break;
+      //Constant time implementation
+      c = CRYPTO_TEST_Z_8(em[i]);
+      c &= CRYPTO_TEST_Z_32(m);
+      m = CRYPTO_SELECT_32(m, i, c);
+   }
 
-      //Apply the RSADP decryption primitive
-      error = rsadp(key, &c, &m);
-      //Any error to report?
-      if(error)
-         break;
+   //Point to the first byte of the message
+   *message = em + m + 1;
+   //Retrieve the length of the message
+   *messageLen = k - m - 1;
 
-      //Convert the message representative m to an encoded message EM of length k octets
-      error = mpiWriteRaw(&m, em, k);
-      //Conversion failed?
-      if(error)
-         break;
+   //If the first octet of EM does not have hexadecimal value 0x00, then
+   //report a decryption error
+   bad = em[0];
 
-      //Debug message
-      TRACE_DEBUG("  Encoded message\r\n");
-      TRACE_DEBUG_ARRAY("    ", em, k);
+   //If the second octet of EM does not have hexadecimal value 0x02, then
+   //report a decryption error
+   bad |= em[1] ^ 0x02;
 
-      //The first octet of EM must have a value of 0x00
-      //and the block type BT shall be 0x02
-      if(em[0] != 0x00 || em[1] != 0x02)
-      {
-         //Report an error
-         error = ERROR_UNEXPECTED_VALUE;
-         break;
-      }
+   //If there is no octet with hexadecimal value 0x00 to separate PS from M,
+   //then report a decryption error
+   bad |= CRYPTO_TEST_Z_32(m);
 
-      //An octet with hexadecimal value 0x00 is used to separate PS from M
-      for(i = 2; i < k && em[i] != 0x00; i++);
+   //If the length of PS is less than 8 octets, then report a decryption error
+   bad |= CRYPTO_TEST_LT_32(m, 10);
 
-      //Check whether the padding string is valid
-      if(i < 10 || i >= k)
-      {
-         //Report an error
-         error = ERROR_INVALID_PADDING;
-         break;
-      }
-
-      //Ensure that the output buffer is large enough
-      if(messageSize < (k - i - 1))
-      {
-         //Report an error
-         error = ERROR_INVALID_LENGTH;
-         break;
-      }
-
-      //Recover the length of the message
-      *messageLen = k - i - 1;
-      //Copy the message contents
-      cryptoMemcpy(message, em + i + 1, *messageLen);
-
-      //Debug message
-      TRACE_DEBUG("  Message:\r\n");
-      TRACE_DEBUG_ARRAY("    ", message, *messageLen);
-
-      //End of exception handling block
-   } while(0);
-
-   //Release multiple precision integers
-   mpiFree(&c);
-   mpiFree(&m);
-   //Free previously allocated memory
-   cryptoFreeMem(em);
-
-   //Return status code
-   return error;
+   //Care must be taken to ensure that an opponent cannot distinguish the
+   //different error conditions, whether by error message or timing
+   return (bad != 0) ? ERROR_DECRYPTION_FAILED : NO_ERROR;
 }
 
 
 /**
- * @brief PKCS #1 v1.5 signature generation operation
- * @param[in] key Signer's RSA private key
- * @param[in] hash Hash function used to digest the message
- * @param[in] digest Digest of the message to be signed
- * @param[out] signature Resulting signature
- * @param[out] signatureLen Length of the resulting signature
+ * @brief EME-OAEP encoding operation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[in] hash Underlying hash function
+ * @param[in] label Optional label to be associated with the message
+ * @param[in] message Message to be encrypted
+ * @param[in] messageLen Length of the message to be encrypted
+ * @param[out] em Encoded message
+ * @param[in] k Length of the encoded message
  * @return Error code
  **/
 
-error_t rsassaPkcs1v15Sign(const RsaPrivateKey *key, const HashAlgo *hash,
-   const uint8_t *digest, uint8_t *signature, size_t *signatureLen)
+error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
+   const HashAlgo *hash, const char_t *label, const uint8_t *message,
+   size_t messageLen, uint8_t *em, size_t k)
 {
    error_t error;
-   uint_t k;
-   uint8_t *em;
-   Mpi m;
-   Mpi s;
+   size_t n;
+   uint8_t *db;
+   uint8_t *seed;
+   HashContext *hashContext;
 
-   //Check parameters
-   if(key == NULL || hash == NULL || digest == NULL)
-      return ERROR_INVALID_PARAMETER;
-   if(signature == NULL || signatureLen == NULL)
-      return ERROR_INVALID_PARAMETER;
+   //Check the length of the message
+   if(messageLen > (k - 2 * hash->digestSize - 2))
+      return ERROR_INVALID_LENGTH;
 
-   //Debug message
-   TRACE_DEBUG("RSA PKCS #1 v1.5 signature generation...\r\n");
-   TRACE_DEBUG("  Modulus:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->n);
-   TRACE_DEBUG("  Public exponent:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->e);
-   TRACE_DEBUG("  Private exponent:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->d);
-   TRACE_DEBUG("  Prime 1:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->p);
-   TRACE_DEBUG("  Prime 2:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->q);
-   TRACE_DEBUG("  Prime exponent 1:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->dp);
-   TRACE_DEBUG("  Prime exponent 2:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->dq);
-   TRACE_DEBUG("  Coefficient:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->qinv);
-   TRACE_DEBUG("  Message digest:\r\n");
-   TRACE_DEBUG_ARRAY("    ", digest, hash->digestSize);
+   //Point to the buffer where to format the seed
+   seed = em + 1;
+   //Point to the buffer where to format the data block
+   db = em + hash->digestSize + 1;
 
-   //Initialize multiple-precision integers
-   mpiInit(&m);
-   mpiInit(&s);
-
-   //Get the length in octets of the modulus n
-   k = mpiGetByteLength(&key->n);
-   //Point to the buffer where the encoded message EM will be generated
-   em = signature;
-
-   //Apply the EMSA-PKCS1-v1.5 encoding operation
-   error = emsaPkcs1v15Encode(hash, digest, em, k);
+   //Generate a random octet string seed of length hLen
+   error = prngAlgo->read(prngContext, seed, hash->digestSize);
    //Any error to report?
    if(error)
       return error;
 
-   //Debug message
-   TRACE_DEBUG("  Encoded message\r\n");
-   TRACE_DEBUG_ARRAY("    ", em, k);
+   //Allocate a memory buffer to hold the hash context
+   hashContext = cryptoAllocMem(hash->contextSize);
+   //Failed to allocate memory?
+   if(hashContext == NULL)
+      return ERROR_OUT_OF_MEMORY;
 
-   //Start of exception handling block
-   do
-   {
-      //Convert the encoded message EM to an integer message representative m
-      error = mpiReadRaw(&m, em, k);
-      //Conversion failed?
-      if(error)
-         break;
+   //If the label L is not provided, let L be the empty string
+   if(label == NULL)
+      label = "";
 
-      //Apply the RSASP1 signature primitive
-      error = rsasp1(key, &m, &s);
-      //Any error to report?
-      if(error)
-         break;
+   //Let lHash = Hash(L)
+   hash->init(hashContext);
+   hash->update(hashContext, label, strlen(label));
+   hash->final(hashContext, db);
 
-      //Convert the signature representative s to a signature of length k octets
-      error = mpiWriteRaw(&s, signature, k);
-      //Conversion failed?
-      if(error)
-         break;
+   //The padding string PS consists of k - mLen - 2hLen - 2 zero octets
+   n = k - messageLen - 2 * hash->digestSize - 2;
+   //Generate the padding string
+   memset(db + hash->digestSize, 0, n);
 
-      //Length of the resulting signature
-      *signatureLen = k;
+   //Concatenate lHash, PS, a single octet with hexadecimal value 0x01, and
+   //the message M to form a data block DB of length k - hLen - 1 octets
+   db[hash->digestSize + n] = 0x01;
+   cryptoMemcpy(db + hash->digestSize + n + 1, message, messageLen);
 
-      //Debug message
-      TRACE_DEBUG("  Signature:\r\n");
-      TRACE_DEBUG_ARRAY("    ", signature, *signatureLen);
+   //Calculate the length of the data block
+   n = k - hash->digestSize - 1;
 
-      //End of exception handling block
-   } while(0);
+   //Let maskedDB = DB xor MGF(seed, k - hLen - 1)
+   mgf1(hash, hashContext, seed, hash->digestSize, db, n);
+   //Let maskedSeed = seed xor MGF(maskedDB, hLen)
+   mgf1(hash, hashContext, db, n, seed, hash->digestSize);
 
-   //Free previously allocated memory
-   mpiFree(&m);
-   mpiFree(&s);
+   //Concatenate a single octet with hexadecimal value 0x00, maskedSeed, and
+   //maskedDB to form an encoded message EM of length k octets
+   em[0] = 0x00;
 
-   //Return status code
-   return error;
+   //Release hash context
+   cryptoFreeMem(hashContext);
+
+   //Successful processing
+   return NO_ERROR;
 }
 
 
 /**
- * @brief PKCS #1 v1.5 signature verification operation
- * @param[in] key Signer's RSA public key
- * @param[in] hash Hash function used to digest the message
- * @param[in] digest Digest of the message whose signature is to be verified
- * @param[in] signature Signature to be verified
- * @param[in] signatureLen Length of the signature to be verified
+ * @brief EME-OAEP decoding operation
+ * @param[in] hash Underlying hash function
+ * @param[in] label Optional label to be associated with the message
+ * @param[in] em Encoded message
+ * @param[in] k Length of the encoded message
+ * @param[out] message Pointer to the decrypted message
+ * @param[out] messageLen Length of the decrypted message
  * @return Error code
  **/
 
-error_t rsassaPkcs1v15Verify(const RsaPublicKey *key, const HashAlgo *hash,
-   const uint8_t *digest, const uint8_t *signature, size_t signatureLen)
+error_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
+   size_t k, uint8_t **message, size_t *messageLen)
 {
-   error_t error;
-   uint_t k;
-   uint8_t *em;
-   const uint8_t *oid;
-   size_t oidLen;
-   const uint8_t *d;
-   size_t dLen;
-   Mpi s;
-   Mpi m;
+   size_t i;
+   size_t m;
+   size_t n;
+   uint32_t c;
+   uint32_t bad;
+   uint8_t *db;
+   uint8_t *seed;
+   uint8_t lHash[MAX_HASH_DIGEST_SIZE];
+   HashContext *hashContext;
 
-   //Check parameters
-   if(key == NULL || hash == NULL || digest == NULL || signature == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Debug message
-   TRACE_DEBUG("RSA PKCS #1 v1.5 signature verification...\r\n");
-   TRACE_DEBUG("  Modulus:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->n);
-   TRACE_DEBUG("  Public exponent:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->e);
-   TRACE_DEBUG("  Message digest:\r\n");
-   TRACE_DEBUG_ARRAY("    ", digest, hash->digestSize);
-   TRACE_DEBUG("  Signature:\r\n");
-   TRACE_DEBUG_ARRAY("    ", signature, signatureLen);
-
-   //Initialize multiple-precision integers
-   mpiInit(&s);
-   mpiInit(&m);
-
-   //Get the length in octets of the modulus n
-   k = mpiGetByteLength(&key->n);
-
-   //Check the length of the signature
-   if(signatureLen != k)
-      return ERROR_INVALID_SIGNATURE;
-
-   //Allocate a memory buffer to hold the encoded message
-   em = cryptoAllocMem(k);
+   //Allocate a memory buffer to hold the hash context
+   hashContext = cryptoAllocMem(hash->contextSize);
    //Failed to allocate memory?
-   if(em == NULL)
+   if(hashContext == NULL)
       return ERROR_OUT_OF_MEMORY;
 
-   //Start of exception handling block
-   do
+   //If the label L is not provided, let L be the empty string
+   if(label == NULL)
+      label = "";
+
+   //Let lHash = Hash(L)
+   hash->init(hashContext);
+   hash->update(hashContext, label, strlen(label));
+   hash->final(hashContext, lHash);
+
+   //Separate the encoded message EM into a single octet Y, an octet string
+   //maskedSeed of length hLen, and an octet string maskedDB of length k - hLen - 1
+   seed = em + 1;
+   db = em + hash->digestSize + 1;
+
+   //Calculate the length of the data block
+   n = k - hash->digestSize - 1;
+
+   //Let seed = maskedSeed xor MGF(maskedDB, hLen)
+   mgf1(hash, hashContext, db, n, seed, hash->digestSize);
+   //Let DB = maskedDB xor MGF(seed, k - hLen - 1)
+   mgf1(hash, hashContext, seed, hash->digestSize, db, n);
+
+   //Release hash context
+   cryptoFreeMem(hashContext);
+
+   //Separate DB into an octet string lHash' of length hLen, a padding string
+   //PS consisting of octets with hexadecimal value 0x00, and a message M
+   for(m = 0, i = hash->digestSize; i < n; i++)
    {
-      //Convert the signature to an integer signature representative s
-      error = mpiReadRaw(&s, signature, signatureLen);
-      //Conversion failed?
-      if(error)
-         break;
+      //Constant time implementation
+      c = CRYPTO_TEST_NZ_8(db[i]);
+      c &= CRYPTO_TEST_Z_32(m);
+      m = CRYPTO_SELECT_32(m, i, c);
+   }
 
-      //Apply the RSAVP1 verification primitive
-      error = rsavp1(key, &s, &m);
-      //Any error to report?
-      if(error)
-         break;
+   //Point to the first byte of the message
+   *message = db + m + 1;
+   //Retrieve the length of the message
+   *messageLen = n - m - 1;
 
-      //Convert the message representative m to an encoded message EM of length k octets
-      error = mpiWriteRaw(&m, em, k);
-      //Conversion failed?
-      if(error)
-         break;
+   //Make sure the padding string PS is terminated
+   bad = CRYPTO_TEST_Z_32(m);
 
-      //Debug message
-      TRACE_DEBUG("  Encoded message\r\n");
-      TRACE_DEBUG_ARRAY("    ", em, k);
+   //If there is no octet with hexadecimal value 0x01 to separate PS from M,
+   //then report a decryption error
+   bad |= db[m] ^ 0x01;
 
-      //Parse the encoded message EM
-      error = emsaPkcs1v15Decode(em, k, &oid, &oidLen, &d, &dLen);
-      //Any error to report?
-      if(error)
-         break;
+   //If lHash does not equal lHash', then report a decryption error
+   for(i = 0; i < hash->digestSize; i++)
+   {
+      bad |= db[i] ^ lHash[i];
+   }
 
-      //Assume an error...
-      error = ERROR_INVALID_SIGNATURE_ALGO;
+   //If Y is nonzero, then report a decryption error
+   bad |= em[0];
 
-      //Ensure the hash algorithm identifier matches the OID
-      if(oidComp(oid, oidLen, hash->oid, hash->oidSize))
-         break;
-      //Check the length of the digest
-      if(dLen != hash->digestSize)
-         break;
-
-      //Compare the message digest
-      error = cryptoMemcmp(digest, d, dLen) ? ERROR_INVALID_SIGNATURE : NO_ERROR;
-
-      //End of exception handling block
-   } while(0);
-
-   //Release multiple precision integers
-   mpiFree(&s);
-   mpiFree(&m);
-   //Free previously allocated memory
-   cryptoFreeMem(em);
-
-   //Return status code
-   return error;
+   //Care must be taken to ensure that an opponent cannot distinguish the
+   //different error conditions, whether by error message or timing
+   return (bad != 0) ? ERROR_DECRYPTION_FAILED : NO_ERROR;
 }
 
 
 /**
- * @brief PKCS #1 v1.5 encoding method
+ * @brief EMSA-PKCS1-v1_5 encoding operation
  * @param[in] hash Hash function used to digest the message
  * @param[in] digest Digest of the message to be signed
  * @param[out] em Encoded message
@@ -776,35 +1547,38 @@ error_t rsassaPkcs1v15Verify(const RsaPublicKey *key, const HashAlgo *hash,
 error_t emsaPkcs1v15Encode(const HashAlgo *hash,
    const uint8_t *digest, uint8_t *em, size_t emLen)
 {
-   uint_t i;
-   size_t paddingLen;
+   size_t i;
+   size_t n;
 
-   //Ensure the length of the digest is valid
-   if((hash->oidSize + hash->digestSize + 21) > emLen)
+   //Check the intended length of the encoded message
+   if(emLen < (hash->oidSize + hash->digestSize + 21))
       return ERROR_INVALID_LENGTH;
 
-   //The leading 0x00 octet ensures that the encoded message,
-   //converted to an integer, is less than the modulus
-   em[0] = 0x00;
+   //Point to the first byte of the encoded message
+   i = 0;
+
+   //The leading 0x00 octet ensures that the encoded message, converted to
+   //an integer, is less than the modulus
+   em[i++] = 0x00;
    //Block type 0x01 is used for private-key operations
-   em[1] = 0x01;
+   em[i++] = 0x01;
 
-   //Compute the length of the padding string PS
-   paddingLen = emLen - hash->oidSize - hash->digestSize - 13;
-   //Fill the padding string with 0xFF
-   cryptoMemset(em + 2, 0xFF, paddingLen);
+   //Determine the length of the padding string PS
+   n = emLen - hash->oidSize - hash->digestSize - 13;
 
-   //Point to the byte that follows PS
-   i = paddingLen + 2;
-   //Append a 0x00 octet to PS
+   //Each byte of PS must be set to 0xFF when the block type is 0x01
+   cryptoMemset(em + i, 0xFF, n);
+   i += n;
+
+   //Append a 0x00 octet to the padding string
    em[i++] = 0x00;
 
-   //Encode the DigestInfo using ASN.1
-   em[i++] = ASN1_ENCODING_CONSTRUCTED | ASN1_TYPE_SEQUENCE;
+   //Encode the DigestInfo structure using ASN.1
+   em[i++] = (uint8_t) (ASN1_ENCODING_CONSTRUCTED | ASN1_TYPE_SEQUENCE);
    em[i++] = (uint8_t) (hash->oidSize + hash->digestSize + 8);
-   em[i++] = ASN1_ENCODING_CONSTRUCTED | ASN1_TYPE_SEQUENCE;
+   em[i++] = (uint8_t) (ASN1_ENCODING_CONSTRUCTED | ASN1_TYPE_SEQUENCE);
    em[i++] = (uint8_t) (hash->oidSize + 4);
-   em[i++] = ASN1_TYPE_OBJECT_IDENTIFIER;
+   em[i++] = (uint8_t) ASN1_TYPE_OBJECT_IDENTIFIER;
    em[i++] = (uint8_t) hash->oidSize;
 
    //Copy the hash algorithm OID
@@ -812,9 +1586,9 @@ error_t emsaPkcs1v15Encode(const HashAlgo *hash,
    i += hash->oidSize;
 
    //Encode the rest of the ASN.1 structure
-   em[i++] = ASN1_TYPE_NULL;
+   em[i++] = (uint8_t) ASN1_TYPE_NULL;
    em[i++] = 0;
-   em[i++] = ASN1_TYPE_OCTET_STRING;
+   em[i++] = (uint8_t) ASN1_TYPE_OCTET_STRING;
    em[i++] = (uint8_t) hash->digestSize;
 
    //Append the hash value
@@ -826,117 +1600,301 @@ error_t emsaPkcs1v15Encode(const HashAlgo *hash,
 
 
 /**
- * @brief PKCS #1 v1.5 decoding method
+ * @brief EMSA-PKCS1-v1_5 verification operation
+ * @param[in] hash Hash function
+ * @param[in] digest Digest value
  * @param[in] em Encoded message
  * @param[in] emLen Length of the encoded message
- * @param[out] oid Hash algorithm OID
- * @param[out] oidLen Length of the hash algorithm OID
- * @param[out] digest Digest value
- * @param[out] digestLen Length of the digest value
-
  * @return Error code
  **/
 
-error_t emsaPkcs1v15Decode(const uint8_t *em, size_t emLen, const uint8_t **oid,
-   size_t *oidLen, const uint8_t **digest, size_t *digestLen)
+error_t emsaPkcs1v15Verify(const HashAlgo *hash, const uint8_t *digest,
+   const uint8_t *em, size_t emLen)
 {
-   error_t error;
-   uint_t i;
-   size_t length;
-   const uint8_t *data;
-   Asn1Tag tag;
+   size_t i;
+   size_t j;
+   size_t n;
+   uint8_t bad;
 
-   //Check the length of the encoded message EM
-   if(emLen < 11)
+   //Check the length of the encoded message
+   if(emLen < (hash->oidSize + hash->digestSize + 21))
       return ERROR_INVALID_LENGTH;
 
-   //The first octet of EM must have a value of 0x00
-   if(em[0] != 0x00)
-      return ERROR_UNEXPECTED_VALUE;
-   //The block type BT shall be 0x01
-   if(em[1] != 0x01)
-      return ERROR_UNEXPECTED_VALUE;
+   //Point to the first byte of the encoded message
+   i = 0;
 
-   //Check the padding string PS
-   for(i = 2; i < emLen; i++)
+   //The first octet of EM must have hexadecimal value 0x00
+   bad = em[i++];
+   //The second octet of EM must have hexadecimal value 0x01
+   bad |= em[i++] ^ 0x01;
+
+   //Determine the length of the padding string PS
+   n = emLen - hash->oidSize - hash->digestSize - 13;
+
+   //Each byte of PS must be set to 0xFF when the block type is 0x01
+   for(j = 0 ; j < n; j++)
    {
-      //A 0x00 octet indicates the end of the padding string
-      if(em[i] == 0x00)
-         break;
-      //Each byte of PS must be set to 0xFF when the block type is 0x01
-      if(em[i] != 0xFF)
-         return ERROR_INVALID_PADDING;
+      bad |= em[i++] ^ 0xFF;
    }
 
-   //Check whether the padding string is properly terminated
-   if(i >= emLen)
-      return ERROR_INVALID_PADDING;
-   //The length of PS cannot be less than 8 octets
-   if(i < 10)
-      return ERROR_INVALID_PADDING;
+   //The padding string must be followed by a 0x00 octet
+   bad |= em[i++];
 
-   //Point to the DigestInfo structure
-   data = em + i + 1;
-   length = emLen - i - 1;
+   //Check the ASN.1 syntax of the DigestInfo structure
+   bad |= em[i++] ^ (uint8_t) (ASN1_ENCODING_CONSTRUCTED | ASN1_TYPE_SEQUENCE);
+   bad |= em[i++] ^ (uint8_t) (hash->oidSize + hash->digestSize + 8);
+   bad |= em[i++] ^ (uint8_t) (ASN1_ENCODING_CONSTRUCTED | ASN1_TYPE_SEQUENCE);
+   bad |= em[i++] ^ (uint8_t) (hash->oidSize + 4);
+   bad |= em[i++] ^ (uint8_t) ASN1_TYPE_OBJECT_IDENTIFIER;
+   bad |= em[i++] ^ (uint8_t) hash->oidSize;
 
-   //Read the contents of the DigestInfo structure
-   error = asn1ReadTag(data, length, &tag);
-   //Failed to decode the ASN.1 tag?
+   //Verify the hash algorithm OID
+   for(j = 0; j < hash->oidSize; j++)
+   {
+      bad |= em[i++] ^ hash->oid[j];
+   }
+
+   //Check the rest of the ASN.1 structure
+   bad |= em[i++] ^ (uint8_t) ASN1_TYPE_NULL;
+   bad |= em[i++];
+   bad |= em[i++] ^ (uint8_t) ASN1_TYPE_OCTET_STRING;
+   bad |= em[i++] ^ (uint8_t) hash->digestSize;
+
+   //Recover the underlying hash value, and then compare it to a newly
+   //computed hash value
+   for(j = 0; j < hash->digestSize; j++)
+   {
+      bad |= em[i++] ^ digest[j];
+   }
+
+   //Verification result
+   return (bad != 0) ? ERROR_INCONSISTENT_VALUE : NO_ERROR;
+}
+
+
+/**
+ * @brief EMSA-PSS encoding operation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[in] hash Underlying hash function
+ * @param[in] saltLen Length of the salt, in bytes
+ * @param[in] digest Digest of the message to be signed
+ * @param[out] em Encoded message
+ * @param[in] emBits Maximal bit length of the integer OS2IP(EM)
+ * @return Error code
+ **/
+
+error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
+   const HashAlgo *hash, size_t saltLen, const uint8_t *digest,
+   uint8_t *em, uint_t emBits)
+{
+   error_t error;
+   size_t n;
+   size_t emLen;
+   uint8_t *db;
+   uint8_t h[MAX_HASH_DIGEST_SIZE];
+   uint8_t salt[MAX_HASH_DIGEST_SIZE];
+   HashContext *hashContext;
+
+   //The encoded message is an octet string of length emLen = ceil(emBits / 8)
+   emLen = (emBits + 7) / 8;
+
+   //If emLen < hLen + sLen + 2, output "encoding error" and stop
+   if(emLen < (hash->digestSize + saltLen + 2))
+      return ERROR_INVALID_LENGTH;
+
+   //Generate a random octet string salt of length sLen
+   error = prngAlgo->read(prngContext, salt, saltLen);
+   //Any error to report?
    if(error)
-      return ERROR_INVALID_TAG;
+      return error;
 
-   //Enforce encoding, class and type
-   if(!tag.constructed || tag.objType != ASN1_TYPE_SEQUENCE)
-      return ERROR_INVALID_TAG;
+   //Allocate a memory buffer to hold the hash context
+   hashContext = cryptoAllocMem(hash->contextSize);
+   //Failed to allocate memory?
+   if(hashContext == NULL)
+      return ERROR_OUT_OF_MEMORY;
 
-   //Point to the DigestAlgorithm structure
-   data = tag.value;
-   length = tag.length;
+   //Let H = Hash(00 00 00 00 00 00 00 00 || mHash || salt)
+   hash->init(hashContext);
+   hash->update(hashContext, padding, sizeof(padding));
+   hash->update(hashContext, digest, hash->digestSize);
+   hash->update(hashContext, salt, saltLen);
+   hash->final(hashContext, h);
 
-   //Decode the DigestAlgorithm tag
-   error = asn1ReadTag(data, length, &tag);
-   //Failed to decode the ASN.1 tag?
-   if(error)
-      return ERROR_INVALID_TAG;
+   //Point to the buffer where to format the data block DB
+   db = em;
 
-   //Enforce encoding, class and type
-   if(!tag.constructed || tag.objType != ASN1_TYPE_SEQUENCE)
-      return ERROR_INVALID_TAG;
+   //The padding string PS consists of emLen - sLen - hLen - 2 zero octets
+   n = emLen - saltLen - hash->digestSize - 2;
 
-   //Save the location of the next tag
-   data += tag.totalLength;
-   length -= tag.totalLength;
+   //Let DB = PS || 0x01 || salt
+   cryptoMemset(db, 0, n);
+   db[n] = 0x01;
+   cryptoMemcpy(db + n + 1, salt, saltLen);
 
-   //Decode the AlgorithmIdentifier tag
-   error = asn1ReadTag(tag.value, tag.length, &tag);
-   //Failed to decode the ASN.1 tag?
-   if(error)
-      return ERROR_INVALID_TAG;
+   //Calculate the length of the data block
+   n += saltLen + 1;
 
-   //Enforce encoding, class and type
-   if(tag.constructed || tag.objType != ASN1_TYPE_OBJECT_IDENTIFIER)
-      return ERROR_INVALID_TAG;
+   //Let maskedDB = DB xor MGF(H, emLen - hLen - 1)
+   mgf1(hash, hashContext, h, hash->digestSize, db, n);
 
-   //Save the hash algorithm OID
-   *oid = tag.value;
-   *oidLen = tag.length;
+   //Set the leftmost 8emLen - emBits bits of the leftmost octet in maskedDB
+   //to zero
+   db[0] &= 0xFF >> (8 * emLen - emBits);
 
-   //Decode the DigestValue tag
-   error = asn1ReadTag(data, length, &tag);
-   //Failed to decode the ASN.1 tag?
-   if(error)
-      return ERROR_INVALID_TAG;
+   //Let EM = maskedDB || H || 0xbc
+   cryptoMemcpy(em + n, h, hash->digestSize);
+   em[n + hash->digestSize] = 0xBC;
 
-   //Enforce encoding, class and type
-   if(tag.constructed || tag.objType != ASN1_TYPE_OCTET_STRING)
-      return ERROR_INVALID_TAG;
+   //Release hash context
+   cryptoFreeMem(hashContext);
 
-   //Save the hash value
-   *digest = tag.value;
-   *digestLen = tag.length;
-
-   //EM successfully decoded
+   //Successful processing
    return NO_ERROR;
+}
+
+
+/**
+ * @brief EMSA-PSS verification operation
+ * @param[in] hash Underlying hash function
+ * @param[in] saltLen Length of the salt, in bytes
+ * @param[in] digest Digest of the message to be signed
+ * @param[out] em Encoded message
+ * @param[in] emBits Maximal bit length of the integer OS2IP(EM)
+ * @return Error code
+ **/
+
+error_t emsaPssVerify(const HashAlgo *hash, size_t saltLen,
+   const uint8_t *digest, uint8_t *em, uint_t emBits)
+{
+   size_t i;
+   size_t n;
+   size_t emLen;
+   uint8_t bad;
+   uint8_t mask;
+   uint8_t *h;
+   uint8_t *db;
+   uint8_t *salt;
+   HashContext *hashContext;
+
+   //The encoded message is an octet string of length emLen = ceil(emBits / 8)
+   emLen = (emBits + 7) / 8;
+
+   //Check the length of the encoded message EM
+   if(emLen < (hash->digestSize + saltLen + 2))
+      return ERROR_INVALID_LENGTH;
+
+   //Allocate a memory buffer to hold the hash context
+   hashContext = cryptoAllocMem(hash->contextSize);
+   //Failed to allocate memory?
+   if(hashContext == NULL)
+      return ERROR_OUT_OF_MEMORY;
+
+   //If the rightmost octet of EM does not have hexadecimal value 0xbc, output
+   //"inconsistent" and stop
+   bad = em[emLen - 1] ^ 0xBC;
+
+   //Let maskedDB be the leftmost emLen - hLen - 1 octets of EM, and let H be
+   //the next hLen octets
+   db = em;
+   n = emLen - hash->digestSize - 1;
+   h = em + n;
+
+   //Form a mask
+   mask = 0xFF >> (8 * emLen - emBits);
+
+   //If the leftmost 8emLen - emBits bits of the leftmost octet in maskedDB are
+   //not all equal to zero, output "inconsistent" and stop
+   bad |= db[0] & ~mask;
+
+   //Let DB = maskedDB xor MGF(H, emLen - hLen - 1)
+   mgf1(hash, hashContext, h, hash->digestSize, db, n);
+
+   //Set the leftmost 8emLen - emBits bits of the leftmost octet in DB to zero
+   db[0] &= mask;
+
+   //The padding string PS consists of emLen - sLen - hLen - 2 octets
+   n = emLen - hash->digestSize - saltLen - 2;
+
+   //If the emLen - hLen - sLen - 2 leftmost octets of DB are not zero, output
+   //"inconsistent" and stop
+   for(i = 0; i < n; i++)
+   {
+       bad |= db[i];
+   }
+
+   //If the octet at position emLen - hLen - sLen - 1 does not have hexadecimal
+   //value 0x01, output "inconsistent" and stop
+   bad |= db[n] ^ 0x01;
+
+   //Let salt be the last sLen octets of DB
+   salt = db + n + 1;
+
+   //Let H' = Hash(00 00 00 00 00 00 00 00 || mHash || salt)
+   hash->init(hashContext);
+   hash->update(hashContext, padding, sizeof(padding));
+   hash->update(hashContext, digest, hash->digestSize);
+   hash->update(hashContext, salt, saltLen);
+   hash->final(hashContext, NULL);
+
+   //If H = H', output "consistent". Otherwise, output "inconsistent"
+   for(i = 0; i < hash->digestSize; i++)
+   {
+      bad |= h[i] ^ hashContext->digest[i];
+   }
+
+   //Release hash context
+   cryptoFreeMem(hashContext);
+
+   //Verification result
+   return (bad != 0) ? ERROR_INCONSISTENT_VALUE : NO_ERROR;
+}
+
+
+/**
+ * @brief MGF1 mask generation function
+ * @param[in] hash Hash function
+ * @param[in] hashContext Hash function context
+ * @param[in] seed Seed from which the mask is generated
+ * @param[in] seedLen Length of the seed in bytes
+ * @param[in,out] data Data block to be masked
+ * @param[in] dataLen Length of the data block in bytes
+ **/
+
+void mgf1(const HashAlgo *hash, HashContext *hashContext, const uint8_t *seed,
+   size_t seedLen, uint8_t *data, size_t dataLen)
+{
+   size_t i;
+   size_t n;
+   uint32_t counter;
+   uint8_t c[4];
+
+   //The data is processed block by block
+   for(counter = 0; dataLen > 0; counter++)
+   {
+      //Limit the number of bytes to process at a time
+      n = MIN(dataLen, hash->digestSize);
+
+      //Convert counter to an octet string C of length 4 octets
+      STORE32BE(counter, c);
+
+      //Calculate Hash(mgfSeed || C)
+      hash->init(hashContext);
+      hash->update(hashContext, seed, seedLen);
+      hash->update(hashContext, c, sizeof(c));
+      hash->final(hashContext, NULL);
+
+      //Apply the mask
+      for(i = 0; i < n; i++)
+      {
+         data[i] ^= hashContext->digest[i];
+      }
+
+      //Advance data pointer
+      data += n;
+      dataLen -= n;
+   }
 }
 
 #endif

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -161,7 +161,7 @@ bool_t oidMatch(const uint8_t *oid, size_t oidLen, const uint8_t *subtree,
       //First node?
       if(i == 0)
       {
-         //The mask allows for a simple form of wilcarding
+         //The mask allows for a simple form of wildcarding
          if(flag)
          {
             //Compare the first sub-identifier
@@ -172,7 +172,7 @@ bool_t oidMatch(const uint8_t *oid, size_t oidLen, const uint8_t *subtree,
       //Second node?
       else if(i == 1)
       {
-         //The mask allows for a simple form of wilcarding
+         //The mask allows for a simple form of wildcarding
          if(flag)
          {
             //Compare the second sub-identifier
@@ -187,7 +187,7 @@ bool_t oidMatch(const uint8_t *oid, size_t oidLen, const uint8_t *subtree,
       //Remaining nodes?
       else
       {
-         //The mask allows for a simple form of wilcarding
+         //The mask allows for a simple form of wildcarding
          if(flag)
          {
             //Compare sub-identifiers
@@ -552,7 +552,7 @@ char_t *oidToString(const uint8_t *oid, size_t oidLen, char_t *str,
       maxStrLen = sizeof(buffer) - 1;
    }
 
-   //Point the beginning of the string
+   //Point to the beginning of the string
    p = str;
    //Properly terminate the string
    *p = '\0';

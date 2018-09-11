@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 #ifndef _CRYPTO_H
@@ -35,6 +35,34 @@
 #include "crypto_legacy.h"
 #include "cpu_endian.h"
 #include "error.h"
+
+
+/*
+ * CycloneCrypto Open is licensed under GPL version 2. In particular:
+ *
+ * - If you link your program to CycloneCrypto Open, the result is a derivative
+ *   work that can only be distributed under the same GPL license terms.
+ *
+ * - If additions or changes to CycloneCrypto Open are made, the result is a
+ *   derivative work that can only be distributed under the same license terms.
+ *
+ * - The GPL license requires that you make the source code available to
+ *   whoever you make the binary available to.
+ *
+ * - If you sell or distribute a hardware product that runs CycloneCrypto Open,
+ *   the GPL license requires you to provide public and full access to all
+ *   source code on a nondiscriminatory basis.
+ *
+ * If you fully understand and accept the terms of the GPL license, then edit
+ * the os_port_config.h header and add the following directive:
+ *
+ * #define GPL_LICENSE_TERMS_ACCEPTED
+ */
+
+#ifndef GPL_LICENSE_TERMS_ACCEPTED
+   #error Before compiling CycloneCrypto Open, you must accept the terms of the GPL license
+#endif
+
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -838,6 +866,119 @@
 #define SHR16(a, n) ((a) >> (n))
 #define SHR32(a, n) ((a) >> (n))
 #define SHR64(a, n) ((a) >> (n))
+
+//Micellaneous macros
+#define _U8(x) ((uint8_t) (x))
+#define _U16(x) ((uint16_t) (x))
+#define _U32(x) ((uint32_t) (x))
+
+//Test if a 8-bit integer is zero
+#define CRYPTO_TEST_Z_8(a) \
+   _U8((_U8((_U8(a) | (~_U8(a) + 1U))) >> 7U) ^ 1U)
+
+//Test if a 8-bit integer is nonzero
+#define CRYPTO_TEST_NZ_8(a) \
+   _U8(_U8((_U8(a) | (~_U8(a) + 1U))) >> 7U)
+
+//Test if two 8-bit integers are equal
+#define CRYPTO_TEST_EQ_8(a, b) \
+   _U8((_U8(((_U8(a) ^ _U8(b)) | (~(_U8(a) ^ _U8(b)) + 1U))) >> 7U) ^ 1U)
+
+//Test if two 8-bit integers are not equal
+#define CRYPTO_TEST_NEQ_8(a, b) \
+   _U8(_U8(((_U8(a) ^ _U8(b)) | (~(_U8(a) ^ _U8(b)) + 1U))) >> 7U)
+
+//Test if a 8-bit integer is lower than another 8-bit integer
+#define CRYPTO_TEST_LT_8(a, b) \
+   _U8(_U8((((_U8(a) - _U8(b)) ^ _U8(b)) | (_U8(a) ^ _U8(b))) ^ _U8(a)) >> 7U)
+
+//Test if a 8-bit integer is lower or equal than another 8-bit integer
+#define CRYPTO_TEST_LTE_8(a, b) \
+   _U8((_U8((((_U8(b) - _U8(a)) ^ _U8(a)) | (_U8(a) ^ _U8(b))) ^ _U8(b)) >> 7U) ^ 1U)
+
+//Test if a 8-bit integer is greater than another 8-bit integer
+#define CRYPTO_TEST_GT_8(a, b) \
+   _U8(_U8((((_U8(b) - _U8(a)) ^ _U8(a)) | (_U8(a) ^ _U8(b))) ^ _U8(b)) >> 7U)
+
+//Test if a 8-bit integer is greater or equal than another 8-bit integer
+#define CRYPTO_TEST_GTE_8(a, b) \
+   _U8((_U8((((_U8(a) - _U8(b)) ^ _U8(b)) | (_U8(a) ^ _U8(b))) ^ _U8(a)) >> 7U) ^ 1U)
+
+//Select between two 8-bit integers
+#define CRYPTO_SELECT_8(a, b, c) \
+   _U8((_U8(a) & (_U8(c) - 1U)) | (_U8(b) & ~(_U8(c) - 1U)))
+
+//Test if a 16-bit integer is zero
+#define CRYPTO_TEST_Z_16(a) \
+   _U16((_U16((_U16(a) | (~_U16(a) + 1U))) >> 15U) ^ 1U)
+
+//Test if a 16-bit integer is nonzero
+#define CRYPTO_TEST_NZ_16(a) \
+   _U16(_U16((_U16(a) | (~_U16(a) + 1U))) >> 15U)
+
+//Test if two 16-bit integers are equal
+#define CRYPTO_TEST_EQ_16(a, b) \
+   _U16((_U16(((_U16(a) ^ _U16(b)) | (~(_U16(a) ^ _U16(b)) + 1U))) >> 15U) ^ 1U)
+
+//Test if two 16-bit integers are not equal
+#define CRYPTO_TEST_NEQ_16(a, b) \
+   _U16(_U16(((_U16(a) ^ _U16(b)) | (~(_U16(a) ^ _U16(b)) + 1U))) >> 15U)
+
+//Test if a 16-bit integer is lower than another 16-bit integer
+#define CRYPTO_TEST_LT_16(a, b) \
+   _U16(_U16((((_U16(a) - _U16(b)) ^ _U16(b)) | (_U16(a) ^ _U16(b))) ^ _U16(a)) >> 15U)
+
+//Test if a 16-bit integer is lower or equal than another 16-bit integer
+#define CRYPTO_TEST_LTE_16(a, b) \
+   _U16((_U16((((_U16(b) - _U16(a)) ^ _U16(a)) | (_U16(a) ^ _U16(b))) ^ _U16(b)) >> 15U) ^ 1U)
+
+//Test if a 16-bit integer is greater than another 16-bit integer
+#define CRYPTO_TEST_GT_16(a, b) \
+   _U16(_U16((((_U16(b) - _U16(a)) ^ _U16(a)) | (_U16(a) ^ _U16(b))) ^ _U16(b)) >> 15U)
+
+//Test if a 16-bit integer is greater or equal than another 16-bit integer
+#define CRYPTO_TEST_GTE_16(a, b) \
+   _U16((_U16((((_U16(a) - _U16(b)) ^ _U16(b)) | (_U16(a) ^ _U16(b))) ^ _U16(a)) >> 15U) ^ 1U)
+
+//Select between two 16-bit integers
+#define CRYPTO_SELECT_16(a, b, c) \
+   _U16((_U16(a) & (_U16(c) - 1U)) | (_U16(b) & ~(_U16(c) - 1U)))
+
+//Test if a 32-bit integer is zero
+#define CRYPTO_TEST_Z_32(a) \
+   _U32((_U32((_U32(a) | (~_U32(a) + 1U))) >> 31U) ^ 1U)
+
+//Test if a 32-bit integer is nonzero
+#define CRYPTO_TEST_NZ_32(a) \
+   _U32(_U32((_U32(a) | (~_U32(a) + 1U))) >> 31U)
+
+//Test if two 32-bit integers are equal
+#define CRYPTO_TEST_EQ_32(a, b) \
+   _U32((_U32(((_U32(a) ^ _U32(b)) | (~(_U32(a) ^ _U32(b)) + 1U))) >> 31U) ^ 1U)
+
+//Test if two 32-bit integers are not equal
+#define CRYPTO_TEST_NEQ_32(a, b) \
+   _U32(_U32(((_U32(a) ^ _U32(b)) | (~(_U32(a) ^ _U32(b)) + 1U))) >> 31U)
+
+//Test if a 32-bit integer is lower than another 32-bit integer
+#define CRYPTO_TEST_LT_32(a, b) \
+   _U32(_U32((((_U32(a) - _U32(b)) ^ _U32(b)) | (_U32(a) ^ _U32(b))) ^ _U32(a)) >> 31U)
+
+//Test if a 32-bit integer is lower or equal than another 32-bit integer
+#define CRYPTO_TEST_LTE_32(a, b) \
+   _U32((_U32((((_U32(b) - _U32(a)) ^ _U32(a)) | (_U32(a) ^ _U32(b))) ^ _U32(b)) >> 31U) ^ 1U)
+
+//Test if a 32-bit integer is greater than another 32-bit integer
+#define CRYPTO_TEST_GT_32(a, b) \
+   _U32(_U32((((_U32(b) - _U32(a)) ^ _U32(a)) | (_U32(a) ^ _U32(b))) ^ _U32(b)) >> 31U)
+
+//Test if a 32-bit integer is greater or equal than another 32-bit integer
+#define CRYPTO_TEST_GTE_32(a, b) \
+   _U32((_U32((((_U32(a) - _U32(b)) ^ _U32(b)) | (_U32(a) ^ _U32(b))) ^ _U32(a)) >> 31U) ^ 1U)
+
+//Select between two 32-bit integers
+#define CRYPTO_SELECT_32(a, b, c) \
+   _U32((_U32(a) & (_U32(c) - 1U)) | (_U32(b) & ~(_U32(c) - 1U)))
 
 //C++ guard
 #ifdef __cplusplus

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 #ifndef _X509_COMMON_H
@@ -281,6 +281,20 @@
    #error X509_BRAINPOOLP512R1_SUPPORT parameter is not valid
 #endif
 
+//Ed25519 elliptic curve support
+#ifndef X509_ED25519_SUPPORT
+   #define X509_ED25519_SUPPORT DISABLED
+#elif (X509_ED25519_SUPPORT != ENABLED && X509_ED25519_SUPPORT != DISABLED)
+   #error X509_ED25519_SUPPORT parameter is not valid
+#endif
+
+//Ed448 elliptic curve support
+#ifndef X509_ED448_SUPPORT
+   #define X509_ED448_SUPPORT DISABLED
+#elif (X509_ED448_SUPPORT != ENABLED && X509_ED448_SUPPORT != DISABLED)
+   #error X509_ED448_SUPPORT parameter is not valid
+#endif
+
 //Minimum acceptable size for RSA modulus
 #ifndef X509_MIN_RSA_MODULUS_SIZE
    #define X509_MIN_RSA_MODULUS_SIZE 1024
@@ -404,9 +418,11 @@ typedef enum
 
 typedef enum
 {
-   X509_SIGN_ALGO_RSA   = 1,
-   X509_SIGN_ALGO_DSA   = 2,
-   X509_SIGN_ALGO_ECDSA = 3
+   X509_SIGN_ALGO_RSA     = 1,
+   X509_SIGN_ALGO_DSA     = 2,
+   X509_SIGN_ALGO_ECDSA   = 3,
+   X509_SIGN_ALGO_ED25519 = 4,
+   X509_SIGN_ALGO_ED448   = 5
 } X509SignatureAlgo;
 
 

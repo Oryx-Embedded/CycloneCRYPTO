@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 #ifndef _X25519_H
@@ -40,7 +40,7 @@
 
 
 /**
- * @brief X25519 working context
+ * @brief X25519 working state
  **/
 
 typedef struct
@@ -53,7 +53,7 @@ typedef struct
    uint32_t z2[8];
    uint32_t t1[8];
    uint32_t t2[8];
-} X25519Context;
+} X25519State;
 
 
 //X25519 related functions

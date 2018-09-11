@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 #ifndef _RSA_H
@@ -70,11 +70,15 @@ typedef struct
 //RSA related constants
 extern const uint8_t PKCS1_OID[8];
 extern const uint8_t RSA_ENCRYPTION_OID[9];
+extern const uint8_t MD2_WITH_RSA_ENCRYPTION_OID[9];
 extern const uint8_t MD5_WITH_RSA_ENCRYPTION_OID[9];
 extern const uint8_t SHA1_WITH_RSA_ENCRYPTION_OID[9];
+extern const uint8_t SHA224_WITH_RSA_ENCRYPTION_OID[9];
 extern const uint8_t SHA256_WITH_RSA_ENCRYPTION_OID[9];
 extern const uint8_t SHA384_WITH_RSA_ENCRYPTION_OID[9];
 extern const uint8_t SHA512_WITH_RSA_ENCRYPTION_OID[9];
+extern const uint8_t SHA512_256_WITH_RSA_ENCRYPTION_OID[9];
+extern const uint8_t SHA512_224_WITH_RSA_ENCRYPTION_OID[9];
 extern const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_224_OID[9];
 extern const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_256_OID[9];
 extern const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_384_OID[9];
@@ -86,17 +90,21 @@ void rsaFreePublicKey(RsaPublicKey *key);
 void rsaInitPrivateKey(RsaPrivateKey *key);
 void rsaFreePrivateKey(RsaPrivateKey *key);
 
-error_t rsaep(const RsaPublicKey *key, const Mpi *m, Mpi *c);
-error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m);
-
-error_t rsasp1(const RsaPrivateKey *key, const Mpi *m, Mpi *s);
-error_t rsavp1(const RsaPublicKey *key, const Mpi *s, Mpi *m);
-
-error_t rsaesPkcs1v15Encrypt(const PrngAlgo *prngAlgo, void *prngContext, const RsaPublicKey *key,
-   const uint8_t *message, size_t messageLen, uint8_t *ciphertext, size_t *ciphertextLen);
+error_t rsaesPkcs1v15Encrypt(const PrngAlgo *prngAlgo, void *prngContext,
+   const RsaPublicKey *key, const uint8_t *message, size_t messageLen,
+   uint8_t *ciphertext, size_t *ciphertextLen);
 
 error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key, const uint8_t *ciphertext,
    size_t ciphertextLen, uint8_t *message, size_t messageSize, size_t *messageLen);
+
+error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo, void *prngContext,
+   const RsaPublicKey *key, const HashAlgo *hash, const char_t *label,
+   const uint8_t *message, size_t messageLen, uint8_t *ciphertext,
+   size_t *ciphertextLen);
+
+error_t rsaesOaepDecrypt(const RsaPrivateKey *key, const HashAlgo *hash,
+   const char_t *label, const uint8_t *ciphertext, size_t ciphertextLen,
+   uint8_t *message, size_t messageSize, size_t *messageLen);
 
 error_t rsassaPkcs1v15Sign(const RsaPrivateKey *key, const HashAlgo *hash,
    const uint8_t *digest, uint8_t *signature, size_t *signatureLen);
@@ -104,11 +112,48 @@ error_t rsassaPkcs1v15Sign(const RsaPrivateKey *key, const HashAlgo *hash,
 error_t rsassaPkcs1v15Verify(const RsaPublicKey *key, const HashAlgo *hash,
    const uint8_t *digest, const uint8_t *signature, size_t signatureLen);
 
+error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
+   const RsaPrivateKey *key, const HashAlgo *hash, size_t saltLen,
+   const uint8_t *digest, uint8_t *signature, size_t *signatureLen);
+
+error_t rsassaPssVerify(const RsaPublicKey *key, const HashAlgo *hash,
+   size_t saltLen, const uint8_t *digest, const uint8_t *signature,
+   size_t signatureLen);
+
+error_t rsaep(const RsaPublicKey *key, const Mpi *m, Mpi *c);
+error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m);
+
+error_t rsasp1(const RsaPrivateKey *key, const Mpi *m, Mpi *s);
+error_t rsavp1(const RsaPublicKey *key, const Mpi *s, Mpi *m);
+
+error_t emePkcs1v15Encode(const PrngAlgo *prngAlgo, void *prngContext,
+   const uint8_t *message, size_t messageLen, uint8_t *em, size_t k);
+
+error_t emePkcs1v15Decode(uint8_t *em, size_t k, uint8_t **message,
+   size_t *messageLen);
+
+error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
+   const HashAlgo *hash, const char_t *label, const uint8_t *message,
+   size_t messageLen, uint8_t *em, size_t k);
+
+error_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
+   size_t k, uint8_t **message, size_t *messageLen);
+
 error_t emsaPkcs1v15Encode(const HashAlgo *hash,
    const uint8_t *digest, uint8_t *em, size_t emLen);
 
-error_t emsaPkcs1v15Decode(const uint8_t *em, size_t emLen, const uint8_t **oid,
-   size_t *oidLen, const uint8_t **digest, size_t *digestLen);
+error_t emsaPkcs1v15Verify(const HashAlgo *hash, const uint8_t *digest,
+   const uint8_t *em, size_t emLen);
+
+error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
+   const HashAlgo *hash, size_t saltLen, const uint8_t *digest,
+   uint8_t *em, uint_t emBits);
+
+error_t emsaPssVerify(const HashAlgo *hash, size_t saltLen,
+   const uint8_t *digest, uint8_t *em, uint_t emBits);
+
+void mgf1(const HashAlgo *hash, HashContext *hashContext, const uint8_t *seed,
+   size_t seedLen, uint8_t *data, size_t dataLen);
 
 //C++ guard
 #ifdef __cplusplus

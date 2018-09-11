@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 #ifndef _PEM_IMPORT_H
@@ -35,6 +35,7 @@
 #include "pkc/rsa.h"
 #include "pkc/dsa.h"
 #include "ecc/ec.h"
+#include "ecc/eddsa.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -49,6 +50,8 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length, DsaPrivateKey
 
 error_t pemImportEcParameters(const char_t *input, size_t length, EcDomainParameters *params);
 error_t pemImportEcPrivateKey(const char_t *input, size_t length, Mpi *key);
+
+error_t pemImportEddsaPrivateKey(const char_t *input, size_t length, EddsaPrivateKey *key);
 
 error_t pemImportCertificate(const char_t **input, size_t *inputLen,
    uint8_t **output, size_t *outputSize, size_t *outputLen);

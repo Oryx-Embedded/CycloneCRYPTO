@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -590,6 +590,26 @@ error_t x509GetSignHashAlgo(const uint8_t *oid, size_t length,
    else
 #endif
 #endif
+#if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
+   //Ed25519 algorithm identifier?
+   if(!oidComp(oid, length, ED25519_OID, sizeof(ED25519_OID)))
+   {
+      //Ed25519 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_ED25519;
+      *hashAlgo = NULL;
+   }
+   else
+#endif
+#if (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED)
+   //Ed448 algorithm identifier?
+   if(!oidComp(oid, length, ED448_OID, sizeof(ED448_OID)))
+   {
+      //Ed448 signature algorithm
+      *signAlgo = X509_SIGN_ALGO_ED448;
+      *hashAlgo = NULL;
+   }
+   else
+#endif
    {
       //The specified signature algorithm is not supported
       error = ERROR_UNSUPPORTED_SIGNATURE_ALGO;
@@ -770,6 +790,20 @@ const EcCurveInfo *x509GetCurveInfo(const uint8_t *oid, size_t length)
 #if (X509_BRAINPOOLP512R1_SUPPORT == ENABLED)
    //brainpoolP512r1 elliptic curve?
    else if(!oidComp(oid, length, BRAINPOOLP512R1_OID, sizeof(BRAINPOOLP512R1_OID)))
+   {
+      curveInfo = ecGetCurveInfo(oid, length);
+   }
+#endif
+#if (X509_ED25519_SUPPORT == ENABLED)
+   //Ed25519 elliptic curve?
+   else if(!oidComp(oid, length, ED25519_OID, sizeof(ED25519_OID)))
+   {
+      curveInfo = ecGetCurveInfo(oid, length);
+   }
+#endif
+#if (X509_ED448_SUPPORT == ENABLED)
+   //Ed448 elliptic curve?
+   else if(!oidComp(oid, length, ED448_OID, sizeof(ED448_OID)))
    {
       curveInfo = ecGetCurveInfo(oid, length);
    }

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 #ifndef _EC_H
@@ -60,14 +60,15 @@ typedef struct
 
 typedef struct
 {
-   EcCurveType type;  ///<Curve type
-   Mpi p;             ///<Prime
-   Mpi a;             ///<Curve parameter a
-   Mpi b;             ///<Curve parameter b
-   EcPoint g;         ///<Base point G
-   Mpi q;             ///<Order of the point G
-   uint32_t h;        ///<Cofactor h
-   EcFastModAlgo mod; ///<Fast modular reduction
+   const char_t *name; ///<Curve name
+   EcCurveType type;   ///<Curve type
+   Mpi p;              ///<Prime
+   Mpi a;              ///<Curve parameter a
+   Mpi b;              ///<Curve parameter b
+   EcPoint g;          ///<Base point G
+   Mpi q;              ///<Order of the point G
+   uint32_t h;         ///<Cofactor h
+   EcFastModAlgo mod;  ///<Fast modular reduction
 } EcDomainParameters;
 
 

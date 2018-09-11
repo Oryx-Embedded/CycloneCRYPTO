@@ -24,11 +24,11 @@
  *
  * @section Description
  *
- * XTS is a tweakable block cipher designed for encrytion of sector-based
+ * XTS is a tweakable block cipher designed for encryption of sector-based
  * storage. Refer to IEEE Std 1619 and SP 800-38E for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level

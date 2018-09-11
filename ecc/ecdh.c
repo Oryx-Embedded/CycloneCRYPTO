@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -492,7 +492,7 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
             //Check whether K is the all-zero value and abort if so
             if(mask == 0)
             {
-               error = ERROR_DECODING_FAILED;
+               error = ERROR_ILLEGAL_PARAMETER;
             }
          }
       }
@@ -550,7 +550,7 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
             //Check whether K is the all-zero value and abort if so
             if(mask == 0)
             {
-               error = ERROR_DECODING_FAILED;
+               error = ERROR_ILLEGAL_PARAMETER;
             }
          }
       }

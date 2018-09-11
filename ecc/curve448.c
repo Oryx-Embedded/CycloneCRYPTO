@@ -1,6 +1,6 @@
 /**
  * @file curve448.c
- * @brief Curve448 elliptic curve
+ * @brief Curve448 elliptic curve (constant-time implementation)
  *
  * @section License
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -36,7 +36,7 @@
 #include "debug.h"
 
 //Check crypto library configuration
-#if (CURVE448_SUPPORT == ENABLED)
+#if (CURVE448_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
 
 
 /**
@@ -140,7 +140,7 @@ void curve448Sub(uint32_t *r, const uint32_t *a, const uint32_t *b)
       temp >>= 32;
    }
 
-   //Compute the higest term of the result
+   //Compute the highest term of the result
    temp += 1;
 
    //Perform modular reduction
@@ -179,7 +179,7 @@ void curve448SubInt(uint32_t *r, const uint32_t *a, uint32_t b)
       temp >>= 32;
    }
 
-   //Compute the higest term of the result
+   //Compute the highest term of the result
    temp += 1;
 
    //Perform modular reduction
@@ -335,10 +335,32 @@ void curve448Sqr(uint32_t *r, const uint32_t *a)
 
 
 /**
+ * @brief Raise an integer to power 2^n
+ * @param[out] r Resulting integer R = (A ^ (2^n)) mod p
+ * @param[in] a An integer such as 0 <= A < p
+ * @param[in] n An integer such as n >= 1
+ **/
+
+void curve448Pwr2(uint32_t *r, const uint32_t *a, uint_t n)
+{
+   uint_t i;
+
+   //Pre-compute (A ^ 2) mod p
+   curve448Sqr(r, a);
+
+   //Compute R = (A ^ (2^n)) mod p
+   for(i = 1; i < n; i++)
+   {
+      curve448Sqr(r, r);
+   }
+}
+
+
+/**
  * @brief Modular reduction
  * @param[out] r Resulting integer R = A mod p
  * @param[in] a An integer such as 0 <= A < (2 * p)
- * @param[in] h The higest term of A
+ * @param[in] h The highest term of A
  **/
 
 void curve448Red(uint32_t *r, const uint32_t *a, uint32_t h)
@@ -362,7 +384,7 @@ void curve448Red(uint32_t *r, const uint32_t *a, uint32_t h)
       temp >>= 32;
    }
 
-   //Compute the higest term of the result
+   //Compute the highest term of the result
    h += (uint32_t) temp - 1;
 
    //If B < (2^448 - 2^224 + 1) then R = B, else R = A
@@ -378,7 +400,6 @@ void curve448Red(uint32_t *r, const uint32_t *a, uint32_t h)
 
 void curve448Inv(uint32_t *r, const uint32_t *a)
 {
-   uint_t i;
    uint32_t u[14];
    uint32_t v[14];
 
@@ -392,62 +413,27 @@ void curve448Inv(uint32_t *r, const uint32_t *a)
    curve448Sqr(u, u);
    curve448Sqr(u, u);
    curve448Mul(v, u, v); //A^(2^6 - 1)
-   curve448Sqr(u, v);
-
-   for(i = 0; i < 5; i++)
-   {
-      curve448Sqr(u, u);
-   }
-
+   curve448Pwr2(u, v, 6);
    curve448Mul(u, u, v); //A^(2^12 - 1)
    curve448Sqr(u, u);
    curve448Mul(v, u, a); //A^(2^13 - 1)
-   curve448Sqr(u, v);
-
-   for(i = 0; i < 12; i++)
-   {
-      curve448Sqr(u, u);
-   }
-
+   curve448Pwr2(u, v, 13);
    curve448Mul(u, u, v); //A^(2^26 - 1)
    curve448Sqr(u, u);
    curve448Mul(v, u, a); //A^(2^27 - 1)
-   curve448Sqr(u, v);
-
-   for(i = 0; i < 26; i++)
-   {
-      curve448Sqr(u, u);
-   }
-
+   curve448Pwr2(u, v, 27);
    curve448Mul(u, u, v); //A^(2^54 - 1)
    curve448Sqr(u, u);
    curve448Mul(v, u, a); //A^(2^55 - 1)
-   curve448Sqr(u, v);
-
-   for(i = 0; i < 54; i++)
-   {
-      curve448Sqr(u, u);
-   }
-
+   curve448Pwr2(u, v, 55);
    curve448Mul(u, u, v); //A^(2^110 - 1)
    curve448Sqr(u, u);
    curve448Mul(v, u, a); //A^(2^111 - 1)
-   curve448Sqr(u, v);
-
-   for(i = 0; i < 110; i++)
-   {
-      curve448Sqr(u, u);
-   }
-
+   curve448Pwr2(u, v, 111);
    curve448Mul(v, u, v); //A^(2^222 - 1)
    curve448Sqr(u, v);
    curve448Mul(u, u, a); //A^(2^223 - 1)
-
-   for(i = 0; i < 223; i++)
-   {
-      curve448Sqr(u, u);
-   }
-
+   curve448Pwr2(u, u, 223);
    curve448Mul(u, u, v); //A^(2^446 - 2^222 - 1)
    curve448Sqr(u, u);
    curve448Sqr(u, u);
@@ -465,7 +451,6 @@ void curve448Inv(uint32_t *r, const uint32_t *a)
 
 uint32_t curve448Sqrt(uint32_t *r, const uint32_t *a, const uint32_t *b)
 {
-   uint_t i;
    uint32_t res;
    uint32_t c[14];
    uint32_t u[14];
@@ -492,62 +477,27 @@ uint32_t curve448Sqrt(uint32_t *r, const uint32_t *a, const uint32_t *b)
    curve448Sqr(u, u);
    curve448Sqr(u, u);
    curve448Mul(v, u, v); //C^(2^6 - 1)
-   curve448Sqr(u, v);
-
-   for(i = 0; i < 5; i++)
-   {
-      curve448Sqr(u, u);
-   }
-
+   curve448Pwr2(u, v, 6);
    curve448Mul(u, u, v); //C^(2^12 - 1)
    curve448Sqr(u, u);
    curve448Mul(v, u, c); //C^(2^13 - 1)
-   curve448Sqr(u, v);
-
-   for(i = 0; i < 12; i++)
-   {
-      curve448Sqr(u, u);
-   }
-
+   curve448Pwr2(u, v, 13);
    curve448Mul(u, u, v); //C^(2^26 - 1)
    curve448Sqr(u, u);
    curve448Mul(v, u, c); //C^(2^27 - 1)
-   curve448Sqr(u, v);
-
-   for(i = 0; i < 26; i++)
-   {
-      curve448Sqr(u, u);
-   }
-
+   curve448Pwr2(u, v, 27);
    curve448Mul(u, u, v); //C^(2^54 - 1)
    curve448Sqr(u, u);
    curve448Mul(v, u, c); //C^(2^55 - 1)
-   curve448Sqr(u, v);
-
-   for(i = 0; i < 54; i++)
-   {
-      curve448Sqr(u, u);
-   }
-
+   curve448Pwr2(u, v, 55);
    curve448Mul(u, u, v); //C^(2^110 - 1)
    curve448Sqr(u, u);
    curve448Mul(v, u, c); //C^(2^111 - 1)
-   curve448Sqr(u, v);
-
-   for(i = 0; i < 110; i++)
-   {
-      curve448Sqr(u, u);
-   }
-
+   curve448Pwr2(u, v, 111);
    curve448Mul(v, u, v); //C^(2^222 - 1)
    curve448Sqr(u, v);
    curve448Mul(u, u, c); //C^(2^223 - 1)
-
-   for(i = 0; i < 223; i++)
-   {
-      curve448Sqr(u, u);
-   }
-
+   curve448Pwr2(u, u, 223);
    curve448Mul(u, u, v); //C^(2^446 - 2^222 - 1)
 
    //The candidate root is U = A^3 * B * (A^5 * B^3)^((p - 3) / 4)
@@ -644,8 +594,8 @@ void curve448Select(uint32_t *r, const uint32_t *a, const uint32_t *b,
 
 /**
  * @brief Compare integers
- * @param[in,out] a Pointer to the first integer
- * @param[in,out] b Pointer to the second integer
+ * @param[in] a Pointer to the first integer
+ * @param[in] b Pointer to the second integer
  * @return The function returns 0 if the A = B, else 1
  **/
 
@@ -660,11 +610,12 @@ uint32_t curve448Comp(const uint32_t *a, const uint32_t *b)
    //Compare A and B
    for(i = 0; i < 14; i++)
    {
+      //Constant time implementation
       mask |= a[i] ^ b[i];
    }
 
    //Return 0 if A = B, else 1
-   return (mask | (~mask + 1)) >> 31;
+   return ((uint32_t) (mask | (~mask + 1))) >> 31;
 }
 
 

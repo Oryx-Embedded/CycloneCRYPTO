@@ -29,7 +29,7 @@
  * for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -321,10 +321,10 @@ void blake2sProcessBlock(Blake2sContext *context, bool_t last)
    {
       //The column rounds apply the quarter-round function to the four
       //columns, from left to right
-      G(v[0], v[4], v[8],  v[12], m[sigma[i][0]],  m[sigma[i][1]]);
-      G(v[1], v[5], v[9],  v[13], m[sigma[i][2]],  m[sigma[i][3]]);
-      G(v[2], v[6], v[10], v[14], m[sigma[i][4]],  m[sigma[i][5]]);
-      G(v[3], v[7], v[11], v[15], m[sigma[i][6]],  m[sigma[i][7]]);
+      G(v[0], v[4], v[8],  v[12], m[sigma[i][0]], m[sigma[i][1]]);
+      G(v[1], v[5], v[9],  v[13], m[sigma[i][2]], m[sigma[i][3]]);
+      G(v[2], v[6], v[10], v[14], m[sigma[i][4]], m[sigma[i][5]]);
+      G(v[3], v[7], v[11], v[15], m[sigma[i][6]], m[sigma[i][7]]);
 
       //The diagonal rounds apply the quarter-round function to the top-left,
       //bottom-right diagonal, followed by the pattern shifted one place to

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -33,6 +33,7 @@
 #include "core/crypto.h"
 #include "certificate/pem_import.h"
 #include "encoding/asn1.h"
+#include "encoding/oid.h"
 #include "encoding/base64.h"
 #include "mpi/mpi.h"
 #include "debug.h"
@@ -606,9 +607,12 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length, RsaPrivateKey
    //Release previously allocated memory
    cryptoFreeMem(buffer);
 
-   //Clean up side effects if necessary
+   //Any error to report?
    if(error)
+   {
+      //Clean up side effects
       rsaFreePrivateKey(key);
+   }
 
    //Return status code
    return error;
@@ -978,9 +982,12 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length, DsaPrivateKey
    //Release previously allocated memory
    cryptoFreeMem(buffer);
 
-   //Clean up side effects if necessary
+   //Any error to report?
    if(error)
+   {
+      //Clean up side effects
       dsaFreePrivateKey(key);
+   }
 
    //Return status code
    return error;
@@ -1194,9 +1201,12 @@ error_t pemImportEcParameters(const char_t *input, size_t length, EcDomainParame
    //Release previously allocated memory
    cryptoFreeMem(buffer);
 
-   //Clean up side effects if necessary
+   //Any error to report?
    if(error)
+   {
+      //Clean up side effects
       ecFreeDomainParameters(params);
+   }
 
    //Return status code
    return error;
@@ -1445,9 +1455,212 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length, Mpi *key)
    //Release previously allocated memory
    cryptoFreeMem(buffer);
 
-   //Clean up side effects if necessary
+   //Any error to report?
    if(error)
+   {
+      //Clean up side effects
       mpiFree(key);
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief Decode a PEM file containing a EdDSA private key
+ * @param[in] input Pointer to the PEM structure
+ * @param[in] length Length of the PEM structure
+ * @param[out] key EdDSA private key resulting from the parsing process
+ * @return Error code
+ **/
+
+error_t pemImportEddsaPrivateKey(const char_t *input, size_t length, EddsaPrivateKey *key)
+{
+#if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
+   error_t error;
+   size_t i;
+   size_t j;
+   int_t k;
+   char_t *buffer;
+   const uint8_t *data;
+   Asn1Tag tag;
+
+   //Check parameters
+   if(input == NULL && length != 0)
+      return ERROR_INVALID_PARAMETER;
+   if(key == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Search for the beginning tag
+   k = pemSearchTag(input, length, "-----BEGIN PRIVATE KEY-----", 27);
+   //Failed to find the specified tag?
+   if(k < 0)
+      return ERROR_INVALID_SYNTAX;
+
+   //Advance the pointer over the tag
+   input += k + 27;
+   length -= k + 27;
+
+   //Search for the end tag
+   k = pemSearchTag(input, length, "-----END PRIVATE KEY-----", 25);
+   //Invalid PEM file?
+   if(k <= 0)
+      return ERROR_INVALID_SYNTAX;
+
+   //Length of the PEM structure
+   length = k;
+
+   //Allocate a memory buffer to hold the decoded data
+   buffer = cryptoAllocMem(length);
+   //Failed to allocate memory?
+   if(buffer == NULL)
+      return ERROR_OUT_OF_MEMORY;
+
+   //Copy the contents of the PEM structure
+   cryptoMemcpy(buffer, input, length);
+
+   //Remove carriage returns and line feeds
+   for(i = 0, j = 0; i < length; i++)
+   {
+      if(buffer[i] != '\r' && buffer[i] != '\n')
+         buffer[j++] = buffer[i];
+   }
+
+   //Start of exception handling block
+   do
+   {
+      //The PEM file is Base64 encoded...
+      error = base64Decode(buffer, j, buffer, &length);
+      //Failed to decode the file?
+      if(error)
+         break;
+
+      //Point to the resulting ASN.1 structure
+      data = (uint8_t *) buffer;
+
+      //Display ASN.1 structure
+      error = asn1DumpObject(data, length, 0);
+      //Any error to report?
+      if(error)
+         break;
+
+      //The EdDSA private key is encapsulated within a sequence
+      error = asn1ReadSequence(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         break;
+
+      //Point to the first field of the sequence
+      data = tag.value;
+      length = tag.length;
+
+      //Read the version field
+      error = asn1ReadTag(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         break;
+
+      //Enforce encoding, class and type
+      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
+      //The tag does not match the criteria?
+      if(error)
+         break;
+
+      //Skip the version field
+      data += tag.totalLength;
+      length -= tag.totalLength;
+
+      //Read the privateKeyAlgorithm field
+      error = asn1ReadSequence(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         break;
+
+      //Save the position of the privateKey field
+      data += tag.totalLength;
+      length -= tag.totalLength;
+
+      //Read the algorithm identifier (OID)
+      error = asn1ReadTag(tag.value, tag.length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         break;
+
+      //Enforce encoding, class and type
+      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_OBJECT_IDENTIFIER);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Check algorithm identifier
+      if(oidComp(tag.value, tag.length, ED25519_OID, sizeof(ED25519_OID)) &&
+         oidComp(tag.value, tag.length, ED448_OID, sizeof(ED448_OID)))
+      {
+         error = ERROR_WRONG_IDENTIFIER;
+         break;
+      }
+
+      //The privateKey field is encapsulated within an octet string
+      error = asn1ReadTag(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         break;
+
+      //Enforce encoding, class and type
+      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_OCTET_STRING);
+      //The tag does not match the criteria?
+      if(error)
+         break;
+
+      //Display ASN.1 structure
+      error = asn1DumpObject(tag.value, tag.length, 0);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Point to the content of the privateKey structure
+      data = tag.value;
+      length = tag.length;
+
+      //Read the privateKey field
+      error = asn1ReadTag(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         break;
+
+      //Enforce encoding, class and type
+      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_OCTET_STRING);
+      //The tag does not match the criteria?
+      if(error)
+         break;
+
+      //Read the EdDSA private key
+      error = mpiImport(&key->d, tag.value, tag.length, MPI_FORMAT_LITTLE_ENDIAN);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Debug message
+      TRACE_DEBUG("EdDSA private key:\r\n");
+      TRACE_DEBUG_MPI("  ", &key->d);
+
+      //End of exception handling block
+   } while(0);
+
+   //Release previously allocated memory
+   cryptoFreeMem(buffer);
+
+   //Any error to report?
+   if(error)
+   {
+      //Clean up side effects
+      eddsaFreePrivateKey(key);
+   }
 
    //Return status code
    return error;

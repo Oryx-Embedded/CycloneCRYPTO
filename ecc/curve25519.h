@@ -1,6 +1,6 @@
 /**
  * @file curve25519.h
- * @brief Curve25519 elliptic curve
+ * @brief Curve25519 elliptic curve (constant-time implementation)
  *
  * @section License
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 #ifndef _CURVE25519_H
@@ -55,6 +55,7 @@ void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b);
 void curve25519MulInt(uint32_t *r, const uint32_t *a, uint32_t b);
 void curve25519Red(uint32_t *r, const uint32_t *a);
 void curve25519Sqr(uint32_t *r, const uint32_t *a);
+void curve25519Pwr2(uint32_t *r, const uint32_t *a, uint_t n);
 void curve25519Inv(uint32_t *r, const uint32_t *a);
 
 uint32_t curve25519Sqrt(uint32_t *r, const uint32_t *a, const uint32_t *b);

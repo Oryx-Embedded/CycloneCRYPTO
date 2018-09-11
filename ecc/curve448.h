@@ -1,6 +1,6 @@
 /**
  * @file curve448.h
- * @brief Curve448 elliptic curve
+ * @brief Curve448 elliptic curve (constant-time implementation)
  *
  * @section License
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 #ifndef _CURVE448_H
@@ -55,6 +55,7 @@ void curve448Mul(uint32_t *r, const uint32_t *a, const uint32_t *b);
 void curve448MulInt(uint32_t *r, const uint32_t *a, uint32_t b);
 void curve448Red(uint32_t *r, const uint32_t *a, uint32_t h);
 void curve448Sqr(uint32_t *r, const uint32_t *a);
+void curve448Pwr2(uint32_t *r, const uint32_t *a, uint_t n);
 void curve448Inv(uint32_t *r, const uint32_t *a);
 
 uint32_t curve448Sqrt(uint32_t *r, const uint32_t *a, const uint32_t *b);

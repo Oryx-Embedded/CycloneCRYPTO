@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -53,7 +53,7 @@ error_t asn1ReadTag(const uint8_t *data, size_t length, Asn1Tag *tag)
    uint_t n;
 
    //Make sure the identifier octet is present
-   if(!length)
+   if(length == 0)
       return ERROR_INVALID_TAG;
 
    //Save the class of the ASN.1 tag

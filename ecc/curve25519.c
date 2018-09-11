@@ -1,6 +1,6 @@
 /**
  * @file curve25519.c
- * @brief Curve25519 elliptic curve
+ * @brief Curve25519 elliptic curve (constant-time implementation)
  *
  * @section License
  *
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -36,10 +36,10 @@
 #include "debug.h"
 
 //Check crypto library configuration
-#if (CURVE25519_SUPPORT == ENABLED)
+#if (CURVE25519_SUPPORT == ENABLED || ED25519_SUPPORT == ENABLED)
 
 //Square root of -1 modulo p (constant)
-static const uint32_t CURVE25519_SQRT_1[8] =
+static const uint32_t CURVE25519_SQRT_MINUS_1[8] =
 {
    0x4A0EA0B0, 0xC4EE1B27, 0xAD2FE478, 0x2F431806,
    0x3DFBD7A7, 0x2B4D0099, 0x4FC1DF0B, 0x2B832480
@@ -320,6 +320,28 @@ void curve25519Sqr(uint32_t *r, const uint32_t *a)
 
 
 /**
+ * @brief Raise an integer to power 2^n
+ * @param[out] r Resulting integer R = (A ^ (2^n)) mod p
+ * @param[in] a An integer such as 0 <= A < p
+ * @param[in] n An integer such as n >= 1
+ **/
+
+void curve25519Pwr2(uint32_t *r, const uint32_t *a, uint_t n)
+{
+   uint_t i;
+
+   //Pre-compute (A ^ 2) mod p
+   curve25519Sqr(r, a);
+
+   //Compute R = (A ^ (2^n)) mod p
+   for(i = 1; i < n; i++)
+   {
+      curve25519Sqr(r, r);
+   }
+}
+
+
+/**
  * @brief Modular reduction
  * @param[out] r Resulting integer R = A mod p
  * @param[in] a An integer such as 0 <= A < (2 * p)
@@ -355,7 +377,6 @@ void curve25519Red(uint32_t *r, const uint32_t *a)
 
 void curve25519Inv(uint32_t *r, const uint32_t *a)
 {
-   uint_t i;
    uint32_t u[8];
    uint32_t v[8];
 
@@ -371,51 +392,21 @@ void curve25519Inv(uint32_t *r, const uint32_t *a)
    curve25519Mul(u, u, v); //A^(2^6 - 1)
    curve25519Sqr(u, u);
    curve25519Mul(v, u, a); //A^(2^7 - 1)
-   curve25519Sqr(u, v);
-
-   for(i = 0; i < 6; i++)
-   {
-      curve25519Sqr(u, u);
-   }
-
+   curve25519Pwr2(u, v, 7);
    curve25519Mul(u, u, v); //A^(2^14 - 1)
    curve25519Sqr(u, u);
    curve25519Mul(v, u, a); //A^(2^15 - 1)
-   curve25519Sqr(u, v);
-
-   for(i = 0; i < 14; i++)
-   {
-      curve25519Sqr(u, u);
-   }
-
+   curve25519Pwr2(u, v, 15);
    curve25519Mul(u, u, v); //A^(2^30 - 1)
    curve25519Sqr(u, u);
    curve25519Mul(v, u, a); //A^(2^31 - 1)
-   curve25519Sqr(u, v);
-
-   for(i = 0; i < 30; i++)
-   {
-      curve25519Sqr(u, u);
-   }
-
+   curve25519Pwr2(u, v, 31);
    curve25519Mul(v, u, v); //A^(2^62 - 1)
-   curve25519Sqr(u, v);
-
-   for(i = 0; i < 61; i++)
-   {
-      curve25519Sqr(u, u);
-   }
-
+   curve25519Pwr2(u, v, 62);
    curve25519Mul(u, u, v); //A^(2^124 - 1)
    curve25519Sqr(u, u);
    curve25519Mul(v, u, a); //A^(2^125 - 1)
-   curve25519Sqr(u, v);
-
-   for(i = 0; i < 124; i++)
-   {
-      curve25519Sqr(u, u);
-   }
-
+   curve25519Pwr2(u, v, 125);
    curve25519Mul(u, u, v); //A^(2^250 - 1)
    curve25519Sqr(u, u);
    curve25519Sqr(u, u);
@@ -438,7 +429,6 @@ void curve25519Inv(uint32_t *r, const uint32_t *a)
 
 uint32_t curve25519Sqrt(uint32_t *r, const uint32_t *a, const uint32_t *b)
 {
-   uint_t i;
    uint32_t res1;
    uint32_t res2;
    uint32_t c[8];
@@ -467,51 +457,21 @@ uint32_t curve25519Sqrt(uint32_t *r, const uint32_t *a, const uint32_t *b)
    curve25519Mul(u, u, v); //C^(2^6 - 1)
    curve25519Sqr(u, u);
    curve25519Mul(v, u, c); //C^(2^7 - 1)
-   curve25519Sqr(u, v);
-
-   for(i = 0; i < 6; i++)
-   {
-      curve25519Sqr(u, u);
-   }
-
+   curve25519Pwr2(u, v, 7);
    curve25519Mul(u, u, v); //C^(2^14 - 1)
    curve25519Sqr(u, u);
    curve25519Mul(v, u, c); //C^(2^15 - 1)
-   curve25519Sqr(u, v);
-
-   for(i = 0; i < 14; i++)
-   {
-      curve25519Sqr(u, u);
-   }
-
+   curve25519Pwr2(u, v, 15);
    curve25519Mul(u, u, v); //C^(2^30 - 1)
    curve25519Sqr(u, u);
    curve25519Mul(v, u, c); //C^(2^31 - 1)
-   curve25519Sqr(u, v);
-
-   for(i = 0; i < 30; i++)
-   {
-      curve25519Sqr(u, u);
-   }
-
+   curve25519Pwr2(u, v, 31);
    curve25519Mul(v, u, v); //C^(2^62 - 1)
-   curve25519Sqr(u, v);
-
-   for(i = 0; i < 61; i++)
-   {
-      curve25519Sqr(u, u);
-   }
-
+   curve25519Pwr2(u, v, 62);
    curve25519Mul(u, u, v); //C^(2^124 - 1)
    curve25519Sqr(u, u);
    curve25519Mul(v, u, c); //C^(2^125 - 1)
-   curve25519Sqr(u, v);
-
-   for(i = 0; i < 124; i++)
-   {
-      curve25519Sqr(u, u);
-   }
-
+   curve25519Pwr2(u, v, 125);
    curve25519Mul(u, u, v); //C^(2^250 - 1)
    curve25519Sqr(u, u);
    curve25519Sqr(u, u);
@@ -524,7 +484,7 @@ uint32_t curve25519Sqrt(uint32_t *r, const uint32_t *a, const uint32_t *b)
    curve25519Mul(u, u, v);
 
    //The second candidate root is V = U * sqrt(-1)
-   curve25519Mul(v, u, CURVE25519_SQRT_1);
+   curve25519Mul(v, u, CURVE25519_SQRT_MINUS_1);
 
    //Calculate C = B * U^2
    curve25519Sqr(c, u);
@@ -621,8 +581,8 @@ void curve25519Select(uint32_t *r, const uint32_t *a, const uint32_t *b,
 
 /**
  * @brief Compare integers
- * @param[in,out] a Pointer to the first integer
- * @param[in,out] b Pointer to the second integer
+ * @param[in] a Pointer to the first integer
+ * @param[in] b Pointer to the second integer
  * @return The function returns 0 if the A = B, else 1
  **/
 
@@ -637,11 +597,12 @@ uint32_t curve25519Comp(const uint32_t *a, const uint32_t *b)
    //Compare A and B
    for(i = 0; i < 8; i++)
    {
+      //Constant time implementation
       mask |= a[i] ^ b[i];
    }
 
    //Return 0 if A = B, else 1
-   return (mask | (~mask + 1)) >> 31;
+   return ((uint32_t) (mask | (~mask + 1))) >> 31;
 }
 
 

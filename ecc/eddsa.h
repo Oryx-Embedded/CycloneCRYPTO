@@ -1,6 +1,6 @@
 /**
- * @file shake128.h
- * @brief SHAKE128 extendable-output function (XOF)
+ * @file eddsa.h
+ * @brief EdDSA (Edwards-Curve Digital Signature Algorithm)
  *
  * @section License
  *
@@ -26,12 +26,12 @@
  * @version 1.8.6
  **/
 
-#ifndef _SHAKE128_H
-#define _SHAKE128_H
+#ifndef _EDDSA_H
+#define _EDDSA_H
 
 //Dependencies
 #include "core/crypto.h"
-#include "xof/keccak.h"
+#include "ecc/ec.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -40,23 +40,33 @@
 
 
 /**
- * @brief SHAKE128 algorithm context
+ * @brief EdDSA public key
  **/
 
-typedef KeccakContext Shake128Context;
+typedef struct
+{
+   Mpi q; ///<Public key
+} EddsaPublicKey;
 
 
-//SHAKE128 related constants
-extern const uint8_t shake128Oid[9];
+/**
+ * @brief EdDSA private key
+ **/
 
-//SHAKE128 related functions
-error_t shake128Compute(const void *input, size_t inputLen,
-   uint8_t *output, size_t outputLen);
+typedef struct
+{
+   Mpi d; ///<Private key
+   Mpi q; ///<Public key
+} EddsaPrivateKey;
 
-void shake128Init(Shake128Context *context);
-void shake128Absorb(Shake128Context *context, const void *input, size_t length);
-void shake128Final(Shake128Context *context);
-void shake128Squeeze(Shake128Context *context, uint8_t *output, size_t length);
+
+//EdDSA related functions
+void eddsaInitPublicKey(EddsaPublicKey *key);
+void eddsaFreePublicKey(EddsaPublicKey *key);
+
+void eddsaInitPrivateKey(EddsaPrivateKey *key);
+void eddsaFreePrivateKey(EddsaPrivateKey *key);
+
 
 //C++ guard
 #ifdef __cplusplus

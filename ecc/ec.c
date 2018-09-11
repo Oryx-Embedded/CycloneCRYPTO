@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -32,6 +32,10 @@
 //Dependencies
 #include "core/crypto.h"
 #include "ecc/ec.h"
+#include "ecc/curve25519.h"
+#include "ecc/curve448.h"
+#include "ecc/ed25519.h"
+#include "ecc/ed448.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -92,6 +96,8 @@ error_t ecLoadDomainParameters(EcDomainParameters *params,
    //Debug message
    TRACE_DEBUG("Loading %s EC domain parameters...\r\n", curveInfo->name);
 
+   //Curve name
+   params->name = curveInfo->name;
    //Curve type
    params->type = curveInfo->type;
 
@@ -203,21 +209,28 @@ error_t ecImport(const EcDomainParameters *params, EcPoint *r,
    const uint8_t *data, size_t length)
 {
    error_t error;
-   size_t k;
 
-   //Get the length in octets of the prime
-   k = mpiGetByteLength(&params->p);
-
-   //Montgomery curve?
+   //Montgomery or Edwards curve?
    if(params->type == EC_CURVE_TYPE_X25519 ||
-      params->type == EC_CURVE_TYPE_X448)
+      params->type == EC_CURVE_TYPE_X448 ||
+      params->type == EC_CURVE_TYPE_ED25519 ||
+      params->type == EC_CURVE_TYPE_ED448)
    {
-      //Check the length of the octet string
-      if(length != k)
+      //Empty octet string?
+      if(length == 0)
          return ERROR_DECODING_FAILED;
 
-      //Convert the u-coordinate to a multiple precision integer
-      error = mpiImport(&r->x, data, k, MPI_FORMAT_LITTLE_ENDIAN);
+      //Check the length of the octet string
+      if((params->type == EC_CURVE_TYPE_X25519 && length != CURVE25519_BYTE_LEN) ||
+         (params->type == EC_CURVE_TYPE_X448 && length != CURVE448_BYTE_LEN) ||
+         (params->type == EC_CURVE_TYPE_ED25519 && length != ED25519_PUBLIC_KEY_LEN) ||
+         (params->type == EC_CURVE_TYPE_ED448 && length != ED448_PUBLIC_KEY_LEN))
+      {
+         return ERROR_ILLEGAL_PARAMETER;
+      }
+
+      //Convert the octet string to a multiple precision integer
+      error = mpiImport(&r->x, data, length, MPI_FORMAT_LITTLE_ENDIAN);
       //Any error to report?
       if(error)
          return error;
@@ -225,6 +238,11 @@ error_t ecImport(const EcDomainParameters *params, EcPoint *r,
    //Weierstrass curve?
    else
    {
+      size_t k;
+
+      //Get the length in octets of the prime
+      k = mpiGetByteLength(&params->p);
+
       //Check the length of the octet string
       if(length != (k * 2 + 1))
          return ERROR_DECODING_FAILED;

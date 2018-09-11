@@ -29,7 +29,7 @@
  * more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -67,12 +67,15 @@ error_t hkdf(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
 
    //Perform HKDF extract step
    error = hkdfExtract(hash, ikm, ikmLen, salt, saltLen, prk);
-   //Any error to report?
-   if(error)
-      return error;
 
-   //Perform HKDF expand step
-   error = hkdfExpand(hash, prk, hash->digestSize, info, infoLen, okm, okmLen);
+   //Check status code
+   if(!error)
+   {
+      //Perform HKDF expand step
+      error = hkdfExpand(hash, prk, hash->digestSize, info, infoLen,
+         okm, okmLen);
+   }
+
    //Return status code
    return error;
 }

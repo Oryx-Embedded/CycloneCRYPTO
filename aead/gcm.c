@@ -29,7 +29,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -334,6 +334,7 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    size_t ivLen, const uint8_t *a, size_t aLen, const uint8_t *c,
    uint8_t *p, size_t length, const uint8_t *t, size_t tLen)
 {
+   uint8_t mask;
    size_t k;
    size_t n;
    uint8_t b[16];
@@ -445,24 +446,28 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
       n -= k;
    }
 
-   //Append the 64-bit representation of the length of the AAD and the ciphertext
+   //Append the 64-bit representation of the length of the AAD and the
+   //ciphertext
    STORE64BE(aLen * 8, b);
    STORE64BE(length * 8, b + 8);
 
-   //The GHASH function is applied to the result to produce a single output block S
+   //The GHASH function is applied to the result to produce a single output
+   //block S
    gcmXorBlock(s, s, b, 16);
    gcmMul(context, s);
 
    //Let R = MSB(GCTR(J(0), S))
    gcmXorBlock(r, r, s, tLen);
 
-   //The calculated tag is bitwise compared to the received tag. The
-   //message is authenticated if and only if the tags match
-   if(cryptoMemcmp(r, t, tLen))
-      return ERROR_FAILURE;
+   //The calculated tag is bitwise compared to the received tag. The message
+   //is authenticated if and only if the tags match
+   for(mask = 0, n = 0; n < tLen; n++)
+   {
+      mask |= r[n] ^ t[n];
+   }
 
-   //Successful decryption
-   return NO_ERROR;
+   //Return status code
+   return (mask == 0) ? NO_ERROR : ERROR_FAILURE;
 }
 
 

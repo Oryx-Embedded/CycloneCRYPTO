@@ -31,7 +31,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -234,6 +234,7 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
    size_t nLen, const uint8_t *a, size_t aLen, const uint8_t *c, uint8_t *p,
    size_t length, const uint8_t *t, size_t tLen)
 {
+   uint8_t mask;
    size_t m;
    size_t q;
    size_t qLen;
@@ -378,13 +379,15 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
    //Compute MAC
    ccmXorBlock(r, r, y, tLen);
 
-   //The calculated tag is bitwise compared to the received tag. The
-   //message is authenticated if and only if the tags match
-   if(cryptoMemcmp(r, t, tLen))
-      return ERROR_FAILURE;
+   //The calculated tag is bitwise compared to the received tag. The message
+   //is authenticated if and only if the tags match
+   for(mask = 0, m = 0; m < tLen; m++)
+   {
+      mask |= r[m] ^ t[m];
+   }
 
-   //Successful decryption
-   return NO_ERROR;
+   //Return status code
+   return (mask == 0) ? NO_ERROR : ERROR_FAILURE;
 }
 
 

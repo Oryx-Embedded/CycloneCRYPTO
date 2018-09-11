@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 //Switch to the appropriate trace level
@@ -38,6 +38,8 @@
 #include "pkc/rsa.h"
 #include "pkc/dsa.h"
 #include "ecc/ecdsa.h"
+#include "ecc/ed25519.h"
+#include "ecc/ed448.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -124,19 +126,28 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
    if(error)
       return error;
 
-   //Allocate a memory buffer to hold the hash context
-   hashContext = cryptoAllocMem(hashAlgo->contextSize);
-   //Failed to allocate memory?
-   if(hashContext == NULL)
-      return ERROR_OUT_OF_MEMORY;
+   //Valid hash algorithm?
+   if(hashAlgo != NULL)
+   {
+      //Allocate a memory buffer to hold the hash context
+      hashContext = cryptoAllocMem(hashAlgo->contextSize);
+      //Failed to allocate memory?
+      if(hashContext == NULL)
+         return ERROR_OUT_OF_MEMORY;
 
-   //Digest the TBSCertificate structure using the specified hash algorithm
-   hashAlgo->init(hashContext);
-   hashAlgo->update(hashContext, certInfo->tbsCertificate, certInfo->tbsCertificateLen);
-   hashAlgo->final(hashContext, NULL);
+      //Digest the TBSCertificate structure using the specified hash algorithm
+      hashAlgo->init(hashContext);
+      hashAlgo->update(hashContext, certInfo->tbsCertificate, certInfo->tbsCertificateLen);
+      hashAlgo->final(hashContext, NULL);
+   }
+   else
+   {
+      //Ed25519 and Ed448 are used in PureEdDSA mode, without pre-hashing
+      hashContext = NULL;
+   }
 
-   //Check signature algorithm
 #if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
+   //RSA signature algorithm?
    if(signAlgo == X509_SIGN_ALGO_RSA)
    {
       uint_t k;
@@ -166,7 +177,7 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
       //Check status code
       if(!error)
       {
-         //Verify RSA signature
+         //Verify RSA signature (RSASSA-PKCS1-v1_5 signature scheme)
          error = rsassaPkcs1v15Verify(&publicKey, hashAlgo, hashContext->digest,
             certInfo->signatureValue.data, certInfo->signatureValue.length);
       }
@@ -177,6 +188,7 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
    else
 #endif
 #if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
+   //DSA signature algorithm?
    if(signAlgo == X509_SIGN_ALGO_DSA)
    {
       uint_t k;
@@ -229,6 +241,7 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
    else
 #endif
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
+   //ECDSA signature algorithm?
    if(signAlgo == X509_SIGN_ALGO_ECDSA)
    {
       const EcCurveInfo *curveInfo;
@@ -244,7 +257,8 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
       ecdsaInitSignature(&signature);
 
       //Retrieve EC domain parameters
-      curveInfo = x509GetCurveInfo(issuerCertInfo->subjectPublicKeyInfo.ecParams.namedCurve,
+      curveInfo = x509GetCurveInfo(
+         issuerCertInfo->subjectPublicKeyInfo.ecParams.namedCurve,
          issuerCertInfo->subjectPublicKeyInfo.ecParams.namedCurveLen);
 
       //Make sure the specified elliptic curve is supported
@@ -291,13 +305,82 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
    }
    else
 #endif
+#if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
+   //Ed25519 signature algorithm?
+   if(signAlgo == X509_SIGN_ALGO_ED25519)
+   {
+      const X509EcPublicKey *publicKey;
+
+      //Point to the Ed25519 public key
+      publicKey = &issuerCertInfo->subjectPublicKeyInfo.ecPublicKey;
+
+      //Check the length of the public key
+      if(publicKey->qLen == ED25519_PUBLIC_KEY_LEN)
+      {
+         //Check the length of the EdDSA signature
+         if(certInfo->signatureValue.length == ED25519_SIGNATURE_LEN)
+         {
+            //Verify signature (PureEdDSA mode)
+            error = ed25519VerifySignature(publicKey->q, certInfo->tbsCertificate,
+               certInfo->tbsCertificateLen, NULL, 0, 0, certInfo->signatureValue.data);
+         }
+         else
+         {
+            //The length of the EdDSA signature is not valid
+            error = ERROR_INVALID_SIGNATURE;
+         }
+      }
+      else
+      {
+         //The length of the Ed25519 public key is not valid
+         error = ERROR_ILLEGAL_PARAMETER;
+      }
+   }
+   else
+#endif
+#if (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED)
+   //Ed448 signature algorithm?
+   if(signAlgo == X509_SIGN_ALGO_ED448)
+   {
+      const X509EcPublicKey *publicKey;
+
+      //Point to the Ed448 public key
+      publicKey = &issuerCertInfo->subjectPublicKeyInfo.ecPublicKey;
+
+      //Check the length of the public key
+      if(publicKey->qLen == ED448_PUBLIC_KEY_LEN)
+      {
+         //Check the length of the EdDSA signature
+         if(certInfo->signatureValue.length == ED448_SIGNATURE_LEN)
+         {
+            //Verify signature (PureEdDSA mode)
+            error = ed448VerifySignature(publicKey->q, certInfo->tbsCertificate,
+               certInfo->tbsCertificateLen, NULL, 0, 0, certInfo->signatureValue.data);
+         }
+         else
+         {
+            //The length of the EdDSA signature is not valid
+            error = ERROR_INVALID_SIGNATURE;
+         }
+      }
+      else
+      {
+         //The length of the Ed448 public key is not valid
+         error = ERROR_ILLEGAL_PARAMETER;
+      }
+   }
+   else
+#endif
    {
       //The signature algorithm is not supported...
       error = ERROR_UNSUPPORTED_SIGNATURE_ALGO;
    }
 
    //Release hash algorithm context
-   cryptoFreeMem(hashContext);
+   if(hashContext != NULL)
+   {
+      cryptoFreeMem(hashContext);
+   }
 
    //Return status code
    return error;

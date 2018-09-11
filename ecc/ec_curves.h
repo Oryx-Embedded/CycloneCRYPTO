@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.2
+ * @version 1.8.6
  **/
 
 #ifndef _EC_CURVES_H
@@ -201,6 +201,20 @@
    #error CURVE448_SUPPORT parameter is not valid
 #endif
 
+//Ed25519 elliptic curve support
+#ifndef ED25519_SUPPORT
+   #define ED25519_SUPPORT DISABLED
+#elif (ED25519_SUPPORT != ENABLED && ED25519_SUPPORT != DISABLED)
+   #error ED25519_SUPPORT parameter is not valid
+#endif
+
+//Ed448 elliptic curve support
+#ifndef ED448_SUPPORT
+   #define ED448_SUPPORT DISABLED
+#elif (ED448_SUPPORT != ENABLED && ED448_SUPPORT != DISABLED)
+   #error ED448_SUPPORT parameter is not valid
+#endif
+
 //SECG curves
 #define SECP112R1_CURVE (&secp112r1Curve)
 #define SECP112R2_CURVE (&secp112r2Curve)
@@ -231,6 +245,10 @@
 #define X25519_CURVE (&x25519Curve)
 #define X448_CURVE (&x448Curve)
 
+//Edwards curves
+#define ED25519_CURVE (&ed25519Curve)
+#define ED448_CURVE (&ed448Curve)
+
 //C++ guard
 #ifdef __cplusplus
    extern "C" {
@@ -252,7 +270,9 @@ typedef enum
    EC_CURVE_TYPE_SECP_R2       = 6,
    EC_CURVE_TYPE_BRAINPOOLP_R1 = 7,
    EC_CURVE_TYPE_X25519        = 8,
-   EC_CURVE_TYPE_X448          = 9
+   EC_CURVE_TYPE_X448          = 9,
+   EC_CURVE_TYPE_ED25519       = 10,
+   EC_CURVE_TYPE_ED448         = 11
 } EcCurveType;
 
 
@@ -342,6 +362,8 @@ extern const EcCurveInfo brainpoolP384r1Curve;
 extern const EcCurveInfo brainpoolP512r1Curve;
 extern const EcCurveInfo x25519Curve;
 extern const EcCurveInfo x448Curve;
+extern const EcCurveInfo ed25519Curve;
+extern const EcCurveInfo ed448Curve;
 
 //Fast modular reduction
 error_t secp128r1Mod(Mpi *a, const Mpi *p);
