@@ -28,7 +28,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -42,7 +42,7 @@
 #if (SHA512_224_SUPPORT == ENABLED)
 
 //SHA-512/224 object identifier (2.16.840.1.101.3.4.2.5)
-static const uint8_t sha512_224Oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x05};
+const uint8_t sha512_224Oid[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x05};
 
 //Common interface for hash algorithms
 const HashAlgo sha512_224HashAlgo =

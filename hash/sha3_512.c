@@ -28,7 +28,7 @@
  * of an electronic message. Refer to FIPS 202 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -42,7 +42,7 @@
 #if (SHA3_512_SUPPORT == ENABLED)
 
 //SHA3-512 object identifier (2.16.840.1.101.3.4.2.10)
-static const uint8_t sha3_512Oid[] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0A};
+const uint8_t sha3_512Oid[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0A};
 
 //Common interface for hash algorithms
 const HashAlgo sha3_512HashAlgo =

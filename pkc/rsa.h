@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 #ifndef _RSA_H
@@ -83,6 +83,7 @@ extern const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_224_OID[9];
 extern const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_256_OID[9];
 extern const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_384_OID[9];
 extern const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_512_OID[9];
+extern const uint8_t RSASSA_PSS_OID[9];
 
 //RSA related functions
 void rsaInitPublicKey(RsaPublicKey *key);

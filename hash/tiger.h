@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 #ifndef _TIGER_H
@@ -36,6 +36,8 @@
 #define TIGER_BLOCK_SIZE 64
 //Tiger digest size
 #define TIGER_DIGEST_SIZE 24
+//Tiger algorithm object identifier
+#define TIGER_OID tigerOid
 //Common interface for hash algorithms
 #define TIGER_HASH_ALGO (&tigerHashAlgo)
 
@@ -67,6 +69,7 @@ typedef struct
 
 
 //Tiger related constants
+extern const uint8_t tigerOid[9];
 extern const HashAlgo tigerHashAlgo;
 
 //Tiger related functions

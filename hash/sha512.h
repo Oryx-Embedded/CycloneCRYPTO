@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 #ifndef _SHA512_H
@@ -36,6 +36,8 @@
 #define SHA512_BLOCK_SIZE 128
 //SHA-512 digest size
 #define SHA512_DIGEST_SIZE 64
+//SHA-512 algorithm object identifier
+#define SHA512_OID sha512Oid
 //Common interface for hash algorithms
 #define SHA512_HASH_ALGO (&sha512HashAlgo)
 
@@ -67,6 +69,7 @@ typedef struct
 
 
 //SHA-512 related constants
+extern const uint8_t sha512Oid[9];
 extern const HashAlgo sha512HashAlgo;
 
 //SHA-512 related functions

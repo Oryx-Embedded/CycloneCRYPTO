@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 #ifndef _SHA224_H
@@ -37,6 +37,8 @@
 #define SHA224_BLOCK_SIZE 64
 //SHA-224 digest size
 #define SHA224_DIGEST_SIZE 28
+//SHA-224 algorithm object identifier
+#define SHA224_OID sha224Oid
 //Common interface for hash algorithms
 #define SHA224_HASH_ALGO (&sha224HashAlgo)
 
@@ -54,6 +56,7 @@ typedef Sha256Context Sha224Context;
 
 
 //SHA-224 related constants
+extern const uint8_t sha224Oid[9];
 extern const HashAlgo sha224HashAlgo;
 
 //SHA-224 related functions

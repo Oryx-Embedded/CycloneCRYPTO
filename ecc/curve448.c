@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -36,7 +36,7 @@
 #include "debug.h"
 
 //Check crypto library configuration
-#if (CURVE448_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
+#if (X448_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
 
 
 /**
@@ -409,9 +409,7 @@ void curve448Inv(uint32_t *r, const uint32_t *a)
    curve448Mul(u, u, a); //A^(2^2 - 1)
    curve448Sqr(u, u);
    curve448Mul(v, u, a); //A^(2^3 - 1)
-   curve448Sqr(u, v);
-   curve448Sqr(u, u);
-   curve448Sqr(u, u);
+   curve448Pwr2(u, v, 3);
    curve448Mul(v, u, v); //A^(2^6 - 1)
    curve448Pwr2(u, v, 6);
    curve448Mul(u, u, v); //A^(2^12 - 1)
@@ -473,9 +471,7 @@ uint32_t curve448Sqrt(uint32_t *r, const uint32_t *a, const uint32_t *b)
    curve448Mul(u, u, c); //C^(2^2 - 1)
    curve448Sqr(u, u);
    curve448Mul(v, u, c); //C^(2^3 - 1)
-   curve448Sqr(u, v);
-   curve448Sqr(u, u);
-   curve448Sqr(u, u);
+   curve448Pwr2(u, v, 3);
    curve448Mul(v, u, v); //C^(2^6 - 1)
    curve448Pwr2(u, v, 6);
    curve448Mul(u, u, v); //C^(2^12 - 1)

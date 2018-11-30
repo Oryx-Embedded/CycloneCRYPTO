@@ -28,7 +28,7 @@
  * in length, and produces a message digest of 512 bits
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -149,7 +149,7 @@ static const uint64_t t[256] =
 };
 
 //Whirlpool object identifier (1.0.10118.3.0.55)
-static const uint8_t whirlpoolOid[] = {0x28, 0xCF, 0x06, 0x03, 0x00, 0x37};
+const uint8_t whirlpoolOid[6] = {0x28, 0xCF, 0x06, 0x03, 0x00, 0x37};
 
 //Common interface for hash algorithms
 const HashAlgo whirlpoolHashAlgo =

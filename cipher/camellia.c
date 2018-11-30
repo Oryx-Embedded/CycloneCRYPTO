@@ -28,7 +28,7 @@
  * blocks of 128 bits under control of a 128/192/256-bit secret key
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -304,15 +304,22 @@ error_t camelliaInit(CamelliaContext *context, const uint8_t *key, size_t keyLen
    uint32_t *k;
    const CamelliaSubkey *p;
 
-   //18 rounds are required for 128-bit key
+   //Check the length of the key
    if(keyLen == 16)
+   {
+      //18 rounds are required for 128-bit key
       context->nr = 18;
-   //24 rounds are required for 192 and 256-bit keys
+   }
    else if(keyLen == 24 || keyLen == 32)
+   {
+      //24 rounds are required for 192 and 256-bit keys
       context->nr = 24;
-   //Key length is not supported...
+   }
    else
+   {
+      //Report an error
       return ERROR_INVALID_KEY_LENGTH;
+   }
 
    //Point to KA, KB, KL and KR
    k = context->k;

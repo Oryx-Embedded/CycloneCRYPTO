@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -146,7 +146,7 @@ error_t ecdhGenerateKeyPair(EcdhContext *context,
          TRACE_DEBUG_MPI("    ", &context->qa.y);
       }
    }
-#if (CURVE25519_SUPPORT == ENABLED)
+#if (X25519_SUPPORT == ENABLED)
    //Curve25519 elliptic curve?
    else if(context->params.type == EC_CURVE_TYPE_X25519)
    {
@@ -197,7 +197,7 @@ error_t ecdhGenerateKeyPair(EcdhContext *context,
       }
    }
 #endif
-#if (CURVE448_SUPPORT == ENABLED)
+#if (X448_SUPPORT == ENABLED)
    //Curve448 elliptic curve?
    else if(context->params.type == EC_CURVE_TYPE_X448)
    {
@@ -336,7 +336,7 @@ error_t ecdhCheckPublicKey(const EcDomainParameters *params, EcPoint *publicKey)
          }
       }
    }
-#if (CURVE25519_SUPPORT == ENABLED)
+#if (X25519_SUPPORT == ENABLED)
    //Curve25519 elliptic curve?
    else if(params->type == EC_CURVE_TYPE_X25519)
    {
@@ -344,7 +344,7 @@ error_t ecdhCheckPublicKey(const EcDomainParameters *params, EcPoint *publicKey)
       valid = TRUE;
    }
 #endif
-#if (CURVE448_SUPPORT == ENABLED)
+#if (X448_SUPPORT == ENABLED)
    //Curve448 elliptic curve?
    else if(params->type == EC_CURVE_TYPE_X448)
    {
@@ -445,7 +445,7 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
          error = ERROR_INVALID_LENGTH;
       }
    }
-#if (CURVE25519_SUPPORT == ENABLED)
+#if (X25519_SUPPORT == ENABLED)
    //Curve25519 elliptic curve?
    else if(context->params.type == EC_CURVE_TYPE_X25519)
    {
@@ -489,7 +489,8 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
                mask |= output[i];
             }
 
-            //Check whether K is the all-zero value and abort if so
+            //Check whether K is the all-zero value and abort if so (refer to
+            //RFC 8422, sections 5.10 and 5.11)
             if(mask == 0)
             {
                error = ERROR_ILLEGAL_PARAMETER;
@@ -503,7 +504,7 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
       }
    }
 #endif
-#if (CURVE448_SUPPORT == ENABLED)
+#if (X448_SUPPORT == ENABLED)
    //Curve448 elliptic curve?
    else if(context->params.type == EC_CURVE_TYPE_X448)
    {
@@ -547,7 +548,8 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
                mask |= output[i];
             }
 
-            //Check whether K is the all-zero value and abort if so
+            //Check whether K is the all-zero value and abort if so (refer to
+            //RFC 8422, sections 5.10 and 5.11)
             if(mask == 0)
             {
                error = ERROR_ILLEGAL_PARAMETER;

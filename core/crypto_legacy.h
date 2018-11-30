@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 #ifndef _CRYPTO_LEGACY_H
@@ -32,5 +32,13 @@
 //Deprecated functions
 #define mpiReadRaw(r, data, length) mpiImport(r, data, length, MPI_FORMAT_BIG_ENDIAN)
 #define mpiWriteRaw(a, data, length) mpiExport(a, data, length, MPI_FORMAT_BIG_ENDIAN)
+
+#ifdef CURVE25519_SUPPORT
+   #define X25519_SUPPORT CURVE25519_SUPPORT
+#endif
+
+#ifdef CURVE448_SUPPORT
+   #define X448_SUPPORT CURVE448_SUPPORT
+#endif
 
 #endif

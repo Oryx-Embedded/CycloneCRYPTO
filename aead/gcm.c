@@ -29,7 +29,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -126,8 +126,8 @@ error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
          h[2] = context->m[j][2];
          h[3] = context->m[j][3];
 
-         //An addition in GF(2^128) is identical to a bitwise
-         //exclusive-OR operation
+         //An addition in GF(2^128) is identical to a bitwise exclusive-OR
+         //operation
          j = reverseInt4(1);
          h[0] ^= context->m[j][0];
          h[1] ^= context->m[j][1];
@@ -210,8 +210,8 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
    //Check whether the length of the IV is 96 bits
    if(ivLen == 12)
    {
-      //When the length of the IV is 96 bits, the padding string is
-      //appended to the IV to form the pre-counter block
+      //When the length of the IV is 96 bits, the padding string is appended
+      //to the IV to form the pre-counter block
       cryptoMemcpy(j, iv, 12);
       STORE32BE(1, j + 12);
    }
@@ -299,11 +299,13 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
       n -= k;
    }
 
-   //Append the 64-bit representation of the length of the AAD and the ciphertext
+   //Append the 64-bit representation of the length of the AAD and the
+   //ciphertext
    STORE64BE(aLen * 8, b);
    STORE64BE(length * 8, b + 8);
 
-   //The GHASH function is applied to the result to produce a single output block S
+   //The GHASH function is applied to the result to produce a single output
+   //block S
    gcmXorBlock(s, s, b, 16);
    gcmMul(context, s);
 
@@ -357,8 +359,8 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    //Check whether the length of the IV is 96 bits
    if(ivLen == 12)
    {
-      //When the length of the IV is 96 bits, the padding string is
-      //appended to the IV to form the pre-counter block
+      //When the length of the IV is 96 bits, the padding string is appended
+      //to the IV to form the pre-counter block
       cryptoMemcpy(j, iv, 12);
       STORE32BE(1, j + 12);
    }

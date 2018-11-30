@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -120,13 +120,12 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
    }
 
    //Retrieve the signature algorithm that was used to sign the certificate
-   error = x509GetSignHashAlgo(certInfo->signatureAlgo.data,
-      certInfo->signatureAlgo.length, &signAlgo, &hashAlgo);
+   error = x509GetSignHashAlgo(&certInfo->signatureAlgo, &signAlgo, &hashAlgo);
    //Unsupported signature algorithm?
    if(error)
       return error;
 
-   //Valid hash algorithm?
+   //Ed25519 and Ed448 are used in PureEdDSA mode, without pre-hashing
    if(hashAlgo != NULL)
    {
       //Allocate a memory buffer to hold the hash context
@@ -135,251 +134,303 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
       if(hashContext == NULL)
          return ERROR_OUT_OF_MEMORY;
 
-      //Digest the TBSCertificate structure using the specified hash algorithm
+      //Initialize hash computation
       hashAlgo->init(hashContext);
-      hashAlgo->update(hashContext, certInfo->tbsCertificate, certInfo->tbsCertificateLen);
+
+      //Digest the TBSCertificate structure using the specified hash algorithm
+      hashAlgo->update(hashContext, certInfo->tbsCertificate,
+         certInfo->tbsCertificateLen);
+
+      //Finalize hash computation
       hashAlgo->final(hashContext, NULL);
-   }
-   else
-   {
-      //Ed25519 and Ed448 are used in PureEdDSA mode, without pre-hashing
-      hashContext = NULL;
-   }
 
 #if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
-   //RSA signature algorithm?
-   if(signAlgo == X509_SIGN_ALGO_RSA)
-   {
-      uint_t k;
-      RsaPublicKey publicKey;
-
-      //Initialize RSA public key
-      rsaInitPublicKey(&publicKey);
-
-      //Get the RSA public key
-      error = x509ReadRsaPublicKey(&issuerCertInfo->subjectPublicKeyInfo,
-         &publicKey);
-
-      //Check status code
-      if(!error)
+      //RSA signature algorithm?
+      if(signAlgo == X509_SIGN_ALGO_RSA)
       {
-         //Get the length of the modulus, in bits
-         k = mpiGetBitLength(&publicKey.n);
+         uint_t k;
+         RsaPublicKey publicKey;
 
-         //Make sure the modulus is acceptable
-         if(k < X509_MIN_RSA_MODULUS_SIZE || k > X509_MAX_RSA_MODULUS_SIZE)
+         //Initialize RSA public key
+         rsaInitPublicKey(&publicKey);
+
+         //Get the RSA public key
+         error = x509ReadRsaPublicKey(&issuerCertInfo->subjectPublicKeyInfo,
+            &publicKey);
+
+         //Check status code
+         if(!error)
          {
-            //Report an error
-            error = ERROR_INVALID_KEY;
+            //Get the length of the modulus, in bits
+            k = mpiGetBitLength(&publicKey.n);
+
+            //Make sure the modulus is acceptable
+            if(k < X509_MIN_RSA_MODULUS_SIZE || k > X509_MAX_RSA_MODULUS_SIZE)
+            {
+               //Report an error
+               error = ERROR_INVALID_KEY;
+            }
          }
-      }
 
-      //Check status code
-      if(!error)
+         //Check status code
+         if(!error)
+         {
+            //Verify RSA signature (RSASSA-PKCS1-v1_5 signature scheme)
+            error = rsassaPkcs1v15Verify(&publicKey, hashAlgo,
+               hashContext->digest, certInfo->signatureValue.data,
+               certInfo->signatureValue.length);
+         }
+
+         //Release previously allocated resources
+         rsaFreePublicKey(&publicKey);
+      }
+      else
+#endif
+#if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
+      //RSA-PSS signature algorithm?
+      if(signAlgo == X509_SIGN_ALGO_RSA_PSS)
       {
-         //Verify RSA signature (RSASSA-PKCS1-v1_5 signature scheme)
-         error = rsassaPkcs1v15Verify(&publicKey, hashAlgo, hashContext->digest,
-            certInfo->signatureValue.data, certInfo->signatureValue.length);
-      }
+         uint_t k;
+         RsaPublicKey publicKey;
 
-      //Release previously allocated resources
-      rsaFreePublicKey(&publicKey);
-   }
-   else
+         //Initialize RSA public key
+         rsaInitPublicKey(&publicKey);
+
+         //Get the RSA public key
+         error = x509ReadRsaPublicKey(&issuerCertInfo->subjectPublicKeyInfo,
+            &publicKey);
+
+         //Check status code
+         if(!error)
+         {
+            //Get the length of the modulus, in bits
+            k = mpiGetBitLength(&publicKey.n);
+
+            //Make sure the modulus is acceptable
+            if(k < X509_MIN_RSA_MODULUS_SIZE || k > X509_MAX_RSA_MODULUS_SIZE)
+            {
+               //Report an error
+               error = ERROR_INVALID_KEY;
+            }
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Retrieve the length of the salt
+            k = certInfo->signatureAlgo.rsaPssParams.saltLen;
+
+            //Verify RSA signature (RSASSA-PSS signature scheme)
+            error = rsassaPssVerify(&publicKey, hashAlgo, k,
+               hashContext->digest, certInfo->signatureValue.data,
+               certInfo->signatureValue.length);
+         }
+
+         //Release previously allocated resources
+         rsaFreePublicKey(&publicKey);
+      }
+      else
 #endif
 #if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
-   //DSA signature algorithm?
-   if(signAlgo == X509_SIGN_ALGO_DSA)
-   {
-      uint_t k;
-      DsaPublicKey publicKey;
-      DsaSignature signature;
-
-      //Initialize DSA public key
-      dsaInitPublicKey(&publicKey);
-      //Initialize DSA signature
-      dsaInitSignature(&signature);
-
-      //Get the DSA public key
-      error = x509ReadDsaPublicKey(&issuerCertInfo->subjectPublicKeyInfo,
-         &publicKey);
-
-      //Check status code
-      if(!error)
+      //DSA signature algorithm?
+      if(signAlgo == X509_SIGN_ALGO_DSA)
       {
-         //Get the length of the prime modulus, in bits
-         k = mpiGetBitLength(&publicKey.p);
+         uint_t k;
+         DsaPublicKey publicKey;
+         DsaSignature signature;
 
-         //Make sure the prime modulus is acceptable
-         if(k < X509_MIN_DSA_MODULUS_SIZE || k > X509_MAX_DSA_MODULUS_SIZE)
+         //Initialize DSA public key
+         dsaInitPublicKey(&publicKey);
+         //Initialize DSA signature
+         dsaInitSignature(&signature);
+
+         //Get the DSA public key
+         error = x509ReadDsaPublicKey(&issuerCertInfo->subjectPublicKeyInfo,
+            &publicKey);
+
+         //Check status code
+         if(!error)
          {
-            //Report an error
-            error = ERROR_INVALID_KEY;
+            //Get the length of the prime modulus, in bits
+            k = mpiGetBitLength(&publicKey.p);
+
+            //Make sure the prime modulus is acceptable
+            if(k < X509_MIN_DSA_MODULUS_SIZE || k > X509_MAX_DSA_MODULUS_SIZE)
+            {
+               //Report an error
+               error = ERROR_INVALID_KEY;
+            }
          }
-      }
 
-      //Check status code
-      if(!error)
-      {
-         //Read the ASN.1 encoded signature
-         error = dsaReadSignature(certInfo->signatureValue.data,
-            certInfo->signatureValue.length, &signature);
-      }
+         //Check status code
+         if(!error)
+         {
+            //Read the ASN.1 encoded signature
+            error = dsaReadSignature(certInfo->signatureValue.data,
+               certInfo->signatureValue.length, &signature);
+         }
 
-      //Check status code
-      if(!error)
-      {
-         //Verify DSA signature
-         error = dsaVerifySignature(&publicKey, hashContext->digest,
-            hashAlgo->digestSize, &signature);
-      }
+         //Check status code
+         if(!error)
+         {
+            //Verify DSA signature
+            error = dsaVerifySignature(&publicKey, hashContext->digest,
+               hashAlgo->digestSize, &signature);
+         }
 
-      //Release previously allocated resources
-      dsaFreePublicKey(&publicKey);
-      dsaFreeSignature(&signature);
-   }
-   else
+         //Release previously allocated resources
+         dsaFreePublicKey(&publicKey);
+         dsaFreeSignature(&signature);
+      }
+      else
 #endif
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
-   //ECDSA signature algorithm?
-   if(signAlgo == X509_SIGN_ALGO_ECDSA)
-   {
-      const EcCurveInfo *curveInfo;
-      EcDomainParameters params;
-      EcPoint publicKey;
-      EcdsaSignature signature;
-
-      //Initialize EC domain parameters
-      ecInitDomainParameters(&params);
-      //Initialize ECDSA public key
-      ecInit(&publicKey);
-      //Initialize ECDSA signature
-      ecdsaInitSignature(&signature);
-
-      //Retrieve EC domain parameters
-      curveInfo = x509GetCurveInfo(
-         issuerCertInfo->subjectPublicKeyInfo.ecParams.namedCurve,
-         issuerCertInfo->subjectPublicKeyInfo.ecParams.namedCurveLen);
-
-      //Make sure the specified elliptic curve is supported
-      if(curveInfo != NULL)
+      //ECDSA signature algorithm?
+      if(signAlgo == X509_SIGN_ALGO_ECDSA)
       {
-         //Load EC domain parameters
-         error = ecLoadDomainParameters(&params, curveInfo);
-      }
-      else
-      {
-         //Invalid EC domain parameters
-         error = ERROR_BAD_CERTIFICATE;
-      }
+         const EcCurveInfo *curveInfo;
+         EcDomainParameters params;
+         EcPoint publicKey;
+         EcdsaSignature signature;
 
-      //Check status code
-      if(!error)
-      {
-         //Retrieve the EC public key
-         error = ecImport(&params, &publicKey,
-            issuerCertInfo->subjectPublicKeyInfo.ecPublicKey.q,
-            issuerCertInfo->subjectPublicKeyInfo.ecPublicKey.qLen);
-      }
+         //Initialize EC domain parameters
+         ecInitDomainParameters(&params);
+         //Initialize ECDSA public key
+         ecInit(&publicKey);
+         //Initialize ECDSA signature
+         ecdsaInitSignature(&signature);
 
-      //Check status code
-      if(!error)
-      {
-         //Read the ASN.1 encoded signature
-         error = ecdsaReadSignature(certInfo->signatureValue.data,
-            certInfo->signatureValue.length, &signature);
-      }
+         //Retrieve EC domain parameters
+         curveInfo = x509GetCurveInfo(
+            issuerCertInfo->subjectPublicKeyInfo.ecParams.namedCurve,
+            issuerCertInfo->subjectPublicKeyInfo.ecParams.namedCurveLen);
 
-      //Check status code
-      if(!error)
-      {
-         //Verify ECDSA signature
-         error = ecdsaVerifySignature(&params, &publicKey,
-            hashContext->digest, hashAlgo->digestSize, &signature);
-      }
-
-      //Release previously allocated resources
-      ecFreeDomainParameters(&params);
-      ecFree(&publicKey);
-      ecdsaFreeSignature(&signature);
-   }
-   else
-#endif
-#if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
-   //Ed25519 signature algorithm?
-   if(signAlgo == X509_SIGN_ALGO_ED25519)
-   {
-      const X509EcPublicKey *publicKey;
-
-      //Point to the Ed25519 public key
-      publicKey = &issuerCertInfo->subjectPublicKeyInfo.ecPublicKey;
-
-      //Check the length of the public key
-      if(publicKey->qLen == ED25519_PUBLIC_KEY_LEN)
-      {
-         //Check the length of the EdDSA signature
-         if(certInfo->signatureValue.length == ED25519_SIGNATURE_LEN)
+         //Make sure the specified elliptic curve is supported
+         if(curveInfo != NULL)
          {
-            //Verify signature (PureEdDSA mode)
-            error = ed25519VerifySignature(publicKey->q, certInfo->tbsCertificate,
-               certInfo->tbsCertificateLen, NULL, 0, 0, certInfo->signatureValue.data);
+            //Load EC domain parameters
+            error = ecLoadDomainParameters(&params, curveInfo);
          }
          else
          {
-            //The length of the EdDSA signature is not valid
-            error = ERROR_INVALID_SIGNATURE;
+            //Invalid EC domain parameters
+            error = ERROR_BAD_CERTIFICATE;
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Retrieve the EC public key
+            error = ecImport(&params, &publicKey,
+               issuerCertInfo->subjectPublicKeyInfo.ecPublicKey.q,
+               issuerCertInfo->subjectPublicKeyInfo.ecPublicKey.qLen);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Read the ASN.1 encoded signature
+            error = ecdsaReadSignature(certInfo->signatureValue.data,
+               certInfo->signatureValue.length, &signature);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Verify ECDSA signature
+            error = ecdsaVerifySignature(&params, &publicKey,
+               hashContext->digest, hashAlgo->digestSize, &signature);
+         }
+
+         //Release previously allocated resources
+         ecFreeDomainParameters(&params);
+         ecFree(&publicKey);
+         ecdsaFreeSignature(&signature);
+      }
+      else
+#endif
+      {
+         //The signature algorithm is not supported
+         error = ERROR_UNSUPPORTED_SIGNATURE_ALGO;
+      }
+
+      //Release hash algorithm context
+      cryptoFreeMem(hashContext);
+   }
+   else
+   {
+#if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
+      //Ed25519 signature algorithm?
+      if(signAlgo == X509_SIGN_ALGO_ED25519)
+      {
+         const X509EcPublicKey *publicKey;
+
+         //Point to the Ed25519 public key
+         publicKey = &issuerCertInfo->subjectPublicKeyInfo.ecPublicKey;
+
+         //Check the length of the public key
+         if(publicKey->qLen == ED25519_PUBLIC_KEY_LEN)
+         {
+            //Check the length of the EdDSA signature
+            if(certInfo->signatureValue.length == ED25519_SIGNATURE_LEN)
+            {
+               //Verify signature (PureEdDSA mode)
+               error = ed25519VerifySignature(publicKey->q,
+                  certInfo->tbsCertificate, certInfo->tbsCertificateLen,
+                  NULL, 0, 0, certInfo->signatureValue.data);
+            }
+            else
+            {
+               //The length of the EdDSA signature is not valid
+               error = ERROR_INVALID_SIGNATURE;
+            }
+         }
+         else
+         {
+            //The length of the Ed25519 public key is not valid
+            error = ERROR_ILLEGAL_PARAMETER;
          }
       }
       else
-      {
-         //The length of the Ed25519 public key is not valid
-         error = ERROR_ILLEGAL_PARAMETER;
-      }
-   }
-   else
 #endif
 #if (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED)
-   //Ed448 signature algorithm?
-   if(signAlgo == X509_SIGN_ALGO_ED448)
-   {
-      const X509EcPublicKey *publicKey;
-
-      //Point to the Ed448 public key
-      publicKey = &issuerCertInfo->subjectPublicKeyInfo.ecPublicKey;
-
-      //Check the length of the public key
-      if(publicKey->qLen == ED448_PUBLIC_KEY_LEN)
+      //Ed448 signature algorithm?
+      if(signAlgo == X509_SIGN_ALGO_ED448)
       {
-         //Check the length of the EdDSA signature
-         if(certInfo->signatureValue.length == ED448_SIGNATURE_LEN)
+         const X509EcPublicKey *publicKey;
+
+         //Point to the Ed448 public key
+         publicKey = &issuerCertInfo->subjectPublicKeyInfo.ecPublicKey;
+
+         //Check the length of the public key
+         if(publicKey->qLen == ED448_PUBLIC_KEY_LEN)
          {
-            //Verify signature (PureEdDSA mode)
-            error = ed448VerifySignature(publicKey->q, certInfo->tbsCertificate,
-               certInfo->tbsCertificateLen, NULL, 0, 0, certInfo->signatureValue.data);
+            //Check the length of the EdDSA signature
+            if(certInfo->signatureValue.length == ED448_SIGNATURE_LEN)
+            {
+               //Verify signature (PureEdDSA mode)
+               error = ed448VerifySignature(publicKey->q,
+                  certInfo->tbsCertificate, certInfo->tbsCertificateLen,
+                  NULL, 0, 0, certInfo->signatureValue.data);
+            }
+            else
+            {
+               //The length of the EdDSA signature is not valid
+               error = ERROR_INVALID_SIGNATURE;
+            }
          }
          else
          {
-            //The length of the EdDSA signature is not valid
-            error = ERROR_INVALID_SIGNATURE;
+            //The length of the Ed448 public key is not valid
+            error = ERROR_ILLEGAL_PARAMETER;
          }
       }
       else
-      {
-         //The length of the Ed448 public key is not valid
-         error = ERROR_ILLEGAL_PARAMETER;
-      }
-   }
-   else
 #endif
-   {
-      //The signature algorithm is not supported...
-      error = ERROR_UNSUPPORTED_SIGNATURE_ALGO;
-   }
-
-   //Release hash algorithm context
-   if(hashContext != NULL)
-   {
-      cryptoFreeMem(hashContext);
+      {
+         //The signature algorithm is not supported
+         error = ERROR_UNSUPPORTED_SIGNATURE_ALGO;
+      }
    }
 
    //Return status code

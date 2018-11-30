@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -36,7 +36,7 @@
 #include "debug.h"
 
 //Check crypto library configuration
-#if (CURVE25519_SUPPORT == ENABLED || ED25519_SUPPORT == ENABLED)
+#if (X25519_SUPPORT == ENABLED || ED25519_SUPPORT == ENABLED)
 
 //Square root of -1 modulo p (constant)
 static const uint32_t CURVE25519_SQRT_MINUS_1[8] =
@@ -386,9 +386,7 @@ void curve25519Inv(uint32_t *r, const uint32_t *a)
    curve25519Mul(u, u, a); //A^(2^2 - 1)
    curve25519Sqr(u, u);
    curve25519Mul(v, u, a); //A^(2^3 - 1)
-   curve25519Sqr(u, v);
-   curve25519Sqr(u, u);
-   curve25519Sqr(u, u);
+   curve25519Pwr2(u, v, 3);
    curve25519Mul(u, u, v); //A^(2^6 - 1)
    curve25519Sqr(u, u);
    curve25519Mul(v, u, a); //A^(2^7 - 1)
@@ -451,9 +449,7 @@ uint32_t curve25519Sqrt(uint32_t *r, const uint32_t *a, const uint32_t *b)
    curve25519Mul(u, u, c); //C^(2^2 - 1)
    curve25519Sqr(u, u);
    curve25519Mul(v, u, c); //C^(2^3 - 1)
-   curve25519Sqr(u, v);
-   curve25519Sqr(u, u);
-   curve25519Sqr(u, u);
+   curve25519Pwr2(u, v, 3);
    curve25519Mul(u, u, v); //C^(2^6 - 1)
    curve25519Sqr(u, u);
    curve25519Mul(v, u, c); //C^(2^7 - 1)

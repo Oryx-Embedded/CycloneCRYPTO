@@ -31,7 +31,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -81,6 +81,9 @@ const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_256_OID[9] = {0x60, 0x86, 0x48, 0x01, 
 const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_384_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0F};
 //RSASSA-PKCS1-v1_5 signature with SHA-3-512 OID (2.16.840.1.101.3.4.3.16)
 const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_512_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x10};
+
+//RSASSA-PSS OID (1.2.840.113549.1.1.10)
+const uint8_t RSASSA_PSS_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0A};
 
 //Padding string
 static const uint8_t padding[] =

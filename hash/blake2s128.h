@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 #ifndef _BLAKE2S128_H
@@ -37,6 +37,8 @@
 #define BLAKE2S128_BLOCK_SIZE 64
 //BLAKE2s-128 digest size
 #define BLAKE2S128_DIGEST_SIZE 16
+//BLAKE2s-128 algorithm object identifier
+#define BLAKE2S128_OID blake2s128Oid
 //Common interface for hash algorithms
 #define BLAKE2S128_HASH_ALGO (&blake2s128HashAlgo)
 
@@ -54,6 +56,7 @@ typedef Blake2sContext Blake2s128Context;
 
 
 //BLAKE2s-128 related constants
+extern const uint8_t blake2s128Oid[11];
 extern const HashAlgo blake2s128HashAlgo;
 
 //BLAKE2s-128 related functions

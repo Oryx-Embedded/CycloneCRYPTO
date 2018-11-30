@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 #ifndef _MD5_H
@@ -36,6 +36,8 @@
 #define MD5_BLOCK_SIZE 64
 //MD5 digest size
 #define MD5_DIGEST_SIZE 16
+//MD5 algorithm object identifier
+#define MD5_OID md5Oid
 //Common interface for hash algorithms
 #define MD5_HASH_ALGO (&md5HashAlgo)
 
@@ -67,6 +69,7 @@ typedef struct
 
 
 //MD5 related constants
+extern const uint8_t md5Oid[8];
 extern const HashAlgo md5HashAlgo;
 
 //MD5 related functions

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 #ifndef _SHA1_H
@@ -36,6 +36,8 @@
 #define SHA1_BLOCK_SIZE 64
 //SHA-1 digest size
 #define SHA1_DIGEST_SIZE 20
+//SHA-1 algorithm object identifier
+#define SHA1_OID sha1Oid
 //Common interface for hash algorithms
 #define SHA1_HASH_ALGO (&sha1HashAlgo)
 
@@ -67,6 +69,7 @@ typedef struct
 
 
 //SHA-1 related constants
+extern const uint8_t sha1Oid[5];
 extern const HashAlgo sha1HashAlgo;
 
 //SHA-1 related functions

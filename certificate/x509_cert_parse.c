@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -399,7 +399,7 @@ error_t x509ParseSerialNumber(const uint8_t *data, size_t length,
  **/
 
 error_t x509ParseSignature(const uint8_t *data, size_t length,
-   size_t *totalLength, X509SignatureId *signature)
+   size_t *totalLength, X509SignatureAlgoId *signature)
 {
    error_t error;
    Asn1Tag tag;
@@ -416,8 +416,12 @@ error_t x509ParseSignature(const uint8_t *data, size_t length,
    //Save the total length of the field
    *totalLength = tag.totalLength;
 
-   //Read the inner tag
-   error = asn1ReadTag(tag.value, tag.length, &tag);
+   //Point to the first field of the sequence
+   data = tag.value;
+   length = tag.length;
+
+   //Read signature algorithm identifier
+   error = asn1ReadTag(data, length, &tag);
    //Failed to decode ASN.1 tag?
    if(error)
       return error;
@@ -429,12 +433,195 @@ error_t x509ParseSignature(const uint8_t *data, size_t length,
    if(error)
       return error;
 
-   //Get the signature algorithm identifier
-   signature->data = tag.value;
-   signature->length = tag.length;
+   //Save the signature algorithm identifier
+   signature->oid = tag.value;
+   signature->oidLen = tag.length;
 
-   //Validity field successfully parsed
+   //Point to the next field (if any)
+   data += tag.totalLength;
+   length -= tag.totalLength;
+
+#if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
+   //RSASSA-PSS algorithm identifier?
+   if(!asn1CheckOid(&tag, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
+   {
+      //Read RSASSA-PSS parameters
+      error = x509ParseRsaPssParameters(data, length, &signature->rsaPssParams);
+   }
+   else
+#endif
+   //Unknown algorithm identifier?
+   {
+      //The parameters are optional
+      error = NO_ERROR;
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Parse RSASSA-PSS parameters
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] rsaPssParams Information resulting from the parsing process
+ * @return Error code
+ **/
+
+error_t x509ParseRsaPssParameters(const uint8_t *data, size_t length,
+   X509RsaPssParameters *rsaPssParams)
+{
+#if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
+   error_t error;
+   Asn1Tag tag;
+
+#if(X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
+   //The default hash algorithm is SHA-1 (refer to RFC 4055, section 3.1)
+   rsaPssParams->hashAlgo = SHA1_OID;
+   rsaPssParams->hashAlgoLen = sizeof(SHA1_OID);
+#endif
+
+   //The default length of the salt is 20 (refer to RFC 4055, section 3.1)
+   rsaPssParams->saltLen = 20;
+
+   //Read the contents of the structure
+   error = asn1ReadSequence(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Point to the first field of the sequence
+   data = tag.value;
+   length = tag.length;
+
+   //Parse RSASSA-PSS parameters
+   while(length > 0)
+   {
+      //Read current parameter
+      error = asn1ReadTag(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         return error;
+
+      //The tags in this sequence are explicit
+      if(!asn1CheckTag(&tag, TRUE, ASN1_CLASS_CONTEXT_SPECIFIC, 0))
+      {
+         //Parse hashAlgorithm field
+         error = x509ParseRsaPssHashAlgo(tag.value, tag.length, rsaPssParams);
+         //Any error to report?
+         if(error)
+            return error;
+      }
+      else if(!asn1CheckTag(&tag, TRUE, ASN1_CLASS_CONTEXT_SPECIFIC, 2))
+      {
+         //Parse saltLength field
+         error = x509ParseRsaPssSaltLength(tag.value, tag.length, rsaPssParams);
+         //Any error to report?
+         if(error)
+            return error;
+      }
+
+      //Next parameter
+      data += tag.totalLength;
+      length -= tag.totalLength;
+   }
+
+   //Successful processing
    return NO_ERROR;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief Parse RSASSA-PSS hash algorithm
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] rsaPssParams Information resulting from the parsing process
+ * @return Error code
+ **/
+
+error_t x509ParseRsaPssHashAlgo(const uint8_t *data, size_t length,
+   X509RsaPssParameters *rsaPssParams)
+{
+#if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
+   error_t error;
+   Asn1Tag tag;
+
+   //Read the contents of the structure
+   error = asn1ReadSequence(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Point to the first field of the sequence
+   data = tag.value;
+   length = tag.length;
+
+   //Read hash algorithm identifier
+   error = asn1ReadTag(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Enforce encoding, class and type
+   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
+      ASN1_TYPE_OBJECT_IDENTIFIER);
+   //The tag does not match the criteria?
+   if(error)
+      return error;
+
+   //Save the hash algorithm identifier
+   rsaPssParams->hashAlgo = tag.value;
+   rsaPssParams->hashAlgoLen = tag.length;
+
+   //No error to report
+   return NO_ERROR;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief Parse RSASSA-PSS salt length
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] rsaPssParams Information resulting from the parsing process
+ * @return Error code
+ **/
+
+error_t x509ParseRsaPssSaltLength(const uint8_t *data, size_t length,
+   X509RsaPssParameters *rsaPssParams)
+{
+#if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
+   error_t error;
+   int32_t saltLen;
+   Asn1Tag tag;
+
+   //Read the saltLength field
+   error = asn1ReadInt32(data, length, &tag, &saltLen);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Sanity check
+   if(saltLen < 0)
+      return ERROR_INVALID_SYNTAX;
+
+   //Save the length of the salt
+   rsaPssParams->saltLen = saltLen;
+
+   //No error to report
+   return NO_ERROR;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 
@@ -945,6 +1132,16 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
    }
    else
 #endif
+#if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
+   //RSA-PSS algorithm identifier?
+   if(!oidComp(oid, oidLen, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
+   {
+      //Read RSAPublicKey structure
+      error = x509ParseRsaPublicKey(tag.value + 1, tag.length - 1,
+         &subjectPublicKeyInfo->rsaPublicKey);
+   }
+   else
+#endif
 #if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
    //DSA algorithm identifier?
    if(!oidComp(oid, oidLen, DSA_OID, sizeof(DSA_OID)))
@@ -1055,6 +1252,15 @@ error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
    if(!asn1CheckOid(&tag, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)))
    {
       //RSA does not require any additional parameters
+      error = NO_ERROR;
+   }
+   else
+#endif
+#if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
+   //RSA-PSS algorithm identifier?
+   if(!asn1CheckOid(&tag, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
+   {
+      //RSA-PSS does not require any additional parameters
       error = NO_ERROR;
    }
    else
@@ -2543,7 +2749,7 @@ error_t x509ParseNsCertType(const uint8_t *data, size_t length,
  **/
 
 error_t x509ParseSignatureAlgo(const uint8_t *data, size_t length,
-   size_t *totalLength, X509SignatureId *signatureAlgo)
+   size_t *totalLength, X509SignatureAlgoId *signatureAlgo)
 {
    error_t error;
    Asn1Tag tag;
@@ -2568,7 +2774,7 @@ error_t x509ParseSignatureAlgo(const uint8_t *data, size_t length,
 
    //This field must contain the same algorithm identifier as the signature
    //field in the TBSCertificate sequence
-   error = asn1CheckOid(&tag, signatureAlgo->data, signatureAlgo->length);
+   error = asn1CheckOid(&tag, signatureAlgo->oid, signatureAlgo->oidLen);
    //The tag does not match the criteria?
    if(error)
       return error;

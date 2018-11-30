@@ -28,7 +28,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1321
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -75,7 +75,7 @@ static const uint32_t k[64] =
 };
 
 //MD5 object identifier (1.2.840.113549.2.5)
-static const uint8_t md5Oid[] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05};
+const uint8_t md5Oid[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x05};
 
 //Common interface for hash algorithms
 const HashAlgo md5HashAlgo =

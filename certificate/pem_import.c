@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -356,10 +356,13 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length, RsaPrivateKey
             break;
 
          //Check algorithm identifier
-         error = asn1CheckOid(&tag, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID));
-         //Wrong identifier?
-         if(error)
+         if(asn1CheckOid(&tag, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)) &&
+            asn1CheckOid(&tag, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
+         {
+            //Report an error
+            error = ERROR_WRONG_IDENTIFIER;
             break;
+         }
 
          //The privateKey field is encapsulated within an octet string
          error = asn1ReadTag(data, length, &tag);

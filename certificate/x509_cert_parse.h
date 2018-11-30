@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 #ifndef _X509_CERT_PARSE_H
@@ -52,7 +52,16 @@ error_t x509ParseSerialNumber(const uint8_t *data, size_t length,
    size_t *totalLength, X509SerialNumber *serialNumber);
 
 error_t x509ParseSignature(const uint8_t *data, size_t length,
-   size_t *totalLength, X509SignatureId *signature);
+   size_t *totalLength, X509SignatureAlgoId *signature);
+
+error_t x509ParseRsaPssParameters(const uint8_t *data, size_t length,
+   X509RsaPssParameters *rsaPssParams);
+
+error_t x509ParseRsaPssHashAlgo(const uint8_t *data, size_t length,
+   X509RsaPssParameters *rsaPssParams);
+
+error_t x509ParseRsaPssSaltLength(const uint8_t *data, size_t length,
+   X509RsaPssParameters *rsaPssParams);
 
 error_t x509ParseName(const uint8_t *data, size_t length,
    size_t *totalLength, X509Name *name);
@@ -133,7 +142,7 @@ error_t x509ParseNsCertType(const uint8_t *data, size_t length,
    uint8_t *nsCertType);
 
 error_t x509ParseSignatureAlgo(const uint8_t *data, size_t length,
-   size_t *totalLength, X509SignatureId *signatureAlgo);
+   size_t *totalLength, X509SignatureAlgoId *signatureAlgo);
 
 error_t x509ParseSignatureValue(const uint8_t *data, size_t length,
    size_t *totalLength, X509SignatureValue *signatureValue);

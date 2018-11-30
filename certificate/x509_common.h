@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 #ifndef _X509_COMMON_H
@@ -40,12 +40,19 @@
 #ifndef X509_RSA_SUPPORT
    #define X509_RSA_SUPPORT ENABLED
 #elif (X509_RSA_SUPPORT != ENABLED && X509_RSA_SUPPORT != DISABLED)
-   #errorX509_RSA_SUPPORT
+   #error X509_RSA_SUPPORT
+#endif
+
+//RSA-PSS certificate support
+#ifndef X509_RSA_PSS_SUPPORT
+   #define X509_RSA_PSS_SUPPORT DISABLED
+#elif (X509_RSA_PSS_SUPPORT != ENABLED && X509_RSA_PSS_SUPPORT != DISABLED)
+   #error X509_RSA_PSS_SUPPORT
 #endif
 
 //DSA certificate support
 #ifndef X509_DSA_SUPPORT
-   #define X509_DSA_SUPPORT ENABLED
+   #define X509_DSA_SUPPORT DISABLED
 #elif (X509_DSA_SUPPORT != ENABLED && X509_DSA_SUPPORT != DISABLED)
    #error X509_DSA_SUPPORT parameter is not valid
 #endif
@@ -71,9 +78,9 @@
    #error X509_SHA1_SUPPORT parameter is not valid
 #endif
 
-//SHA-224 hash support
+//SHA-224 hash support (weak)
 #ifndef X509_SHA224_SUPPORT
-   #define X509_SHA224_SUPPORT ENABLED
+   #define X509_SHA224_SUPPORT DISABLED
 #elif (X509_SHA224_SUPPORT != ENABLED && X509_SHA224_SUPPORT != DISABLED)
    #error X509_SHA224_SUPPORT parameter is not valid
 #endif
@@ -418,12 +425,34 @@ typedef enum
 
 typedef enum
 {
+   X509_SIGN_ALGO_NONE    = 0,
    X509_SIGN_ALGO_RSA     = 1,
-   X509_SIGN_ALGO_DSA     = 2,
-   X509_SIGN_ALGO_ECDSA   = 3,
-   X509_SIGN_ALGO_ED25519 = 4,
-   X509_SIGN_ALGO_ED448   = 5
+   X509_SIGN_ALGO_RSA_PSS = 2,
+   X509_SIGN_ALGO_DSA     = 3,
+   X509_SIGN_ALGO_ECDSA   = 4,
+   X509_SIGN_ALGO_ED25519 = 5,
+   X509_SIGN_ALGO_ED448   = 6
 } X509SignatureAlgo;
+
+
+/**
+ * @brief Hash algorithms
+ **/
+
+typedef enum
+{
+   X509_HASH_ALGO_NONE     = 0,
+   X509_HASH_ALGO_MD5      = 1,
+   X509_HASH_ALGO_SHA1     = 2,
+   X509_HASH_ALGO_SHA224   = 3,
+   X509_HASH_ALGO_SHA256   = 4,
+   X509_HASH_ALGO_SHA384   = 5,
+   X509_HASH_ALGO_SHA512   = 6,
+   X509_HASH_ALGO_SHA3_224 = 7,
+   X509_HASH_ALGO_SHA3_256 = 8,
+   X509_HASH_ALGO_SHA3_384 = 9,
+   X509_HASH_ALGO_SHA3_512 = 10
+} X509HashAlgo;
 
 
 /**
@@ -676,14 +705,29 @@ typedef struct
 
 
 /**
+ * @brief RSASSA-PSS parameters
+ **/
+
+typedef struct
+{
+   const uint8_t *hashAlgo;
+   size_t hashAlgoLen;
+   size_t saltLen;
+} X509RsaPssParameters;
+
+
+/**
  * @brief Signature algorithm identifier
  **/
 
 typedef struct
 {
-   const uint8_t *data;
-   size_t length;
-} X509SignatureId;
+   const uint8_t *oid;
+   size_t oidLen;
+#if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
+   X509RsaPssParameters rsaPssParams;
+#endif
+} X509SignatureAlgoId;
 
 
 /**
@@ -712,7 +756,7 @@ typedef struct
    X509Name subject;
    X509SubjectPublicKeyInfo subjectPublicKeyInfo;
    X509Extensions extensions;
-   X509SignatureId signatureAlgo;
+   X509SignatureAlgoId signatureAlgo;
    X509SignatureValue signatureValue;
 } X509CertificateInfo;
 
@@ -742,7 +786,7 @@ typedef struct
    DateTime nextUpdate;
    const uint8_t *revokedCerts;
    size_t revokedCertsLen;
-   X509SignatureId signatureAlgo;
+   X509SignatureAlgoId signatureAlgo;
    X509SignatureValue signatureValue;
 } X509CrlInfo;
 
@@ -799,7 +843,10 @@ error_t x509ReadRsaPublicKey(const X509SubjectPublicKeyInfo *subjectPublicKeyInf
 error_t x509ReadDsaPublicKey(const X509SubjectPublicKeyInfo *subjectPublicKeyInfo,
    DsaPublicKey *key);
 
-error_t x509GetSignHashAlgo(const uint8_t *oid, size_t length,
+bool_t x509IsSignAlgoSupported(X509SignatureAlgo signAlgo);
+bool_t x509IsHashAlgoSupported(X509HashAlgo hashAlgo);
+
+error_t x509GetSignHashAlgo(const X509SignatureAlgoId *signAlgoId,
    X509SignatureAlgo *signAlgo, const HashAlgo **hashAlgo);
 
 const EcCurveInfo *x509GetCurveInfo(const uint8_t *oid, size_t length);

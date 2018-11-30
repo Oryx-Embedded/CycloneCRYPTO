@@ -29,7 +29,7 @@
  * lengths of 128, 192, and 256 bits. Refer to FIPS 197 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -203,25 +203,36 @@ error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
    uint32_t temp;
    size_t keyScheduleSize;
 
-   //10 rounds are required for 128-bit key
+   //Check the length of the key
    if(keyLen == 16)
+   {
+      //10 rounds are required for 128-bit key
       context->nr = 10;
-   //12 rounds are required for 192-bit key
+   }
    else if(keyLen == 24)
+   {
+      //12 rounds are required for 192-bit key
       context->nr = 12;
-   //14 rounds are required for 256-bit key
+   }
    else if(keyLen == 32)
+   {
+      //14 rounds are required for 256-bit key
       context->nr = 14;
-   //Key length is not supported...
+   }
    else
+   {
+      //Report an error
       return ERROR_INVALID_KEY_LENGTH;
+   }
 
    //Determine the number of 32-bit words in the key
    keyLen /= 4;
 
    //Copy the original key
    for(i = 0; i < keyLen; i++)
+   {
       context->ek[i] = LOAD32LE(key + (i * 4));
+   }
 
    //The size of the key schedule depends on the number of rounds
    keyScheduleSize = 4 * (context->nr + 1);

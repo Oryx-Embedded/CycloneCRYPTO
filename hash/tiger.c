@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -352,7 +352,7 @@ static const uint64_t t4[256] =
 };
 
 //Tiger object identifier (1.3.6.1.4.1.11591.12.2)
-static const uint8_t tigerOid[] = {0x2B, 0x06, 0x01, 0x04, 0x01, 0xDA, 0x47, 0x0C, 0x02};
+const uint8_t tigerOid[9] = {0x2B, 0x06, 0x01, 0x04, 0x01, 0xDA, 0x47, 0x0C, 0x02};
 
 //Common interface for hash algorithms
 const HashAlgo tigerHashAlgo =

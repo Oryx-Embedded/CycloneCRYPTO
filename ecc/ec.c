@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -218,7 +218,7 @@ error_t ecImport(const EcDomainParameters *params, EcPoint *r,
    {
       //Empty octet string?
       if(length == 0)
-         return ERROR_DECODING_FAILED;
+         return ERROR_ILLEGAL_PARAMETER;
 
       //Check the length of the octet string
       if((params->type == EC_CURVE_TYPE_X25519 && length != CURVE25519_BYTE_LEN) ||

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 #ifndef _SHA256_H
@@ -36,6 +36,8 @@
 #define SHA256_BLOCK_SIZE 64
 //SHA-256 digest size
 #define SHA256_DIGEST_SIZE 32
+//SHA-256 algorithm object identifier
+#define SHA256_OID sha256Oid
 //Common interface for hash algorithms
 #define SHA256_HASH_ALGO (&sha256HashAlgo)
 
@@ -67,6 +69,7 @@ typedef struct
 
 
 //SHA-256 related constants
+extern const uint8_t sha256Oid[9];
 extern const HashAlgo sha256HashAlgo;
 
 //SHA-256 related functions

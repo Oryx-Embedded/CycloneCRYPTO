@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -65,7 +65,7 @@ static const uint8_t padding[64] =
 };
 
 //RIPEMD-160 object identifier (1.3.36.3.2.1)
-static const uint8_t ripemd160Oid[] = {0x2B, 0x24, 0x03, 0x02, 0x01};
+const uint8_t ripemd160Oid[5] = {0x2B, 0x24, 0x03, 0x02, 0x01};
 
 //Common interface for hash algorithms
 const HashAlgo ripemd160HashAlgo =

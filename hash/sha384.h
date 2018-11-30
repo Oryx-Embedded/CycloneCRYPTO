@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 #ifndef _SHA384_H
@@ -37,6 +37,8 @@
 #define SHA384_BLOCK_SIZE 128
 //SHA-384 digest size
 #define SHA384_DIGEST_SIZE 48
+//SHA-384 algorithm object identifier
+#define SHA384_OID sha384Oid
 //Common interface for hash algorithms
 #define SHA384_HASH_ALGO (&sha384HashAlgo)
 
@@ -54,6 +56,7 @@ typedef Sha512Context Sha384Context;
 
 
 //SHA-384 related constants
+extern const uint8_t sha384Oid[9];
 extern const HashAlgo sha384HashAlgo;
 
 //SHA-384 related functions

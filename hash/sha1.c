@@ -28,7 +28,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 //Switch to the appropriate trace level
@@ -68,7 +68,7 @@ static const uint32_t k[4] =
 };
 
 //SHA-1 object identifier (1.3.14.3.2.26)
-static const uint8_t sha1Oid[] = {0x2B, 0x0E, 0x03, 0x02, 0x1A};
+const uint8_t sha1Oid[5] = {0x2B, 0x0E, 0x03, 0x02, 0x1A};
 
 //Common interface for hash algorithms
 const HashAlgo sha1HashAlgo =

@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.8.6
+ * @version 1.9.0
  **/
 
 #ifndef _EC_CURVES_H
@@ -91,7 +91,7 @@
 
 //secp192r1 elliptic curve support (NIST P-192)
 #ifndef SECP192R1_SUPPORT
-   #define SECP192R1_SUPPORT ENABLED
+   #define SECP192R1_SUPPORT DISABLED
 #elif (SECP192R1_SUPPORT != ENABLED && SECP192R1_SUPPORT != DISABLED)
    #error SECP192R1_SUPPORT parameter is not valid
 #endif
@@ -188,17 +188,17 @@
 #endif
 
 //Curve25519 elliptic curve support
-#ifndef CURVE25519_SUPPORT
-   #define CURVE25519_SUPPORT DISABLED
-#elif (CURVE25519_SUPPORT != ENABLED && CURVE25519_SUPPORT != DISABLED)
-   #error CURVE25519_SUPPORT parameter is not valid
+#ifndef X25519_SUPPORT
+   #define X25519_SUPPORT DISABLED
+#elif (X25519_SUPPORT != ENABLED && X25519_SUPPORT != DISABLED)
+   #error X25519_SUPPORT parameter is not valid
 #endif
 
 //Curve448 elliptic curve support
-#ifndef CURVE448_SUPPORT
-   #define CURVE448_SUPPORT DISABLED
-#elif (CURVE448_SUPPORT != ENABLED && CURVE448_SUPPORT != DISABLED)
-   #error CURVE448_SUPPORT parameter is not valid
+#ifndef X448_SUPPORT
+   #define X448_SUPPORT DISABLED
+#elif (X448_SUPPORT != ENABLED && X448_SUPPORT != DISABLED)
+   #error X448_SUPPORT parameter is not valid
 #endif
 
 //Ed25519 elliptic curve support
