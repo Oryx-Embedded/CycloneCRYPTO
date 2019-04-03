@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 #ifndef _PEM_IMPORT_H
@@ -45,7 +47,9 @@
 //PEM format decoding functions
 error_t pemImportDhParameters(const char_t *input, size_t length, DhParameters *params);
 
+error_t pemImportRsaPublicKey(const char_t *input, size_t length, RsaPublicKey *key);
 error_t pemImportRsaPrivateKey(const char_t *input, size_t length, RsaPrivateKey *key);
+
 error_t pemImportDsaPrivateKey(const char_t *input, size_t length, DsaPrivateKey *key);
 
 error_t pemImportEcParameters(const char_t *input, size_t length, EcDomainParameters *params);

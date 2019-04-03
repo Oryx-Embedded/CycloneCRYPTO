@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -31,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -271,8 +273,13 @@ error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key, const uint8_t *ciphertext
 {
    error_t error;
    uint_t k;
+   size_t i;
+   size_t j;
    size_t n;
-   uint8_t *p;
+   uint8_t b;
+   uint32_t a;
+   uint32_t badPadding;
+   uint32_t badLength;
    uint8_t *em;
    Mpi c;
    Mpi m;
@@ -280,7 +287,7 @@ error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key, const uint8_t *ciphertext
    //Check parameters
    if(key == NULL || ciphertext == NULL)
       return ERROR_INVALID_PARAMETER;
-   if(message == NULL || messageLen == NULL)
+   if(message == NULL || messageSize == 0 || messageLen == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Debug message
@@ -348,23 +355,33 @@ error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key, const uint8_t *ciphertext
       TRACE_DEBUG_ARRAY("    ", em, k);
 
       //EME-PKCS1-v1_5 decoding
-      error = emePkcs1v15Decode(em, k, &p, &n);
-      //Any error to report?
-      if(error)
-         break;
+      badPadding = emePkcs1v15Decode(em, k, &n);
 
-      //Ensure that the output buffer is large enough
-      if(messageSize < n)
+      //Check whether the output buffer is large enough to hold the decrypted
+      //message
+      badLength = CRYPTO_TEST_LT_32(messageSize, n);
+
+      //Copy the decrypted message, byte per byte
+      for(i = 0; i < messageSize; i++)
       {
-         //Report an error
-         error = ERROR_INVALID_LENGTH;
-         break;
+         //Read the whole encoded message EM
+         for(b = 0, j = 0; j < k; j++)
+         {
+            //Constant time implementation
+            a = CRYPTO_TEST_EQ_32(j, k - n + i);
+            b = CRYPTO_SELECT_8(b, em[j], a);
+         }
+
+         //Save the value of the current byte
+         message[i] = b;
       }
 
-      //Recover the length of the message
-      *messageLen = n;
-      //Copy the message contents
-      cryptoMemcpy(message, p, n);
+      //Return the length of the decrypted message
+      *messageLen = CRYPTO_SELECT_32(n, messageSize, badLength);
+
+      //Check whether the decryption operation is successful
+      error = (error_t) CRYPTO_SELECT_32(error, ERROR_BUFFER_OVERFLOW, badLength);
+      error = (error_t) CRYPTO_SELECT_32(error, ERROR_DECRYPTION_FAILED, badPadding);
 
       //Debug message
       TRACE_DEBUG("  Message:\r\n");
@@ -511,8 +528,13 @@ error_t rsaesOaepDecrypt(const RsaPrivateKey *key, const HashAlgo *hash,
 {
    error_t error;
    uint_t k;
+   size_t i;
+   size_t j;
    size_t n;
-   uint8_t *p;
+   uint8_t b;
+   uint32_t a;
+   uint32_t badPadding;
+   uint32_t badLength;
    uint8_t *em;
    Mpi c;
    Mpi m;
@@ -520,7 +542,7 @@ error_t rsaesOaepDecrypt(const RsaPrivateKey *key, const HashAlgo *hash,
    //Check parameters
    if(key == NULL || ciphertext == NULL)
       return ERROR_INVALID_PARAMETER;
-   if(message == NULL || messageLen == NULL)
+   if(message == NULL || messageSize == 0 || messageLen == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Debug message
@@ -592,23 +614,33 @@ error_t rsaesOaepDecrypt(const RsaPrivateKey *key, const HashAlgo *hash,
       TRACE_DEBUG_ARRAY("    ", em, k);
 
       //EME-OAEP decoding
-      error = emeOaepDecode(hash, label, em, k, &p, &n);
-      //Any error to report?
-      if(error)
-         break;
+      badPadding = emeOaepDecode(hash, label, em, k, &n);
 
-      //Ensure that the output buffer is large enough
-      if(messageSize < n)
+      //Check whether the output buffer is large enough to hold the decrypted
+      //message
+      badLength = CRYPTO_TEST_LT_32(messageSize, n);
+
+      //Copy the decrypted message, byte per byte
+      for(i = 0; i < messageSize; i++)
       {
-         //Report an error
-         error = ERROR_INVALID_LENGTH;
-         break;
+         //Read the whole encoded message EM
+         for(b = 0, j = 0; j < k; j++)
+         {
+            //Constant time implementation
+            a = CRYPTO_TEST_EQ_32(j, k - n + i);
+            b = CRYPTO_SELECT_8(b, em[j], a);
+         }
+
+         //Save the value of the current byte
+         message[i] = b;
       }
 
-      //Recover the length of the message
-      *messageLen = n;
-      //Copy the message contents
-      cryptoMemcpy(message, p, n);
+      //Return the length of the decrypted message
+      *messageLen = CRYPTO_SELECT_32(n, messageSize, badLength);
+
+      //Check whether the decryption operation is successful
+      error = (error_t) CRYPTO_SELECT_32(error, ERROR_BUFFER_OVERFLOW, badLength);
+      error = (error_t) CRYPTO_SELECT_32(error, ERROR_DECRYPTION_FAILED, badPadding);
 
       //Debug message
       TRACE_DEBUG("  Message:\r\n");
@@ -1142,7 +1174,7 @@ error_t rsaep(const RsaPublicKey *key, const Mpi *m, Mpi *c)
  * @return Error code
  **/
 
-error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
+__weak error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
 {
    error_t error;
    Mpi m1;
@@ -1314,13 +1346,11 @@ error_t emePkcs1v15Encode(const PrngAlgo *prngAlgo, void *prngContext,
  * @brief EME-PKCS1-v1_5 decoding operation
  * @param[in] em Encoded message
  * @param[in] k Length of the encoded message
- * @param[out] message Pointer to the decrypted message
  * @param[out] messageLen Length of the decrypted message
- * @return Error code
+ * @return The function returns 0 on success, 1 on failure
  **/
 
-error_t emePkcs1v15Decode(uint8_t *em, size_t k, uint8_t **message,
-   size_t *messageLen)
+uint32_t emePkcs1v15Decode(uint8_t *em, size_t k, size_t *messageLen)
 {
    size_t i;
    size_t m;
@@ -1337,18 +1367,13 @@ error_t emePkcs1v15Decode(uint8_t *em, size_t k, uint8_t **message,
       m = CRYPTO_SELECT_32(m, i, c);
    }
 
-   //Point to the first byte of the message
-   *message = em + m + 1;
-   //Retrieve the length of the message
-   *messageLen = k - m - 1;
-
    //If the first octet of EM does not have hexadecimal value 0x00, then
    //report a decryption error
-   bad = em[0];
+   bad = CRYPTO_TEST_NEQ_8(em[0], 0x00);
 
    //If the second octet of EM does not have hexadecimal value 0x02, then
    //report a decryption error
-   bad |= em[1] ^ 0x02;
+   bad |= CRYPTO_TEST_NEQ_8(em[1], 0x02);
 
    //If there is no octet with hexadecimal value 0x00 to separate PS from M,
    //then report a decryption error
@@ -1357,9 +1382,12 @@ error_t emePkcs1v15Decode(uint8_t *em, size_t k, uint8_t **message,
    //If the length of PS is less than 8 octets, then report a decryption error
    bad |= CRYPTO_TEST_LT_32(m, 10);
 
+   //Return the length of the decrypted message
+   *messageLen = CRYPTO_SELECT_32(k - m - 1, 0, bad);
+
    //Care must be taken to ensure that an opponent cannot distinguish the
    //different error conditions, whether by error message or timing
-   return (bad != 0) ? ERROR_DECRYPTION_FAILED : NO_ERROR;
+   return bad;
 }
 
 
@@ -1452,13 +1480,12 @@ error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
  * @param[in] label Optional label to be associated with the message
  * @param[in] em Encoded message
  * @param[in] k Length of the encoded message
- * @param[out] message Pointer to the decrypted message
  * @param[out] messageLen Length of the decrypted message
- * @return Error code
+ * @return The function returns 0 on success, 1 on failure
  **/
 
-error_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
-   size_t k, uint8_t **message, size_t *messageLen)
+uint32_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
+   size_t k, size_t *messageLen)
 {
    size_t i;
    size_t m;
@@ -1511,30 +1538,28 @@ error_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
       m = CRYPTO_SELECT_32(m, i, c);
    }
 
-   //Point to the first byte of the message
-   *message = db + m + 1;
-   //Retrieve the length of the message
-   *messageLen = n - m - 1;
-
    //Make sure the padding string PS is terminated
    bad = CRYPTO_TEST_Z_32(m);
 
    //If there is no octet with hexadecimal value 0x01 to separate PS from M,
    //then report a decryption error
-   bad |= db[m] ^ 0x01;
+   bad |= CRYPTO_TEST_NEQ_8(db[m], 0x01);
 
    //If lHash does not equal lHash', then report a decryption error
    for(i = 0; i < hash->digestSize; i++)
    {
-      bad |= db[i] ^ lHash[i];
+      bad |= CRYPTO_TEST_NEQ_8(db[i], lHash[i]);
    }
 
    //If Y is nonzero, then report a decryption error
-   bad |= em[0];
+   bad |= CRYPTO_TEST_NEQ_8(em[0], 0x00);
+
+   //Return the length of the decrypted message
+   *messageLen = CRYPTO_SELECT_32(n - m - 1, 0, bad);
 
    //Care must be taken to ensure that an opponent cannot distinguish the
    //different error conditions, whether by error message or timing
-   return (bad != 0) ? ERROR_DECRYPTION_FAILED : NO_ERROR;
+   return bad;
 }
 
 
@@ -1824,7 +1849,7 @@ error_t emsaPssVerify(const HashAlgo *hash, size_t saltLen,
    //"inconsistent" and stop
    for(i = 0; i < n; i++)
    {
-       bad |= db[i];
+      bad |= db[i];
    }
 
    //If the octet at position emLen - hLen - sLen - 1 does not have hexadecimal

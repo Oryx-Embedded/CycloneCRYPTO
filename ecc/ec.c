@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -359,7 +361,7 @@ end:
  * @return Error code
  **/
 
-error_t ecAffinify(const EcDomainParameters *params, EcPoint *r,
+__weak error_t ecAffinify(const EcDomainParameters *params, EcPoint *r,
    const EcPoint *s)
 {
    error_t error;
@@ -405,7 +407,7 @@ end:
  * @return TRUE if the affine point S is on the curve, else FALSE
  **/
 
-bool_t ecIsPointAffine(const EcDomainParameters *params, const EcPoint *s)
+__weak bool_t ecIsPointAffine(const EcDomainParameters *params, const EcPoint *s)
 {
    error_t error;
    Mpi t1;
@@ -826,7 +828,7 @@ end:
  * @return Error code
  **/
 
-error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
+__weak error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    const EcPoint *s)
 {
    error_t error;

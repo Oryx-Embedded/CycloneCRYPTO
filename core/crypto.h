@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 #ifndef _CRYPTO_H
@@ -63,6 +65,14 @@
    #error Before compiling CycloneCrypto Open, you must accept the terms of the GPL license
 #endif
 
+//Version string
+#define CYCLONE_CRYPTO_VERSION_STRING "1.9.2"
+//Major version
+#define CYCLONE_CRYPTO_MAJOR_VERSION 1
+//Minor version
+#define CYCLONE_CRYPTO_MINOR_VERSION 9
+//Revision number
+#define CYCLONE_CRYPTO_REV_NUMBER 2
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -871,6 +881,7 @@
 #define _U8(x) ((uint8_t) (x))
 #define _U16(x) ((uint16_t) (x))
 #define _U32(x) ((uint32_t) (x))
+#define _U64(x) ((uint64_t) (x))
 
 //Test if a 8-bit integer is zero
 #define CRYPTO_TEST_Z_8(a) \
@@ -980,6 +991,10 @@
 #define CRYPTO_SELECT_32(a, b, c) \
    _U32((_U32(a) & (_U32(c) - 1U)) | (_U32(b) & ~(_U32(c) - 1U)))
 
+//Select between two 64-bit integers
+#define CRYPTO_SELECT_64(a, b, c) \
+   _U64((_U64(a) & (_U64(c) - 1U)) | (_U64(b) & ~(_U64(c) - 1U)))
+
 //C++ guard
 #ifdef __cplusplus
    extern "C" {
@@ -1021,6 +1036,7 @@ typedef error_t (*HashAlgoCompute)(const void *data, size_t length, uint8_t *dig
 typedef void (*HashAlgoInit)(void *context);
 typedef void (*HashAlgoUpdate)(void *context, const void *data, size_t length);
 typedef void (*HashAlgoFinal)(void *context, uint8_t *digest);
+typedef void (*HashAlgoFinalRaw)(void *context, uint8_t *digest);
 
 //Common API for encryption algorithms
 typedef error_t (*CipherAlgoInit)(void *context, const uint8_t *key, size_t keyLen);
@@ -1059,10 +1075,13 @@ typedef struct
    size_t contextSize;
    size_t blockSize;
    size_t digestSize;
+   size_t minPadSize;
+   bool_t bigEndian;
    HashAlgoCompute compute;
    HashAlgoInit init;
    HashAlgoUpdate update;
    HashAlgoFinal final;
+   HashAlgoFinalRaw finalRaw;
 } HashAlgo;
 
 

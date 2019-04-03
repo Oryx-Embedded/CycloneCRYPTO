@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -28,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -53,10 +55,13 @@ const HashAlgo sha384HashAlgo =
    sizeof(Sha384Context),
    SHA384_BLOCK_SIZE,
    SHA384_DIGEST_SIZE,
+   SHA384_MIN_PAD_SIZE,
+   TRUE,
    (HashAlgoCompute) sha384Compute,
    (HashAlgoInit) sha384Init,
    (HashAlgoUpdate) sha384Update,
-   (HashAlgoFinal) sha384Final
+   (HashAlgoFinal) sha384Final,
+   (HashAlgoFinalRaw) sha384FinalRaw
 };
 
 
@@ -142,6 +147,29 @@ void sha384Final(Sha384Context *context, uint8_t *digest)
    //Copy the resulting digest
    if(digest != NULL)
       cryptoMemcpy(digest, context->digest, SHA384_DIGEST_SIZE);
+}
+
+
+/**
+ * @brief Finish the SHA-384 message digest (no padding is added)
+ * @param[in] context Pointer to the SHA-384 context
+ * @param[out] digest Calculated digest
+ **/
+
+void sha384FinalRaw(Sha384Context *context, uint8_t *digest)
+{
+   uint_t i;
+
+   //Convert from host byte order to big-endian byte order
+   for(i = 0; i < 8; i++)
+      context->h[i] = htobe64(context->h[i]);
+
+   //Copy the resulting digest
+   cryptoMemcpy(digest, context->digest, SHA384_DIGEST_SIZE);
+
+   //Convert from big-endian byte order to host byte order
+   for(i = 0; i < 8; i++)
+      context->h[i] = betoh64(context->h[i]);
 }
 
 #endif

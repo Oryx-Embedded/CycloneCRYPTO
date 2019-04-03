@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 #ifndef _SHA512_224_H
@@ -37,6 +39,8 @@
 #define SHA512_224_BLOCK_SIZE 128
 //SHA-512/224 digest size
 #define SHA512_224_DIGEST_SIZE 28
+//Minimum length of the padding string
+#define SHA512_224_MIN_PAD_SIZE 17
 //SHA-512/224 algorithm object identifier
 #define SHA512_224_OID sha512_224Oid
 //Common interface for hash algorithms

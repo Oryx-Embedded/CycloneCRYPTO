@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 #ifndef _RSA_H
@@ -130,15 +132,14 @@ error_t rsavp1(const RsaPublicKey *key, const Mpi *s, Mpi *m);
 error_t emePkcs1v15Encode(const PrngAlgo *prngAlgo, void *prngContext,
    const uint8_t *message, size_t messageLen, uint8_t *em, size_t k);
 
-error_t emePkcs1v15Decode(uint8_t *em, size_t k, uint8_t **message,
-   size_t *messageLen);
+uint32_t emePkcs1v15Decode(uint8_t *em, size_t k, size_t *messageLen);
 
 error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
    const HashAlgo *hash, const char_t *label, const uint8_t *message,
    size_t messageLen, uint8_t *em, size_t k);
 
-error_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
-   size_t k, uint8_t **message, size_t *messageLen);
+uint32_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
+   size_t k, size_t *messageLen);
 
 error_t emsaPkcs1v15Encode(const HashAlgo *hash,
    const uint8_t *digest, uint8_t *em, size_t emLen);

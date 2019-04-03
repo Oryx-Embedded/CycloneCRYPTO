@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -339,8 +341,13 @@ error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
    cryptoMemcpy(state->s, signature + ED25519_SIGNATURE_LEN / 2,
       ED25519_SIGNATURE_LEN / 2);
 
+   //Ed25519 signatures are not malleable due to the verification check that
+   //decoded S is smaller than L (refer to RFC 8032, section 8.4)
+   ret = 1 ^ ed25519SubInt(state->p, state->s, ED25519_L,
+      ED25519_SIGNATURE_LEN / 2);
+
    //Decode the public key A as point A'
-   ret = ed25519Decode(&state->ka, publicKey);
+   ret |= ed25519Decode(&state->ka, publicKey);
 
    //Initialize SHA-512 context
    sha512Init(&state->sha512Context);

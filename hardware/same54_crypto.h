@@ -1,6 +1,6 @@
 /**
- * @file blake2s160.h
- * @brief BLAKE2s-160 hash function
+ * @file same54_crypto.h
+ * @brief SAME54 hardware cryptography accelerator
  *
  * @section License
  *
@@ -28,46 +28,23 @@
  * @version 1.9.2
  **/
 
-#ifndef _BLAKE2S160_H
-#define _BLAKE2S160_H
+#ifndef _SAME54_CRYPTO_H
+#define _SAME54_CRYPTO_H
 
 //Dependencies
+#include "os_port.h"
 #include "core/crypto.h"
-#include "hash/blake2s.h"
-
-//BLAKE2s-160 block size
-#define BLAKE2S160_BLOCK_SIZE 64
-//BLAKE2s-160 digest size
-#define BLAKE2S160_DIGEST_SIZE 20
-//Minimum length of the padding string
-#define BLAKE2S160_MIN_PAD_SIZE 0
-//BLAKE2s-160 algorithm object identifier
-#define BLAKE2S160_OID blake2s160Oid
-//Common interface for hash algorithms
-#define BLAKE2S160_HASH_ALGO (&blake2s160HashAlgo)
 
 //C++ guard
 #ifdef __cplusplus
    extern "C" {
 #endif
 
+//Global variables
+extern OsMutex same54CryptoMutex;
 
-/**
- * @brief BLAKE2s-160 algorithm context
- **/
-
-typedef Blake2sContext Blake2s160Context;
-
-
-//BLAKE2s-160 related constants
-extern const uint8_t blake2s160Oid[11];
-extern const HashAlgo blake2s160HashAlgo;
-
-//BLAKE2s-160 related functions
-error_t blake2s160Compute(const void *data, size_t length, uint8_t *digest);
-void blake2s160Init(Blake2s160Context *context);
-void blake2s160Update(Blake2s160Context *context, const void *data, size_t length);
-void blake2s160Final(Blake2s160Context *context, uint8_t *digest);
+//SAME54 hardware cryptography accelerator related functions
+error_t same54CryptoInit(void);
 
 //C++ guard
 #ifdef __cplusplus

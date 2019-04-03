@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 #ifndef _RIPEMD160_H
@@ -36,6 +38,8 @@
 #define RIPEMD160_BLOCK_SIZE 64
 //RIPEMD-160 digest size
 #define RIPEMD160_DIGEST_SIZE 20
+//Minimum length of the padding string
+#define RIPEMD160_MIN_PAD_SIZE 9
 //RIPEMD-160 algorithm object identifier
 #define RIPEMD160_OID ripemd160Oid
 //Common interface for hash algorithms

@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -28,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1320
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -71,6 +73,8 @@ const HashAlgo md4HashAlgo =
    sizeof(Md4Context),
    MD4_BLOCK_SIZE,
    MD4_DIGEST_SIZE,
+   MD4_MIN_PAD_SIZE,
+   FALSE,
    (HashAlgoCompute) md4Compute,
    (HashAlgoInit) md4Init,
    (HashAlgoUpdate) md4Update,

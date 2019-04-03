@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -29,7 +31,7 @@
  * documents. Refer to FIPS 186-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -344,6 +346,14 @@ error_t dsaReadSignature(const uint8_t *data, size_t length, DsaSignature *signa
       if(error)
          break;
 
+      //Malformed DSA signature?
+      if(length != tag.totalLength)
+      {
+         //Report an error
+         error = ERROR_INVALID_SYNTAX;
+         break;
+      }
+
       //Point to the first field
       data = tag.value;
       length = tag.length;
@@ -359,6 +369,14 @@ error_t dsaReadSignature(const uint8_t *data, size_t length, DsaSignature *signa
       //The tag does not match the criteria?
       if(error)
          break;
+
+      //Make sure R is a positive integer
+      if(tag.length == 0 || (tag.value[0] & 0x80) != 0)
+      {
+         //Report an error
+         error = ERROR_INVALID_SYNTAX;
+         break;
+      }
 
       //Convert the octet string to a multiple precision integer
       error = mpiReadRaw(&signature->r, tag.value, tag.length);
@@ -382,11 +400,27 @@ error_t dsaReadSignature(const uint8_t *data, size_t length, DsaSignature *signa
       if(error)
          break;
 
+      //Make sure S is a positive integer
+      if(tag.length == 0 || (tag.value[0] & 0x80) != 0)
+      {
+         //Report an error
+         error = ERROR_INVALID_SYNTAX;
+         break;
+      }
+
       //Convert the octet string to a multiple precision integer
       error = mpiReadRaw(&signature->s, tag.value, tag.length);
       //Any error to report?
       if(error)
          break;
+
+      //Malformed DSA signature?
+      if(length != tag.totalLength)
+      {
+         //Report an error
+         error = ERROR_INVALID_SYNTAX;
+         break;
+      }
 
       //Dump (R, S) integer pair
       TRACE_DEBUG("  r:\r\n");
@@ -397,9 +431,12 @@ error_t dsaReadSignature(const uint8_t *data, size_t length, DsaSignature *signa
       //End of exception handling block
    } while(0);
 
-   //Clean up side effects if necessary
+   //Any error to report?
    if(error)
+   {
+      //Clean up side effects
       dsaFreeSignature(signature);
+   }
 
    //Return status code
    return error;

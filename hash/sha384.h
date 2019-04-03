@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 #ifndef _SHA384_H
@@ -37,6 +39,8 @@
 #define SHA384_BLOCK_SIZE 128
 //SHA-384 digest size
 #define SHA384_DIGEST_SIZE 48
+//Minimum length of the padding string
+#define SHA384_MIN_PAD_SIZE 17
 //SHA-384 algorithm object identifier
 #define SHA384_OID sha384Oid
 //Common interface for hash algorithms
@@ -64,6 +68,7 @@ error_t sha384Compute(const void *data, size_t length, uint8_t *digest);
 void sha384Init(Sha384Context *context);
 void sha384Update(Sha384Context *context, const void *data, size_t length);
 void sha384Final(Sha384Context *context, uint8_t *digest);
+void sha384FinalRaw(Sha384Context *context, uint8_t *digest);
 
 //C++ guard
 #ifdef __cplusplus

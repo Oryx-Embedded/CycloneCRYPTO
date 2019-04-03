@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 #ifndef _SHA256_H
@@ -36,6 +38,8 @@
 #define SHA256_BLOCK_SIZE 64
 //SHA-256 digest size
 #define SHA256_DIGEST_SIZE 32
+//Minimum length of the padding string
+#define SHA256_MIN_PAD_SIZE 9
 //SHA-256 algorithm object identifier
 #define SHA256_OID sha256Oid
 //Common interface for hash algorithms
@@ -77,6 +81,7 @@ error_t sha256Compute(const void *data, size_t length, uint8_t *digest);
 void sha256Init(Sha256Context *context);
 void sha256Update(Sha256Context *context, const void *data, size_t length);
 void sha256Final(Sha256Context *context, uint8_t *digest);
+void sha256FinalRaw(Sha256Context *context, uint8_t *digest);
 void sha256ProcessBlock(Sha256Context *context);
 
 //C++ guard

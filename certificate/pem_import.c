@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -105,7 +107,7 @@ error_t pemImportDhParameters(const char_t *input, size_t length, DhParameters *
    //Start of exception handling block
    do
    {
-      //The PEM file is Base64 encoded...
+      //The contents of the PEM file is Base64-encoded
       error = base64Decode(buffer, j, buffer, &length);
       //Failed to decode the file?
       if(error)
@@ -189,6 +191,266 @@ error_t pemImportDhParameters(const char_t *input, size_t length, DhParameters *
       //Clean up side effects
       mpiFree(&params->p);
       mpiFree(&params->g);
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief Decode a PEM file containing a RSA public key
+ * @param[in] input Pointer to the PEM structure
+ * @param[in] length Length of the PEM structure
+ * @param[out] key RSA public key resulting from the parsing process
+ * @return Error code
+ **/
+
+
+error_t pemImportRsaPublicKey(const char_t *input, size_t length, RsaPublicKey *key)
+{
+#if (RSA_SUPPORT == ENABLED)
+   error_t error;
+   bool_t pkcs8Format;
+   size_t i;
+   size_t j;
+   int_t k;
+   char_t *buffer;
+   const uint8_t *data;
+   Asn1Tag tag;
+
+   //Check parameters
+   if(input == NULL && length != 0)
+      return ERROR_INVALID_PARAMETER;
+   if(key == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //PKCS #8 format?
+   if(pemSearchTag(input, length, "-----BEGIN PUBLIC KEY-----", 26) >= 0)
+   {
+      //Search for the beginning tag
+      k = pemSearchTag(input, length, "-----BEGIN PUBLIC KEY-----", 26);
+      //Failed to find the specified tag?
+      if(k < 0)
+         return ERROR_INVALID_SYNTAX;
+
+      //Advance the pointer over the tag
+      input += k + 26;
+      length -= k + 26;
+
+      //Search for the end tag
+      k = pemSearchTag(input, length, "-----END PUBLIC KEY-----", 24);
+      //Invalid PEM file?
+      if(k <= 0)
+         return ERROR_INVALID_SYNTAX;
+
+      //Length of the PEM structure
+      length = k;
+
+      //The structure of the private key is described by PKCS #8
+      pkcs8Format = TRUE;
+   }
+   else
+   {
+      //Search for the beginning tag
+      k = pemSearchTag(input, length, "-----BEGIN RSA PUBLIC KEY-----", 30);
+      //Failed to find the specified tag?
+      if(k < 0)
+         return ERROR_INVALID_SYNTAX;
+
+      //Advance the pointer over the tag
+      input += k + 30;
+      length -= k + 30;
+
+      //Search for the end tag
+      k = pemSearchTag(input, length, "-----END RSA PUBLIC KEY-----", 28);
+      //Invalid PEM file?
+      if(k <= 0)
+         return ERROR_INVALID_SYNTAX;
+
+      //Length of the PEM structure
+      length = k;
+
+      //The structure of the private key is described by PKCS #1
+      pkcs8Format = FALSE;
+   }
+
+   //Allocate a memory buffer to hold the decoded data
+   buffer = cryptoAllocMem(length);
+   //Failed to allocate memory?
+   if(buffer == NULL)
+      return ERROR_OUT_OF_MEMORY;
+
+   //Copy the contents of the PEM structure
+   cryptoMemcpy(buffer, input, length);
+
+   //Remove carriage returns and line feeds
+   for(i = 0, j = 0; i < length; i++)
+   {
+      if(buffer[i] != '\r' && buffer[i] != '\n')
+         buffer[j++] = buffer[i];
+   }
+
+   //Start of exception handling block
+   do
+   {
+      //The contents of the PEM file is Base64-encoded
+      error = base64Decode(buffer, j, buffer, &length);
+      //Failed to decode the file?
+      if(error)
+         break;
+
+      //Point to the resulting ASN.1 structure
+      data = (uint8_t *) buffer;
+
+      //Display ASN.1 structure
+      error = asn1DumpObject(data, length, 0);
+      //Any error to report?
+      if(error)
+         break;
+
+      //PKCS #8 format?
+      if(pkcs8Format)
+      {
+         //PKCS #8 describes a generic syntax for encoding public keys
+         error = asn1ReadSequence(data, length, &tag);
+         //Failed to decode ASN.1 tag?
+         if(error)
+            break;
+
+         //Point to the first field of the sequence
+         data = tag.value;
+         length = tag.length;
+
+         //Read the publicKeyAlgorithm field
+         error = asn1ReadSequence(data, length, &tag);
+         //Failed to decode ASN.1 tag?
+         if(error)
+            break;
+
+         //Save the position of the publicKey field
+         data += tag.totalLength;
+         length -= tag.totalLength;
+
+         //Read the algorithm identifier (OID)
+         error = asn1ReadTag(tag.value, tag.length, &tag);
+         //Failed to decode ASN.1 tag?
+         if(error)
+            break;
+
+         //Check algorithm identifier
+         if(asn1CheckOid(&tag, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)) &&
+            asn1CheckOid(&tag, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
+         {
+            //Report an error
+            error = ERROR_WRONG_IDENTIFIER;
+            break;
+         }
+
+         //The publicKey field is encapsulated within an bit string
+         error = asn1ReadTag(data, length, &tag);
+         //Failed to decode ASN.1 tag?
+         if(error)
+            break;
+
+         //Enforce encoding, class and type
+         error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_BIT_STRING);
+         //The tag does not match the criteria?
+         if(error)
+            break;
+
+         //The bit string shall contain an initial octet which encodes the number
+         //of unused bits in the final subsequent octet
+         if(tag.length < 1 || tag.value[0] != 0x00)
+         {
+            //Report an error
+            error = ERROR_INVALID_SYNTAX;
+            break;
+         }
+
+         //Point to the content of the publicKey structure
+         data = tag.value + 1;
+         length = tag.length - 1;
+
+         //Display ASN.1 structure
+         error = asn1DumpObject(data, length, 0);
+         //Any error to report?
+         if(error)
+            break;
+      }
+
+      //Read the contents of the publicKey structure
+      error = asn1ReadSequence(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         break;
+
+      //Point to the first field of the sequence
+      data = tag.value;
+      length = tag.length;
+
+      //Read the modulus
+      error = asn1ReadTag(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         break;
+
+      //Enforce encoding, class and type
+      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
+      //The tag does not match the criteria?
+      if(error)
+         break;
+
+      //Convert the modulus to a multiple precision integer
+      error = mpiReadRaw(&key->n, tag.value, tag.length);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Point to the next field
+      data += tag.totalLength;
+      length -= tag.totalLength;
+
+      //Read the public exponent
+      error = asn1ReadTag(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         break;
+
+      //Enforce encoding, class and type
+      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
+      //The tag does not match the criteria?
+      if(error)
+         break;
+
+      //Convert the public exponent to a multiple precision integer
+      error = mpiReadRaw(&key->e, tag.value, tag.length);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Debug message
+      TRACE_DEBUG("RSA public key:\r\n");
+      TRACE_DEBUG("  Modulus:\r\n");
+      TRACE_DEBUG_MPI("    ", &key->n);
+      TRACE_DEBUG("  Public exponent:\r\n");
+      TRACE_DEBUG_MPI("    ", &key->e);
+
+      //End of exception handling block
+   } while(0);
+
+   //Release previously allocated memory
+   cryptoFreeMem(buffer);
+
+   //Any error to report?
+   if(error)
+   {
+      //Clean up side effects
+      rsaFreePublicKey(key);
    }
 
    //Return status code
@@ -295,7 +557,7 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length, RsaPrivateKey
    //Start of exception handling block
    do
    {
-      //The PEM file is Base64 encoded...
+      //The contents of the PEM file is Base64-encoded
       error = base64Decode(buffer, j, buffer, &length);
       //Failed to decode the file?
       if(error)
@@ -376,15 +638,15 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length, RsaPrivateKey
          if(error)
             break;
 
-         //Display ASN.1 structure
-         error = asn1DumpObject(tag.value, tag.length, 0);
-         //Any error to report?
-         if(error)
-            break;
-
          //Point to the content of the privateKey structure
          data = tag.value;
          length = tag.length;
+
+         //Display ASN.1 structure
+         error = asn1DumpObject(data, length, 0);
+         //Any error to report?
+         if(error)
+            break;
       }
 
       //Read the contents of the privateKey structure
@@ -727,7 +989,7 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length, DsaPrivateKey
    //Start of exception handling block
    do
    {
-      //The PEM file is Base64 encoded...
+      //The contents of the PEM file is Base64-encoded
       error = base64Decode(buffer, j, buffer, &length);
       //Failed to decode the file?
       if(error)
@@ -921,15 +1183,15 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length, DsaPrivateKey
          if(error)
             break;
 
-         //Display ASN.1 structure
-         error = asn1DumpObject(tag.value, tag.length, 0);
-         //Any error to report?
-         if(error)
-            break;
-
          //Point to the content of the privateKey structure
          data = tag.value;
          length = tag.length;
+
+         //Display ASN.1 structure
+         error = asn1DumpObject(data, length, 0);
+         //Any error to report?
+         if(error)
+            break;
       }
       else
       {
@@ -1097,7 +1359,7 @@ error_t pemImportEcParameters(const char_t *input, size_t length, EcDomainParame
    //Start of exception handling block
    do
    {
-      //The PEM file is Base64 encoded...
+      //The contents of the PEM file is Base64-encoded
       error = base64Decode(buffer, j, buffer, &length);
       //Failed to decode the file?
       if(error)
@@ -1315,7 +1577,7 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length, Mpi *key)
    //Start of exception handling block
    do
    {
-      //The PEM file is Base64 encoded...
+      //The contents of the PEM file is Base64-encoded
       error = base64Decode(buffer, j, buffer, &length);
       //Failed to decode the file?
       if(error)
@@ -1393,15 +1655,15 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length, Mpi *key)
          if(error)
             break;
 
-         //Display ASN.1 structure
-         error = asn1DumpObject(tag.value, tag.length, 0);
-         //Any error to report?
-         if(error)
-            break;
-
          //Point to the content of the privateKey structure
          data = tag.value;
          length = tag.length;
+
+         //Display ASN.1 structure
+         error = asn1DumpObject(data, length, 0);
+         //Any error to report?
+         if(error)
+            break;
       }
 
       //Read the contents of the privateKey structure
@@ -1537,7 +1799,7 @@ error_t pemImportEddsaPrivateKey(const char_t *input, size_t length, EddsaPrivat
    //Start of exception handling block
    do
    {
-      //The PEM file is Base64 encoded...
+      //The contents of the PEM file is Base64-encoded
       error = base64Decode(buffer, j, buffer, &length);
       //Failed to decode the file?
       if(error)
@@ -1620,15 +1882,15 @@ error_t pemImportEddsaPrivateKey(const char_t *input, size_t length, EddsaPrivat
       if(error)
          break;
 
-      //Display ASN.1 structure
-      error = asn1DumpObject(tag.value, tag.length, 0);
-      //Any error to report?
-      if(error)
-         break;
-
       //Point to the content of the privateKey structure
       data = tag.value;
       length = tag.length;
+
+      //Display ASN.1 structure
+      error = asn1DumpObject(data, length, 0);
+      //Any error to report?
+      if(error)
+         break;
 
       //Read the privateKey field
       error = asn1ReadTag(data, length, &tag);
@@ -1756,7 +2018,7 @@ error_t pemImportCertificate(const char_t **input, size_t *inputLen,
    //Start of exception handling block
    do
    {
-      //The PEM file is Base64 encoded...
+      //The contents of the PEM file is Base64-encoded
       error = base64Decode((char_t *) *output, j, *output, &length);
       //Failed to decode the file?
       if(error)

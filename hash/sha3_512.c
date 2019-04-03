@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -28,7 +30,7 @@
  * of an electronic message. Refer to FIPS 202 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -53,6 +55,8 @@ const HashAlgo sha3_512HashAlgo =
    sizeof(Sha3_512Context),
    SHA3_512_BLOCK_SIZE,
    SHA3_512_DIGEST_SIZE,
+   SHA3_512_MIN_PAD_SIZE,
+   FALSE,
    (HashAlgoCompute) sha3_512Compute,
    (HashAlgoInit) sha3_512Init,
    (HashAlgoUpdate) sha3_512Update,

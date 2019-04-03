@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -29,7 +31,7 @@
  * for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -176,7 +178,7 @@ void base64Encode(const void *input, size_t inputLen,
 
 /**
  * @brief Base64 decoding algorithm
- * @param[in] input Base64 encoded string
+ * @param[in] input Base64-encoded string
  * @param[in] inputLen Length of the encoded string
  * @param[out] output Resulting decoded data
  * @param[out] outputLen Length of the decoded data
@@ -206,7 +208,7 @@ error_t base64Decode(const char_t *input, size_t inputLen,
    if((inputLen % 4) != 0)
       return ERROR_INVALID_LENGTH;
 
-   //Process the Base64 encoded string
+   //Process the Base64-encoded string
    while(inputLen >= 4)
    {
       //Divide the input stream into blocks of 4 characters

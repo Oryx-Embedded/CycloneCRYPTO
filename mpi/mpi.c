@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -1091,7 +1093,7 @@ error_t mpiShiftRight(Mpi *r, uint_t n)
  * @return Error code
  **/
 
-error_t mpiMul(Mpi *r, const Mpi *a, const Mpi *b)
+__weak error_t mpiMul(Mpi *r, const Mpi *a, const Mpi *b)
 {
    error_t error;
    int_t i;
@@ -1413,7 +1415,7 @@ end:
  * @return Error code
  **/
 
-error_t mpiInvMod(Mpi *r, const Mpi *a, const Mpi *p)
+__weak error_t mpiInvMod(Mpi *r, const Mpi *a, const Mpi *p)
 {
    error_t error;
    Mpi b;
@@ -1489,7 +1491,7 @@ end:
  * @return Error code
  **/
 
-error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
+__weak error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
 {
    error_t error;
    int_t i;

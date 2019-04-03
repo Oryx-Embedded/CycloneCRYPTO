@@ -1,6 +1,6 @@
 /**
- * @file blake2b.h
- * @brief BLAKE2 cryptographic hash and MAC (BLAKE2b variant)
+ * @file same54_crypto.c
+ * @brief SAME54 hardware cryptography accelerator
  *
  * @section License
  *
@@ -28,57 +28,40 @@
  * @version 1.9.2
  **/
 
-#ifndef _BLAKE2B_H
-#define _BLAKE2B_H
+//Switch to the appropriate trace level
+#define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
+#include "pukcc/CryptoLib_typedef_pb.h"
+#include "pukcc/CryptoLib_Headers_pb.h"
 #include "core/crypto.h"
+#include "hardware/same54_crypto.h"
+#include "hardware/same54_crypto_pukcc.h"
+#include "debug.h"
 
-//BLAKE2b block size
-#define BLAKE2B_BLOCK_SIZE 128
-
-//C++ guard
-#ifdef __cplusplus
-   extern "C" {
-#endif
+//Global variables
+OsMutex same54CryptoMutex;
 
 
 /**
- * @brief BLAKE2b algorithm context
+ * @brief Cryptography accelerator initialization
  **/
 
-typedef struct
+error_t same54CryptoInit(void)
 {
-   union
+   error_t error;
+
+   //Create a mutex to prevent simultaneous access to the cryptography
+   //accelerator
+   if(!osCreateMutex(&same54CryptoMutex))
    {
-      uint64_t h[8];
-      uint8_t digest[64];
-   };
-   union
-   {
-      uint64_t m[16];
-      uint8_t buffer[128];
-   };
-   size_t size;
-   uint64_t totalSize[2];
-   size_t digestSize;
-} Blake2bContext;
-
-
-//BLAKE2b related functions
-error_t blake2bCompute(const void *key, size_t keyLen, const void *data,
-   size_t dataLen, uint8_t *digest, size_t digestLen);
-
-error_t blake2bInit(Blake2bContext *context, const void *key,
-   size_t keyLen, size_t digestLen);
-
-void blake2bUpdate(Blake2bContext *context, const void *data, size_t length);
-void blake2bFinal(Blake2bContext *context, uint8_t *digest);
-void blake2bProcessBlock(Blake2bContext *context, bool_t last);
-
-//C++ guard
-#ifdef __cplusplus
+      //Failed to create mutex
+      return ERROR_OUT_OF_RESOURCES;
    }
-#endif
 
-#endif
+   //Initialize public key accelerator
+   error = pukccInit();
+
+   //Return status code
+   return error;
+}

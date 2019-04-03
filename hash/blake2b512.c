@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -48,6 +50,8 @@ const HashAlgo blake2b512HashAlgo =
    sizeof(Blake2b512Context),
    BLAKE2B512_BLOCK_SIZE,
    BLAKE2B512_DIGEST_SIZE,
+   BLAKE2B512_MIN_PAD_SIZE,
+   FALSE,
    (HashAlgoCompute) blake2b512Compute,
    (HashAlgoInit) blake2b512Init,
    (HashAlgoUpdate) blake2b512Update,

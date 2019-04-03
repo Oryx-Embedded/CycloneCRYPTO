@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -28,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -79,10 +81,13 @@ const HashAlgo sha1HashAlgo =
    sizeof(Sha1Context),
    SHA1_BLOCK_SIZE,
    SHA1_DIGEST_SIZE,
+   SHA1_MIN_PAD_SIZE,
+   TRUE,
    (HashAlgoCompute) sha1Compute,
    (HashAlgoInit) sha1Init,
    (HashAlgoUpdate) sha1Update,
-   (HashAlgoFinal) sha1Final
+   (HashAlgoFinal) sha1Final,
+   (HashAlgoFinalRaw) sha1FinalRaw
 };
 
 
@@ -215,6 +220,29 @@ void sha1Final(Sha1Context *context, uint8_t *digest)
    //Copy the resulting digest
    if(digest != NULL)
       cryptoMemcpy(digest, context->digest, SHA1_DIGEST_SIZE);
+}
+
+
+/**
+ * @brief Finish the SHA-1 message digest (no padding is added)
+ * @param[in] context Pointer to the SHA-1 context
+ * @param[out] digest Calculated digest
+ **/
+
+void sha1FinalRaw(Sha1Context *context, uint8_t *digest)
+{
+   uint_t i;
+
+   //Convert from host byte order to big-endian byte order
+   for(i = 0; i < 5; i++)
+      context->h[i] = htobe32(context->h[i]);
+
+   //Copy the resulting digest
+   cryptoMemcpy(digest, context->digest, SHA1_DIGEST_SIZE);
+
+   //Convert from big-endian byte order to host byte order
+   for(i = 0; i < 5; i++)
+      context->h[i] = betoh32(context->h[i]);
 }
 
 

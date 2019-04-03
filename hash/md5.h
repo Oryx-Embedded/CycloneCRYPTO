@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 #ifndef _MD5_H
@@ -36,6 +38,8 @@
 #define MD5_BLOCK_SIZE 64
 //MD5 digest size
 #define MD5_DIGEST_SIZE 16
+//Minimum length of the padding string
+#define MD5_MIN_PAD_SIZE 9
 //MD5 algorithm object identifier
 #define MD5_OID md5Oid
 //Common interface for hash algorithms
@@ -77,6 +81,7 @@ error_t md5Compute(const void *data, size_t length, uint8_t *digest);
 void md5Init(Md5Context *context);
 void md5Update(Md5Context *context, const void *data, size_t length);
 void md5Final(Md5Context *context, uint8_t *digest);
+void md5FinalRaw(Md5Context *context, uint8_t *digest);
 void md5ProcessBlock(Md5Context *context);
 
 //C++ guard

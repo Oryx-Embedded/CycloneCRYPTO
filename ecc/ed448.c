@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -308,8 +310,12 @@ error_t ed448VerifySignature(const uint8_t *publicKey, const void *message,
    cryptoMemcpy(state->s, signature + ED448_SIGNATURE_LEN / 2,
       ED448_SIGNATURE_LEN / 2);
 
+   //Ed448 signatures are not malleable due to the verification check that
+   //decoded S is smaller than L (refer to RFC 8032, section 8.4)
+   ret = 1 ^ ed448SubInt(state->p, state->s, ED448_L, ED448_SIGNATURE_LEN / 2);
+
    //Decode the public key A as point A'
-   ret = ed448Decode(&state->ka, publicKey);
+   ret |= ed448Decode(&state->ka, publicKey);
 
    //Compute SHAKE256(dom4(F, C) || R || A || PH(M), 114) and interpret the
    //114-octet digest as a little-endian integer k

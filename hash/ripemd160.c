@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -76,6 +78,8 @@ const HashAlgo ripemd160HashAlgo =
    sizeof(Ripemd160Context),
    RIPEMD160_BLOCK_SIZE,
    RIPEMD160_DIGEST_SIZE,
+   RIPEMD160_MIN_PAD_SIZE,
+   FALSE,
    (HashAlgoCompute) ripemd160Compute,
    (HashAlgoInit) ripemd160Init,
    (HashAlgoUpdate) ripemd160Update,

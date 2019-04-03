@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -28,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1321
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -86,10 +88,13 @@ const HashAlgo md5HashAlgo =
    sizeof(Md5Context),
    MD5_BLOCK_SIZE,
    MD5_DIGEST_SIZE,
+   MD5_MIN_PAD_SIZE,
+   FALSE,
    (HashAlgoCompute) md5Compute,
    (HashAlgoInit) md5Init,
    (HashAlgoUpdate) md5Update,
-   (HashAlgoFinal) md5Final
+   (HashAlgoFinal) md5Final,
+   (HashAlgoFinalRaw) md5FinalRaw
 };
 
 
@@ -221,6 +226,29 @@ void md5Final(Md5Context *context, uint8_t *digest)
    //Copy the resulting digest
    if(digest != NULL)
       cryptoMemcpy(digest, context->digest, MD5_DIGEST_SIZE);
+}
+
+
+/**
+ * @brief Finish the MD5 message digest (no padding is added)
+ * @param[in] context Pointer to the MD5 context
+ * @param[out] digest Calculated digest
+ **/
+
+void md5FinalRaw(Md5Context *context, uint8_t *digest)
+{
+   uint_t i;
+
+   //Convert from host byte order to little-endian byte order
+   for(i = 0; i < 4; i++)
+      context->h[i] = htole32(context->h[i]);
+
+   //Copy the resulting digest
+   cryptoMemcpy(digest, context->digest, MD5_DIGEST_SIZE);
+
+   //Convert from little-endian byte order to host byte order
+   for(i = 0; i < 4; i++)
+      context->h[i] = letoh32(context->h[i]);
 }
 
 

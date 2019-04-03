@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -29,7 +31,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -201,11 +203,11 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
 
    //The length of the IV shall meet SP 800-38D requirements
    if(ivLen < 1)
-      return ERROR_INVALID_PARAMETER;
+      return ERROR_INVALID_LENGTH;
 
    //Check the length of the authentication tag
    if(tLen < 4 || tLen > 16)
-      return ERROR_INVALID_PARAMETER;
+      return ERROR_INVALID_LENGTH;
 
    //Check whether the length of the IV is 96 bits
    if(ivLen == 12)
@@ -350,11 +352,11 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
 
    //The length of the IV shall meet SP 800-38D requirements
    if(ivLen < 1)
-      return ERROR_INVALID_PARAMETER;
+      return ERROR_INVALID_LENGTH;
 
    //Check the length of the authentication tag
    if(tLen < 4 || tLen > 16)
-      return ERROR_INVALID_PARAMETER;
+      return ERROR_INVALID_LENGTH;
 
    //Check whether the length of the IV is 96 bits
    if(ivLen == 12)

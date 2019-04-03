@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 #ifndef _SHA1_H
@@ -36,6 +38,8 @@
 #define SHA1_BLOCK_SIZE 64
 //SHA-1 digest size
 #define SHA1_DIGEST_SIZE 20
+//Minimum length of the padding string
+#define SHA1_MIN_PAD_SIZE 9
 //SHA-1 algorithm object identifier
 #define SHA1_OID sha1Oid
 //Common interface for hash algorithms
@@ -77,6 +81,7 @@ error_t sha1Compute(const void *data, size_t length, uint8_t *digest);
 void sha1Init(Sha1Context *context);
 void sha1Update(Sha1Context *context, const void *data, size_t length);
 void sha1Final(Sha1Context *context, uint8_t *digest);
+void sha1FinalRaw(Sha1Context *context, uint8_t *digest);
 void sha1ProcessBlock(Sha1Context *context);
 
 //C++ guard

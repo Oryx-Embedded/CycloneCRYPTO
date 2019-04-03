@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -23,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 #ifndef _BLAKE2S128_H
@@ -37,6 +39,8 @@
 #define BLAKE2S128_BLOCK_SIZE 64
 //BLAKE2s-128 digest size
 #define BLAKE2S128_DIGEST_SIZE 16
+//Minimum length of the padding string
+#define BLAKE2S128_MIN_PAD_SIZE 0
 //BLAKE2s-128 algorithm object identifier
 #define BLAKE2S128_OID blake2s128Oid
 //Common interface for hash algorithms

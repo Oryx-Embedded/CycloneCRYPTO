@@ -4,7 +4,9 @@
  *
  * @section License
  *
- * Copyright (C) 2010-2018 Oryx Embedded SARL. All rights reserved.
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCrypto Open.
  *
@@ -30,7 +32,7 @@
  * key. Refer to RFC 2104 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.0
+ * @version 1.9.2
  **/
 
 //Switch to the appropriate trace level
@@ -189,6 +191,41 @@ void hmacFinal(HmacContext *context, uint8_t *digest)
    hash = context->hash;
    //Finish the first pass
    hash->final(context->hashContext, context->digest);
+
+   //XOR the original key with opad
+   for(i = 0; i < hash->blockSize; i++)
+   {
+      context->key[i] ^= HMAC_IPAD ^ HMAC_OPAD;
+   }
+
+   //Initialize context for the second pass
+   hash->init(context->hashContext);
+   //Start with outer pad
+   hash->update(context->hashContext, context->key, hash->blockSize);
+   //Then digest the result of the first hash
+   hash->update(context->hashContext, context->digest, hash->digestSize);
+   //Finish the second pass
+   hash->final(context->hashContext, context->digest);
+
+   //Copy the resulting HMAC value
+   if(digest != NULL)
+      cryptoMemcpy(digest, context->digest, hash->digestSize);
+}
+
+
+/**
+ * @brief Finish the HMAC calculation (no padding is added)
+ * @param[in] context Pointer to the HMAC context
+ * @param[out] digest Calculated HMAC value (optional parameter)
+ **/
+
+void hmacFinalRaw(HmacContext *context, uint8_t *digest)
+{
+   uint_t i;
+   const HashAlgo *hash;
+
+   //Hash algorithm used to compute HMAC
+   hash = context->hash;
 
    //XOR the original key with opad
    for(i = 0; i < hash->blockSize; i++)
