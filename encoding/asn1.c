@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 //Switch to the appropriate trace level
@@ -177,7 +177,63 @@ error_t asn1ReadSequence(const uint8_t *data, size_t length, Asn1Tag *tag)
 
 
 /**
- * @brief Read an integer from the input stream
+ * @brief Read an octet string from the input stream
+ * @param[in] data Input stream where to read the tag
+ * @param[in] length Number of bytes available in the input stream
+ * @param[out] tag Structure describing the ASN.1 tag
+ * @return Error code
+ **/
+
+error_t asn1ReadOctetString(const uint8_t *data, size_t length, Asn1Tag *tag)
+{
+   error_t error;
+
+   //Read ASN.1 tag
+   error = asn1ReadTag(data, length, tag);
+
+   //Check status code
+   if(!error)
+   {
+      //Enforce encoding, class and type
+      error = asn1CheckTag(tag, FALSE, ASN1_CLASS_UNIVERSAL,
+         ASN1_TYPE_OCTET_STRING);
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Read an object identifier from the input stream
+ * @param[in] data Input stream where to read the tag
+ * @param[in] length Number of bytes available in the input stream
+ * @param[out] tag Structure describing the ASN.1 tag
+ * @return Error code
+ **/
+
+error_t asn1ReadOid(const uint8_t *data, size_t length, Asn1Tag *tag)
+{
+   error_t error;
+
+   //Read ASN.1 tag
+   error = asn1ReadTag(data, length, tag);
+
+   //Check status code
+   if(!error)
+   {
+      //Enforce encoding, class and type
+      error = asn1CheckTag(tag, FALSE, ASN1_CLASS_UNIVERSAL,
+         ASN1_TYPE_OBJECT_IDENTIFIER);
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Read a 32-bit integer from the input stream
  * @param[in] data Input stream where to read the tag
  * @param[in] length Number of bytes available in the input stream
  * @param[out] tag Structure describing the ASN.1 tag
@@ -185,7 +241,8 @@ error_t asn1ReadSequence(const uint8_t *data, size_t length, Asn1Tag *tag)
  * @return Error code
  **/
 
-error_t asn1ReadInt32(const uint8_t *data, size_t length, Asn1Tag *tag, int32_t *value)
+error_t asn1ReadInt32(const uint8_t *data, size_t length, Asn1Tag *tag,
+   int32_t *value)
 {
    error_t error;
    size_t i;
@@ -198,7 +255,7 @@ error_t asn1ReadInt32(const uint8_t *data, size_t length, Asn1Tag *tag, int32_t 
 
    //Enforce encoding, class and type
    error = asn1CheckTag(tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
       return error;
 
@@ -225,6 +282,49 @@ error_t asn1ReadInt32(const uint8_t *data, size_t length, Asn1Tag *tag, int32_t 
 
 
 /**
+ * @brief Read a multiple-precision integer from the input stream
+ * @param[in] data Input stream where to read the tag
+ * @param[in] length Number of bytes available in the input stream
+ * @param[out] tag Structure describing the ASN.1 tag
+ * @param[out] value Integer value
+ * @return Error code
+ **/
+
+error_t asn1ReadMpi(const uint8_t *data, size_t length, Asn1Tag *tag,
+   Mpi *value)
+{
+#if (MPI_SUPPORT == ENABLED)
+   error_t error;
+
+   //Read ASN.1 tag
+   error = asn1ReadTag(data, length, tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Enforce encoding, class and type
+   error = asn1CheckTag(tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
+   //Invalid tag?
+   if(error)
+      return error;
+
+   //Negative integer?
+   if(tag->length > 0 && (tag->value[0] & 0x80) != 0)
+      return ERROR_INVALID_SYNTAX;
+
+   //Convert the octet string to a multiple precision integer
+   error = mpiImport(value, tag->value, tag->length, MPI_FORMAT_BIG_ENDIAN);
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
  * @brief Write an ASN.1 tag
  * @param[in] tag Structure describing the ASN.1 tag
  * @param[in] reverse Use reverse encoding
@@ -233,7 +333,8 @@ error_t asn1ReadInt32(const uint8_t *data, size_t length, Asn1Tag *tag, int32_t 
  * @return Error code
  **/
 
-error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data, size_t *written)
+error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data,
+   size_t *written)
 {
    size_t i;
    size_t m;
@@ -363,7 +464,7 @@ error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data, size_t *writte
 
 
 /**
- * @brief Write an integer to the output stream
+ * @brief Write a 32-bit integer to the output stream
  * @param[in] value Integer value
  * @param[in] reverse Use reverse encoding
  * @param[out] data Output stream where to write the tag (optional parameter)
@@ -371,7 +472,8 @@ error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data, size_t *writte
  * @return Error code
  **/
 
-error_t asn1WriteInt32(int32_t value, bool_t reverse, uint8_t *data, size_t *written)
+error_t asn1WriteInt32(int32_t value, bool_t reverse, uint8_t *data,
+   size_t *written)
 {
    size_t i;
    size_t n;
@@ -419,13 +521,15 @@ error_t asn1WriteInt32(int32_t value, bool_t reverse, uint8_t *data, size_t *wri
 /**
  * @brief Enforce the type of a specified tag
  * @param[in] tag Pointer to an ASN.1 tag
- * @param[in] constructed Expected encoding (TRUE for constructed, FALSE for primitive)
+ * @param[in] constructed Expected encoding (TRUE for constructed, FALSE
+ *   for primitive)
  * @param[in] objClass Expected tag class
  * @param[in] objType Expected tag type
  * @return Error code
  **/
 
-error_t asn1CheckTag(const Asn1Tag *tag, bool_t constructed, uint_t objClass, uint_t objType)
+error_t asn1CheckTag(const Asn1Tag *tag, bool_t constructed, uint_t objClass,
+   uint_t objType)
 {
    //Check encoding
    if(tag->constructed != constructed)

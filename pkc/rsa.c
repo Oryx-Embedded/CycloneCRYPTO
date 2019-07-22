@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 //Switch to the appropriate trace level
@@ -1494,68 +1494,74 @@ uint32_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
    uint32_t bad;
    uint8_t *db;
    uint8_t *seed;
-   uint8_t lHash[MAX_HASH_DIGEST_SIZE];
    HashContext *hashContext;
+   uint8_t lHash[MAX_HASH_DIGEST_SIZE];
 
    //Allocate a memory buffer to hold the hash context
    hashContext = cryptoAllocMem(hash->contextSize);
-   //Failed to allocate memory?
-   if(hashContext == NULL)
-      return ERROR_OUT_OF_MEMORY;
 
-   //If the label L is not provided, let L be the empty string
-   if(label == NULL)
-      label = "";
-
-   //Let lHash = Hash(L)
-   hash->init(hashContext);
-   hash->update(hashContext, label, strlen(label));
-   hash->final(hashContext, lHash);
-
-   //Separate the encoded message EM into a single octet Y, an octet string
-   //maskedSeed of length hLen, and an octet string maskedDB of length k - hLen - 1
-   seed = em + 1;
-   db = em + hash->digestSize + 1;
-
-   //Calculate the length of the data block
-   n = k - hash->digestSize - 1;
-
-   //Let seed = maskedSeed xor MGF(maskedDB, hLen)
-   mgf1(hash, hashContext, db, n, seed, hash->digestSize);
-   //Let DB = maskedDB xor MGF(seed, k - hLen - 1)
-   mgf1(hash, hashContext, seed, hash->digestSize, db, n);
-
-   //Release hash context
-   cryptoFreeMem(hashContext);
-
-   //Separate DB into an octet string lHash' of length hLen, a padding string
-   //PS consisting of octets with hexadecimal value 0x00, and a message M
-   for(m = 0, i = hash->digestSize; i < n; i++)
+   //Successful memory allocation?
+   if(hashContext != NULL)
    {
-      //Constant time implementation
-      c = CRYPTO_TEST_NZ_8(db[i]);
-      c &= CRYPTO_TEST_Z_32(m);
-      m = CRYPTO_SELECT_32(m, i, c);
+      //If the label L is not provided, let L be the empty string
+      if(label == NULL)
+         label = "";
+
+      //Let lHash = Hash(L)
+      hash->init(hashContext);
+      hash->update(hashContext, label, strlen(label));
+      hash->final(hashContext, lHash);
+
+      //Separate the encoded message EM into a single octet Y, an octet string
+      //maskedSeed of length hLen, and an octet string maskedDB of length k - hLen - 1
+      seed = em + 1;
+      db = em + hash->digestSize + 1;
+
+      //Calculate the length of the data block
+      n = k - hash->digestSize - 1;
+
+      //Let seed = maskedSeed xor MGF(maskedDB, hLen)
+      mgf1(hash, hashContext, db, n, seed, hash->digestSize);
+      //Let DB = maskedDB xor MGF(seed, k - hLen - 1)
+      mgf1(hash, hashContext, seed, hash->digestSize, db, n);
+
+      //Release hash context
+      cryptoFreeMem(hashContext);
+
+      //Separate DB into an octet string lHash' of length hLen, a padding string
+      //PS consisting of octets with hexadecimal value 0x00, and a message M
+      for(m = 0, i = hash->digestSize; i < n; i++)
+      {
+         //Constant time implementation
+         c = CRYPTO_TEST_NZ_8(db[i]);
+         c &= CRYPTO_TEST_Z_32(m);
+         m = CRYPTO_SELECT_32(m, i, c);
+      }
+
+      //Make sure the padding string PS is terminated
+      bad = CRYPTO_TEST_Z_32(m);
+
+      //If there is no octet with hexadecimal value 0x01 to separate PS from M,
+      //then report a decryption error
+      bad |= CRYPTO_TEST_NEQ_8(db[m], 0x01);
+
+      //If lHash does not equal lHash', then report a decryption error
+      for(i = 0; i < hash->digestSize; i++)
+      {
+         bad |= CRYPTO_TEST_NEQ_8(db[i], lHash[i]);
+      }
+
+      //If Y is nonzero, then report a decryption error
+      bad |= CRYPTO_TEST_NEQ_8(em[0], 0x00);
+
+      //Return the length of the decrypted message
+      *messageLen = CRYPTO_SELECT_32(n - m - 1, 0, bad);
    }
-
-   //Make sure the padding string PS is terminated
-   bad = CRYPTO_TEST_Z_32(m);
-
-   //If there is no octet with hexadecimal value 0x01 to separate PS from M,
-   //then report a decryption error
-   bad |= CRYPTO_TEST_NEQ_8(db[m], 0x01);
-
-   //If lHash does not equal lHash', then report a decryption error
-   for(i = 0; i < hash->digestSize; i++)
+   else
    {
-      bad |= CRYPTO_TEST_NEQ_8(db[i], lHash[i]);
+      //Failed to allocate memory
+      bad = TRUE;
    }
-
-   //If Y is nonzero, then report a decryption error
-   bad |= CRYPTO_TEST_NEQ_8(em[0], 0x00);
-
-   //Return the length of the decrypted message
-   *messageLen = CRYPTO_SELECT_32(n - m - 1, 0, bad);
 
    //Care must be taken to ensure that an opponent cannot distinguish the
    //different error conditions, whether by error message or timing

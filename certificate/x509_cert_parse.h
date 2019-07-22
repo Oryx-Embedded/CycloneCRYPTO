@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 #ifndef _X509_CERT_PARSE_H
@@ -106,6 +106,9 @@ error_t x509ParseSubjectUniqueId(const uint8_t *data, size_t length,
 
 error_t x509ParseExtensions(const uint8_t *data, size_t length,
    size_t *totalLength, X509Extensions *extensions);
+
+error_t x509ParseExtension(const uint8_t *data, size_t length,
+   size_t *totalLength, X509Extension *extension);
 
 error_t x509ParseBasicConstraints(const uint8_t *data, size_t length,
    X509BasicConstraints *basicConstraints);

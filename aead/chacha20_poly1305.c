@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 //Switch to the appropriate trace level
@@ -102,8 +102,8 @@ error_t chacha20Poly1305Encrypt(const uint8_t *k, size_t kLen,
       //Compute the number of padding bytes
       paddingLen = 16 - (aLen % 16);
 
-      //The padding is up to 15 zero bytes, and it brings the total
-      //length so far to an integral multiple of 16
+      //The padding is up to 15 zero bytes, and it brings the total length
+      //so far to an integral multiple of 16
       cryptoMemset(temp, 0, paddingLen);
 
       //Compute MAC over the padding
@@ -120,8 +120,8 @@ error_t chacha20Poly1305Encrypt(const uint8_t *k, size_t kLen,
       //Compute the number of padding bytes
       paddingLen = 16 - (length % 16);
 
-      //The padding is up to 15 zero bytes, and it brings the total
-      //length so far to an integral multiple of 16
+      //The padding is up to 15 zero bytes, and it brings the total length
+      //so far to an integral multiple of 16
       cryptoMemset(temp, 0, paddingLen);
 
       //Compute MAC over the padding
@@ -167,6 +167,8 @@ error_t chacha20Poly1305Decrypt(const uint8_t *k, size_t kLen,
    const uint8_t *c, uint8_t *p, size_t length, const uint8_t *t, size_t tLen)
 {
    error_t error;
+   uint8_t mask;
+   size_t i;
    size_t paddingLen;
    ChachaContext chachaContext;
    Poly1305Context poly1305Context;
@@ -202,8 +204,8 @@ error_t chacha20Poly1305Decrypt(const uint8_t *k, size_t kLen,
       //Compute the number of padding bytes
       paddingLen = 16 - (aLen % 16);
 
-      //The padding is up to 15 zero bytes, and it brings the total
-      //length so far to an integral multiple of 16
+      //The padding is up to 15 zero bytes, and it brings the total length
+      //so far to an integral multiple of 16
       cryptoMemset(temp, 0, paddingLen);
 
       //Compute MAC over the padding
@@ -220,8 +222,8 @@ error_t chacha20Poly1305Decrypt(const uint8_t *k, size_t kLen,
       //Compute the number of padding bytes
       paddingLen = 16 - (length % 16);
 
-      //The padding is up to 15 zero bytes, and it brings the total
-      //length so far to an integral multiple of 16
+      //The padding is up to 15 zero bytes, and it brings the total length
+      //so far to an integral multiple of 16
       cryptoMemset(temp, 0, paddingLen);
 
       //Compute MAC over the padding
@@ -246,11 +248,13 @@ error_t chacha20Poly1305Decrypt(const uint8_t *k, size_t kLen,
 
    //The calculated tag is bitwise compared to the received tag. The
    //message is authenticated if and only if the tags match
-   if(cryptoMemcmp(temp, t, tLen))
-      return ERROR_FAILURE;
+   for(mask = 0, i = 0; i < tLen; i++)
+   {
+      mask |= temp[i] ^ t[i];
+   }
 
-   //Successful encryption
-   return NO_ERROR;
+   //Return status code
+   return (mask == 0) ? NO_ERROR : ERROR_FAILURE;
 }
 
 #endif

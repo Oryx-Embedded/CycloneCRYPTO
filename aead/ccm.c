@@ -33,7 +33,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 //Switch to the appropriate trace level
@@ -108,7 +108,9 @@ error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
 
    //Encode the length field Q
    for(m = 0; m < qLen; m++, q >>= 8)
+   {
       b[15 - m] = q & 0xFF;
+   }
 
    //Invalid length?
    if(q != 0)
@@ -278,7 +280,9 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
 
    //Encode the length field Q
    for(m = 0; m < qLen; m++, q >>= 8)
+   {
       b[15 - m] = q & 0xFF;
+   }
 
    //Invalid length?
    if(q != 0)

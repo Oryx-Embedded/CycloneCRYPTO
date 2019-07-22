@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 #ifndef _X509_CERT_VALIDATE_H
@@ -42,7 +42,7 @@
 
 //X.509 related functions
 error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
-   const X509CertificateInfo *issuerCertInfo, uint_t pathLength);
+   const X509CertificateInfo *issuerCertInfo, uint_t pathLen);
 
 error_t x509CheckSubjectName(const X509CertificateInfo *certInfo,
    const char_t *fqdn);

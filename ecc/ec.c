@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 //Switch to the appropriate trace level
@@ -94,6 +94,10 @@ error_t ecLoadDomainParameters(EcDomainParameters *params,
    const EcCurveInfo *curveInfo)
 {
    error_t error;
+
+   //Check parameters
+   if(params == NULL || curveInfo == NULL)
+      return ERROR_INVALID_PARAMETER;
 
    //Debug message
    TRACE_DEBUG("Loading %s EC domain parameters...\r\n", curveInfo->name);

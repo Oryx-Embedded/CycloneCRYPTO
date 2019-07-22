@@ -31,7 +31,7 @@
  * documents. Refer to FIPS 186-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 //Switch to the appropriate trace level
@@ -366,7 +366,7 @@ error_t dsaReadSignature(const uint8_t *data, size_t length, DsaSignature *signa
 
       //Enforce encoding, class and type
       error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
-      //The tag does not match the criteria?
+      //Invalid tag?
       if(error)
          break;
 
@@ -396,7 +396,7 @@ error_t dsaReadSignature(const uint8_t *data, size_t length, DsaSignature *signa
 
       //Enforce encoding, class and type
       error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
-      //The tag does not match the criteria?
+      //Invalid tag?
       if(error)
          break;
 

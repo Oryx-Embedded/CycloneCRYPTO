@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 #ifndef _DSA_H
@@ -48,9 +48,9 @@
 typedef struct
 {
    Mpi p; ///<Prime modulus
-   Mpi q; ///<Prime divisor
-   Mpi g; ///<Generator of the subgroup
-   Mpi y; ///<Public key
+   Mpi q; ///<Group order
+   Mpi g; ///<Group generator
+   Mpi y; ///<Public key value
 } DsaPublicKey;
 
 
@@ -61,9 +61,9 @@ typedef struct
 typedef struct
 {
    Mpi p; ///<Prime modulus
-   Mpi q; ///<<Prime divisor
-   Mpi g; ///<Generator of the subgroup
-   Mpi x; ///<Private key
+   Mpi q; ///<Group order
+   Mpi g; ///<Group generator
+   Mpi x; ///<Secret exponent
 } DsaPrivateKey;
 
 

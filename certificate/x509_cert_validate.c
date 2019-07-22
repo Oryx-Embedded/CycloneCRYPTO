@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 //Switch to the appropriate trace level
@@ -52,12 +52,12 @@
  * @brief X.509 certificate validation
  * @param[in] certInfo X.509 certificate to be verified
  * @param[in] issuerCertInfo Issuer certificate
- * @param[in] pathLength Certificate path length
+ * @param[in] pathLen Certificate path length
  * @return Error code
  **/
 
 error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
-   const X509CertificateInfo *issuerCertInfo, uint_t pathLength)
+   const X509CertificateInfo *issuerCertInfo, uint_t pathLen)
 {
    error_t error;
    time_t currentTime;
@@ -107,7 +107,7 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
       //The pathLenConstraint field gives the maximum number of non-self-issued
       //intermediate certificates that may follow this certificate in a valid
       //certification path
-      if(pathLength > (uint_t) issuerCertInfo->extensions.basicConstraints.pathLenConstraint)
+      if(pathLen > (uint_t) issuerCertInfo->extensions.basicConstraints.pathLenConstraint)
          return ERROR_BAD_CERTIFICATE;
    }
 

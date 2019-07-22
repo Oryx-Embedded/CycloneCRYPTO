@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 #ifndef _BASE64_H
@@ -40,11 +40,11 @@
 #endif
 
 //Base64 encoding related functions
-void base64Encode(const void *input, size_t inputLen,
-   char_t *output, size_t *outputLen);
+void base64Encode(const void *input, size_t inputLen, char_t *output,
+   size_t *outputLen);
 
-error_t base64Decode(const char_t *input, size_t inputLen,
-   void *output, size_t *outputLen);
+error_t base64Decode(const char_t *input, size_t inputLen, void *output,
+   size_t *outputLen);
 
 //C++ guard
 #ifdef __cplusplus

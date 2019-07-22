@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 #ifndef _X509_COMMON_H
@@ -690,11 +690,27 @@ typedef struct
 
 
 /**
- * @brief Extensions
+ * @brief X.509 certificate extension
  **/
 
 typedef struct
 {
+   const uint8_t *oid;
+   size_t oidLen;
+   bool_t critical;
+   const uint8_t *value;
+   size_t valueLen;
+} X509Extension;
+
+
+/**
+ * @brief X.509 certificate extensions
+ **/
+
+typedef struct
+{
+   const uint8_t *rawData;
+   size_t rawDataLen;
    X509BasicConstraints basicConstraints;
    X509NameConstraints nameConstraints;
    uint16_t keyUsage;

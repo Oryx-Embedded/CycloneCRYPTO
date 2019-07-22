@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 //Switch to the appropriate trace level
@@ -309,7 +309,7 @@ error_t x509ParseVersion(const uint8_t *data, size_t length,
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_CONTEXT_SPECIFIC, 0);
 
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
    {
       //Assume X.509 version 1 format
@@ -371,13 +371,12 @@ error_t x509ParseSerialNumber(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
       return error;
 
-   //Conforming CAs must not use serialNumber values longer than 20 octets
-   //(refer to RFC 5280, section 4.1.2.2)
-   if(tag.length < 1 || tag.length > 20)
+   //Check the length of the serial number
+   if(tag.length < 1)
       return ERROR_INVALID_SYNTAX;
 
    //Non-conforming CAs may issue certificates with serial numbers that are
@@ -423,15 +422,8 @@ error_t x509ParseSignature(const uint8_t *data, size_t length,
    length = tag.length;
 
    //Read signature algorithm identifier
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadOid(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
-      ASN1_TYPE_OBJECT_IDENTIFIER);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -564,15 +556,8 @@ error_t x509ParseRsaPssHashAlgo(const uint8_t *data, size_t length,
    length = tag.length;
 
    //Read hash algorithm identifier
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadOid(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
-      ASN1_TYPE_OBJECT_IDENTIFIER);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -656,7 +641,7 @@ error_t x509ParseName(const uint8_t *data, size_t length,
    //Save the total length of the field
    *totalLength = tag.totalLength;
 
-   //Raw ASN.1 sequence
+   //Raw contents of the ASN.1 sequence
    name->rawData = data;
    name->rawDataLen = tag.totalLength;
 
@@ -817,7 +802,7 @@ error_t x509ParseNameAttribute(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_SET);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
       return error;
 
@@ -835,15 +820,8 @@ error_t x509ParseNameAttribute(const uint8_t *data, size_t length,
    length = tag.length;
 
    //Read attribute type
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadOid(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
-      ASN1_TYPE_OBJECT_IDENTIFIER);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -1085,7 +1063,7 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
    //Save the total length of the field
    *totalLength = tag.totalLength;
 
-   //Raw ASN.1 sequence
+   //Raw contents of the ASN.1 sequence
    subjectPublicKeyInfo->rawData = data;
    subjectPublicKeyInfo->rawDataLen = tag.totalLength;
 
@@ -1111,7 +1089,7 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_BIT_STRING);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
       return error;
 
@@ -1229,15 +1207,8 @@ error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
    length = tag.length;
 
    //Read algorithm identifier (OID)
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadOid(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
-      ASN1_TYPE_OBJECT_IDENTIFIER);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -1354,7 +1325,7 @@ error_t x509ParseRsaPublicKey(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
       return error;
 
@@ -1374,7 +1345,7 @@ error_t x509ParseRsaPublicKey(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
       return error;
 
@@ -1427,7 +1398,7 @@ error_t x509ParseDsaParameters(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
       return error;
 
@@ -1447,7 +1418,7 @@ error_t x509ParseDsaParameters(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
       return error;
 
@@ -1467,7 +1438,7 @@ error_t x509ParseDsaParameters(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
       return error;
 
@@ -1510,7 +1481,7 @@ error_t x509ParseDsaPublicKey(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
       return error;
 
@@ -1546,15 +1517,8 @@ error_t x509ParseEcParameters(const uint8_t *data, size_t length,
    TRACE_DEBUG("        Parsing ECParameters...\r\n");
 
    //Read namedCurve field
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadOid(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
-      ASN1_TYPE_OBJECT_IDENTIFIER);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -1638,7 +1602,7 @@ error_t x509ParseIssuerUniqueId(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_CONTEXT_SPECIFIC, 1);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
    {
       //The IssuerUniqueID field is optional
@@ -1691,7 +1655,7 @@ error_t x509ParseSubjectUniqueId(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_CONTEXT_SPECIFIC, 2);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
    {
       //The SubjectUniqueID field is optional
@@ -1714,7 +1678,7 @@ error_t x509ParseSubjectUniqueId(const uint8_t *data, size_t length,
 
 
 /**
- * @brief Parse Extensions structure
+ * @brief Parse X.509 certificate extensions
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
  * @param[out] totalLength Number of bytes that have been parsed
@@ -1726,11 +1690,9 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
    size_t *totalLength, X509Extensions *extensions)
 {
    error_t error;
-   bool_t critical;
-   const uint8_t *extensionData;
-   size_t extensionLength;
+   size_t n;
    Asn1Tag tag;
-   Asn1Tag oidTag;
+   X509Extension extension;
 
    //No more data to process?
    if(length == 0)
@@ -1749,7 +1711,7 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, TRUE, ASN1_CLASS_CONTEXT_SPECIFIC, 3);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
    {
       //The Extensions field is optional
@@ -1764,185 +1726,121 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
    //Debug message
    TRACE_DEBUG("    Parsing Extensions...\r\n");
 
-   //Read inner tag
+   //This field is a sequence of one or more certificate extensions
    error = asn1ReadSequence(tag.value, tag.length, &tag);
    //Failed to decode ASN.1 tag?
    if(error)
       return error;
 
-   //This field is a sequence of one or more certificate extensions
+   //Raw contents of the ASN.1 sequence
+   extensions->rawData = tag.value;
+   extensions->rawDataLen = tag.length;
+
+   //Point to the first item of the sequence
    data = tag.value;
    length = tag.length;
 
    //Loop through the extensions
    while(length > 0)
    {
-      //Read current extension
-      error = asn1ReadSequence(data, length, &tag);
-      //Failed to decode ASN.1 tag?
-      if(error)
-         return error;
-
-      //Point to the next extension
-      data += tag.totalLength;
-      length -= tag.totalLength;
-
-      //Contents of the current extension
-      extensionData = tag.value;
-      extensionLength = tag.length;
-
-      //Read the object identifier
-      error = asn1ReadTag(extensionData, extensionLength, &oidTag);
-      //Failed to decode ASN.1 tag?
-      if(error)
-         return error;
-
-      //Enforce encoding, class and type
-      error = asn1CheckTag(&oidTag, FALSE, ASN1_CLASS_UNIVERSAL,
-         ASN1_TYPE_OBJECT_IDENTIFIER);
-      //The tag does not match the criteria?
-      if(error)
-         return error;
-
-      //Next item
-      extensionData += oidTag.totalLength;
-      extensionLength -= oidTag.totalLength;
-
-      //Read the Critical flag (if present)
-      error = asn1ReadTag(extensionData, extensionLength, &tag);
-      //Failed to decode ASN.1 tag?
-      if(error)
-         return error;
-
-      //Enforce encoding, class and type
-      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_BOOLEAN);
-
-      //Check whether the Critical field is present
-      if(!error)
-      {
-         //Make sure the length of the boolean is valid
-         if(tag.length != 1)
-            return ERROR_INVALID_LENGTH;
-
-         //Each extension in a certificate is designated as either critical
-         //or non-critical
-         critical = tag.value[0] ? TRUE : FALSE;
-
-         //Next item
-         extensionData += tag.totalLength;
-         extensionLength -= tag.totalLength;
-      }
-      else
-      {
-         //The extension is considered as non-critical
-         critical = FALSE;
-      }
-
-      //The extension itself is encapsulated in an octet string
-      error = asn1ReadTag(extensionData, extensionLength, &tag);
-      //Failed to decode ASN.1 tag?
-      if(error)
-         return error;
-
-      //Enforce encoding, class and type
-      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
-         ASN1_TYPE_OCTET_STRING);
-      //The tag does not match the criteria?
+      //Each extension includes an OID and a value
+      error = x509ParseExtension(data, length, &n, &extension);
+      //Any error to report?
       if(error)
          return error;
 
       //BasicConstraints extension found?
-      if(!oidComp(oidTag.value, oidTag.length,
+      if(!oidComp(extension.oid, extension.oidLen,
          X509_BASIC_CONSTRAINTS_OID, sizeof(X509_BASIC_CONSTRAINTS_OID)))
       {
          //Parse BasicConstraints extension
-         error = x509ParseBasicConstraints(tag.value, tag.length,
+         error = x509ParseBasicConstraints(extension.value, extension.valueLen,
             &extensions->basicConstraints);
       }
       //NameConstraints extension found?
-      else if(!oidComp(oidTag.value, oidTag.length,
+      else if(!oidComp(extension.oid, extension.oidLen,
          X509_NAME_CONSTRAINTS_OID, sizeof(X509_NAME_CONSTRAINTS_OID)))
       {
          //Parse NameConstraints extension
-         error = x509ParseNameConstraints(tag.value, tag.length,
+         error = x509ParseNameConstraints(extension.value, extension.valueLen,
             &extensions->nameConstraints);
       }
 #if 0
       //PolicyConstraints extension found?
-      else if(!oidComp(oidTag.value, oidTag.length,
+      else if(!oidComp(extension.oid, extension.oidLen,
          X509_POLICY_CONSTRAINTS_OID, sizeof(X509_POLICY_CONSTRAINTS_OID)))
       {
          //Parse PolicyConstraints extension
-         error = x509ParsePolicyConstraints(tag.value, tag.length);
+         error = x509ParsePolicyConstraints(extension.value, extension.valueLen);
       }
       //PolicyMappings extension found?
-      else if(!oidComp(oidTag.value, oidTag.length,
+      else if(!oidComp(extension.oid, extension.oidLen,
          X509_POLICY_MAPPINGS_OID, sizeof(X509_POLICY_MAPPINGS_OID)))
       {
          //Parse PolicyMappings extension
-         error = x509ParsePolicyMappings(tag.value, tag.length);
+         error = x509ParsePolicyMappings(extension.value, extension.valueLen);
       }
       //InhibitAnyPolicy extension found?
-      else if(!oidComp(oidTag.value, oidTag.length,
+      else if(!oidComp(extension.oid, extension.oidLen,
          X509_INHIBIT_ANY_POLICY_OID, sizeof(X509_INHIBIT_ANY_POLICY_OID)))
       {
          //Parse InhibitAnyPolicy extension
-         error = x509ParseInhibitAnyPolicy(tag.value, tag.length);
+         error = x509ParseInhibitAnyPolicy(extension.value, extension.valueLen);
       }
 #endif
       //KeyUsage extension found?
-      else if(!oidComp(oidTag.value, oidTag.length,
+      else if(!oidComp(extension.oid, extension.oidLen,
          X509_KEY_USAGE_OID, sizeof(X509_KEY_USAGE_OID)))
       {
          //Parse KeyUsage extension
-         error = x509ParseKeyUsage(tag.value, tag.length,
+         error = x509ParseKeyUsage(extension.value, extension.valueLen,
             &extensions->keyUsage);
       }
       //ExtendedKeyUsage extension found?
-      else if(!oidComp(oidTag.value, oidTag.length,
+      else if(!oidComp(extension.oid, extension.oidLen,
          X509_EXTENDED_KEY_USAGE_OID, sizeof(X509_EXTENDED_KEY_USAGE_OID)))
       {
          //Parse ExtendedKeyUsage extension
-         error = x509ParseExtendedKeyUsage(tag.value, tag.length,
+         error = x509ParseExtendedKeyUsage(extension.value, extension.valueLen,
             &extensions->extKeyUsage);
       }
       //SubjectAltName extension found?
-      else if(!oidComp(oidTag.value, oidTag.length,
+      else if(!oidComp(extension.oid, extension.oidLen,
          X509_SUBJECT_ALT_NAME_OID, sizeof(X509_SUBJECT_ALT_NAME_OID)))
       {
          //Parse SubjectAltName extension
-         error = x509ParseSubjectAltName(tag.value, tag.length,
+         error = x509ParseSubjectAltName(extension.value, extension.valueLen,
             &extensions->subjectAltName);
       }
       //SubjectKeyIdentifier extension found?
-      else if(!oidComp(oidTag.value, oidTag.length,
+      else if(!oidComp(extension.oid, extension.oidLen,
          X509_SUBJECT_KEY_ID_OID, sizeof(X509_SUBJECT_KEY_ID_OID)))
       {
          //Parse SubjectKeyIdentifier extension
-         error = x509ParseSubjectKeyId(tag.value, tag.length,
+         error = x509ParseSubjectKeyId(extension.value, extension.valueLen,
             &extensions->subjectKeyId);
       }
       //AuthorityKeyIdentifier extension found?
-      else if(!oidComp(oidTag.value, oidTag.length,
+      else if(!oidComp(extension.oid, extension.oidLen,
          X509_AUTHORITY_KEY_ID_OID, sizeof(X509_AUTHORITY_KEY_ID_OID)))
       {
          //Parse AuthorityKeyIdentifier extension
-         error = x509ParseAuthorityKeyId(tag.value, tag.length,
+         error = x509ParseAuthorityKeyId(extension.value, extension.valueLen,
             &extensions->authorityKeyId);
       }
       //NetscapeCertType extension found?
-      else if(!oidComp(oidTag.value, oidTag.length,
+      else if(!oidComp(extension.oid, extension.oidLen,
          X509_NS_CERT_TYPE_OID, sizeof(X509_NS_CERT_TYPE_OID)))
       {
          //Parse NetscapeCertType extension
-         error = x509ParseNsCertType(tag.value, tag.length,
+         error = x509ParseNsCertType(extension.value, extension.valueLen,
             &extensions->nsCertType);
       }
       //Unknown extension?
       else
       {
-         //Check if the current extension is marked as critical
-         if(critical)
+         //Check if the extension is marked as critical
+         if(extension.critical)
          {
             //An application must reject the certificate if it encounters a
             //critical extension it does not recognize or a critical extension
@@ -1951,9 +1849,13 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
          }
       }
 
-      //Any error to report?
+      //Any parsing error?
       if(error)
          return error;
+
+      //Next extension
+      data += n;
+      length -= n;
    }
 
    //Check whether the keyCertSign bit is asserted
@@ -1965,6 +1867,93 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
       if(!extensions->basicConstraints.cA)
          return ERROR_INVALID_SYNTAX;
    }
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Parse X.509 certificate extension
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] totalLength Number of bytes that have been parsed
+ * @param[out] extension Information resulting from the parsing process
+ * @return Error code
+ **/
+
+error_t x509ParseExtension(const uint8_t *data, size_t length,
+   size_t *totalLength, X509Extension *extension)
+{
+   error_t error;
+   Asn1Tag tag;
+
+   //The X.509 extension is encapsulated within a sequence
+   error = asn1ReadSequence(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Save the total length of the X.509 extension
+   *totalLength = tag.totalLength;
+
+   //Each extension includes an OID and a value
+   data = tag.value;
+   length = tag.length;
+
+   //Read extension OID
+   error = asn1ReadOid(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Save the object identifier
+   extension->oid = tag.value;
+   extension->oidLen = tag.length;
+
+   //Next item
+   data += tag.totalLength;
+   length -= tag.totalLength;
+
+   //Read the Critical flag (if present)
+   error = asn1ReadTag(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Enforce encoding, class and type
+   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_BOOLEAN);
+
+   //Check whether the Critical field is present
+   if(!error)
+   {
+      //Make sure the length of the boolean is valid
+      if(tag.length != 1)
+         return ERROR_INVALID_LENGTH;
+
+      //Each extension in a certificate is designated as either critical
+      //or non-critical
+      extension->critical = tag.value[0] ? TRUE : FALSE;
+
+      //Next item
+      data += tag.totalLength;
+      length -= tag.totalLength;
+   }
+   else
+   {
+      //The extension is considered as non-critical
+      extension->critical = FALSE;
+   }
+
+   //The extension value is encapsulated within an octet string
+   error = asn1ReadOctetString(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Save the value of the extension
+   extension->value = tag.value;
+   extension->valueLen = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -2259,7 +2248,7 @@ error_t x509ParseKeyUsage(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_BIT_STRING);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
       return error;
 
@@ -2334,15 +2323,8 @@ error_t x509ParseExtendedKeyUsage(const uint8_t *data, size_t length,
    while(length > 0)
    {
       //Read KeyPurposeId field
-      error = asn1ReadTag(data, length, &tag);
+      error = asn1ReadOid(data, length, &tag);
       //Failed to decode ASN.1 tag?
-      if(error)
-         return error;
-
-      //Enforce encoding, class and type
-      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
-         ASN1_TYPE_OBJECT_IDENTIFIER);
-      //The tag does not match the criteria?
       if(error)
          return error;
 
@@ -2613,14 +2595,8 @@ error_t x509ParseSubjectKeyId(const uint8_t *data, size_t length,
 
    //The subject key identifier extension provides a means of identifying
    //certificates that contain a particular public key
-   error = asn1ReadTag(data, length, &tag);
+   error = asn1ReadOctetString(data, length, &tag);
    //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_OCTET_STRING);
-   //The tag does not match the criteria?
    if(error)
       return error;
 
@@ -2716,7 +2692,7 @@ error_t x509ParseNsCertType(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_BIT_STRING);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
       return error;
 
@@ -2777,7 +2753,7 @@ error_t x509ParseSignatureAlgo(const uint8_t *data, size_t length,
    //This field must contain the same algorithm identifier as the signature
    //field in the TBSCertificate sequence
    error = asn1CheckOid(&tag, signatureAlgo->oid, signatureAlgo->oidLen);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
       return error;
 
@@ -2815,7 +2791,7 @@ error_t x509ParseSignatureValue(const uint8_t *data, size_t length,
 
    //Enforce encoding, class and type
    error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_BIT_STRING);
-   //The tag does not match the criteria?
+   //Invalid tag?
    if(error)
       return error;
 

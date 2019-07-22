@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 #ifndef _ASN1_H
@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "mpi/mpi.h"
 
 //Tag number mask
 #define ASN1_TAG_NUMBER_MASK        0x1F
@@ -107,12 +108,24 @@ typedef struct
 //ASN.1 related functions
 error_t asn1ReadTag(const uint8_t *data, size_t length, Asn1Tag *tag);
 error_t asn1ReadSequence(const uint8_t *data, size_t length, Asn1Tag *tag);
-error_t asn1ReadInt32(const uint8_t *data, size_t length, Asn1Tag *tag, int32_t *value);
+error_t asn1ReadOctetString(const uint8_t *data, size_t length, Asn1Tag *tag);
+error_t asn1ReadOid(const uint8_t *data, size_t length, Asn1Tag *tag);
 
-error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data, size_t *written);
-error_t asn1WriteInt32(int32_t value, bool_t reverse, uint8_t *data, size_t *written);
+error_t asn1ReadInt32(const uint8_t *data, size_t length, Asn1Tag *tag,
+   int32_t *value);
 
-error_t asn1CheckTag(const Asn1Tag *tag, bool_t constructed, uint_t objClass, uint_t objType);
+error_t asn1ReadMpi(const uint8_t *data, size_t length, Asn1Tag *tag,
+   Mpi *value);
+
+error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data,
+   size_t *written);
+
+error_t asn1WriteInt32(int32_t value, bool_t reverse, uint8_t *data,
+   size_t *written);
+
+error_t asn1CheckTag(const Asn1Tag *tag, bool_t constructed, uint_t objClass,
+   uint_t objType);
+
 error_t asn1CheckOid(const Asn1Tag *tag, const uint8_t *oid, size_t length);
 
 error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level);

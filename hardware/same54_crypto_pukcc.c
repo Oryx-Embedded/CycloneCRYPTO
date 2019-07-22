@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 //Switch to the appropriate trace level
@@ -233,12 +233,12 @@ error_t mpiMul(Mpi *r, const Mpi *a, const Mpi *b)
    PUKCL_Fmult(u2XLength) = m;
    PUKCL_Fmult(nu1XBase) = PUKCC_FAR_TO_NEAR(params.x);
    PUKCL_Fmult(u2YLength) = n;
-	PUKCL_Fmult(nu1YBase) = PUKCC_FAR_TO_NEAR(params.y);
-	PUKCL_Fmult(nu1ZBase) = PUKCC_FAR_TO_NEAR(params.z);
-	PUKCL_Fmult(nu1RBase) = PUKCC_FAR_TO_NEAR(params.r);
+   PUKCL_Fmult(nu1YBase) = PUKCC_FAR_TO_NEAR(params.y);
+   PUKCL_Fmult(nu1ZBase) = PUKCC_FAR_TO_NEAR(params.z);
+   PUKCL_Fmult(nu1RBase) = PUKCC_FAR_TO_NEAR(params.r);
 
    //Perform multiplication
-	vPUKCL_Process(Fmult, pvPUKCLParam);
+   vPUKCL_Process(Fmult, pvPUKCLParam);
 
    //Check status code
    if(PUKCL(u2Status) == PUKCL_OK)
@@ -380,14 +380,14 @@ error_t mpiInvMod(Mpi *r, const Mpi *a, const Mpi *p)
    //Set GCD service parameters
    PUKCL(Specific).Gf2n = 0;
    PUKCL_GCD(nu1XBase) = PUKCC_FAR_TO_NEAR(params.x);
-	PUKCL_GCD(nu1YBase) = PUKCC_FAR_TO_NEAR(params.y);
-	PUKCL_GCD(nu1ABase) = PUKCC_FAR_TO_NEAR(params.a);
-	PUKCL_GCD(nu1ZBase) = PUKCC_FAR_TO_NEAR(params.z);
-	PUKCL_GCD(nu1WorkSpace) = PUKCC_FAR_TO_NEAR(params.w);
-	PUKCL_GCD(u2Length) = n;
+   PUKCL_GCD(nu1YBase) = PUKCC_FAR_TO_NEAR(params.y);
+   PUKCL_GCD(nu1ABase) = PUKCC_FAR_TO_NEAR(params.a);
+   PUKCL_GCD(nu1ZBase) = PUKCC_FAR_TO_NEAR(params.z);
+   PUKCL_GCD(nu1WorkSpace) = PUKCC_FAR_TO_NEAR(params.w);
+   PUKCL_GCD(u2Length) = n;
 
    //Calculate the modular inverse
-	vPUKCL_Process(GCD, pvPUKCLParam);
+   vPUKCL_Process(GCD, pvPUKCLParam);
 
    //Check status code
    if(PUKCL(u2Status) == PUKCL_OK)

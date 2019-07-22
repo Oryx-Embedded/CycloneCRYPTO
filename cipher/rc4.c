@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.2
+ * @version 1.9.4
  **/
 
 //Switch to the appropriate trace level
@@ -121,12 +121,16 @@ void rc4Cipher(Rc4Context *context, const uint8_t *input, uint8_t *output, size_
       s[i] = s[j];
       s[j] = temp;
 
-      //XOR the input data with the RC4 stream
-      *output = *input ^ s[(s[i] + s[j]) % 256];
+      //Valid input and output?
+      if(input != NULL && output != NULL)
+      {
+         //XOR the input data with the RC4 stream
+         *output = *input ^ s[(s[i] + s[j]) % 256];
 
-      //Increment data pointers
-      input++;
-      output++;
+         //Increment data pointers
+         input++;
+         output++;
+      }
 
       //Remaining bytes to process
       length--;
