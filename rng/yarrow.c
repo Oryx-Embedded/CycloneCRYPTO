@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -303,7 +303,9 @@ void yarrowFastReseed(YarrowContext *context)
 
    //The entropy estimates for the fast pool are all reset to zero
    for(i = 0; i < YARROW_N; i++)
+   {
       context->fastPoolEntropy[i] = 0;
+   }
 
    //The PRNG is ready to generate random data
    context->ready = TRUE;

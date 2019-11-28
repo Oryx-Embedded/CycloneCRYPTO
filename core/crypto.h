@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "1.9.4"
+#define CYCLONE_CRYPTO_VERSION_STRING "1.9.6"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 1
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 9
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 4
+#define CYCLONE_CRYPTO_REV_NUMBER 6
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -93,6 +93,20 @@
    #define BASE64_SUPPORT ENABLED
 #elif (BASE64_SUPPORT != ENABLED && BASE64_SUPPORT != DISABLED)
    #error BASE64_SUPPORT parameter is not valid
+#endif
+
+//Base64url encoding support
+#ifndef BASE64URL_SUPPORT
+   #define BASE64URL_SUPPORT ENABLED
+#elif (BASE64URL_SUPPORT != ENABLED && BASE64URL_SUPPORT != DISABLED)
+   #error BASE64URL_SUPPORT parameter is not valid
+#endif
+
+//Radix64 encoding support
+#ifndef RADIX64_SUPPORT
+   #define RADIX64_SUPPORT ENABLED
+#elif (RADIX64_SUPPORT != ENABLED && RADIX64_SUPPORT != DISABLED)
+   #error RADIX64_SUPPORT parameter is not valid
 #endif
 
 //MD2 hash support
@@ -382,6 +396,13 @@
    #error AES_SUPPORT parameter is not valid
 #endif
 
+//Blowfish encryption support
+#ifndef BLOWFISH_SUPPORT
+   #define BLOWFISH_SUPPORT DISABLED
+#elif (BLOWFISH_SUPPORT != ENABLED && BLOWFISH_SUPPORT != DISABLED)
+   #error BLOWFISH_SUPPORT parameter is not valid
+#endif
+
 //Camellia encryption support
 #ifndef CAMELLIA_SUPPORT
    #define CAMELLIA_SUPPORT ENABLED
@@ -466,6 +487,13 @@
    #error GCM_SUPPORT parameter is not valid
 #endif
 
+//Salsa20 support
+#ifndef SALSA20_SUPPORT
+   #define SALSA20_SUPPORT DISABLED
+#elif (SALSA20_SUPPORT != ENABLED && SALSA20_SUPPORT != DISABLED)
+   #error SALSA20_SUPPORT parameter is not valid
+#endif
+
 //Chacha support
 #ifndef CHACHA_SUPPORT
    #define CHACHA_SUPPORT DISABLED
@@ -541,6 +569,20 @@
    #define PKCS5_SUPPORT ENABLED
 #elif (PKCS5_SUPPORT != ENABLED && PKCS5_SUPPORT != DISABLED)
    #error PKCS5_SUPPORT parameter is not valid
+#endif
+
+//bcrypt support
+#ifndef BCRYPT_SUPPORT
+   #define BCRYPT_SUPPORT ENABLED
+#elif (BCRYPT_SUPPORT != ENABLED && BCRYPT_SUPPORT != DISABLED)
+   #error BCRYPT_SUPPORT parameter is not valid
+#endif
+
+//scrypt support
+#ifndef SCRYPT_SUPPORT
+   #define SCRYPT_SUPPORT ENABLED
+#elif (SCRYPT_SUPPORT != ENABLED && SCRYPT_SUPPORT != DISABLED)
+   #error SCRYPT_SUPPORT parameter is not valid
 #endif
 
 //Yarrow PRNG support
@@ -628,6 +670,18 @@
 #ifndef cryptoStrncpy
    #include <string.h>
    #define cryptoStrncpy(s1, s2, length) (void) strncpy(s1, s2, length)
+#endif
+
+//Format string
+#ifndef cryptoSprintf
+   #include <stdio.h>
+   #define cryptoSprintf(dest, format, ...) sprintf(dest, format, __VA_ARGS__)
+#endif
+
+//Convert string to unsigned long integer
+#ifndef cryptoStrtoul
+   #include <stdlib.h>
+   #define cryptoStrtoul(s, endptr, base) strtoul(s, endptr, base)
 #endif
 
 //Convert a character to lowercase
@@ -808,7 +862,9 @@
 #endif
 
 //Maximum context size (block cipher algorithms)
-#if (ARIA_SUPPORT == ENABLED)
+#if (BLOWFISH_SUPPORT == ENABLED)
+   #define MAX_CIPHER_CONTEXT_SIZE sizeof(BlowfishContext)
+#elif (ARIA_SUPPORT == ENABLED)
    #define MAX_CIPHER_CONTEXT_SIZE sizeof(AriaContext)
 #elif (AES_SUPPORT == ENABLED)
    #define MAX_CIPHER_CONTEXT_SIZE sizeof(AesContext)
@@ -847,6 +903,8 @@
    #define MAX_CIPHER_BLOCK_SIZE DES_BLOCK_SIZE
 #elif (IDEA_SUPPORT == ENABLED)
    #define MAX_CIPHER_BLOCK_SIZE IDEA_BLOCK_SIZE
+#elif (BLOWFISH_SUPPORT == ENABLED)
+   #define MAX_CIPHER_BLOCK_SIZE BLOWFISH_BLOCK_SIZE
 #elif (PRESENT_SUPPORT == ENABLED)
    #define MAX_CIPHER_BLOCK_SIZE PRESENT_BLOCK_SIZE
 #elif (RC2_SUPPORT == ENABLED)
@@ -997,7 +1055,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -1120,7 +1178,7 @@ typedef struct
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

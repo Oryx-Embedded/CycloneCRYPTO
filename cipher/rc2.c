@@ -32,7 +32,7 @@
  * for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -112,6 +112,10 @@ error_t rc2InitEx(Rc2Context *context, const uint8_t *key, size_t keyLen,
    uint_t i;
    uint_t t8;
    uint8_t tm;
+
+   //Check parameters
+   if(context == NULL || key == NULL)
+      return ERROR_INVALID_PARAMETER;
 
    //Make sure the key length is acceptable
    if(keyLen < 1 || keyLen > 128)

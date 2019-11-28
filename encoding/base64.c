@@ -31,7 +31,7 @@
  * for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -196,8 +196,11 @@ error_t base64Decode(const char_t *input, size_t inputLen, void *output,
 {
    error_t error;
    uint32_t value;
+   uint_t c;
    size_t i;
+   size_t j;
    size_t n;
+   size_t padLen;
    uint8_t *p;
 
    //Check parameters
@@ -206,10 +209,6 @@ error_t base64Decode(const char_t *input, size_t inputLen, void *output,
    if(outputLen == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //The length of the string to decode must be a multiple of 4
-   if((inputLen % 4) != 0)
-      return ERROR_INVALID_LENGTH;
-
    //Initialize status code
    error = NO_ERROR;
 
@@ -217,14 +216,82 @@ error_t base64Decode(const char_t *input, size_t inputLen, void *output,
    p = (uint8_t *) output;
 
    //Initialize variables
-   value = 0;
+   j = 0;
    n = 0;
+   value = 0;
+   padLen = 0;
 
    //Process the Base64-encoded string
    for(i = 0; i < inputLen && !error; i++)
    {
+      //Get current character
+      c = (uint_t) input[i];
+
       //Check the value of the current character
-      if((inputLen - i) == 2 && input[i] == '=' && input[i + 1] == '=')
+      if(c == '\r' || c == '\n')
+      {
+         //CR and LF characters should be ignored
+      }
+      else if(c == '=')
+      {
+         //Increment the number of pad characters
+         padLen++;
+      }
+      else if(c < 128 && base64DecTable[c] < 64 && padLen == 0)
+      {
+         //Decode the current character
+         value = (value << 6) | base64DecTable[c];
+
+         //Divide the input stream into blocks of 4 characters
+         if(++j == 4)
+         {
+            //Map each 4-character block to 3 bytes
+            if(p != NULL)
+            {
+               p[n] = (value >> 16) & 0xFF;
+               p[n + 1] = (value >> 8) & 0xFF;
+               p[n + 2] = value & 0xFF;
+            }
+
+            //Adjust the length of the decoded data
+            n += 3;
+
+            //Decode next block
+            j = 0;
+            value = 0;
+         }
+      }
+      else
+      {
+         //Implementations must reject the encoded data if it contains
+         //characters outside the base alphabet (refer to RFC 4648,
+         //section 3.3)
+         error = ERROR_INVALID_CHARACTER;
+      }
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Check the number of pad characters
+      if(padLen == 0 && j == 0)
+      {
+         //No pad characters in this case
+      }
+      else if(padLen == 1 && j == 3)
+      {
+         //The "=" sequence indicates that the last block contains only 2 bytes
+         if(p != NULL)
+         {
+            //Decode the last two bytes
+            p[n] = (value >> 10) & 0xFF;
+            p[n + 1] = (value >> 2) & 0xFF;
+         }
+
+         //Adjust the length of the decoded data
+         n += 2;
+      }
+      else if(padLen == 2 && j == 2)
       {
          //The "==" sequence indicates that the last block contains only 1 byte
          if(p != NULL)
@@ -238,45 +305,10 @@ error_t base64Decode(const char_t *input, size_t inputLen, void *output,
          //Skip trailing pad characters
          i++;
       }
-      else if((inputLen - i) == 1 && input[i] == '=')
-      {
-         //The "=" sequence indicates that the last block contains only 2 bytes
-         if(p != NULL)
-         {
-            //Decode the last two bytes
-            p[n] = (value >> 10) & 0xFF;
-            p[n + 1] = (value >> 2) & 0xFF;
-         }
-
-         //Adjust the length of the decoded data
-         n += 2;
-      }
-      else if(input[i] > 127 || base64DecTable[input[i]] > 63)
-      {
-         //The current character does not belong to the Base64 character set
-         error = ERROR_INVALID_CHARACTER;
-      }
       else
       {
-         //Decode the current character
-         value = (value << 6) | base64DecTable[input[i]];
-
-         //Divide the input stream into blocks of 4 characters
-         if((i % 4) == 3)
-         {
-            //Map each 4-character block to 3 bytes
-            if(p != NULL)
-            {
-               p[n] = (value >> 16) & 0xFF;
-               p[n + 1] = (value >> 8) & 0xFF;
-               p[n + 2] = value  & 0xFF;
-            }
-
-            //Adjust the length of the decoded data
-            n += 3;
-            //Decode next block
-            value = 0;
-         }
+         //The length of the input string must be a multiple of 4
+         error = ERROR_INVALID_LENGTH;
       }
    }
 

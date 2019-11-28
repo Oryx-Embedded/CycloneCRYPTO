@@ -34,7 +34,7 @@
  * Refer to SP 800-38A for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -65,6 +65,7 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
    uint8_t *iv, const uint8_t *p, uint8_t *c, size_t length)
 {
    size_t i;
+   size_t n;
    uint8_t o[16];
 
    //The parameter must be a multiple of 8
@@ -79,28 +80,29 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
       return ERROR_INVALID_PARAMETER;
 
    //Process each plaintext segment
-   while(length >= s)
+   while(length > 0)
    {
+      //Compute the number of bytes to process at a time
+      n = MIN(length, s);
+
       //Compute O(j) = CIPH(I(j))
       cipher->encryptBlock(context, iv, o);
 
       //Compute C(j) = P(j) XOR MSB(O(j))
-      for(i = 0; i < s; i++)
+      for(i = 0; i < n; i++)
+      {
          c[i] = p[i] ^ o[i];
+      }
 
       //Compute I(j+1) = LSB(I(j)) | O(j)
       cryptoMemmove(iv, iv + s, cipher->blockSize - s);
       cryptoMemcpy(iv + cipher->blockSize - s, o, s);
 
       //Next block
-      p += s;
-      c += s;
-      length -= s;
+      p += n;
+      c += n;
+      length -= n;
    }
-
-   //The plaintext must be a multiple of the segment size
-   if(length != 0)
-      return ERROR_INVALID_LENGTH;
 
    //Successful encryption
    return NO_ERROR;
@@ -123,6 +125,7 @@ error_t ofbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
    uint8_t *iv, const uint8_t *c, uint8_t *p, size_t length)
 {
    size_t i;
+   size_t n;
    uint8_t o[16];
 
    //The parameter must be a multiple of 8
@@ -137,28 +140,29 @@ error_t ofbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
       return ERROR_INVALID_PARAMETER;
 
    //Process each ciphertext segment
-   while(length >= s)
+   while(length > 0)
    {
+      //Compute the number of bytes to process at a time
+      n = MIN(length, s);
+
       //Compute O(j) = CIPH(I(j))
       cipher->encryptBlock(context, iv, o);
 
       //Compute P(j) = C(j) XOR MSB(O(j))
-      for(i = 0; i < s; i++)
+      for(i = 0; i < n; i++)
+      {
          p[i] = c[i] ^ o[i];
+      }
 
       //Compute I(j+1) = LSB(I(j)) | O(j)
       cryptoMemmove(iv, iv + s, cipher->blockSize - s);
       cryptoMemcpy(iv + cipher->blockSize - s, o, s);
 
       //Next block
-      c += s;
-      p += s;
-      length -= s;
+      c += n;
+      p += n;
+      length -= n;
    }
-
-   //The plaintext must be a multiple of the segment size
-   if(length != 0)
-      return ERROR_INVALID_LENGTH;
 
    //Successful encryption
    return NO_ERROR;

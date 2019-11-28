@@ -32,7 +32,7 @@
  * produce the ciphertext, and vice versa. Refer to SP 800-38A for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -89,7 +89,9 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
 
       //Compute C(j) = P(j) XOR T(j)
       for(i = 0; i < n; i++)
+      {
          c[i] = p[i] ^ o[i];
+      }
 
       //Standard incrementing function
       for(i = 0; i < m; i++)
@@ -152,7 +154,9 @@ error_t ctrDecrypt(const CipherAlgo *cipher, void *context, uint_t m,
 
       //Compute P(j) = C(j) XOR T(j)
       for(i = 0; i < n; i++)
+      {
          p[i] = c[i] ^ o[i];
+      }
 
       //Standard incrementing function
       for(i = 0; i < m; i++)

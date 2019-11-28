@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _RSA_H
@@ -37,7 +37,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -86,6 +86,7 @@ extern const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_256_OID[9];
 extern const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_384_OID[9];
 extern const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_512_OID[9];
 extern const uint8_t RSASSA_PSS_OID[9];
+extern const uint8_t MGF1_OID[9];
 
 //RSA related functions
 void rsaInitPublicKey(RsaPublicKey *key);
@@ -97,8 +98,9 @@ error_t rsaesPkcs1v15Encrypt(const PrngAlgo *prngAlgo, void *prngContext,
    const RsaPublicKey *key, const uint8_t *message, size_t messageLen,
    uint8_t *ciphertext, size_t *ciphertextLen);
 
-error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key, const uint8_t *ciphertext,
-   size_t ciphertextLen, uint8_t *message, size_t messageSize, size_t *messageLen);
+error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
+   const uint8_t *ciphertext, size_t ciphertextLen, uint8_t *message,
+   size_t messageSize, size_t *messageLen);
 
 error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo, void *prngContext,
    const RsaPublicKey *key, const HashAlgo *hash, const char_t *label,
@@ -157,9 +159,12 @@ error_t emsaPssVerify(const HashAlgo *hash, size_t saltLen,
 void mgf1(const HashAlgo *hash, HashContext *hashContext, const uint8_t *seed,
    size_t seedLen, uint8_t *data, size_t dataLen);
 
+error_t rsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
+   size_t k, uint_t e, RsaPrivateKey *privateKey, RsaPublicKey *publicKey);
+
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

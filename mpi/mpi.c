@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -176,7 +176,10 @@ uint_t mpiGetByteLength(const Mpi *a)
    n *= MPI_INT_SIZE;
 
    //Adjust the byte count
-   for(; m != 0; m >>= 8) n++;
+   for(; m != 0; m >>= 8)
+   {
+      n++;
+   }
 
    //Return the actual length in bytes
    return n;
@@ -212,7 +215,10 @@ uint_t mpiGetBitLength(const Mpi *a)
    n *= MPI_INT_SIZE * 8;
 
    //Adjust the bit count
-   for(; m != 0; m >>= 1) n++;
+   for(; m != 0; m >>= 1)
+   {
+      n++;
+   }
 
    //Return the actual length in bits
    return n;
@@ -459,7 +465,8 @@ error_t mpiSetValue(Mpi *r, int_t a)
  * @return Error code
  **/
 
-error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo, void *prngContext)
+error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo,
+   void *prngContext)
 {
    error_t error;
    uint_t m;
@@ -495,6 +502,19 @@ error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo, void *prngConte
 
    //Successful operation
    return NO_ERROR;
+}
+
+
+/**
+ * @brief Test whether a number is probable prime
+ * @param[in] a Pointer to a multiple precision integer
+ * @return Error code
+ **/
+
+__weak error_t mpiCheckProbablePrime(const Mpi *a)
+{
+   //The algorithm is implemented by hardware
+   return ERROR_NOT_IMPLEMENTED;
 }
 
 
@@ -965,11 +985,15 @@ error_t mpiSubAbs(Mpi *r, const Mpi *a, const Mpi *b)
    {
       //Copy the remaining words
       for(; i < m; i++)
+      {
          r->data[i] = a->data[i];
+      }
 
       //Zero the upper part of R
       for(; i < r->size; i++)
+      {
          r->data[i] = 0;
+      }
    }
 
 end:
@@ -1010,11 +1034,15 @@ error_t mpiShiftLeft(Mpi *r, uint_t n)
    {
       //Process the most significant words
       for(i = r->size - 1; i >= n1; i--)
+      {
          r->data[i] = r->data[i - n1];
+      }
 
       //Fill the rest with zeroes
       for(i = 0; i < n1; i++)
+      {
          r->data[i] = 0;
+      }
    }
 
    //Then shift bits
@@ -1022,7 +1050,9 @@ error_t mpiShiftLeft(Mpi *r, uint_t n)
    {
       //Process the most significant words
       for(i = r->size - 1; i >= 1; i--)
+      {
          r->data[i] = (r->data[i] << n2) | (r->data[i - 1] >> (32 - n2));
+      }
 
       //The least significant word requires a special handling
       r->data[0] <<= n2;
@@ -1062,11 +1092,15 @@ error_t mpiShiftRight(Mpi *r, uint_t n)
    {
       //Process the least significant words
       for(m = r->size - n1, i = 0; i < m; i++)
+      {
          r->data[i] = r->data[i + n1];
+      }
 
       //Fill the rest with zeroes
       for(i = m; i < r->size; i++)
+      {
          r->data[i] = 0;
+      }
    }
 
    //Then shift bits
@@ -1074,7 +1108,9 @@ error_t mpiShiftRight(Mpi *r, uint_t n)
    {
       //Process the least significant words
       for(m = r->size - n1 - 1, i = 0; i < m; i++)
+      {
          r->data[i] = (r->data[i] >> n2) | (r->data[i + 1] << (32 - n2));
+      }
 
       //The most significant word requires a special handling
       r->data[m] >>= n2;
@@ -1140,12 +1176,16 @@ __weak error_t mpiMul(Mpi *r, const Mpi *a, const Mpi *b)
    if(m < n)
    {
       for(i = 0; i < m; i++)
+      {
          mpiMulAccCore(&r->data[i], b->data, n, a->data[i]);
+      }
    }
    else
    {
       for(i = 0; i < n; i++)
+      {
          mpiMulAccCore(&r->data[i], a->data, m, b->data[i]);
+      }
    }
 
 end:
@@ -1512,7 +1552,9 @@ __weak error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
 
    //Initialize precomputed values
    for(i = 0; i < arraysize(s); i++)
+   {
       mpiInit(&s[i]);
+   }
 
    //Very small exponents are often selected with low Hamming weight.
    //The sliding window mechanism should be disabled in that case
@@ -1661,7 +1703,9 @@ end:
 
    //Release precomputed values
    for(i = 0; i < arraysize(s); i++)
+   {
       mpiFree(&s[i]);
+   }
 
    //Return status code
    return error;
@@ -1690,7 +1734,9 @@ error_t mpiMontgomeryMul(Mpi *r, const Mpi *a, const Mpi *b, uint_t k,
 
    //Use Newton's method to compute the inverse of P[0] mod 2^32
    for(m = 2 - p->data[0], i = 0; i < 4; i++)
+   {
       m = m * (2 - m * p->data[0]);
+   }
 
    //Precompute -1/P[0] mod 2^32;
    m = ~m + 1;

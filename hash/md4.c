@@ -30,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1320
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -78,7 +78,8 @@ const HashAlgo md4HashAlgo =
    (HashAlgoCompute) md4Compute,
    (HashAlgoInit) md4Init,
    (HashAlgoUpdate) md4Update,
-   (HashAlgoFinal) md4Final
+   (HashAlgoFinal) md4Final,
+   NULL
 };
 
 
@@ -205,7 +206,9 @@ void md4Final(Md4Context *context, uint8_t *digest)
 
    //Convert from host byte order to little-endian byte order
    for(i = 0; i < 4; i++)
+   {
       context->h[i] = htole32(context->h[i]);
+   }
 
    //Copy the resulting digest
    if(digest != NULL)
@@ -233,7 +236,9 @@ void md4ProcessBlock(Md4Context *context)
 
    //Convert from little-endian byte order to host byte order
    for(i = 0; i < 16; i++)
+   {
       x[i] = letoh32(x[i]);
+   }
 
    //Round 1
    FF(a, b, c, d, x[0],  3);

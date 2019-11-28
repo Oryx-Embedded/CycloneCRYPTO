@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -125,9 +125,12 @@ error_t asn1ReadTag(const uint8_t *data, size_t length, Asn1Tag *tag)
 
       //Clear the tag length
       tag->length = 0;
+
       //Read the subsequent octets
       for(i++; n > 0; n--)
+      {
          tag->length = (tag->length << 8) | data[i++];
+      }
    }
    //Indefinite form is used?
    else
@@ -229,6 +232,44 @@ error_t asn1ReadOid(const uint8_t *data, size_t length, Asn1Tag *tag)
 
    //Return status code
    return error;
+}
+
+
+/**
+ * @brief Read a boolean from the input stream
+ * @param[in] data Input stream where to read the tag
+ * @param[in] length Number of bytes available in the input stream
+ * @param[out] tag Structure describing the ASN.1 tag
+ * @param[out] value Boolean value
+ * @return Error code
+ **/
+
+error_t asn1ReadBoolean(const uint8_t *data, size_t length, Asn1Tag *tag,
+   bool_t *value)
+{
+   error_t error;
+
+   //Read ASN.1 tag
+   error = asn1ReadTag(data, length, tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Enforce encoding, class and type
+   error = asn1CheckTag(tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_BOOLEAN);
+   //Invalid tag?
+   if(error)
+      return error;
+
+   //Make sure the length of the boolean is valid
+   if(tag->length != 1)
+      return ERROR_INVALID_LENGTH;
+
+   //Read the value of the boolean
+   *value = tag->value[0] ? TRUE : FALSE;
+
+   //ASN.1 tag successfully decoded
+   return NO_ERROR;
 }
 
 
@@ -479,7 +520,8 @@ error_t asn1WriteInt32(int32_t value, bool_t reverse, uint8_t *data,
    size_t n;
    uint16_t msb;
 
-   //An integer value is always encoded in the smallest possible number of octets
+   //An integer value is always encoded in the smallest possible number of
+   //octets
    for(n = 4; n > 1; n--)
    {
       //Retrieve the upper 9 bits
@@ -515,6 +557,70 @@ error_t asn1WriteInt32(int32_t value, bool_t reverse, uint8_t *data,
 
    //Successful processing
    return NO_ERROR;
+}
+
+
+/**
+ * @brief Write a multiple-precision integer from the output stream
+ * @param[in] value Integer value
+ * @param[in] reverse Use reverse encoding
+ * @param[out] data Output stream where to write the tag (optional parameter)
+ * @param[out] written Number of bytes written to the output stream
+ * @return Error code
+ **/
+
+error_t asn1WriteMpi(const Mpi *value, bool_t reverse, uint8_t *data,
+   size_t *written)
+{
+#if (MPI_SUPPORT == ENABLED)
+   error_t error;
+   size_t n;
+   Asn1Tag tag;
+
+   //Retrieve the length of the multiple precision integer
+   n = mpiGetBitLength(value);
+
+   //An integer value is always encoded in the smallest possible number of
+   //octets
+   n = (n / 8) + 1;
+
+   //Valid output stream?
+   if(data != NULL)
+   {
+      //Use reverse encoding?
+      if(reverse)
+         data -= n;
+
+      //The value of the multiple precision integer is encoded MSB first
+      error = mpiExport(value, data, n, MPI_FORMAT_BIG_ENDIAN);
+      //Any error to report?
+      if(error)
+         return error;
+   }
+
+   //The integer is encapsulated within an ASN.1 structure
+   tag.constructed = FALSE;
+   tag.objClass = ASN1_CLASS_UNIVERSAL;
+   tag.objType = ASN1_TYPE_INTEGER;
+   tag.length = n;
+   tag.value = data;
+
+   //Compute the length of the corresponding ASN.1 structure
+   error = asn1WriteTag(&tag, FALSE, data, NULL);
+   //Any error to report?
+   if(error)
+      return error;
+
+   //Number of bytes written to the output stream
+   if(written != NULL)
+      *written = tag.totalLength;
+
+   //Successful processing
+   return NO_ERROR;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 
@@ -693,6 +799,7 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
             //Add a line feed
             TRACE_DEBUG("\r\n");
             break;
+
          //String?
          case ASN1_TYPE_UTF8_STRING:
          case ASN1_TYPE_NUMERIC_STRING:
@@ -707,12 +814,17 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
          case ASN1_TYPE_BMP_STRING:
             //Append prefix
             TRACE_DEBUG("%s", prefix[level + 1]);
+
             //Dump the entire string
             for(i = 0; i < tag.length; i++)
+            {
                TRACE_DEBUG("%c", tag.value[i]);
+            }
+
             //Add a line feed
             TRACE_DEBUG("\r\n");
             break;
+
          //UTC time?
          case ASN1_TYPE_UTC_TIME:
             //Check length
@@ -733,6 +845,7 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
             //Add a line feed
             TRACE_DEBUG("\r\n");
             break;
+
          //Generalized time?
          case ASN1_TYPE_GENERALIZED_TIME:
             //Check length
@@ -753,6 +866,7 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
             //Add a line feed
             TRACE_DEBUG("\r\n");
             break;
+
          //Any other type?
          default:
             //Dump the contents of the tag

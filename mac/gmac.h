@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _GMAC_H
@@ -64,6 +64,11 @@
    #include "cipher/aes.h"
 #endif
 
+//Blowfish support?
+#if (BLOWFISH_SUPPORT == ENABLED)
+   #include "cipher/blowfish.h"
+#endif
+
 //Camellia support?
 #if (CAMELLIA_SUPPORT == ENABLED)
    #include "cipher/camellia.h"
@@ -86,7 +91,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -125,7 +130,7 @@ void gmacIncCounter(uint8_t *x);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

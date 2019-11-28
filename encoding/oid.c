@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -338,7 +338,9 @@ error_t oidEncodeSubIdentifier(uint8_t *oid, size_t maxOidLen,
 
    //Write the current sub-identifier
    for(i = 0; i < n; i++)
+   {
       oid[*pos + i] = temp[n - i - 1];
+   }
 
    //Update offset value
    *pos += n;
@@ -491,7 +493,9 @@ error_t oidFromString(const char_t *str, uint8_t *oid, size_t maxOidLen,
 
          //Write the current sub-identifier
          for(j = 0; j < n; j++)
+         {
             oid[j] = temp[n - j - 1];
+         }
 
          //Advance write pointer
          oid += n;
@@ -693,7 +697,7 @@ error_t maskFromString(const char_t *str, uint8_t *mask, size_t maxMaskLen,
       }
       else
       {
-          //Save the length of the resulting mask
+         //Save the length of the resulting mask
          *maskLen = i;
       }
    }

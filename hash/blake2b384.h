@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _BLAKE2B384_H
@@ -48,7 +48,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -71,7 +71,7 @@ void blake2b384Final(Blake2b384Context *context, uint8_t *digest);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

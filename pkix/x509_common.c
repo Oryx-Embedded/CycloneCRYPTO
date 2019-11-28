@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -33,7 +33,8 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "certificate/x509_common.h"
+#include "pkix/x509_common.h"
+#include "encoding/asn1.h"
 #include "encoding/oid.h"
 #include "pkc/rsa.h"
 #include "pkc/dsa.h"
@@ -105,6 +106,18 @@ const uint8_t X509_SUBJECT_ALT_NAME_OID[3] = {0x55, 0x1D, 0x11};
 const uint8_t X509_ISSUER_ALT_NAME_OID[3] = {0x55, 0x1D, 0x12};
 //Basic Constraints OID (2.5.29.19)
 const uint8_t X509_BASIC_CONSTRAINTS_OID[3] = {0x55, 0x1D, 0x13};
+//CRL Number OID (2.5.29.20)
+const uint8_t X509_CRL_NUMBER_OID[3] = {0x55, 0x1D, 0x14};
+//Reason Code OID (2.5.29.21)
+const uint8_t X509_REASON_CODE_OID[3] = {0x55, 0x1D, 0x15};
+//Invalidity Date OID (2.5.29.24)
+const uint8_t X509_INVALIDITY_DATE_OID[3] = {0x55, 0x1D, 0x18};
+//Delta CRL Indicator OID (2.5.29.27)
+const uint8_t X509_DELTA_CRL_INDICATOR_OID[3] = {0x55, 0x1D, 0x1B};
+//Issuing Distribution Point OID (2.5.29.28)
+const uint8_t X509_ISSUING_DISTR_POINT_OID[3] = {0x55, 0x1D, 0x1C};
+//Certificate Issuer OID (2.5.29.29)
+const uint8_t X509_CERTIFICATE_ISSUER_OID[3] = {0x55, 0x1D, 0x1D};
 //Name Constraints OID (2.5.29.30)
 const uint8_t X509_NAME_CONSTRAINTS_OID[3] = {0x55, 0x1D, 0x1E};
 //CRL Distribution Points OID (2.5.29.31)
@@ -142,160 +155,10 @@ const uint8_t X509_KP_TIME_STAMPING_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07
 //Key Purpose OCSP Signing OID (1.3.6.1.5.5.7.3.9)
 const uint8_t X509_KP_OCSP_SIGNING_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x09};
 
-
-/**
- * @brief Convert string to integer
- * @param[in] data String containing the representation of an integral number
- * @param[in] length Length of the string
- * @param[out] value On success, the function returns the converted integral number
- * @return Error code
- **/
-
-error_t x509ReadInt(const uint8_t *data, size_t length, uint_t *value)
-{
-   //Initialize integer value
-   *value = 0;
-
-   //Parse the string
-   while(length > 0)
-   {
-      //Check whether the character is decimal digit
-      if(!cryptoIsdigit(*data))
-         return ERROR_FAILURE;
-
-      //Convert the string to integer
-      *value = *value * 10 + (*data - '0');
-
-      //Next character
-      data++;
-      length--;
-   }
-
-   //Successful processing
-   return NO_ERROR;
-}
-
-
-/**
- * @brief Read a RSA public key
- * @param[in] subjectPublicKeyInfo Pointer to the SubjectPublicKeyInfo structure
- * @param[out] key RSA public key
- * @return Error code
- **/
-
-error_t x509ReadRsaPublicKey(const X509SubjectPublicKeyInfo *subjectPublicKeyInfo,
-   RsaPublicKey *key)
-{
-#if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
-   error_t error;
-
-   //The certificate shall contain a valid RSA public key
-   if(subjectPublicKeyInfo->rsaPublicKey.n == NULL ||
-      subjectPublicKeyInfo->rsaPublicKey.e == NULL)
-   {
-      //Report an error
-      return ERROR_INVALID_KEY;
-   }
-
-   //Convert the modulus to a big number
-   error = mpiReadRaw(&key->n, subjectPublicKeyInfo->rsaPublicKey.n,
-      subjectPublicKeyInfo->rsaPublicKey.nLen);
-   //Convertion failed?
-   if(error)
-      return error;
-
-   //Convert the public exponent to a big number
-   error = mpiReadRaw(&key->e, subjectPublicKeyInfo->rsaPublicKey.e,
-      subjectPublicKeyInfo->rsaPublicKey.eLen);
-   //Convertion failed?
-   if(error)
-      return error;
-
-   //Debug message
-   TRACE_DEBUG("RSA public key:\r\n");
-   TRACE_DEBUG("  Modulus:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->n);
-   TRACE_DEBUG("  Public exponent:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->e);
-
-   //Successful processing
-   return NO_ERROR;
-#else
-   //Not implemented
-   return ERROR_NOT_IMPLEMENTED;
-#endif
-}
-
-
-/**
- * @brief Read a DSA public key
- * @param[in] subjectPublicKeyInfo Pointer to the SubjectPublicKeyInfo structure
- * @param[out] key DSA public key
- * @return Error code
- **/
-
-error_t x509ReadDsaPublicKey(const X509SubjectPublicKeyInfo *subjectPublicKeyInfo,
-   DsaPublicKey *key)
-{
-#if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
-   error_t error;
-
-   //The certificate shall contain a valid DSA public key
-   if(subjectPublicKeyInfo->dsaParams.p == NULL ||
-      subjectPublicKeyInfo->dsaParams.q == NULL ||
-      subjectPublicKeyInfo->dsaParams.g == NULL ||
-      subjectPublicKeyInfo->dsaPublicKey.y == NULL)
-   {
-      //Report an error
-      return ERROR_INVALID_KEY;
-   }
-
-   //Convert the parameter p to a big number
-   error = mpiReadRaw(&key->p, subjectPublicKeyInfo->dsaParams.p,
-      subjectPublicKeyInfo->dsaParams.pLen);
-   //Convertion failed?
-   if(error)
-      return error;
-
-   //Convert the parameter q to a big number
-   error = mpiReadRaw(&key->q, subjectPublicKeyInfo->dsaParams.q,
-      subjectPublicKeyInfo->dsaParams.qLen);
-   //Convertion failed?
-   if(error)
-      return error;
-
-   //Convert the parameter g to a big number
-   error = mpiReadRaw(&key->g, subjectPublicKeyInfo->dsaParams.g,
-      subjectPublicKeyInfo->dsaParams.gLen);
-   //Convertion failed?
-   if(error)
-      return error;
-
-   //Convert the public value to a big number
-   error = mpiReadRaw(&key->y, subjectPublicKeyInfo->dsaPublicKey.y,
-      subjectPublicKeyInfo->dsaPublicKey.yLen);
-   //Convertion failed?
-   if(error)
-      return error;
-
-   //Debug message
-   TRACE_DEBUG("DSA public key:\r\n");
-   TRACE_DEBUG("  Parameter p:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->p);
-   TRACE_DEBUG("  Parameter q:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->q);
-   TRACE_DEBUG("  Parameter g:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->g);
-   TRACE_DEBUG("  Public value y:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->y);
-
-   //Successful processing
-   return NO_ERROR;
-#else
-   //Not implemented
-   return ERROR_NOT_IMPLEMENTED;
-#endif
-}
+//PKCS#9 Challenge Password OID (1.2.840.113549.1.9.7)
+const uint8_t X509_CHALLENGE_PASSWORD_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x07};
+//PKCS#9 Extension Request OID (1.2.840.113549.1.9.14)
+const uint8_t X509_EXTENSION_REQUEST_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x0E};
 
 
 /**
@@ -485,93 +348,102 @@ error_t x509GetSignHashAlgo(const X509SignatureAlgoId *signAlgoId,
    oid = signAlgoId->oid;
    oidLen = signAlgoId->oidLen;
 
-   //Check the OID against registered objects
 #if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
 #if (X509_MD5_SUPPORT == ENABLED && MD5_SUPPORT == ENABLED)
+   //RSA with MD5 signature algorithm?
    if(!oidComp(oid, oidLen, MD5_WITH_RSA_ENCRYPTION_OID,
       sizeof(MD5_WITH_RSA_ENCRYPTION_OID)))
    {
-      //RSA with MD5 signature algorithm
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = MD5_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
+   //RSA with SHA-1 signature algorithm?
    if(!oidComp(oid, oidLen, SHA1_WITH_RSA_ENCRYPTION_OID,
       sizeof(SHA1_WITH_RSA_ENCRYPTION_OID)))
    {
-      //RSA with SHA-1 signature algorithm
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA1_HASH_ALGO;
    }
    else
 #endif
+#if (X509_SHA224_SUPPORT == ENABLED && SHA224_SUPPORT == ENABLED)
+   //RSA with SHA-224 signature algorithm?
+   if(!oidComp(oid, oidLen, SHA224_WITH_RSA_ENCRYPTION_OID,
+      sizeof(SHA224_WITH_RSA_ENCRYPTION_OID)))
+   {
+      *signAlgo = X509_SIGN_ALGO_RSA;
+      *hashAlgo = SHA224_HASH_ALGO;
+   }
+   else
+#endif
 #if (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
+   //RSA with SHA-256 signature algorithm?
    if(!oidComp(oid, oidLen, SHA256_WITH_RSA_ENCRYPTION_OID,
       sizeof(SHA256_WITH_RSA_ENCRYPTION_OID)))
    {
-      //RSA with SHA-256 signature algorithm
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA256_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
+   //RSA with SHA-384 signature algorithm?
    if(!oidComp(oid, oidLen, SHA384_WITH_RSA_ENCRYPTION_OID,
       sizeof(SHA384_WITH_RSA_ENCRYPTION_OID)))
    {
-      //RSA with SHA-384 signature algorithm
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA384_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
+   //RSA with SHA-512 signature algorithm?
    if(!oidComp(oid, oidLen, SHA512_WITH_RSA_ENCRYPTION_OID,
       sizeof(SHA512_WITH_RSA_ENCRYPTION_OID)))
    {
-      //RSA with SHA-512 signature algorithm
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA512_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
+   //RSA with SHA3-224 signature algorithm?
    if(!oidComp(oid, oidLen, RSASSA_PKCS1_V1_5_WITH_SHA3_224_OID,
       sizeof(RSASSA_PKCS1_V1_5_WITH_SHA3_224_OID)))
    {
-      //RSA with SHA3-224 signature algorithm
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA3_224_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
+   //RSA with SHA3-256 signature algorithm?
    if(!oidComp(oid, oidLen, RSASSA_PKCS1_V1_5_WITH_SHA3_256_OID,
       sizeof(RSASSA_PKCS1_V1_5_WITH_SHA3_256_OID)))
    {
-      //RSA with SHA3-256 signature algorithm
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA3_256_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
+   //RSA with SHA3-384 signature algorithm?
    if(!oidComp(oid, oidLen, RSASSA_PKCS1_V1_5_WITH_SHA3_384_OID,
       sizeof(RSASSA_PKCS1_V1_5_WITH_SHA3_384_OID)))
    {
-      //RSA with SHA3-384 signature algorithm
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA3_384_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
+   //RSA with SHA3-512 signature algorithm?
    if(!oidComp(oid, oidLen, RSASSA_PKCS1_V1_5_WITH_SHA3_512_OID,
       sizeof(RSASSA_PKCS1_V1_5_WITH_SHA3_512_OID)))
    {
-      //RSA with SHA3-512 signature algorithm
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA3_512_HASH_ALGO;
    }
@@ -579,6 +451,7 @@ error_t x509GetSignHashAlgo(const X509SignatureAlgoId *signAlgoId,
 #endif
 #endif
 #if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
+   //RSA-PSS signature algorithm
    if(!oidComp(oid, oidLen, RSASSA_PSS_OID,
       sizeof(RSASSA_PSS_OID)))
    {
@@ -586,6 +459,26 @@ error_t x509GetSignHashAlgo(const X509SignatureAlgoId *signAlgoId,
       oid = signAlgoId->rsaPssParams.hashAlgo;
       oidLen = signAlgoId->rsaPssParams.hashAlgoLen;
 
+#if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
+      //SHA-1 hash algorithm identifier?
+      if(!oidComp(oid, oidLen, SHA1_OID, sizeof(SHA1_OID)))
+      {
+         //RSA-PSS with SHA-1 signature algorithm
+         *signAlgo = X509_SIGN_ALGO_RSA_PSS;
+         *hashAlgo = SHA1_HASH_ALGO;
+      }
+      else
+#endif
+#if (X509_SHA224_SUPPORT == ENABLED && SHA224_SUPPORT == ENABLED)
+      //SHA-224 hash algorithm identifier?
+      if(!oidComp(oid, oidLen, SHA224_OID, sizeof(SHA224_OID)))
+      {
+         //RSA-PSS with SHA-224 signature algorithm
+         *signAlgo = X509_SIGN_ALGO_RSA_PSS;
+         *hashAlgo = SHA224_HASH_ALGO;
+      }
+      else
+#endif
 #if (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
       //SHA-256 hash algorithm identifier?
       if(!oidComp(oid, oidLen, SHA256_OID, sizeof(SHA256_OID)))
@@ -616,6 +509,46 @@ error_t x509GetSignHashAlgo(const X509SignatureAlgoId *signAlgoId,
       }
       else
 #endif
+#if (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
+      //SHA3-224 hash algorithm identifier?
+      if(!oidComp(oid, oidLen, SHA3_224_OID, sizeof(SHA3_224_OID)))
+      {
+         //RSA-PSS with SHA3-224 signature algorithm
+         *signAlgo = X509_SIGN_ALGO_RSA_PSS;
+         *hashAlgo = SHA3_224_HASH_ALGO;
+      }
+      else
+#endif
+#if (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
+      //SHA3-256 hash algorithm identifier?
+      if(!oidComp(oid, oidLen, SHA3_256_OID, sizeof(SHA3_256_OID)))
+      {
+         //RSA-PSS with SHA3-256 signature algorithm
+         *signAlgo = X509_SIGN_ALGO_RSA_PSS;
+         *hashAlgo = SHA3_256_HASH_ALGO;
+      }
+      else
+#endif
+#if (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
+      //SHA3-384 hash algorithm identifier?
+      if(!oidComp(oid, oidLen, SHA3_384_OID, sizeof(SHA3_384_OID)))
+      {
+         //RSA-PSS with SHA3-384 signature algorithm
+         *signAlgo = X509_SIGN_ALGO_RSA_PSS;
+         *hashAlgo = SHA3_384_HASH_ALGO;
+      }
+      else
+#endif
+#if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
+      //SHA3-512 hash algorithm identifier?
+      if(!oidComp(oid, oidLen, SHA3_512_OID, sizeof(SHA3_512_OID)))
+      {
+         //RSA-PSS with SHA3-512 signature algorithm
+         *signAlgo = X509_SIGN_ALGO_RSA_PSS;
+         *hashAlgo = SHA3_512_HASH_ALGO;
+      }
+      else
+#endif
       //Unknown hash algorithm identifier?
       {
          //The specified signature algorithm is not supported
@@ -626,90 +559,90 @@ error_t x509GetSignHashAlgo(const X509SignatureAlgoId *signAlgoId,
 #endif
 #if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
 #if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
+   //DSA with SHA-1 signature algorithm?
    if(!oidComp(oid, oidLen, DSA_WITH_SHA1_OID,
       sizeof(DSA_WITH_SHA1_OID)))
    {
-      //DSA with SHA-1 signature algorithm
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA1_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA224_SUPPORT == ENABLED && SHA224_SUPPORT == ENABLED)
+   //DSA with SHA-224 signature algorithm?
    if(!oidComp(oid, oidLen, DSA_WITH_SHA224_OID,
       sizeof(DSA_WITH_SHA224_OID)))
    {
-      //DSA with SHA-224 signature algorithm
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA224_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
+   //DSA with SHA-256 signature algorithm?
    if(!oidComp(oid, oidLen, DSA_WITH_SHA256_OID,
       sizeof(DSA_WITH_SHA256_OID)))
    {
-      //DSA with SHA-256 signature algorithm
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA256_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
+   //DSA with SHA-384 signature algorithm?
    if(!oidComp(oid, oidLen, DSA_WITH_SHA384_OID,
       sizeof(DSA_WITH_SHA384_OID)))
    {
-      //DSA with SHA-384 signature algorithm
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA384_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
+   //DSA with SHA-512 signature algorithm?
    if(!oidComp(oid, oidLen, DSA_WITH_SHA512_OID,
       sizeof(DSA_WITH_SHA512_OID)))
    {
-      //DSA with SHA-512 signature algorithm
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA512_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
+   //DSA with SHA3-224 signature algorithm?
    if(!oidComp(oid, oidLen, DSA_WITH_SHA3_224_OID,
       sizeof(DSA_WITH_SHA3_224_OID)))
    {
-      //DSA with SHA3-224 signature algorithm
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA3_224_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
+   //DSA with SHA3-256 signature algorithm?
    if(!oidComp(oid, oidLen, DSA_WITH_SHA3_256_OID,
       sizeof(DSA_WITH_SHA3_256_OID)))
    {
-      //DSA with SHA3-256 signature algorithm
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA3_256_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
+   //DSA with SHA3-384 signature algorithm?
    if(!oidComp(oid, oidLen, DSA_WITH_SHA3_384_OID,
       sizeof(DSA_WITH_SHA3_384_OID)))
    {
-      //DSA with SHA3-384 signature algorithm
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA3_384_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
+   //DSA with SHA3-512 signature algorithm?
    if(!oidComp(oid, oidLen, DSA_WITH_SHA3_512_OID,
       sizeof(DSA_WITH_SHA3_512_OID)))
    {
-      //DSA with SHA3-512 signature algorithm
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA3_512_HASH_ALGO;
    }
@@ -718,90 +651,90 @@ error_t x509GetSignHashAlgo(const X509SignatureAlgoId *signAlgoId,
 #endif
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
 #if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
+   //ECDSA with SHA-1 signature algorithm?
    if(!oidComp(oid, oidLen, ECDSA_WITH_SHA1_OID,
       sizeof(ECDSA_WITH_SHA1_OID)))
    {
-      //ECDSA with SHA-1 signature algorithm
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA1_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA224_SUPPORT == ENABLED && SHA224_SUPPORT == ENABLED)
+   //ECDSA with SHA-224 signature algorithm?
    if(!oidComp(oid, oidLen, ECDSA_WITH_SHA224_OID,
       sizeof(ECDSA_WITH_SHA224_OID)))
    {
-      //ECDSA with SHA-224 signature algorithm
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA224_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
+   //ECDSA with SHA-256 signature algorithm?
    if(!oidComp(oid, oidLen, ECDSA_WITH_SHA256_OID,
       sizeof(ECDSA_WITH_SHA256_OID)))
    {
-      //ECDSA with SHA-256 signature algorithm
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA256_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
+   //ECDSA with SHA-384 signature algorithm?
    if(!oidComp(oid, oidLen, ECDSA_WITH_SHA384_OID,
       sizeof(ECDSA_WITH_SHA384_OID)))
    {
-      //ECDSA with SHA-384 signature algorithm
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA384_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
+   //ECDSA with SHA-512 signature algorithm?
    if(!oidComp(oid, oidLen, ECDSA_WITH_SHA512_OID,
       sizeof(ECDSA_WITH_SHA512_OID)))
    {
-      //ECDSA with SHA-512 signature algorithm
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA512_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
+   //ECDSA with SHA3-224 signature algorithm?
    if(!oidComp(oid, oidLen, ECDSA_WITH_SHA3_224_OID,
       sizeof(ECDSA_WITH_SHA3_224_OID)))
    {
-      //ECDSA with SHA3-224 signature algorithm
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA3_224_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
+   //ECDSA with SHA3-256 signature algorithm?
    if(!oidComp(oid, oidLen, ECDSA_WITH_SHA3_256_OID,
       sizeof(ECDSA_WITH_SHA3_256_OID)))
    {
-      //ECDSA with SHA3-256 signature algorithm
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA3_256_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
+   //ECDSA with SHA3-384 signature algorithm?
    if(!oidComp(oid, oidLen, ECDSA_WITH_SHA3_384_OID,
       sizeof(ECDSA_WITH_SHA3_384_OID)))
    {
-      //ECDSA with SHA3-384 signature algorithm
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA3_384_HASH_ALGO;
    }
    else
 #endif
 #if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
+   //ECDSA with SHA3-512 signature algorithm?
    if(!oidComp(oid, oidLen, ECDSA_WITH_SHA3_512_OID,
       sizeof(ECDSA_WITH_SHA3_512_OID)))
    {
-      //ECDSA with SHA3-512 signature algorithm
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA3_512_HASH_ALGO;
    }
@@ -809,32 +742,111 @@ error_t x509GetSignHashAlgo(const X509SignatureAlgoId *signAlgoId,
 #endif
 #endif
 #if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
-   //Ed25519 algorithm identifier?
+   //Ed25519 signature algorithm?
    if(!oidComp(oid, oidLen, ED25519_OID, sizeof(ED25519_OID)))
    {
-      //Ed25519 signature algorithm
       *signAlgo = X509_SIGN_ALGO_ED25519;
       *hashAlgo = NULL;
    }
    else
 #endif
 #if (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED)
-   //Ed448 algorithm identifier?
+   //Ed448 signature algorithm?
    if(!oidComp(oid, oidLen, ED448_OID, sizeof(ED448_OID)))
    {
-      //Ed448 signature algorithm
       *signAlgo = X509_SIGN_ALGO_ED448;
       *hashAlgo = NULL;
    }
    else
 #endif
+   //Unknown signature algorithm?
    {
-      //The specified signature algorithm is not supported
       error = ERROR_UNSUPPORTED_SIGNATURE_ALGO;
    }
 
    //Return status code
    return error;
+}
+
+
+/**
+ * @brief Get the public key type that matches the specified OID
+ * @param[in] oid Object identifier
+ * @param[in] length OID length
+ * @return Public key type
+ **/
+
+X509KeyType x509GetPublicKeyType(const uint8_t *oid, size_t length)
+{
+   X509KeyType keyType;
+
+   //Invalid parameters?
+   if(oid == NULL || length == 0)
+   {
+      keyType = X509_KEY_TYPE_UNKNOWN;
+   }
+#if (RSA_SUPPORT == ENABLED)
+   //RSA algorithm identifier?
+   else if(!oidComp(oid, length, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)))
+   {
+      keyType = X509_KEY_TYPE_RSA;
+   }
+   //RSA-PSS algorithm identifier?
+   else if(!oidComp(oid, length, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
+   {
+      keyType = X509_KEY_TYPE_RSA_PSS;
+   }
+#endif
+#if (DSA_SUPPORT == ENABLED)
+   //DSA algorithm identifier?
+   else if(!oidComp(oid, length, DSA_OID, sizeof(DSA_OID)))
+   {
+      keyType = X509_KEY_TYPE_DSA;
+   }
+#endif
+#if (EC_SUPPORT == ENABLED)
+   //EC public key identifier?
+   else if(!oidComp(oid, length, EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
+   {
+      keyType = X509_KEY_TYPE_EC;
+   }
+#endif
+#if (X25519_SUPPORT == ENABLED)
+   //X25519 algorithm identifier?
+   else if(!oidComp(oid, length, X25519_OID, sizeof(X25519_OID)))
+   {
+      keyType = X509_KEY_TYPE_X25519;
+   }
+#endif
+#if (ED25519_SUPPORT == ENABLED)
+   //Ed25519 algorithm identifier?
+   else if(!oidComp(oid, length, ED25519_OID, sizeof(ED25519_OID)))
+   {
+      keyType = X509_KEY_TYPE_ED25519;
+   }
+#endif
+#if (X448_SUPPORT == ENABLED)
+   //X448 algorithm identifier?
+   else if(!oidComp(oid, length, X448_OID, sizeof(X448_OID)))
+   {
+      keyType = X509_KEY_TYPE_X448;
+   }
+#endif
+#if (ED448_SUPPORT == ENABLED)
+   //Ed448 algorithm identifier?
+   else if(!oidComp(oid, length, ED448_OID, sizeof(ED448_OID)))
+   {
+      keyType = X509_KEY_TYPE_ED448;
+   }
+#endif
+   //Unknown algorithm identifier?
+   else
+   {
+      keyType = X509_KEY_TYPE_UNKNOWN;
+   }
+
+   //Return public key type
+   return keyType;
 }
 
 
@@ -1026,6 +1038,7 @@ const EcCurveInfo *x509GetCurveInfo(const uint8_t *oid, size_t length)
       curveInfo = ecGetCurveInfo(oid, length);
    }
 #endif
+   //Unknown elliptic curve?
    else
    {
       curveInfo = NULL;

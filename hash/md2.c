@@ -30,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1319
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -81,7 +81,8 @@ const HashAlgo md2HashAlgo =
    (HashAlgoCompute) md2Compute,
    (HashAlgoInit) md2Init,
    (HashAlgoUpdate) md2Update,
-   (HashAlgoFinal) md2Final
+   (HashAlgoFinal) md2Final,
+   NULL
 };
 
 

@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -87,6 +87,9 @@ const uint8_t RSASSA_PKCS1_V1_5_WITH_SHA3_512_OID[9] = {0x60, 0x86, 0x48, 0x01, 
 //RSASSA-PSS OID (1.2.840.113549.1.1.10)
 const uint8_t RSASSA_PSS_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0A};
 
+//MGF1 OID (1.2.840.113549.1.1.8)
+const uint8_t MGF1_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x08};
+
 //Padding string
 static const uint8_t padding[] =
 {
@@ -95,7 +98,7 @@ static const uint8_t padding[] =
 
 
 /**
- * @brief Initialize a RSA public key
+ * @brief Initialize an RSA public key
  * @param[in] key Pointer to the RSA public key to initialize
  **/
 
@@ -108,7 +111,7 @@ void rsaInitPublicKey(RsaPublicKey *key)
 
 
 /**
- * @brief Release a RSA public key
+ * @brief Release an RSA public key
  * @param[in] key Pointer to the RSA public key to free
  **/
 
@@ -121,7 +124,7 @@ void rsaFreePublicKey(RsaPublicKey *key)
 
 
 /**
- * @brief Initialize a RSA private key
+ * @brief Initialize an RSA private key
  * @param[in] key Pointer to the RSA private key to initialize
  **/
 
@@ -140,7 +143,7 @@ void rsaInitPrivateKey(RsaPrivateKey *key)
 
 
 /**
- * @brief Release a RSA private key
+ * @brief Release an RSA private key
  * @param[in] key Pointer to the RSA private key to free
  **/
 
@@ -268,8 +271,9 @@ error_t rsaesPkcs1v15Encrypt(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key, const uint8_t *ciphertext,
-   size_t ciphertextLen, uint8_t *message, size_t messageSize, size_t *messageLen)
+error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
+   const uint8_t *ciphertext, size_t ciphertextLen, uint8_t *message,
+   size_t messageSize, size_t *messageLen)
 {
    error_t error;
    uint_t k;
@@ -1135,7 +1139,7 @@ error_t rsassaPssVerify(const RsaPublicKey *key, const HashAlgo *hash,
 }
 
 
-   /**
+/**
  * @brief RSA encryption primitive
  *
  * The RSA encryption primitive produces a ciphertext representative from
@@ -1441,13 +1445,13 @@ error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
 
    //Let lHash = Hash(L)
    hash->init(hashContext);
-   hash->update(hashContext, label, strlen(label));
+   hash->update(hashContext, label, cryptoStrlen(label));
    hash->final(hashContext, db);
 
    //The padding string PS consists of k - mLen - 2hLen - 2 zero octets
    n = k - messageLen - 2 * hash->digestSize - 2;
    //Generate the padding string
-   memset(db + hash->digestSize, 0, n);
+   cryptoMemset(db + hash->digestSize, 0, n);
 
    //Concatenate lHash, PS, a single octet with hexadecimal value 0x01, and
    //the message M to form a data block DB of length k - hLen - 1 octets
@@ -1509,7 +1513,7 @@ uint32_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
 
       //Let lHash = Hash(L)
       hash->init(hashContext);
-      hash->update(hashContext, label, strlen(label));
+      hash->update(hashContext, label, cryptoStrlen(label));
       hash->final(hashContext, lHash);
 
       //Separate the encoded message EM into a single octet Y, an octet string
@@ -1666,7 +1670,7 @@ error_t emsaPkcs1v15Verify(const HashAlgo *hash, const uint8_t *digest,
    n = emLen - hash->oidSize - hash->digestSize - 13;
 
    //Each byte of PS must be set to 0xFF when the block type is 0x01
-   for(j = 0 ; j < n; j++)
+   for(j = 0; j < n; j++)
    {
       bad |= em[i++] ^ 0xFF;
    }
@@ -1726,8 +1730,8 @@ error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
    size_t n;
    size_t emLen;
    uint8_t *db;
+   uint8_t *salt;
    uint8_t h[MAX_HASH_DIGEST_SIZE];
-   uint8_t salt[MAX_HASH_DIGEST_SIZE];
    HashContext *hashContext;
 
    //The encoded message is an octet string of length emLen = ceil(emBits / 8)
@@ -1736,6 +1740,14 @@ error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
    //If emLen < hLen + sLen + 2, output "encoding error" and stop
    if(emLen < (hash->digestSize + saltLen + 2))
       return ERROR_INVALID_LENGTH;
+
+   //The padding string PS consists of emLen - sLen - hLen - 2 zero octets
+   n = emLen - saltLen - hash->digestSize - 2;
+
+   //Point to the buffer where to format the data block DB
+   db = em;
+   //Point to the buffer where to generate the salt
+   salt = db + n + 1;
 
    //Generate a random octet string salt of length sLen
    error = prngAlgo->read(prngContext, salt, saltLen);
@@ -1756,16 +1768,9 @@ error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
    hash->update(hashContext, salt, saltLen);
    hash->final(hashContext, h);
 
-   //Point to the buffer where to format the data block DB
-   db = em;
-
-   //The padding string PS consists of emLen - sLen - hLen - 2 zero octets
-   n = emLen - saltLen - hash->digestSize - 2;
-
    //Let DB = PS || 0x01 || salt
    cryptoMemset(db, 0, n);
    db[n] = 0x01;
-   cryptoMemcpy(db + n + 1, salt, saltLen);
 
    //Calculate the length of the data block
    n += saltLen + 1;
@@ -1929,6 +1934,190 @@ void mgf1(const HashAlgo *hash, HashContext *hashContext, const uint8_t *seed,
       data += n;
       dataLen -= n;
    }
+}
+
+
+/**
+ * @brief RSA key pair generation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[in] k Required bit length of the modulus n
+ * @param[in] e Public exponent (3, 5, 17, 257 or 65537)
+ * @param[out] privateKey RSA private key
+ * @param[out] publicKey RSA public key
+ * @return Error code
+ **/
+
+error_t rsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
+   size_t k, uint_t e, RsaPrivateKey *privateKey, RsaPublicKey *publicKey)
+{
+   error_t error;
+   Mpi t1;
+   Mpi t2;
+   Mpi phy;
+
+   //Check parameters
+   if(prngAlgo == NULL || prngContext == NULL || privateKey == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Check the length of the modulus
+   if(k < 8)
+      return ERROR_INVALID_PARAMETER;
+
+   //Check the value of the public exponent
+   if(e != 3 && e != 5 && e != 17 && e != 257 && e != 65537)
+      return ERROR_INVALID_PARAMETER;
+
+   //Initialize multiple precision integers
+   mpiInit(&t1);
+   mpiInit(&t2);
+   mpiInit(&phy);
+
+   //Save public exponent
+   MPI_CHECK(mpiSetValue(&privateKey->e, e));
+
+   //Generate a large random prime p
+   do
+   {
+      do
+      {
+         //Generate a random number of bit length k/2
+         MPI_CHECK(mpiRand(&privateKey->p, k / 2, prngAlgo, prngContext));
+         //Set the low bit (this ensures the number is odd)
+         MPI_CHECK(mpiSetBitValue(&privateKey->p, 0, 1));
+         //Set the two highest bits (this ensures that the high bit of n is also set)
+         MPI_CHECK(mpiSetBitValue(&privateKey->p, k / 2 - 1, 1));
+         MPI_CHECK(mpiSetBitValue(&privateKey->p, k / 2 - 2, 1));
+
+         //Test whether p is a probable prime
+         error = mpiCheckProbablePrime(&privateKey->p);
+
+         //Repeat until an acceptable value is found
+      } while(error == ERROR_INVALID_VALUE);
+
+      //Check status code
+      MPI_CHECK(error);
+
+      //Compute p mod e
+      MPI_CHECK(mpiMod(&t1, &privateKey->p, &privateKey->e));
+
+      //Repeat as long as p mod e = 1
+   } while(mpiCompInt(&t1, 1) == 0);
+
+   //Generate a large random prime q
+   do
+   {
+      do
+      {
+         //Generate random number of bit length k - k/2
+         MPI_CHECK(mpiRand(&privateKey->q, k - (k / 2), prngAlgo, prngContext));
+         //Set the low bit (this ensures the number is odd)
+         MPI_CHECK(mpiSetBitValue(&privateKey->q, 0, 1));
+         //Set the two highest bits (this ensures that the high bit of n is also set)
+         MPI_CHECK(mpiSetBitValue(&privateKey->q, k - (k / 2) - 1, 1));
+         MPI_CHECK(mpiSetBitValue(&privateKey->q, k - (k / 2) - 2, 1));
+
+         //Test whether q is a probable prime
+         error = mpiCheckProbablePrime(&privateKey->q);
+
+         //Repeat until an acceptable value is found
+      } while(error == ERROR_INVALID_VALUE);
+
+      //Check status code
+      MPI_CHECK(error);
+
+      //Compute q mod e
+      MPI_CHECK(mpiMod(&t2, &privateKey->q, &privateKey->e));
+
+      //Repeat as long as p mod e = 1
+   } while(mpiCompInt(&t2, 1) == 0);
+
+   //Make sure p an q are distinct
+   if(mpiComp(&privateKey->p, &privateKey->q) == 0)
+   {
+      MPI_CHECK(ERROR_FAILURE);
+   }
+
+   //If p < q, then swap p and q (this only matters if the CRT form of
+   //the private key is used)
+   if(mpiComp(&privateKey->p, &privateKey->q) < 0)
+   {
+      //Swap primes
+      mpiCopy(&t1, &privateKey->p);
+      mpiCopy(&privateKey->p, &privateKey->q);
+      mpiCopy(&privateKey->q, &t1);
+   }
+
+   //Compute the modulus n = pq
+   MPI_CHECK(mpiMul(&privateKey->n, &privateKey->p, &privateKey->q));
+
+   //Compute phy = (p-1)(q-1)
+   MPI_CHECK(mpiSubInt(&t1, &privateKey->p, 1));
+   MPI_CHECK(mpiSubInt(&t2, &privateKey->q, 1));
+   MPI_CHECK(mpiMul(&phy, &t1, &t2));
+
+   //Compute d = e^-1 mod phy
+   MPI_CHECK(mpiInvMod(&privateKey->d, &privateKey->e, &phy));
+   //Compute dP = d mod (p-1)
+   MPI_CHECK(mpiMod(&privateKey->dp, &privateKey->d, &t1));
+   //Compute dQ = d mod (q-1)
+   MPI_CHECK(mpiMod(&privateKey->dq, &privateKey->d, &t2));
+   //Compute qInv = q^-1 mod p
+   MPI_CHECK(mpiInvMod(&privateKey->qinv, &privateKey->q, &privateKey->p));
+
+   //Debug message
+   TRACE_DEBUG("RSA private key:\r\n");
+   TRACE_DEBUG("  Modulus:\r\n");
+   TRACE_DEBUG_MPI("    ", &privateKey->n);
+   TRACE_DEBUG("  Public exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &privateKey->e);
+   TRACE_DEBUG("  Private exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &privateKey->d);
+   TRACE_DEBUG("  Prime 1:\r\n");
+   TRACE_DEBUG_MPI("    ", &privateKey->p);
+   TRACE_DEBUG("  Prime 2:\r\n");
+   TRACE_DEBUG_MPI("    ", &privateKey->q);
+   TRACE_DEBUG("  Prime exponent 1:\r\n");
+   TRACE_DEBUG_MPI("    ", &privateKey->dp);
+   TRACE_DEBUG("  Prime exponent 2:\r\n");
+   TRACE_DEBUG_MPI("    ", &privateKey->dq);
+   TRACE_DEBUG("  Coefficient:\r\n");
+   TRACE_DEBUG_MPI("    ", &privateKey->qinv);
+
+   //An public key can be optionally generated
+   if(publicKey != NULL)
+   {
+      //The public key is (n, e)
+      MPI_CHECK(mpiCopy(&publicKey->n, &privateKey->n));
+      MPI_CHECK(mpiCopy(&publicKey->e, &privateKey->e));
+
+      //Debug message
+      TRACE_DEBUG("RSA public key:\r\n");
+      TRACE_DEBUG("  Modulus:\r\n");
+      TRACE_DEBUG_MPI("    ", &publicKey->n);
+      TRACE_DEBUG("  Public exponent:\r\n");
+      TRACE_DEBUG_MPI("    ", &publicKey->e);
+   }
+
+end:
+   //Release multiple precision integers
+   mpiFree(&t1);
+   mpiFree(&t2);
+   mpiFree(&phy);
+
+   //Any error to report?
+   if(error)
+   {
+      //Release RSA private key
+      rsaFreePrivateKey(privateKey);
+
+      //Release RSA public key
+      if(publicKey != NULL)
+         rsaFreePublicKey(publicKey);
+   }
+
+   //Return status code
+   return error;
 }
 
 #endif

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _ASN1_H
@@ -52,7 +52,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -111,6 +111,9 @@ error_t asn1ReadSequence(const uint8_t *data, size_t length, Asn1Tag *tag);
 error_t asn1ReadOctetString(const uint8_t *data, size_t length, Asn1Tag *tag);
 error_t asn1ReadOid(const uint8_t *data, size_t length, Asn1Tag *tag);
 
+error_t asn1ReadBoolean(const uint8_t *data, size_t length, Asn1Tag *tag,
+   bool_t *value);
+
 error_t asn1ReadInt32(const uint8_t *data, size_t length, Asn1Tag *tag,
    int32_t *value);
 
@@ -123,6 +126,9 @@ error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data,
 error_t asn1WriteInt32(int32_t value, bool_t reverse, uint8_t *data,
    size_t *written);
 
+error_t asn1WriteMpi(const Mpi *value, bool_t reverse, uint8_t *data,
+   size_t *written);
+
 error_t asn1CheckTag(const Asn1Tag *tag, bool_t constructed, uint_t objClass,
    uint_t objType);
 
@@ -132,7 +138,7 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

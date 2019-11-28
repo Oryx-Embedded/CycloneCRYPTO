@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _MPI_H
@@ -47,7 +47,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -94,7 +94,10 @@ int_t mpiCompAbs(const Mpi *a, const Mpi *b);
 error_t mpiCopy(Mpi *r, const Mpi *a);
 error_t mpiSetValue(Mpi *a, int_t b);
 
-error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo, void *prngContext);
+error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo,
+   void *prngContext);
+
+error_t mpiCheckProbablePrime(const Mpi *a);
 
 error_t mpiImport(Mpi *r, const uint8_t *data, uint_t length, MpiFormat format);
 error_t mpiExport(const Mpi *a, uint8_t *data, uint_t length, MpiFormat format);
@@ -135,7 +138,7 @@ void mpiDump(FILE *stream, const char_t *prepend, const Mpi *a);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

@@ -31,7 +31,7 @@
  * Refer to RFC 5794 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -304,7 +304,11 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
    const uint32_t *ck3;
    uint32_t w[16];
 
-   //128-bit master key?
+   //Check parameters
+   if(context == NULL || key == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Check the length of the master key
    if(keyLen == 16)
    {
       //Select the relevant constants
@@ -314,7 +318,6 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
       //The number of rounds depends on the size of the master key
       context->nr = 12;
    }
-   //192-bit master key?
    else if(keyLen == 24)
    {
       //Select the relevant constants
@@ -324,7 +327,6 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
       //The number of rounds depends on the size of the master key
       context->nr = 14;
    }
-   //256-bit master key?
    else if(keyLen == 32)
    {
       //Select the relevant constants
@@ -362,7 +364,9 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
 
    //Convert from big-endian byte order to host byte order
    for(i = 0; i < 16; i++)
+   {
       w[i] = betoh32(w[i]);
+   }
 
    //Point to the encryption round keys
    ek = context->ek;
@@ -405,7 +409,9 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
 
    //Convert from host byte order to big-endian byte order
    for(i = 0; i < 68; i++)
+   {
       ek[i] = htobe32(ek[i]);
+   }
 
    //Decryption round keys are derived from the encryption round keys
    dk = context->dk;
@@ -414,7 +420,9 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
 
    //Compute dk2, ..., dk(n)
    for(i = 1; i < context->nr; i++)
+   {
       A(dk + i * 4, ek + (context->nr - i) * 4);
+   }
 
    //Compute dk(n + 1)
    MOV128(dk + i * 4, ek + 0);

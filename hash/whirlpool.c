@@ -30,7 +30,7 @@
  * in length, and produces a message digest of 512 bits
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -167,7 +167,8 @@ const HashAlgo whirlpoolHashAlgo =
    (HashAlgoCompute) whirlpoolCompute,
    (HashAlgoInit) whirlpoolInit,
    (HashAlgoUpdate) whirlpoolUpdate,
-   (HashAlgoFinal) whirlpoolFinal
+   (HashAlgoFinal) whirlpoolFinal,
+   NULL
 };
 
 
@@ -212,7 +213,9 @@ void whirlpoolInit(WhirlpoolContext *context)
 
    //Set initial hash value
    for(i = 0; i < 8; i++)
+   {
       context->h[i] = 0;
+   }
 
    //Number of bytes in the buffer
    context->size = 0;
@@ -296,7 +299,9 @@ void whirlpoolFinal(WhirlpoolContext *context, uint8_t *digest)
 
    //Convert from host byte order to big-endian byte order
    for(i = 0; i < 8; i++)
+   {
       context->h[i] = htobe64(context->h[i]);
+   }
 
    //Copy the resulting digest
    if(digest != NULL)
@@ -320,7 +325,9 @@ void whirlpoolProcessBlock(WhirlpoolContext *context)
 
    //Convert from big-endian byte order to host byte order
    for(i = 0; i < 8; i++)
+   {
       x[i] = betoh64(x[i]);
+   }
 
    k[0] = context->h[0];
    k[1] = context->h[1];

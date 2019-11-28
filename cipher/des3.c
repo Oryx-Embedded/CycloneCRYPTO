@@ -30,7 +30,7 @@
  * of 64 bits under control of a 192-bit key. Refer to FIPS 46-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -69,6 +69,10 @@ const CipherAlgo des3CipherAlgo =
 
 error_t des3Init(Des3Context *context, const uint8_t *key, size_t keyLen)
 {
+   //Check parameters
+   if(context == NULL || key == NULL)
+      return ERROR_INVALID_PARAMETER;
+
    //Check key length
    if(keyLen == 8)
    {

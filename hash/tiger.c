@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -370,7 +370,8 @@ const HashAlgo tigerHashAlgo =
    (HashAlgoCompute) tigerCompute,
    (HashAlgoInit) tigerInit,
    (HashAlgoUpdate) tigerUpdate,
-   (HashAlgoFinal) tigerFinal
+   (HashAlgoFinal) tigerFinal,
+   NULL
 };
 
 
@@ -495,7 +496,9 @@ void tigerFinal(TigerContext *context, uint8_t *digest)
 
    //Convert from host byte order to little-endian byte order
    for(i = 0; i < 3; i++)
+   {
       context->h[i] = htole64(context->h[i]);
+   }
 
    //Copy the resulting digest
    if(digest != NULL)
@@ -522,7 +525,9 @@ void tigerProcessBlock(TigerContext *context)
 
    //Convert from little-endian byte order to host byte order
    for(i = 0; i < 8; i++)
+   {
       x[i] = letoh64(x[i]);
+   }
 
    //The computation consists of three passes
    ROUND(a, b, c, x[0], 5);

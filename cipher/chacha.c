@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -71,6 +71,10 @@ error_t chachaInit(ChachaContext *context, uint_t nr, const uint8_t *key,
    size_t keyLen, const uint8_t *nonce, size_t nonceLen)
 {
    uint32_t *w;
+
+   //Check parameters
+   if(context == NULL || key == NULL || nonce == NULL)
+      return ERROR_INVALID_PARAMETER;
 
    //The number of rounds must be 8, 12 or 20
    if(nr != 8 && nr != 12 && nr != 20)

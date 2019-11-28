@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _BASE64URL_H
@@ -36,7 +36,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 //Base64url encoding related functions
@@ -48,7 +48,7 @@ error_t base64urlDecode(const char_t *input, size_t inputLen, void *output,
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

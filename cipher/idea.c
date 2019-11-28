@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -63,17 +63,22 @@ const CipherAlgo ideaCipherAlgo =
 
 static uint16_t ideaMul(uint16_t a, uint16_t b)
 {
-   uint32_t c = a * b;
+   uint32_t c;
 
-   if(c)
+   //Perform multiplication modulo 2^16 - 1
+   c = a * b;
+
+   if(c != 0)
    {
-      c = (ROL32(c, 16) - c) >> 16;
-      return (c + 1) & 0xFFFF;
+      c = ((ROL32(c, 16) - c) >> 16) + 1;
    }
    else
    {
-      return (1 - a - b) & 0xFFFF;
+      c = 1 - a - b;
    }
+
+   //Return the result
+   return c & 0xFFFF;
 }
 
 
@@ -92,6 +97,7 @@ static uint16_t ideaInv(uint16_t a)
    int32_t u;
    int32_t v;
 
+   //Compute the multiplicative inverse modulo 2^16 - 1
    b = 0x10001;
    u = 0;
    v = 1;
@@ -110,8 +116,11 @@ static uint16_t ideaInv(uint16_t a)
    }
 
    if(u < 0)
+   {
       u += 0x10001;
+   }
 
+   //Return the result
    return u;
 }
 
@@ -130,6 +139,10 @@ error_t ideaInit(IdeaContext *context, const uint8_t *key, size_t keyLen)
    uint16_t *ek;
    uint16_t *dk;
 
+   //Check parameters
+   if(context == NULL || key == NULL)
+      return ERROR_INVALID_PARAMETER;
+
    //Invalid key length?
    if(keyLen != 16)
       return ERROR_INVALID_KEY_LENGTH;
@@ -140,17 +153,25 @@ error_t ideaInit(IdeaContext *context, const uint8_t *key, size_t keyLen)
 
    //First, the 128-bit key is partitioned into eight 16-bit sub-blocks
    for(i = 0; i < 8; i++)
+   {
       ek[i] = LOAD16BE(key + i * 2);
+   }
 
    //Expand encryption subkeys
    for(i = 8; i < 52; i++)
    {
       if((i % 8) == 6)
+      {
          ek[i] = (ek[i - 7] << 9) | (ek[i - 14] >> 7);
+      }
       else if((i % 8) == 7)
+      {
          ek[i] = (ek[i - 15] << 9) | (ek[i - 14] >> 7);
+      }
       else
+      {
          ek[i] = (ek[i - 7] << 9) | (ek[i - 6] >> 7);
+      }
    }
 
    //Generate subkeys for decryption

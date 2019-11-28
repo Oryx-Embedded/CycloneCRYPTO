@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -80,7 +80,8 @@ const HashAlgo ripemd128HashAlgo =
    (HashAlgoCompute) ripemd128Compute,
    (HashAlgoInit) ripemd128Init,
    (HashAlgoUpdate) ripemd128Update,
-   (HashAlgoFinal) ripemd128Final
+   (HashAlgoFinal) ripemd128Final,
+   NULL
 };
 
 
@@ -207,7 +208,9 @@ void ripemd128Final(Ripemd128Context *context, uint8_t *digest)
 
    //Convert from host byte order to little-endian byte order
    for(i = 0; i < 4; i++)
+   {
       context->h[i] = htole32(context->h[i]);
+   }
 
    //Copy the resulting digest
    if(digest != NULL)
@@ -239,7 +242,9 @@ void ripemd128ProcessBlock(Ripemd128Context *context)
 
    //Convert from little-endian byte order to host byte order
    for(i = 0; i < 16; i++)
+   {
       x[i] = letoh32(x[i]);
+   }
 
    //Round 1
    FF(aa, bb, cc, dd, x[0],  11);

@@ -29,7 +29,7 @@
  * RC6 is a symmetric key block cipher derived from RC5
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -79,6 +79,10 @@ error_t rc6Init(Rc6Context *context, const uint8_t *key, size_t keyLen)
    uint32_t a;
    uint32_t b;
 
+   //Check parameters
+   if(context == NULL || key == NULL)
+      return ERROR_INVALID_PARAMETER;
+
    //Invalid key length?
    if(keyLen > RC6_MAX_KEY_SIZE)
       return ERROR_INVALID_KEY_LENGTH;
@@ -95,7 +99,9 @@ error_t rc6Init(Rc6Context *context, const uint8_t *key, size_t keyLen)
 
    //Initialize array S to a particular fixed pseudo random bit pattern
    for(i = 1; i < (2 * RC6_NB_ROUNDS + 4); i++)
+   {
       context->s[i] = context->s[i - 1] + Q32;
+   }
 
    //Initialize variables
    i = 0;

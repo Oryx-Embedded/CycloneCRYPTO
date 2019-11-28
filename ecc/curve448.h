@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _CURVE448_H
@@ -44,7 +44,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 //Curve448 related functions
@@ -75,7 +75,7 @@ void curve448Export(uint32_t *a, uint8_t *data);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

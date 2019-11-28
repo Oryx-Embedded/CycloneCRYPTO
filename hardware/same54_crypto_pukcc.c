@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -563,6 +563,124 @@ error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
 
 
 /**
+ * @brief Test whether a number is probable prime
+ * @param[in] a Pointer to a multiple precision integer
+ * @return Error code
+ **/
+
+error_t mpiCheckProbablePrime(const Mpi *a)
+{
+   error_t error;
+   uint_t k;
+   size_t n;
+   uint8_t *pos;
+   PukccPrimeGenParams params;
+
+   //Retrieve the length of the input integer, in bits
+   n = mpiGetBitLength(a);
+
+   //Prime numbers of a size lower than 96 bits cannot be tested by this
+   //service
+   if(n < 96)
+      return ERROR_INVALID_LENGTH;
+
+   //The number of repetitions controls the error probability
+   if(n >= 1300)
+      k = 2;
+   else if(n >= 850)
+      k = 3;
+   else if(n >= 650)
+      k = 4;
+   else if(n >= 550)
+      k = 5;
+   else if(n >= 450)
+      k = 6;
+   else if(n >= 400)
+      k = 7;
+   else if(n >= 350)
+      k = 8;
+   else if(n >= 300)
+      k = 9;
+   else if(n >= 250)
+      k = 12;
+   else if(n >= 200)
+      k = 15;
+   else if(n >= 150)
+      k = 18;
+   else
+      k = 27;
+
+   //Retrieve the length of the input integer, in bytes
+   n = mpiGetByteLength(a);
+   n = (n + 3U) & ~3U;
+
+   //Acquire exclusive access to the PUKCC accelerator
+   osAcquireMutex(&same54CryptoMutex);
+
+   //Point to the crypto memory
+   pos = (uint8_t *) PUKCC_CRYPTO_RAM_BASE;
+
+   //One additional word is used on the LSB side of the NBase parameter. As
+   //a consequence, the parameter nu1NBase must never be at the beginning of
+   //the crypto RAM, but at least at one word from the beginning
+   pukccWorkspace(&pos, 4);
+
+   //Copy the number to test
+   params.n = pukccImportMpi(&pos, a, n + 4);
+   //Cns is used as a workspace
+   params.cns = pukccWorkspace(&pos, n + 12);
+   //Rnd is used as a workspace
+   params.rnd = pukccWorkspace(&pos, MAX(n + 16, 64));
+   //Precomp is used as a precomputation workspace
+   params.w = pukccWorkspace(&pos, MAX(3 * (n + 4), n + 72) + 8);
+   //Exp is used as a workspace
+   params.exp = pukccWorkspace(&pos, n + 4);
+
+   //Unused parameter
+   params.r = 0;
+
+   //Set PrimeGen service parameters
+   PUKCL(u2Option) = PUKCL_PRIMEGEN_TEST | PUKCL_EXPMOD_FASTRSA |
+      PUKCL_EXPMOD_WINDOWSIZE_1;
+   PUKCL_PrimeGen(u2NLength) = n;
+   PUKCL_PrimeGen(nu1NBase) = PUKCC_FAR_TO_NEAR(params.n);
+   PUKCL_PrimeGen(nu1CnsBase) = PUKCC_FAR_TO_NEAR(params.cns);
+   PUKCL_PrimeGen(nu1RndBase) = PUKCC_FAR_TO_NEAR(params.rnd);
+   PUKCL_PrimeGen(nu1PrecompBase) = PUKCC_FAR_TO_NEAR(params.w);
+   PUKCL_PrimeGen(nu1RBase) = PUKCC_FAR_TO_NEAR(params.r);
+   PUKCL_PrimeGen(nu1ExpBase) = PUKCC_FAR_TO_NEAR(params.exp);
+   PUKCL_PrimeGen(u1MillerRabinIterations) = k;
+   PUKCL_PrimeGen(u2MaxIncrement) = 1;
+
+   //Perform probable prime testing
+   vPUKCL_Process(PrimeGen, pvPUKCLParam);
+
+   //Check status code
+   switch(PUKCL(u2Status))
+   {
+   case PUKCL_NUMBER_IS_PRIME:
+      //The number is probably prime
+      error = NO_ERROR;
+      break;
+   case PUKCL_NUMBER_IS_NOT_PRIME:
+      //The number is not prime
+      error = ERROR_INVALID_VALUE;
+      break;
+   default:
+      //Report an error
+      error = ERROR_FAILURE;
+      break;
+   }
+
+   //Release exclusive access to the PUKCC accelerator
+   osReleaseMutex(&same54CryptoMutex);
+
+   //Return error code
+   return error;
+}
+
+
+/**
  * @brief RSA decryption primitive
  * @param[in] key RSA private key
  * @param[in] c Ciphertext representative
@@ -1014,9 +1132,9 @@ error_t ecMult(const EcDomainParameters *ecParams, EcPoint *r, const Mpi *d,
 
 /**
  * @brief ECDSA signature generation
- * @param[in] ecParams EC domain parameters
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
+ * @param[in] ecParams EC domain parameters
  * @param[in] privateKey Signer's ECDSA private key
  * @param[in] digest Digest of the message to be signed
  * @param[in] digestLen Length in octets of the digest
@@ -1024,8 +1142,8 @@ error_t ecMult(const EcDomainParameters *ecParams, EcPoint *r, const Mpi *d,
  * @return Error code
  **/
 
-error_t ecdsaGenerateSignature(const EcDomainParameters *ecParams,
-   const PrngAlgo *prngAlgo, void *prngContext, const Mpi *privateKey,
+error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
+   const EcDomainParameters *params, const Mpi *privateKey,
    const uint8_t *digest, size_t digestLen, EcdsaSignature *signature)
 {
    error_t error;

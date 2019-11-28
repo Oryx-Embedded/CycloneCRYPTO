@@ -30,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1321
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -221,7 +221,9 @@ void md5Final(Md5Context *context, uint8_t *digest)
 
    //Convert from host byte order to little-endian byte order
    for(i = 0; i < 4; i++)
+   {
       context->h[i] = htole32(context->h[i]);
+   }
 
    //Copy the resulting digest
    if(digest != NULL)
@@ -241,14 +243,18 @@ void md5FinalRaw(Md5Context *context, uint8_t *digest)
 
    //Convert from host byte order to little-endian byte order
    for(i = 0; i < 4; i++)
+   {
       context->h[i] = htole32(context->h[i]);
+   }
 
    //Copy the resulting digest
    cryptoMemcpy(digest, context->digest, MD5_DIGEST_SIZE);
 
    //Convert from little-endian byte order to host byte order
    for(i = 0; i < 4; i++)
+   {
       context->h[i] = letoh32(context->h[i]);
+   }
 }
 
 
@@ -272,7 +278,9 @@ void md5ProcessBlock(Md5Context *context)
 
    //Convert from little-endian byte order to host byte order
    for(i = 0; i < 16; i++)
+   {
       x[i] = letoh32(x[i]);
+   }
 
    //Round 1
    FF(a, b, c, d, x[0],  7,  k[0]);

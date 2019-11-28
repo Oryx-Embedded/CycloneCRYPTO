@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -379,17 +379,16 @@ error_t ecdsaReadSignature(const uint8_t *data, size_t length,
 
 /**
  * @brief ECDSA key pair generation
- * @param[in] params EC domain parameters
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[out] privateKey ECDSA private key
- * @param[out] publicKey ECDSA public key
+ * @param[in] params EC domain parameters
+ * @param[out] privateKey EC private key
+ * @param[out] publicKey EC public key
  * @return Error code
  **/
 
-error_t ecdsaGenerateKeyPair(const EcDomainParameters *params,
-   const PrngAlgo *prngAlgo, void *prngContext, Mpi *privateKey,
-   EcPoint *publicKey)
+error_t ecdsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
+   const EcDomainParameters *params, Mpi *privateKey, EcPoint *publicKey)
 {
    error_t error;
    uint_t n;
@@ -409,7 +408,9 @@ error_t ecdsaGenerateKeyPair(const EcDomainParameters *params,
 
    //Make sure that 0 < d < q
    if(mpiComp(privateKey, &params->q) >= 0)
-      mpiShiftRight(privateKey, 1);
+   {
+      EC_CHECK(mpiShiftRight(privateKey, 1));
+   }
 
    //Debug message
    TRACE_DEBUG("  Private key:\r\n");
@@ -433,18 +434,18 @@ end:
 
 /**
  * @brief ECDSA signature generation
- * @param[in] params EC domain parameters
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] privateKey Signer's ECDSA private key
+ * @param[in] params EC domain parameters
+ * @param[in] privateKey Signer's EC private key
  * @param[in] digest Digest of the message to be signed
  * @param[in] digestLen Length in octets of the digest
  * @param[out] signature (R, S) integer pair
  * @return Error code
  **/
 
-__weak error_t ecdsaGenerateSignature(const EcDomainParameters *params,
-   const PrngAlgo *prngAlgo, void *prngContext, const Mpi *privateKey,
+__weak error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo,
+   void *prngContext, const EcDomainParameters *params, const Mpi *privateKey,
    const uint8_t *digest, size_t digestLen, EcdsaSignature *signature)
 {
    error_t error;
@@ -551,7 +552,7 @@ end:
 /**
  * @brief ECDSA signature verification
  * @param[in] params EC domain parameters
- * @param[in] publicKey Signer's ECDSA public key
+ * @param[in] publicKey Signer's EC public key
  * @param[in] digest Digest of the message whose signature is to be verified
  * @param[in] digestLen Length in octets of the digest
  * @param[in] signature (R, S) integer pair

@@ -31,7 +31,7 @@
  * lengths of 128, 192, and 256 bits. Refer to FIPS 197 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -204,6 +204,10 @@ error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
    uint_t i;
    uint32_t temp;
    size_t keyScheduleSize;
+
+   //Check parameters
+   if(context == NULL || key == NULL)
+      return ERROR_INVALID_PARAMETER;
 
    //Check the length of the key
    if(keyLen == 16)

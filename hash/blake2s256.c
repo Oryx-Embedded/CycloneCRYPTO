@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -55,7 +55,8 @@ const HashAlgo blake2s256HashAlgo =
    (HashAlgoCompute) blake2s256Compute,
    (HashAlgoInit) blake2s256Init,
    (HashAlgoUpdate) blake2s256Update,
-   (HashAlgoFinal) blake2s256Final
+   (HashAlgoFinal) blake2s256Final,
+   NULL
 };
 
 

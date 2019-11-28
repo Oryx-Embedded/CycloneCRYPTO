@@ -30,7 +30,7 @@
  * 64 bits under control of a 64-bit key. Refer to FIPS 46-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -274,7 +274,11 @@ error_t desInit(DesContext *context, const uint8_t *key, size_t keyLen)
    uint32_t c;
    uint32_t d;
 
-   //Check key length
+   //Check parameters
+   if(context == NULL || key == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Invalid key length?
    if(keyLen != 8)
       return ERROR_INVALID_KEY_LENGTH;
 

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -186,6 +186,7 @@ error_t base64urlDecode(const char_t *input, size_t inputLen, void *output,
 {
    error_t error;
    uint32_t value;
+   uint_t c;
    size_t i;
    size_t n;
    uint8_t *p;
@@ -207,22 +208,20 @@ error_t base64urlDecode(const char_t *input, size_t inputLen, void *output,
    p = (uint8_t *) output;
 
    //Initialize variables
-   value = 0;
    n = 0;
+   value = 0;
 
    //Process the Base64url-encoded string
    for(i = 0; i < inputLen && !error; i++)
    {
+      //Get current character
+      c = (uint_t) input[i];
+
       //Check the value of the current character
-      if(input[i] > 127 || base64urlDecTable[input[i]] > 63)
-      {
-         //The current character does not belong to the Base64url character set
-         error = ERROR_INVALID_CHARACTER;
-      }
-      else
+      if(c < 128 && base64urlDecTable[c] < 64)
       {
          //Decode the current character
-         value = (value << 6) | base64urlDecTable[input[i]];
+         value = (value << 6) | base64urlDecTable[c];
 
          //Divide the input stream into blocks of 4 characters
          if((i % 4) == 3)
@@ -232,7 +231,7 @@ error_t base64urlDecode(const char_t *input, size_t inputLen, void *output,
             {
                p[n] = (value >> 16) & 0xFF;
                p[n + 1] = (value >> 8) & 0xFF;
-               p[n + 2] = value  & 0xFF;
+               p[n + 2] = value & 0xFF;
             }
 
             //Adjust the length of the decoded data
@@ -240,6 +239,12 @@ error_t base64urlDecode(const char_t *input, size_t inputLen, void *output,
             //Decode next block
             value = 0;
          }
+      }
+      else
+      {
+         //Implementations must reject the encoded data if it contains
+         //characters outside the base alphabet
+         error = ERROR_INVALID_CHARACTER;
       }
    }
 

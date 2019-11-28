@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _CHACHA20_POLY1305_H
@@ -36,7 +36,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 //ChaCha20Poly1305 related functions
@@ -50,7 +50,7 @@ error_t chacha20Poly1305Decrypt(const uint8_t *k, size_t kLen,
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

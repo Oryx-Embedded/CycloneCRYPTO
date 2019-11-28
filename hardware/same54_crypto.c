@@ -25,13 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
+#include "same54.h"
 #include "pukcc/CryptoLib_typedef_pb.h"
 #include "pukcc/CryptoLib_Headers_pb.h"
 #include "core/crypto.h"
@@ -58,6 +59,11 @@ error_t same54CryptoInit(void)
       //Failed to create mutex
       return ERROR_OUT_OF_RESOURCES;
    }
+
+   //Enable TRNG peripheral clock
+   MCLK->APBCMASK.reg |= MCLK_APBCMASK_TRNG;
+   //Enable TRNG
+   TRNG->CTRLA.reg |= TRNG_CTRLA_ENABLE;
 
    //Initialize public key accelerator
    error = pukccInit();

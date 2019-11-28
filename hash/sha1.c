@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -215,7 +215,9 @@ void sha1Final(Sha1Context *context, uint8_t *digest)
 
    //Convert from host byte order to big-endian byte order
    for(i = 0; i < 5; i++)
+   {
       context->h[i] = htobe32(context->h[i]);
+   }
 
    //Copy the resulting digest
    if(digest != NULL)
@@ -235,14 +237,18 @@ void sha1FinalRaw(Sha1Context *context, uint8_t *digest)
 
    //Convert from host byte order to big-endian byte order
    for(i = 0; i < 5; i++)
+   {
       context->h[i] = htobe32(context->h[i]);
+   }
 
    //Copy the resulting digest
    cryptoMemcpy(digest, context->digest, SHA1_DIGEST_SIZE);
 
    //Convert from big-endian byte order to host byte order
    for(i = 0; i < 5; i++)
+   {
       context->h[i] = betoh32(context->h[i]);
+   }
 }
 
 
@@ -268,7 +274,9 @@ void sha1ProcessBlock(Sha1Context *context)
 
    //Convert from big-endian byte order to host byte order
    for(t = 0; t < 16; t++)
+   {
       w[t] = betoh32(w[t]);
+   }
 
    //SHA-1 hash computation (alternate method)
    for(t = 0; t < 80; t++)

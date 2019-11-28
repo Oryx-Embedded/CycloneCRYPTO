@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _X509_COMMON_H
@@ -36,6 +36,7 @@
 #include "pkc/rsa.h"
 #include "pkc/dsa.h"
 #include "ecc/ecdsa.h"
+#include "ecc/eddsa.h"
 #include "date_time.h"
 
 //RSA certificate support
@@ -332,6 +333,13 @@
    #error X509_MAX_DSA_MODULUS_SIZE parameter is not valid
 #endif
 
+//Default size of serial numbers
+#ifndef X509_SERIAL_NUMBER_SIZE
+   #define X509_SERIAL_NUMBER_SIZE 20
+#elif (X509_SERIAL_NUMBER_SIZE < 1)
+   #error X509_SERIAL_NUMBER_SIZE parameter is not valid
+#endif
+
 //Maximum number of subject alternative names
 #ifndef X509_MAX_SUBJECT_ALT_NAMES
    #define X509_MAX_SUBJECT_ALT_NAMES 4
@@ -339,9 +347,39 @@
    #error X509_MAX_SUBJECT_ALT_NAMES parameter is not valid
 #endif
 
+//Maximum number of certificate issuer names
+#ifndef X509_MAX_CERT_ISSUER_NAMES
+   #define X509_MAX_CERT_ISSUER_NAMES 4
+#elif (X509_MAX_CERT_ISSUER_NAMES < 1)
+   #error X509_MAX_CERT_ISSUER_NAMES parameter is not valid
+#endif
+
+//Maximum digest size
+#if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
+   #define X509_MAX_HASH_DIGEST_SIZE 64
+#elif (X509_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
+   #define X509_MAX_HASH_DIGEST_SIZE 64
+#elif (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
+   #define X509_MAX_HASH_DIGEST_SIZE 48
+#elif (X509_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
+   #define X509_MAX_HASH_DIGEST_SIZE 48
+#elif (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
+   #define X509_MAX_HASH_DIGEST_SIZE 32
+#elif (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
+   #define X509_MAX_HASH_DIGEST_SIZE 32
+#elif (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
+   #define X509_MAX_HASH_DIGEST_SIZE 28
+#elif (X509_SHA224_SUPPORT == ENABLED && SHA224_SUPPORT == ENABLED)
+   #define X509_MAX_HASH_DIGEST_SIZE 28
+#elif (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
+   #define X509_MAX_HASH_DIGEST_SIZE 20
+#elif (X509_MD5_SUPPORT == ENABLED && MD5_SUPPORT == ENABLED)
+   #define X509_MAX_HASH_DIGEST_SIZE 16
+#endif
+
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -372,7 +410,7 @@ typedef enum
    X509_KEY_USAGE_CRL_SIGN          = 0x0040,
    X509_KEY_USAGE_ENCIPHER_ONLY     = 0x0080,
    X509_KEY_USAGE_DECIPHER_ONLY     = 0x0100
-} X509KeyUsage;
+} X509KeyUsageBitmap;
 
 
 /**
@@ -388,7 +426,7 @@ typedef enum
    X509_EXT_KEY_USAGE_TIME_STAMPING    = 0x10,
    X509_EXT_KEY_USAGE_OCSP_SIGNING     = 0x20,
    X509_EXT_KEY_USAGE_ANY              = 0x3F
-} X509ExtKeyUsage;
+} X509ExtKeyUsageBitmap;
 
 
 /**
@@ -418,7 +456,62 @@ typedef enum
    X509_NS_CERT_TYPE_SSL_CLIENT = 0x01,
    X509_NS_CERT_TYPE_SSL_SERVER = 0x02,
    X509_NS_CERT_TYPE_SSL_CA     = 0x20
-} X509NsCertType;
+} X509NsCertTypeBitmap;
+
+
+/**
+ * @brief Reason flags
+ **/
+
+typedef enum
+{
+   X509_REASON_FLAGS_UNUSED                 = 0x0001,
+   X509_REASON_FLAGS_KEY_COMPROMISE         = 0x0002,
+   X509_REASON_FLAGS_CA_COMPROMISE          = 0x0004,
+   X509_REASON_FLAGS_AFFILIATION_CHANGED    = 0x0008,
+   X509_REASON_FLAGS_SUPERSEDED             = 0x0010,
+   X509_REASON_FLAGS_CESSATION_OF_OPERATION = 0x0020,
+   X509_REASON_FLAGS_CERTIFICATE_HOLD       = 0x0040,
+   X509_REASON_FLAGS_PRIVILEGE_WITHDRAWN    = 0x0080,
+   X509_REASON_FLAGS_AA_COMPROMISE          = 0x0100
+} X509ReasonFlags;
+
+
+/**
+ * @brief CRL reasons
+ **/
+
+typedef enum
+{
+   X509_CRL_REASON_UNSPECIFIED            = 0,
+   X509_CRL_REASON_KEY_COMPROMISE         = 1,
+   X509_CRL_REASON_CA_COMPROMISE          = 2,
+   X509_CRL_REASON_AFFILIATION_CHANGED    = 3,
+   X509_CRL_REASON_SUPERSEDED             = 4,
+   X509_CRL_REASON_CESSATION_OF_OPERATION = 5,
+   X509_CRL_REASON_CERTIFICATE_HOLD       = 6,
+   X509_CRL_REMOVE_FROM_CRL               = 8,
+   X509_CRL_REASON_PRIVILEGE_WITHDRAWN    = 9,
+   X509_CRL_REASON_AA_COMPROMISE          = 10
+} X509CrlReasons;
+
+
+/**
+ * @brief Public Key types
+ **/
+
+typedef enum
+{
+   X509_KEY_TYPE_UNKNOWN = 0,
+   X509_KEY_TYPE_RSA     = 1,
+   X509_KEY_TYPE_RSA_PSS = 2,
+   X509_KEY_TYPE_DSA     = 3,
+   X509_KEY_TYPE_EC      = 4,
+   X509_KEY_TYPE_X25519  = 5,
+   X509_KEY_TYPE_ED25519 = 6,
+   X509_KEY_TYPE_X448    = 7,
+   X509_KEY_TYPE_ED448   = 8
+} X509KeyType;
 
 
 /**
@@ -595,7 +688,7 @@ typedef struct
 
 
 /**
- * @brief Subject public key info
+ * @brief Subject public key information
  **/
 
 typedef struct
@@ -604,14 +697,14 @@ typedef struct
    size_t rawDataLen;
    const uint8_t *oid;
    size_t oidLen;
-#if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
+#if (RSA_SUPPORT == ENABLED)
    X509RsaPublicKey rsaPublicKey;
 #endif
-#if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
+#if (DSA_SUPPORT == ENABLED)
    X509DsaParameters dsaParams;
    X509DsaPublicKey dsaPublicKey;
 #endif
-#if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
+#if (EC_SUPPORT == ENABLED || ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
    X509EcParameters ecParams;
    X509EcPublicKey ecPublicKey;
 #endif
@@ -624,6 +717,7 @@ typedef struct
 
 typedef struct
 {
+   bool_t critical;
    bool_t cA;
    int_t pathLenConstraint;
 } X509BasicConstraints;
@@ -635,11 +729,34 @@ typedef struct
 
 typedef struct
 {
+   bool_t critical;
    const uint8_t *permittedSubtrees;
    size_t permittedSubtreesLen;
    const uint8_t *excludedSubtrees;
    size_t excludedSubtreesLen;
 } X509NameConstraints;
+
+
+/**
+ * @brief Key usage
+ **/
+
+typedef struct
+{
+   bool_t critical;
+   uint16_t bitmap;
+} X509KeyUsage;
+
+
+/**
+ * @brief Extended key usage
+ **/
+
+typedef struct
+{
+   bool_t critical;
+   uint8_t bitmap;
+} X509ExtendedKeyUsage;
 
 
 /**
@@ -660,6 +777,7 @@ typedef struct
 
 typedef struct
 {
+   bool_t critical;
    const uint8_t *rawData;
    size_t rawDataLen;
    uint_t numGeneralNames;
@@ -673,6 +791,7 @@ typedef struct
 
 typedef struct
 {
+   bool_t critical;
    const uint8_t *value;
    size_t length;
 } X509SubjectKeyId;
@@ -684,9 +803,21 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *value;
-   size_t length;
+   bool_t critical;
+   const uint8_t *keyId;
+   size_t keyIdLen;
 } X509AuthorityKeyId;
+
+
+/**
+ * @brief Netscape certificate type
+ **/
+
+typedef struct
+{
+   bool_t critical;
+   uint8_t bitmap;
+} X509NsCertType;
 
 
 /**
@@ -713,12 +844,12 @@ typedef struct
    size_t rawDataLen;
    X509BasicConstraints basicConstraints;
    X509NameConstraints nameConstraints;
-   uint16_t keyUsage;
-   uint8_t extKeyUsage;
+   X509KeyUsage keyUsage;
+   X509ExtendedKeyUsage extKeyUsage;
    X509SubjectAltName subjectAltName;
    X509SubjectKeyId subjectKeyId;
-   X509AuthorityKeyId authorityKeyId;
-   uint8_t nsCertType;
+   X509AuthorityKeyId authKeyId;
+   X509NsCertType nsCertType;
 } X509Extensions;
 
 
@@ -730,6 +861,10 @@ typedef struct
 {
    const uint8_t *hashAlgo;
    size_t hashAlgoLen;
+   const uint8_t *maskGenAlgo;
+   size_t maskGenAlgoLen;
+   const uint8_t *maskGenHashAlgo;
+   size_t maskGenHashAlgoLen;
    size_t saltLen;
 } X509RsaPssParameters;
 
@@ -760,23 +895,84 @@ typedef struct
 
 
 /**
- * @brief X.509 certificate
+ * @brief TBSCertificate structure
  **/
 
 typedef struct
 {
-   const uint8_t *tbsCertificate;
-   size_t tbsCertificateLen;
+   const uint8_t *rawData;
+   size_t rawDataLen;
    X509Version version;
    X509SerialNumber serialNumber;
+   X509SignatureAlgoId signatureAlgo;
    X509Name issuer;
    X509Validity validity;
    X509Name subject;
    X509SubjectPublicKeyInfo subjectPublicKeyInfo;
    X509Extensions extensions;
+} X509TbsCertificate;
+
+
+/**
+ * @brief X.509 certificate
+ **/
+
+typedef struct
+{
+   X509TbsCertificate tbsCert;
    X509SignatureAlgoId signatureAlgo;
    X509SignatureValue signatureValue;
 } X509CertificateInfo;
+
+
+/**
+ * @brief CRL reason
+ **/
+
+typedef struct
+{
+   bool_t critical;
+   uint8_t value;
+} X509CrlReason;
+
+
+/**
+ * @brief Invalidity date
+ **/
+
+typedef struct
+{
+   bool_t critical;
+   DateTime value;
+} X509InvalidityDate;
+
+
+/**
+ * @brief Certificate issuer
+ **/
+
+typedef struct
+{
+   bool_t critical;
+   const uint8_t *rawData;
+   size_t rawDataLen;
+   uint_t numGeneralNames;
+   X509GeneralName generalNames[X509_MAX_CERT_ISSUER_NAMES];
+} X509CertificateIssuer;
+
+
+/**
+ * @brief CRL extensions
+ **/
+
+typedef struct
+{
+   const uint8_t *rawData;
+   size_t rawDataLen;
+   X509CrlReason reasonCode;
+   X509InvalidityDate invalidityDate;
+   X509CertificateIssuer certIssuer;
+} X509CrlEntryExtensions;
 
 
 /**
@@ -785,28 +981,174 @@ typedef struct
 
 typedef struct
 {
-   X509SerialNumber userCertificate;
+   X509SerialNumber userCert;
    DateTime revocationDate;
+   X509CrlEntryExtensions crlEntryExtensions;
 } X509RevokedCertificate;
 
 
 /**
- * @brief X.509 CRL
+ * @brief CRL number
  **/
 
 typedef struct
 {
-   const uint8_t *tbsCertList;
-   size_t tbsCertListLen;
+   bool_t critical;
+   const uint8_t *value;
+   size_t length;
+} X509CrlNumber;
+
+
+/**
+ * @brief Delta CRL indicator
+ **/
+
+typedef struct
+{
+   bool_t critical;
+   const uint8_t *baseCrlNumber;
+   size_t baseCrlNumberLen;
+} X509DeltaCrlIndicator;
+
+
+/**
+ * @brief Distribution point name
+ **/
+
+typedef struct
+{
+   bool_t critical;
+   const uint8_t *fullName;
+   size_t fullNameLen;
+   const uint8_t *nameRelativeToCrlIssuer;
+   size_t nameRelativeToCrlIssuerLen;
+} X509DistrPointName;
+
+
+/**
+ * @brief Issuing distribution point
+ **/
+
+typedef struct
+{
+   bool_t critical;
+   X509DistrPointName distributionPoint;
+   bool_t onlyContainsUserCerts;
+   bool_t onlyContainsCaCerts;
+   uint16_t onlySomeReasons;
+   bool_t indirectCrl;
+   bool_t onlyContainsAttributeCerts;
+} X509IssuingDistrPoint;
+
+
+/**
+ * @brief CRL extensions
+ **/
+
+typedef struct
+{
+   const uint8_t *rawData;
+   size_t rawDataLen;
+   X509CrlNumber crlNumber;
+   X509DeltaCrlIndicator deltaCrlIndicator;
+   X509IssuingDistrPoint issuingDistrPoint;
+   X509AuthorityKeyId authKeyId;
+} X509CrlExtensions;
+
+
+/**
+ * @brief TBSCertList structure
+ **/
+
+typedef struct
+{
+   const uint8_t *rawData;
+   size_t rawDataLen;
    X509Version version;
+   X509SignatureAlgoId signatureAlgo;
    X509Name issuer;
    DateTime thisUpdate;
    DateTime nextUpdate;
    const uint8_t *revokedCerts;
    size_t revokedCertsLen;
+   X509CrlExtensions crlExtensions;
+} X509TbsCertList;
+
+
+/**
+ * @brief CRL (Certificate Revocation List)
+ **/
+
+typedef struct
+{
+   X509TbsCertList tbsCertList;
    X509SignatureAlgoId signatureAlgo;
    X509SignatureValue signatureValue;
 } X509CrlInfo;
+
+
+/**
+ * @brief PKCS#9 ChallengePassword attribute
+ **/
+
+typedef struct
+{
+   const char_t *value;
+   size_t length;
+} X509ChallengePassword;
+
+
+/**
+ * @brief CSR attribute
+ **/
+
+typedef struct
+{
+   const uint8_t *oid;
+   size_t oidLen;
+   const uint8_t *value;
+   size_t valueLen;
+} X509Attribute;
+
+
+/**
+ * @brief CSR attributes
+ **/
+
+typedef struct
+{
+   const uint8_t *rawData;
+   size_t rawDataLen;
+   X509ChallengePassword challengePwd;
+   X509Extensions extensionReq;
+} X509Attributes;
+
+
+/**
+ * @brief CertificationRequestInfo structure
+ **/
+
+typedef struct
+{
+   const uint8_t *rawData;
+   size_t rawDataLen;
+   X509Version version;
+   X509Name subject;
+   X509SubjectPublicKeyInfo subjectPublicKeyInfo;
+   X509Attributes attributes;
+} X509CertRequestInfo;
+
+
+/**
+ * @brief CSR (Certificate Signing Request)
+ **/
+
+typedef struct
+{
+   X509CertRequestInfo certReqInfo;
+   X509SignatureAlgoId signatureAlgo;
+   X509SignatureValue signatureValue;
+} X509CsrInfo;
 
 
 //X.509 related constants
@@ -832,6 +1174,12 @@ extern const uint8_t X509_KEY_USAGE_OID[3];
 extern const uint8_t X509_SUBJECT_ALT_NAME_OID[3];
 extern const uint8_t X509_ISSUER_ALT_NAME_OID[3];
 extern const uint8_t X509_BASIC_CONSTRAINTS_OID[3];
+extern const uint8_t X509_CRL_NUMBER_OID[3];
+extern const uint8_t X509_REASON_CODE_OID[3];
+extern const uint8_t X509_INVALIDITY_DATE_OID[3];
+extern const uint8_t X509_DELTA_CRL_INDICATOR_OID[3];
+extern const uint8_t X509_ISSUING_DISTR_POINT_OID[3];
+extern const uint8_t X509_CERTIFICATE_ISSUER_OID[3];
 extern const uint8_t X509_NAME_CONSTRAINTS_OID[3];
 extern const uint8_t X509_CRL_DISTR_POINTS_OID[3];
 extern const uint8_t X509_CERTIFICATE_POLICIES_OID[3];
@@ -852,26 +1200,22 @@ extern const uint8_t X509_KP_EMAIL_PROTECTION_OID[8];
 extern const uint8_t X509_KP_TIME_STAMPING_OID[8];
 extern const uint8_t X509_KP_OCSP_SIGNING_OID[8];
 
+extern const uint8_t X509_CHALLENGE_PASSWORD_OID[9];
+extern const uint8_t X509_EXTENSION_REQUEST_OID[9];
+
 //X.509 related functions
-error_t x509ReadInt(const uint8_t *data, size_t length, uint_t *value);
-
-error_t x509ReadRsaPublicKey(const X509SubjectPublicKeyInfo *subjectPublicKeyInfo,
-   RsaPublicKey *key);
-
-error_t x509ReadDsaPublicKey(const X509SubjectPublicKeyInfo *subjectPublicKeyInfo,
-   DsaPublicKey *key);
-
 bool_t x509IsSignAlgoSupported(X509SignatureAlgo signAlgo);
 bool_t x509IsHashAlgoSupported(X509HashAlgo hashAlgo);
 
 error_t x509GetSignHashAlgo(const X509SignatureAlgoId *signAlgoId,
    X509SignatureAlgo *signAlgo, const HashAlgo **hashAlgo);
 
+X509KeyType x509GetPublicKeyType(const uint8_t *oid, size_t length);
 const EcCurveInfo *x509GetCurveInfo(const uint8_t *oid, size_t length);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

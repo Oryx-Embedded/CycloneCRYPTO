@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _ECDSA_H
@@ -37,7 +37,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -73,12 +73,11 @@ error_t ecdsaWriteSignature(const EcdsaSignature *signature, uint8_t *data,
 error_t ecdsaReadSignature(const uint8_t *data, size_t length,
    EcdsaSignature *signature);
 
-error_t ecdsaGenerateKeyPair(const EcDomainParameters *params,
-   const PrngAlgo *prngAlgo, void *prngContext, Mpi *privateKey,
-   EcPoint *publicKey);
+error_t ecdsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
+   const EcDomainParameters *params, Mpi *privateKey, EcPoint *publicKey);
 
-error_t ecdsaGenerateSignature(const EcDomainParameters *params,
-   const PrngAlgo *prngAlgo, void *prngContext, const Mpi *privateKey,
+error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
+   const EcDomainParameters *params, const Mpi *privateKey,
    const uint8_t *digest, size_t digestLen, EcdsaSignature *signature);
 
 error_t ecdsaVerifySignature(const EcDomainParameters *params,
@@ -87,7 +86,7 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

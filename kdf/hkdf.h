@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _HKDF_H
@@ -36,7 +36,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 //HKDF related functions
@@ -52,7 +52,7 @@ error_t hkdfExpand(const HashAlgo *hash, const uint8_t *prk, size_t prkLen,
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

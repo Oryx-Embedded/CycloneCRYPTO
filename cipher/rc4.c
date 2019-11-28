@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -67,13 +67,19 @@ error_t rc4Init(Rc4Context *context, const uint8_t *key, size_t length)
    uint_t j;
    uint8_t temp;
 
+   //Check parameters
+   if(context == NULL || key == NULL)
+      return ERROR_INVALID_PARAMETER;
+
    //Clear context
    context->i = 0;
    context->j = 0;
 
    //Initialize the S array with identity permutation
    for(i = 0; i < 256; i++)
+   {
       context->s[i] = i;
+   }
 
    //S is then processed for 256 iterations
    for(i = 0, j = 0; i < 256; i++)

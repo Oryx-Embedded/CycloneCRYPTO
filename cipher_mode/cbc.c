@@ -32,7 +32,7 @@
  * with the first plaintext block. Refer to SP 800-38A for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -68,7 +68,9 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
    {
       //XOR input block with IV contents
       for(i = 0; i < cipher->blockSize; i++)
+      {
          c[i] = p[i] ^ iv[i];
+      }
 
       //Encrypt the current block based upon the output
       //of the previous encryption
@@ -120,7 +122,9 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
 
       //XOR output block with IV contents
       for(i = 0; i < cipher->blockSize; i++)
+      {
          p[i] ^= iv[i];
+      }
 
       //Update IV with input block contents
       cryptoMemcpy(iv, t, cipher->blockSize);

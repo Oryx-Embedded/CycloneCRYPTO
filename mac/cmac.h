@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _CMAC_H
@@ -64,6 +64,11 @@
    #include "cipher/aes.h"
 #endif
 
+//Blowfish support?
+#if (BLOWFISH_SUPPORT == ENABLED)
+   #include "cipher/blowfish.h"
+#endif
+
 //Camellia support?
 #if (CAMELLIA_SUPPORT == ENABLED)
    #include "cipher/camellia.h"
@@ -86,7 +91,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -122,7 +127,7 @@ void cmacXorBlock(uint8_t *x, const uint8_t *a, const uint8_t *b, size_t n);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

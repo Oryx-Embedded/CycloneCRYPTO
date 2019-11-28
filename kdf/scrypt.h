@@ -1,6 +1,6 @@
 /**
- * @file x509_cert_validate.h
- * @brief X.509 certificate validation
+ * @file scrypt.h
+ * @brief scrypt PBKDF (Password-Based Key Derivation Function)
  *
  * @section License
  *
@@ -25,43 +25,31 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
-#ifndef _X509_CERT_VALIDATE_H
-#define _X509_CERT_VALIDATE_H
+#ifndef _SCRYPT_H
+#define _SCRYPT_H
 
 //Dependencies
 #include "core/crypto.h"
-#include "certificate/x509_common.h"
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
-//X.509 related functions
-error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
-   const X509CertificateInfo *issuerCertInfo, uint_t pathLen);
+//scrypt related functions
+error_t scrypt(const char_t *password, const uint8_t *salt, size_t saltLen,
+   uint_t n, uint_t r, uint_t p, uint8_t *dk, size_t dkLen);
 
-error_t x509CheckSubjectName(const X509CertificateInfo *certInfo,
-   const char_t *fqdn);
-
-error_t x509CheckNameConstraints(const char_t *subjectName,
-   const X509CertificateInfo *certInfo);
-
-bool_t x509CompareName(const uint8_t *name1, size_t nameLen1,
-   const uint8_t *name2, size_t nameLen2);
-
-bool_t x509CompareSubjectName(const char_t *subjectName,
-   size_t subjectNameLen, const char_t *fqdn);
-
-bool_t x509CompareSubtree(const char_t *subjectName,
-   const char_t *subtree, size_t subtreeLen);
+void scryptRoMix(uint_t r, uint8_t *b, uint_t n, uint8_t *v, uint8_t *y);
+void scryptBlockMix(uint_t r, uint8_t *b, uint8_t *y);
+void scryptXorBlock(uint8_t *x, const uint8_t *a, const uint8_t *b, size_t n);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif

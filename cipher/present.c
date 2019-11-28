@@ -29,7 +29,7 @@
  * PRESENT is an ultra-lightweight block cipher
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -204,6 +204,10 @@ error_t presentInit(PresentContext *context, const uint8_t *key, size_t keyLen)
    uint64_t t;
    uint64_t kl;
    uint64_t kh;
+
+   //Check parameters
+   if(context == NULL || key == NULL)
+      return ERROR_INVALID_PARAMETER;
 
    //Check key length
    if(keyLen != 10 && keyLen != 16)

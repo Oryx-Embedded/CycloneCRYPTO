@@ -30,7 +30,7 @@
  * blocks of 128 bits under control of a 128/192/256-bit secret key
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -305,6 +305,10 @@ error_t camelliaInit(CamelliaContext *context, const uint8_t *key, size_t keyLen
    uint32_t temp2;
    uint32_t *k;
    const CamelliaSubkey *p;
+
+   //Check parameters
+   if(context == NULL || key == NULL)
+      return ERROR_INVALID_PARAMETER;
 
    //Check the length of the key
    if(keyLen == 16)

@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -60,7 +60,8 @@ const HashAlgo sha512_256HashAlgo =
    (HashAlgoCompute) sha512_256Compute,
    (HashAlgoInit) sha512_256Init,
    (HashAlgoUpdate) sha512_256Update,
-   (HashAlgoFinal) sha512_256Final
+   (HashAlgoFinal) sha512_256Final,
+   NULL
 };
 
 

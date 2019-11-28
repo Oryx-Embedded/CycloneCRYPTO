@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -110,7 +110,8 @@ const HashAlgo sha512HashAlgo =
    (HashAlgoCompute) sha512Compute,
    (HashAlgoInit) sha512Init,
    (HashAlgoUpdate) sha512Update,
-   (HashAlgoFinal) sha512Final
+   (HashAlgoFinal) sha512Final,
+   NULL
 };
 
 
@@ -241,7 +242,9 @@ void sha512Final(Sha512Context *context, uint8_t *digest)
 
    //Convert from host byte order to big-endian byte order
    for(i = 0; i < 8; i++)
+   {
       context->h[i] = htobe64(context->h[i]);
+   }
 
    //Copy the resulting digest
    if(digest != NULL)
@@ -275,7 +278,9 @@ void sha512ProcessBlock(Sha512Context *context)
 
    //Convert from big-endian byte order to host byte order
    for(t = 0; t < 16; t++)
+   {
       w[t] = betoh64(w[t]);
+   }
 
    //SHA-512 hash computation (alternate method)
    for(t = 0; t < 80; t++)

@@ -29,7 +29,7 @@
  * SEED is a 128-bit symmetric key block cipher. Refer to RFC 4269
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -246,6 +246,10 @@ error_t seedInit(SeedContext *context, const uint8_t *key, size_t keyLen)
    uint32_t key1;
    uint32_t key2;
    uint32_t key3;
+
+   //Check parameters
+   if(context == NULL || key == NULL)
+      return ERROR_INVALID_PARAMETER;
 
    //Invalid key length?
    if(keyLen != 16)

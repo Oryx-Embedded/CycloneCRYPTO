@@ -34,7 +34,7 @@
  * unpredictable. Refer to SP 800-38A for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 //Switch to the appropriate trace level
@@ -90,7 +90,9 @@ error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
 
       //Compute C(j) = P(j) XOR MSB(O(j))
       for(i = 0; i < n; i++)
+      {
          c[i] = p[i] ^ o[i];
+      }
 
       //Compute I(j+1) = LSB(I(j)) | C(j)
       cryptoMemmove(iv, iv + s, cipher->blockSize - s);
@@ -152,7 +154,9 @@ error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
 
       //Compute P(j) = C(j) XOR MSB(O(j))
       for(i = 0; i < n; i++)
+      {
          p[i] = c[i] ^ o[i];
+      }
 
       //Next block
       c += n;

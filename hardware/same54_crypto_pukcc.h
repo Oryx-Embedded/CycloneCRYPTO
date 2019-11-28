@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.4
+ * @version 1.9.6
  **/
 
 #ifndef _SAME54_CRYPTO_PUKCC_H
@@ -42,7 +42,7 @@
 
 //C++ guard
 #ifdef __cplusplus
-   extern "C" {
+extern "C" {
 #endif
 
 
@@ -114,6 +114,21 @@ typedef struct
    uint8_t *x;
    uint8_t *w;
 } PukccExpModParams;
+
+
+/**
+ * @brief PrimeGen service parameters
+ **/
+
+typedef struct
+{
+   uint8_t *n;
+   uint8_t *cns;
+   uint8_t *rnd;
+   uint8_t *w;
+   uint8_t *r;
+   uint8_t *exp;
+} PukccPrimeGenParams;
 
 
 /**
@@ -229,7 +244,7 @@ error_t pukccInit(void);
 
 //C++ guard
 #ifdef __cplusplus
-   }
+}
 #endif
 
 #endif
