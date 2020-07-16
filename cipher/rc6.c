@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,7 +29,7 @@
  * RC6 is a symmetric key block cipher derived from RC5
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -88,8 +88,8 @@ error_t rc6Init(Rc6Context *context, const uint8_t *key, size_t keyLen)
       return ERROR_INVALID_KEY_LENGTH;
 
    //Convert the secret key from bytes to words
-   cryptoMemset(context->l, 0, RC6_MAX_KEY_SIZE);
-   cryptoMemcpy(context->l, key, keyLen);
+   osMemset(context->l, 0, RC6_MAX_KEY_SIZE);
+   osMemcpy(context->l, key, keyLen);
 
    //Calculate the length of the key in words
    c = (keyLen > 0) ? (keyLen + 3) / 4 : 1;

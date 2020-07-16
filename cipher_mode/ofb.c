@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -34,7 +34,7 @@
  * Refer to SP 800-38A for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -95,8 +95,8 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
       }
 
       //Compute I(j+1) = LSB(I(j)) | O(j)
-      cryptoMemmove(iv, iv + s, cipher->blockSize - s);
-      cryptoMemcpy(iv + cipher->blockSize - s, o, s);
+      osMemmove(iv, iv + s, cipher->blockSize - s);
+      osMemcpy(iv + cipher->blockSize - s, o, s);
 
       //Next block
       p += n;
@@ -155,8 +155,8 @@ error_t ofbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
       }
 
       //Compute I(j+1) = LSB(I(j)) | O(j)
-      cryptoMemmove(iv, iv + s, cipher->blockSize - s);
-      cryptoMemcpy(iv + cipher->blockSize - s, o, s);
+      osMemmove(iv, iv + s, cipher->blockSize - s);
+      osMemcpy(iv + cipher->blockSize - s, o, s);
 
       //Next block
       c += n;

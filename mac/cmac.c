@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,7 +29,7 @@
  * CMAC is a block cipher-based MAC algorithm specified in NIST SP 800-38B
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -139,7 +139,7 @@ error_t cmacInit(CmacContext *context, const CipherAlgo *cipher,
       return error;
 
    //Let L = 0
-   cryptoMemset(context->buffer, 0, cipher->blockSize);
+   osMemset(context->buffer, 0, cipher->blockSize);
    //Compute L = CIPH(L)
    cipher->encryptBlock(context->cipherContext, context->buffer, context->buffer);
 
@@ -164,12 +164,12 @@ error_t cmacInit(CmacContext *context, const CipherAlgo *cipher,
 void cmacReset(CmacContext *context)
 {
    //Clear input buffer
-   cryptoMemset(context->buffer, 0, context->cipher->blockSize);
+   osMemset(context->buffer, 0, context->cipher->blockSize);
    //Number of bytes in the buffer
    context->bufferLength = 0;
 
    //Initialize MAC value
-   cryptoMemset(context->mac, 0, context->cipher->blockSize);
+   osMemset(context->mac, 0, context->cipher->blockSize);
 }
 
 
@@ -206,7 +206,7 @@ void cmacUpdate(CmacContext *context, const void *data, size_t dataLen)
       n = MIN(dataLen, context->cipher->blockSize - context->bufferLength);
 
       //Copy the data to the buffer
-      cryptoMemcpy(context->buffer + context->bufferLength, data, n);
+      osMemcpy(context->buffer + context->bufferLength, data, n);
       //Update the length of the buffer
       context->bufferLength += n;
 
@@ -246,7 +246,9 @@ error_t cmacFinal(CmacContext *context, uint8_t *mac, size_t macLen)
 
       //Append the minimum number of zeroes to form a complete block
       while(context->bufferLength < context->cipher->blockSize)
+      {
          context->buffer[context->bufferLength++] = 0x00;
+      }
 
       //The final block M(n) is XOR-ed with the second subkey K2
       cmacXorBlock(context->buffer, context->buffer, context->k2,
@@ -266,7 +268,7 @@ error_t cmacFinal(CmacContext *context, uint8_t *mac, size_t macLen)
    {
       //It is possible to truncate the MAC. The result of the truncation
       //should be taken in most significant bits first order
-      cryptoMemcpy(mac, context->mac, macLen);
+      osMemcpy(mac, context->mac, macLen);
    }
 
    //Successful processing

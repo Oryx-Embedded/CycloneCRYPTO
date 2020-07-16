@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -65,7 +65,7 @@ void mpiFree(Mpi *r)
    if(r->data != NULL)
    {
       //Erase contents before releasing memory
-      cryptoMemset(r->data, 0, r->size * MPI_INT_SIZE);
+      osMemset(r->data, 0, r->size * MPI_INT_SIZE);
       cryptoFreeMem(r->data);
    }
 
@@ -100,13 +100,13 @@ error_t mpiGrow(Mpi *r, uint_t size)
       return ERROR_OUT_OF_MEMORY;
 
    //Clear buffer contents
-   cryptoMemset(data, 0, size * MPI_INT_SIZE);
+   osMemset(data, 0, size * MPI_INT_SIZE);
 
    //Any data to copy?
    if(r->size > 0)
    {
       //Copy original data
-      cryptoMemcpy(data, r->data, r->size * MPI_INT_SIZE);
+      osMemcpy(data, r->data, r->size * MPI_INT_SIZE);
       //Free previously allocated memory
       cryptoFreeMem(r->data);
    }
@@ -416,9 +416,9 @@ error_t mpiCopy(Mpi *r, const Mpi *a)
       return error;
 
    //Clear the contents of the multiple precision integer
-   cryptoMemset(r->data, 0, r->size * MPI_INT_SIZE);
+   osMemset(r->data, 0, r->size * MPI_INT_SIZE);
    //Let R = A
-   cryptoMemcpy(r->data, a->data, n * MPI_INT_SIZE);
+   osMemcpy(r->data, a->data, n * MPI_INT_SIZE);
    //Set the sign of R
    r->sign = a->sign;
 
@@ -445,7 +445,7 @@ error_t mpiSetValue(Mpi *r, int_t a)
       return error;
 
    //Clear the contents of the multiple precision integer
-   cryptoMemset(r->data, 0, r->size * MPI_INT_SIZE);
+   osMemset(r->data, 0, r->size * MPI_INT_SIZE);
    //Set the value or R
    r->data[0] = (a >= 0) ? a : -a;
    //Set the sign of R
@@ -484,7 +484,7 @@ error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo,
       return error;
 
    //Clear the contents of the multiple precision integer
-   cryptoMemset(r->data, 0, r->size * MPI_INT_SIZE);
+   osMemset(r->data, 0, r->size * MPI_INT_SIZE);
    //Set the sign of R
    r->sign = 1;
 
@@ -551,7 +551,7 @@ error_t mpiImport(Mpi *r, const uint8_t *data, uint_t length, MpiFormat format)
       if(!error)
       {
          //Clear the contents of the multiple precision integer
-         cryptoMemset(r->data, 0, r->size * MPI_INT_SIZE);
+         osMemset(r->data, 0, r->size * MPI_INT_SIZE);
          //Set sign
          r->sign = 1;
 
@@ -578,7 +578,7 @@ error_t mpiImport(Mpi *r, const uint8_t *data, uint_t length, MpiFormat format)
       if(!error)
       {
          //Clear the contents of the multiple precision integer
-         cryptoMemset(r->data, 0, r->size * MPI_INT_SIZE);
+         osMemset(r->data, 0, r->size * MPI_INT_SIZE);
          //Set sign
          r->sign = 1;
 
@@ -634,7 +634,7 @@ error_t mpiExport(const Mpi *a, uint8_t *data, uint_t length, MpiFormat format)
       if(n <= length)
       {
          //Clear output buffer
-         cryptoMemset(data, 0, length);
+         osMemset(data, 0, length);
 
          //Export data
          for(i = 0; i < n; i++, data++)
@@ -657,7 +657,7 @@ error_t mpiExport(const Mpi *a, uint8_t *data, uint_t length, MpiFormat format)
       if(n <= length)
       {
          //Clear output buffer
-         cryptoMemset(data, 0, length);
+         osMemset(data, 0, length);
 
          //Point to the least significant word
          data += length - 1;
@@ -1083,7 +1083,7 @@ error_t mpiShiftRight(Mpi *r, uint_t n)
    //Check parameters
    if(n1 >= r->size)
    {
-      cryptoMemset(r->data, 0, r->size * MPI_INT_SIZE);
+      osMemset(r->data, 0, r->size * MPI_INT_SIZE);
       return NO_ERROR;
    }
 
@@ -1170,7 +1170,7 @@ __weak error_t mpiMul(Mpi *r, const Mpi *a, const Mpi *b)
    r->sign = (a->sign == b->sign) ? 1 : -1;
 
    //Clear the contents of the destination integer
-   cryptoMemset(r->data, 0, r->size * MPI_INT_SIZE);
+   osMemset(r->data, 0, r->size * MPI_INT_SIZE);
 
    //Perform multiplication
    if(m < n)

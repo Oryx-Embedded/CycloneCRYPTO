@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -103,15 +103,15 @@ error_t bcryptVerifyPassword(const char_t *password, const char_t *hash)
       return ERROR_INVALID_PARAMETER;
 
    //Check the length of the hash string
-   if(cryptoStrlen(hash) != BCRYPT_HASH_STRING_LEN)
+   if(osStrlen(hash) != BCRYPT_HASH_STRING_LEN)
       return ERROR_INVALID_PASSWORD;
 
    //bcrypt uses the $2a$ prefix in the hash string
-   if(cryptoMemcmp(hash, "$2a$", 4))
+   if(osMemcmp(hash, "$2a$", 4))
       return ERROR_INVALID_PASSWORD;
 
    //Parse cost parameter
-   cost = cryptoStrtoul(hash + 4, &p, 10);
+   cost = osStrtoul(hash + 4, &p, 10);
 
    //Malformed hash string?
    if(p != (hash + 6) || *p != '$')
@@ -176,7 +176,7 @@ error_t bcrypt(uint_t cost, const uint8_t *salt, const char_t *password,
    if(context != NULL)
    {
       //Calculate the length of the password (including the NULL-terminator byte)
-      length = cryptoStrlen(password) + 1;
+      length = osStrlen(password) + 1;
 
       //The key setup begins with a modified form of the standard Blowfish key
       //setup, in which both the salt and password are used to set all subkeys
@@ -186,7 +186,7 @@ error_t bcrypt(uint_t cost, const uint8_t *salt, const char_t *password,
       if(!error)
       {
          //Initialize plaintext
-         cryptoMemcpy(buffer, "OrpheanBeholderScryDoubt", 24);
+         osMemcpy(buffer, "OrpheanBeholderScryDoubt", 24);
 
          //Repeatedly encrypt the text "OrpheanBeholderScryDoubt" 64 times
          for(i = 0; i < 64 && !error; i++)
@@ -209,7 +209,7 @@ error_t bcrypt(uint_t cost, const uint8_t *salt, const char_t *password,
    if(!error)
    {
       //bcrypt uses the $2a$ prefix in the hash string
-      length = cryptoSprintf(hash, "$2a$%02u$", cost);
+      length = osSprintf(hash, "$2a$%02u$", cost);
 
       //Concatenate the salt and the ciphertext
       radix64Encode(salt, 16, hash + length, &n);

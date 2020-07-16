@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 #ifndef _X509_COMMON_H
@@ -76,7 +76,7 @@
 
 //SHA-1 hash support (weak)
 #ifndef X509_SHA1_SUPPORT
-   #define X509_SHA1_SUPPORT ENABLED
+   #define X509_SHA1_SUPPORT DISABLED
 #elif (X509_SHA1_SUPPORT != ENABLED && X509_SHA1_SUPPORT != DISABLED)
    #error X509_SHA1_SUPPORT parameter is not valid
 #endif
@@ -195,7 +195,7 @@
 
 //secp192r1 elliptic curve support (NIST P-192)
 #ifndef X509_SECP192R1_SUPPORT
-   #define X509_SECP192R1_SUPPORT ENABLED
+   #define X509_SECP192R1_SUPPORT DISABLED
 #elif (X509_SECP192R1_SUPPORT != ENABLED && X509_SECP192R1_SUPPORT != DISABLED)
    #error X509_SECP192R1_SUPPORT parameter is not valid
 #endif
@@ -209,7 +209,7 @@
 
 //secp224r1 elliptic curve support (NIST P-224)
 #ifndef X509_SECP224R1_SUPPORT
-   #define X509_SECP224R1_SUPPORT ENABLED
+   #define X509_SECP224R1_SUPPORT DISABLED
 #elif (X509_SECP224R1_SUPPORT != ENABLED && X509_SECP224R1_SUPPORT != DISABLED)
    #error X509_SECP224R1_SUPPORT parameter is not valid
 #endif
@@ -352,6 +352,13 @@
    #define X509_MAX_CERT_ISSUER_NAMES 4
 #elif (X509_MAX_CERT_ISSUER_NAMES < 1)
    #error X509_MAX_CERT_ISSUER_NAMES parameter is not valid
+#endif
+
+//Maximum number of custom extensions
+#ifndef X509_MAX_CUSTOM_EXTENSIONS
+   #define X509_MAX_CUSTOM_EXTENSIONS 2
+#elif (X509_MAX_CUSTOM_EXTENSIONS < 1)
+   #error X509_MAX_CUSTOM_EXTENSIONS parameter is not valid
 #endif
 
 //Maximum digest size
@@ -850,6 +857,8 @@ typedef struct
    X509SubjectKeyId subjectKeyId;
    X509AuthorityKeyId authKeyId;
    X509NsCertType nsCertType;
+   uint_t numCustomExtensions;
+   X509Extension customExtensions[X509_MAX_CUSTOM_EXTENSIONS];
 } X509Extensions;
 
 

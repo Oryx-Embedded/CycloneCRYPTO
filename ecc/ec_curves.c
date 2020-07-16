@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -41,8 +41,8 @@
 #if (EC_SUPPORT == ENABLED)
 
 //Macro definition
-#define CLEAR_WORD32(a, i, n) cryptoMemset((a)->data + i, 0, n * MPI_INT_SIZE);
-#define COPY_WORD32(a, i, b, j, n) cryptoMemcpy((a)->data + i, (b)->data + j, n * MPI_INT_SIZE);
+#define CLEAR_WORD32(a, i, n) osMemset((a)->data + i, 0, n * MPI_INT_SIZE);
+#define COPY_WORD32(a, i, b, j, n) osMemcpy((a)->data + i, (b)->data + j, n * MPI_INT_SIZE);
 
 //secp112r1 OID (1.3.132.0.6)
 const uint8_t SECP112R1_OID[5] = {0x2B, 0x81, 0x04, 0x00, 0x06};

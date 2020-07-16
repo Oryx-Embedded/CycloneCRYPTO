@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -429,7 +429,7 @@ bool_t x509CompareName(const uint8_t *name1, size_t nameLen1,
       return FALSE;
 
    //Compare the contents of the distinguished names
-   if(cryptoMemcmp(name1, name2, nameLen1))
+   if(osMemcmp(name1, name2, nameLen1))
       return FALSE;
 
    //The distinguished names match
@@ -453,7 +453,7 @@ bool_t x509CompareSubjectName(const char_t *subjectName,
    size_t fqdnLen;
 
    //Retrieve the length of the FQDN
-   fqdnLen = cryptoStrlen(fqdn);
+   fqdnLen = osStrlen(fqdn);
 
    //Initialize variables
    i = 0;
@@ -487,7 +487,7 @@ bool_t x509CompareSubjectName(const char_t *subjectName,
       else
       {
          //Perform case insensitive character comparison
-         if(cryptoTolower(subjectName[i]) != fqdn[j])
+         if(osTolower(subjectName[i]) != fqdn[j])
          {
             break;
          }
@@ -500,9 +500,13 @@ bool_t x509CompareSubjectName(const char_t *subjectName,
 
    //Check whether the subject name matches the specified FQDN
    if(i == subjectNameLen && j == fqdnLen)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 
@@ -523,13 +527,13 @@ bool_t x509CompareSubtree(const char_t *subjectName,
    //Point to the last character of the subtree
    i = subtreeLen - 1;
    //Point to the last character of the subject name
-   j = cryptoStrlen(subjectName) - 1;
+   j = osStrlen(subjectName) - 1;
 
    //Parse the subtree
    while(i >= 0 && j >= 0)
    {
       //Perform case insensitive character comparison
-      if(cryptoTolower(subtree[i]) != subjectName[j])
+      if(osTolower(subtree[i]) != subjectName[j])
       {
          break;
       }
@@ -552,9 +556,13 @@ bool_t x509CompareSubtree(const char_t *subjectName,
 
    //Check whether the subject name matches the specified subtree
    if(i < 0 && j < 0)
+   {
       return TRUE;
+   }
    else
+   {
       return FALSE;
+   }
 }
 
 

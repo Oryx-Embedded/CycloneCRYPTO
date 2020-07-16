@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -104,7 +104,7 @@ error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
    b[0] |= qLen - 1;
 
    //Copy the nonce
-   cryptoMemcpy(b + 1, n, nLen);
+   osMemcpy(b + 1, n, nLen);
 
    //Encode the length field Q
    for(m = 0; m < qLen; m++, q >>= 8)
@@ -123,7 +123,7 @@ error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
    if(aLen > 0)
    {
       //Format the associated data
-      cryptoMemset(b, 0, 16);
+      osMemset(b, 0, 16);
 
       //Check the length of the associated data string
       if(aLen < 0xFF00)
@@ -133,7 +133,7 @@ error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
          //Number of bytes to copy
          m = MIN(aLen, 16 - 2);
          //Concatenate the associated data A
-         cryptoMemcpy(b + 2, a, m);
+         osMemcpy(b + 2, a, m);
       }
       else
       {
@@ -145,7 +145,7 @@ error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
          //Number of bytes to copy
          m = MIN(aLen, 16 - 6);
          //Concatenate the associated data A
-         cryptoMemcpy(b + 6, a, m);
+         osMemcpy(b + 6, a, m);
       }
 
       //XOR B(1) with Y(0)
@@ -177,14 +177,14 @@ error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
    //Format CTR(0)
    b[0] = (uint8_t) (qLen - 1);
    //Copy the nonce
-   cryptoMemcpy(b + 1, n, nLen);
+   osMemcpy(b + 1, n, nLen);
    //Initialize counter value
-   cryptoMemset(b + 1 + nLen, 0, qLen);
+   osMemset(b + 1 + nLen, 0, qLen);
 
    //Compute S(0) = CIPH(CTR(0))
    cipher->encryptBlock(context, b, s);
    //Save MSB(S(0))
-   cryptoMemcpy(t, s, tLen);
+   osMemcpy(t, s, tLen);
 
    //Encrypt plaintext
    while(length > 0)
@@ -276,7 +276,7 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
    b[0] |= qLen - 1;
 
    //Copy the nonce
-   cryptoMemcpy(b + 1, n, nLen);
+   osMemcpy(b + 1, n, nLen);
 
    //Encode the length field Q
    for(m = 0; m < qLen; m++, q >>= 8)
@@ -295,7 +295,7 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
    if(aLen > 0)
    {
       //Format the associated data
-      cryptoMemset(b, 0, 16);
+      osMemset(b, 0, 16);
 
       //Check the length of the associated data string
       if(aLen < 0xFF00)
@@ -305,7 +305,7 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
          //Number of bytes to copy
          m = MIN(aLen, 16 - 2);
          //Concatenate the associated data A
-         cryptoMemcpy(b + 2, a, m);
+         osMemcpy(b + 2, a, m);
       }
       else
       {
@@ -317,7 +317,7 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
          //Number of bytes to copy
          m = MIN(aLen, 16 - 6);
          //Concatenate the associated data A
-         cryptoMemcpy(b + 6, a, m);
+         osMemcpy(b + 6, a, m);
       }
 
       //XOR B(1) with Y(0)
@@ -349,14 +349,14 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
    //Format CTR(0)
    b[0] = (uint8_t) (qLen - 1);
    //Copy the nonce
-   cryptoMemcpy(b + 1, n, nLen);
+   osMemcpy(b + 1, n, nLen);
    //Initialize counter value
-   cryptoMemset(b + 1 + nLen, 0, qLen);
+   osMemset(b + 1 + nLen, 0, qLen);
 
    //Compute S(0) = CIPH(CTR(0))
    cipher->encryptBlock(context, b, s);
    //Save MSB(S(0))
-   cryptoMemcpy(r, s, tLen);
+   osMemcpy(r, s, tLen);
 
    //Decrypt ciphertext
    while(length > 0)

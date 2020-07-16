@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,7 +31,7 @@
  * Refer to RFC 5794 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -343,8 +343,8 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
    }
 
    //Compute 128-bit values KL and KR
-   cryptoMemset(w, 0, sizeof(w));
-   cryptoMemcpy(w, key, keyLen);
+   osMemset(w, 0, sizeof(w));
+   osMemcpy(w, key, keyLen);
 
    //Save KR...
    MOV128(w + 8, w + 4);
@@ -446,7 +446,7 @@ void ariaEncryptBlock(AriaContext *context, const uint8_t *input, uint8_t *outpu
    uint32_t q[4];
 
    //Copy the plaintext to the buffer
-   cryptoMemcpy(p, input, ARIA_BLOCK_SIZE);
+   osMemcpy(p, input, ARIA_BLOCK_SIZE);
 
    //Point to the encryption round keys
    ek = context->ek;
@@ -493,7 +493,7 @@ void ariaEncryptBlock(AriaContext *context, const uint8_t *input, uint8_t *outpu
    }
 
    //Copy the resulting ciphertext from the buffer
-   cryptoMemcpy(output, q, ARIA_BLOCK_SIZE);
+   osMemcpy(output, q, ARIA_BLOCK_SIZE);
 }
 
 
@@ -511,7 +511,7 @@ void ariaDecryptBlock(AriaContext *context, const uint8_t *input, uint8_t *outpu
    uint32_t q[4];
 
    //Copy the ciphertext to the buffer
-   cryptoMemcpy(p, input, ARIA_BLOCK_SIZE);
+   osMemcpy(p, input, ARIA_BLOCK_SIZE);
 
    //Point to the decryption round keys
    dk = context->dk;
@@ -558,7 +558,7 @@ void ariaDecryptBlock(AriaContext *context, const uint8_t *input, uint8_t *outpu
    }
 
    //The resulting value is the plaintext
-   cryptoMemcpy(output, q, ARIA_BLOCK_SIZE);
+   osMemcpy(output, q, ARIA_BLOCK_SIZE);
 }
 
 #endif

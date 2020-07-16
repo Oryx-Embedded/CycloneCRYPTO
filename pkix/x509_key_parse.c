@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -67,7 +67,7 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
    TRACE_DEBUG("    Parsing SubjectPublicKeyInfo...\r\n");
 
    //Clear the SubjectPublicKeyInfo structure
-   cryptoMemset(publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
+   osMemset(publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
 
    //The public key information is encapsulated within a sequence
    error = asn1ReadSequence(data, length, &tag);
@@ -379,7 +379,7 @@ error_t x509ParseRsaPssParameters(const uint8_t *data, size_t length,
    Asn1Tag tag;
 
    //Clear RSASSA-PSS parameters
-   cryptoMemset(rsaPssParams, 0, sizeof(X509RsaPssParameters));
+   osMemset(rsaPssParams, 0, sizeof(X509RsaPssParameters));
 
 #if (SHA1_SUPPORT == ENABLED)
    //The default hash algorithm is SHA-1 (refer to RFC 4055, section 3.1)

@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@
  * SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -233,14 +233,14 @@ error_t gmacInit(GmacContext *context, const CipherAlgo *cipher,
    }
 
    //Clear input buffer
-   cryptoMemset(context->buffer, 0, context->cipher->blockSize);
+   osMemset(context->buffer, 0, context->cipher->blockSize);
    //Number of bytes in the buffer
    context->bufferLength = 0;
    //Total number of bytes
    context->totalLength = 0;
 
    //Initialize MAC value
-   cryptoMemset(context->mac, 0, context->cipher->blockSize);
+   osMemset(context->mac, 0, context->cipher->blockSize);
 
    //Successful initialization
    return NO_ERROR;
@@ -271,13 +271,13 @@ error_t gmacReset(GmacContext *context, const uint8_t *iv, size_t ivLen)
    {
       //When the length of the IV is 96 bits, the padding string is
       //appended to the IV to form the pre-counter block
-      cryptoMemcpy(j, iv, 12);
+      osMemcpy(j, iv, 12);
       STORE32BE(1, j + 12);
    }
    else
    {
       //Initialize GHASH calculation
-      cryptoMemset(j, 0, 16);
+      osMemset(j, 0, 16);
 
       //Length of the IV
       n = ivLen;
@@ -299,7 +299,7 @@ error_t gmacReset(GmacContext *context, const uint8_t *iv, size_t ivLen)
 
       //The string is appended with 64 additional 0 bits, followed by the
       //64-bit representation of the length of the IV
-      cryptoMemset(b, 0, 8);
+      osMemset(b, 0, 8);
       STORE64BE(ivLen * 8, b + 8);
 
       //The GHASH function is applied to the resulting string to form the
@@ -310,13 +310,13 @@ error_t gmacReset(GmacContext *context, const uint8_t *iv, size_t ivLen)
 
    //Compute MSB(CIPH(J(0)))
    context->cipher->encryptBlock(context->cipherContext, j, b);
-   cryptoMemcpy(context->mac, b, 16);
+   osMemcpy(context->mac, b, 16);
 
    //Initialize GHASH calculation
-   cryptoMemset(context->s, 0, 16);
+   osMemset(context->s, 0, 16);
 
    //Clear input buffer
-   cryptoMemset(context->buffer, 0, context->cipher->blockSize);
+   osMemset(context->buffer, 0, context->cipher->blockSize);
    //Number of bytes in the buffer
    context->bufferLength = 0;
 
@@ -343,7 +343,7 @@ void gmacUpdate(GmacContext *context, const void *data, size_t dataLen)
       n = MIN(dataLen, 16 - context->bufferLength);
 
       //Copy the data to the buffer
-      cryptoMemcpy(context->buffer + context->bufferLength, data, n);
+      osMemcpy(context->buffer + context->bufferLength, data, n);
       //Update the length of the buffer
       context->bufferLength += n;
       //Update the total number of bytes
@@ -392,7 +392,7 @@ error_t gmacFinal(GmacContext *context, uint8_t *mac, size_t macLen)
    //Append the 64-bit representation of the length of the message followed
    //by 64 additional 0 bits
    STORE64BE(context->totalLength * 8, context->buffer);
-   cryptoMemset(context->buffer + 8, 0, 8);
+   osMemset(context->buffer + 8, 0, 8);
 
    //The GHASH function is applied to the result to produce a single output block S
    gmacXorBlock(context->s, context->s, context->buffer, 16);
@@ -405,7 +405,7 @@ error_t gmacFinal(GmacContext *context, uint8_t *mac, size_t macLen)
    if(mac != NULL)
    {
       //Output MSB(T)
-      cryptoMemcpy(mac, context->mac, macLen);
+      osMemcpy(mac, context->mac, macLen);
    }
 
    //Successful processing

@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -97,7 +97,7 @@ void poly1305Update(Poly1305Context *context, const void *data, size_t length)
       n = MIN(length, 16 - context->size);
 
       //Copy the data to the buffer
-      cryptoMemcpy(context->buffer + context->size, data, n);
+      osMemcpy(context->buffer + context->size, data, n);
 
       //Update the Poly1305 context
       context->size += n;
@@ -228,7 +228,9 @@ void poly1305ProcessBlock(Poly1305Context *context)
    //If the resulting block is not 17 bytes long (the last block),
    //pad it with zeros
    while(n < 17)
+   {
       context->buffer[n++] = 0x00;
+   }
 
    //Read the block as a little-endian number
    a[0] = LOAD32LE(context->buffer);

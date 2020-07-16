@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1319
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -124,9 +124,9 @@ error_t md2Compute(const void *data, size_t length, uint8_t *digest)
 void md2Init(Md2Context *context)
 {
    //Initialize the 48-byte buffer X
-   cryptoMemset(context->x, 0, 48);
+   osMemset(context->x, 0, 48);
    //Clear checksum
-   cryptoMemset(context->c, 0, 16);
+   osMemset(context->c, 0, 16);
    //Number of bytes in the buffer
    context->size = 0;
 }
@@ -150,7 +150,7 @@ void md2Update(Md2Context *context, const void *data, size_t length)
       n = MIN(length, 16 - context->size);
 
       //Copy the data to the buffer
-      cryptoMemcpy(context->m + context->size, data, n);
+      osMemcpy(context->m + context->size, data, n);
 
       //Update the MD2 context
       context->size += n;
@@ -185,18 +185,18 @@ void md2Final(Md2Context *context, uint8_t *digest)
    n = 16 - context->size;
 
    //Append padding bytes
-   cryptoMemset(context->m + context->size, n, n);
+   osMemset(context->m + context->size, n, n);
    //Transform the 16-word block
    md2ProcessBlock(context->m, context->x, context->c);
 
    //Append the checksum
-   cryptoMemcpy(context->m, context->c, 16);
+   osMemcpy(context->m, context->c, 16);
    //Transform the 16-word block
    md2ProcessBlock(context->m, context->x, context->c);
 
    //Copy the resulting digest
    if(digest != NULL)
-      cryptoMemcpy(digest, context->digest, MD2_DIGEST_SIZE);
+      osMemcpy(digest, context->digest, MD2_DIGEST_SIZE);
 }
 
 

@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -108,16 +108,24 @@ int_t oidComp(const uint8_t *oid1, size_t oidLen1, const uint8_t *oid2,
    {
       //Compare current byte
       if(oid1[i] < oid2[i])
+      {
          return -1;
+      }
       else if(oid1[i] > oid2[i])
+      {
          return 1;
+      }
    }
 
    //Compare length
    if(oidLen1 < oidLen2)
+   {
       return -1;
+   }
    else if(oidLen1 > oidLen2)
+   {
       return 1;
+   }
 
    //Object identifiers are equal
    return 0;
@@ -156,9 +164,13 @@ bool_t oidMatch(const uint8_t *oid, size_t oidLen, const uint8_t *subtree,
 
       //The bit mask is extended with 1's to be the required length
       if((i / 8) < maskLen)
+      {
          flag = mask[i / 8] & (1 << (7 - (i % 8)));
+      }
       else
+      {
          flag = 1;
+      }
 
       //First node?
       if(i == 0)
@@ -367,6 +379,10 @@ error_t oidDecodeSubIdentifier(const uint8_t *oid, size_t oidLen,
    //Initialize the value of the sub-identifier
    *value = 0;
 
+   //Sanity check
+   if(*pos >= oidLen)
+      return ERROR_INSTANCE_NOT_FOUND;
+
    //Read the OID until the last byte of the sub-identifier is found
    for(i = *pos; i < oidLen; i++)
    {
@@ -421,7 +437,7 @@ error_t oidFromString(const char_t *str, uint8_t *oid, size_t maxOidLen,
    while(1)
    {
       //Digit found?
-      if(cryptoIsdigit(*str))
+      if(osIsdigit(*str))
       {
          //Update the value of the sub-identifier
          value = (value * 10) + (*str - '0');
@@ -567,13 +583,13 @@ char_t *oidToString(const uint8_t *oid, size_t oidLen, char_t *str,
    if(oidLen > 0)
    {
       //Convert the first 2 bytes
-      n = sprintf(temp, "%" PRIu8 ".%" PRIu8 "", oid[0] / 40, oid[0] % 40);
+      n = osSprintf(temp, "%" PRIu8 ".%" PRIu8 "", oid[0] / 40, oid[0] % 40);
 
       //Sanity check
       if(n <= maxStrLen)
       {
          //Copy the resulting string
-         cryptoStrcpy(p, temp);
+         osStrcpy(p, temp);
          //Advance write pointer
          p += n;
          maxStrLen -= n;
@@ -594,13 +610,13 @@ char_t *oidToString(const uint8_t *oid, size_t oidLen, char_t *str,
          if(!(oid[i] & OID_MORE_FLAG))
          {
             //Dump current value
-            n = sprintf(temp, ".%" PRIu32, value);
+            n = osSprintf(temp, ".%" PRIu32, value);
 
             //Sanity check
             if(n <= maxStrLen)
             {
                //Copy the resulting string
-               cryptoStrcpy(p, temp);
+               osStrcpy(p, temp);
                //Advance write pointer
                p += n;
                maxStrLen -= n;
@@ -654,9 +670,13 @@ error_t maskFromString(const char_t *str, uint8_t *mask, size_t maxMaskLen,
 
          //Update bit mask
          if(*str == '1')
+         {
             mask[i] |= (1 << (j - 1));
+         }
          else
+         {
             mask[i] &= ~(1 << (j - 1));
+         }
 
          //Next bit
          j--;

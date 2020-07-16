@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -144,7 +144,7 @@ error_t x509CheckRevokedCertificate(const X509CertificateInfo *certInfo,
    error = NO_ERROR;
 
    //Initialize the certificate issuer
-   cryptoMemset(&issuer, 0, sizeof(X509CertificateIssuer));
+   osMemset(&issuer, 0, sizeof(X509CertificateIssuer));
 
    //If the CertificateIssuer extension is not present on the first entry in
    //an indirect CRL, the certificate issuer defaults to the CRL issuer
@@ -206,7 +206,7 @@ error_t x509CheckRevokedCertificate(const X509CertificateInfo *certInfo,
          if(certInfo->tbsCert.serialNumber.length == revokedCert.userCert.length)
          {
             //Compare serial numbers
-            if(!memcmp(certInfo->tbsCert.serialNumber.data,
+            if(!osMemcmp(certInfo->tbsCert.serialNumber.data,
                revokedCert.userCert.data, revokedCert.userCert.length))
             {
                //The certificate has been revoked

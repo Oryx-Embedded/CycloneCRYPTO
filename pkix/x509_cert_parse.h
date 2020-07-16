@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 #ifndef _X509_CERT_PARSE_H
@@ -44,8 +44,11 @@ extern "C" {
 error_t x509ParseCertificate(const uint8_t *data, size_t length,
    X509CertificateInfo *certInfo);
 
+error_t x509ParseCertificateEx(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo, bool_t ignoreUnknown);
+
 error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
-   size_t *totalLength, X509TbsCertificate *tbsCert);
+   size_t *totalLength, X509TbsCertificate *tbsCert, bool_t ignoreUnknown);
 
 error_t x509ParseVersion(const uint8_t *data, size_t length,
    size_t *totalLength, X509Version *version);
@@ -72,7 +75,7 @@ error_t x509ParseSubjectUniqueId(const uint8_t *data, size_t length,
    size_t *totalLength);
 
 error_t x509ParseExtensions(const uint8_t *data, size_t length,
-   size_t *totalLength, X509Extensions *extensions);
+   size_t *totalLength, X509Extensions *extensions, bool_t ignoreUnknown);
 
 error_t x509ParseExtension(const uint8_t *data, size_t length,
    size_t *totalLength, X509Extension *extension);

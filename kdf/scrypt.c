@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@
  * hardware. Refer to RFC 7914 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -97,7 +97,7 @@ error_t scrypt(const char_t *password, const uint8_t *salt, size_t saltLen,
       return ERROR_INVALID_PARAMETER;
 
    //Retrieve the length of the passphrase
-   passwordLen = cryptoStrlen(password);
+   passwordLen = osStrlen(password);
 
    //Each block consists of 128 * r octets
    blockSize = 128 * r;
@@ -202,7 +202,7 @@ void scryptRoMix(uint_t r, uint8_t *b, uint_t n, uint8_t *v, uint8_t *y)
    for(i = 0; i < n; i++)
    {
       //Let V[i] = X
-      cryptoMemcpy(v + i * blockSize, x, blockSize);
+      osMemcpy(v + i * blockSize, x, blockSize);
 
       //Compute X = scryptBlockMix(r, X)
       scryptBlockMix(r, x, y);
@@ -236,7 +236,7 @@ void scryptBlockMix(uint_t r, uint8_t *b, uint8_t *y)
    uint8_t x[64];
 
    //Let X = B[2 * r - 1]
-   cryptoMemcpy(x, b + r * 128 - 64, 64);
+   osMemcpy(x, b + r * 128 - 64, 64);
 
    //Iterate as many times as desired
    for(i = 0; i < (2 * r); i++)
@@ -248,14 +248,14 @@ void scryptBlockMix(uint_t r, uint8_t *b, uint8_t *y)
       salsa20ProcessBlock(x, x, 8);
 
       //Let Y[i] = X
-      cryptoMemcpy(y + i * 64, x, 64);
+      osMemcpy(y + i * 64, x, 64);
    }
 
    //Let  B' = (Y[0], Y[2], ..., Y[2 * r - 2], Y[1], Y[3], ..., Y[2 * r - 1])
    for(i = 0; i < r; i++)
    {
-      cryptoMemcpy(b + i * 64, y + i * 128, 64);
-      cryptoMemcpy(b + (r + i) * 64, y + i * 128 + 64, 64);
+      osMemcpy(b + i * 64, y + i * 128, 64);
+      osMemcpy(b + (r + i) * 64, y + i * 128 + 64, 64);
    }
 }
 

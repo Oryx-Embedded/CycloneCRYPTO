@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -271,7 +271,7 @@ error_t pemImportRsaPublicKey(const char_t *input, size_t length,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the SubjectPublicKeyInfo structure
-   cryptoMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
+   osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
 
    //The type of data encoded is labeled depending on the type label in
    //the "-----BEGIN " line (refer to RFC 7468, section 2)
@@ -395,7 +395,7 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the PrivateKeyInfo structure
-   cryptoMemset(&privateKeyInfo, 0, sizeof(Pkcs8PrivateKeyInfo));
+   osMemset(&privateKeyInfo, 0, sizeof(Pkcs8PrivateKeyInfo));
 
    //The type of data encoded is labeled depending on the type label in
    //the "-----BEGIN " line (refer to RFC 7468, section 2)
@@ -598,7 +598,7 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the PrivateKeyInfo structure
-   cryptoMemset(&privateKeyInfo, 0, sizeof(Pkcs8PrivateKeyInfo));
+   osMemset(&privateKeyInfo, 0, sizeof(Pkcs8PrivateKeyInfo));
 
    //The type of data encoded is labeled depending on the type label in
    //the "-----BEGIN " line (refer to RFC 7468, section 2)
@@ -996,7 +996,7 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the PrivateKeyInfo structure
-   cryptoMemset(&privateKeyInfo, 0, sizeof(Pkcs8PrivateKeyInfo));
+   osMemset(&privateKeyInfo, 0, sizeof(Pkcs8PrivateKeyInfo));
 
    //The type of data encoded is labeled depending on the type label in
    //the "-----BEGIN " line (refer to RFC 7468, section 2)
@@ -1479,7 +1479,7 @@ error_t pemDecodeFile(const char_t *input, size_t inputLen, const char_t *label,
       return ERROR_END_OF_FILE;
 
    //Skip the encapsulation boundary
-   i += cryptoStrlen("-----BEGIN -----") + cryptoStrlen(label);
+   i += osStrlen("-----BEGIN -----") + osStrlen(label);
 
    //The PEM container ends with a "-----END " line
    j = pemFindTag(input + i, inputLen - i, "-----END ", label, "-----");
@@ -1512,7 +1512,7 @@ error_t pemDecodeFile(const char_t *input, size_t inputLen, const char_t *label,
    if(consumed != NULL)
    {
       //Total number of characters that have been consumed
-      *consumed = i + j + cryptoStrlen("-----END -----") + cryptoStrlen(label);
+      *consumed = i + j + osStrlen("-----END -----") + osStrlen(label);
    }
 
    //Successful processing
@@ -1545,9 +1545,9 @@ int_t pemFindTag(const char_t *input, size_t inputLen, const char_t *tag1,
    index = -1;
 
    //Calculate the length of the tag
-   n1 = cryptoStrlen(tag1);
-   n2 = cryptoStrlen(tag2);
-   n3 = cryptoStrlen(tag3);
+   n1 = osStrlen(tag1);
+   n2 = osStrlen(tag2);
+   n3 = osStrlen(tag3);
 
    //Parse input string
    for(i = 0; (i + n1 + n2 + n3) <= inputLen; i++)

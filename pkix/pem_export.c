@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -166,7 +166,7 @@ error_t pemExportRsaPublicKey(const RsaPublicKey *publicKey,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the SubjectPublicKeyInfo structure
-   cryptoMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
+   osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
 
    //The ASN.1 encoded data of the public key is the SubjectPublicKeyInfo
    //structure (refer to RFC 7468, section 13)
@@ -222,7 +222,7 @@ error_t pemExportRsaPrivateKey(const RsaPrivateKey *privateKey,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the SubjectPublicKeyInfo structure
-   cryptoMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
+   osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
 
    //Point to the buffer where to write the PrivateKeyInfo structure
    p = (uint8_t *) output;
@@ -323,7 +323,7 @@ error_t pemExportRsaPssPublicKey(const RsaPublicKey *publicKey,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the SubjectPublicKeyInfo structure
-   cryptoMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
+   osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
 
    //The ASN.1 encoded data of the public key is the SubjectPublicKeyInfo
    //structure (refer to RFC 7468, section 13)
@@ -379,7 +379,7 @@ error_t pemExportRsaPssPrivateKey(const RsaPrivateKey *privateKey,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the SubjectPublicKeyInfo structure
-   cryptoMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
+   osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
 
    //Point to the buffer where to write the PrivateKeyInfo structure
    p = (uint8_t *) output;
@@ -480,7 +480,7 @@ error_t pemExportDsaPublicKey(const DsaPublicKey *publicKey,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the SubjectPublicKeyInfo structure
-   cryptoMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
+   osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
 
    //The ASN.1 encoded data of the public key is the SubjectPublicKeyInfo
    //structure (refer to RFC 7468, section 13)
@@ -537,7 +537,7 @@ error_t pemExportDsaPrivateKey(const DsaPrivateKey *privateKey,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the SubjectPublicKeyInfo structure
-   cryptoMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
+   osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
 
    //Point to the buffer where to write the PrivateKeyInfo structure
    p = (uint8_t *) output;
@@ -695,7 +695,7 @@ error_t pemExportEcPublicKey(const EcCurveInfo *curveInfo,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the SubjectPublicKeyInfo structure
-   cryptoMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
+   osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
 
    //The ASN.1 encoded data of the public key is the SubjectPublicKeyInfo
    //structure (refer to RFC 7468, section 13)
@@ -756,7 +756,7 @@ error_t pemExportEcPrivateKey(const EcCurveInfo *curveInfo,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the SubjectPublicKeyInfo structure
-   cryptoMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
+   osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
 
    //Point to the buffer where to write the PrivateKeyInfo structure
    p = (uint8_t *) output;
@@ -860,7 +860,7 @@ error_t pemExportEddsaPublicKey(const EcCurveInfo *curveInfo,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the SubjectPublicKeyInfo structure
-   cryptoMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
+   osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
 
    //The ASN.1 encoded data of the public key is the SubjectPublicKeyInfo
    //structure (refer to RFC 7468, section 13)
@@ -917,7 +917,7 @@ error_t pemExportEddsaPrivateKey(const EcCurveInfo *curveInfo,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the SubjectPublicKeyInfo structure
-   cryptoMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
+   osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
 
    //Point to the buffer where to write the PrivateKeyInfo structure
    p = (uint8_t *) output;
@@ -1018,7 +1018,7 @@ error_t pemEncodeFile(const void *input, size_t inputLen, const char_t *label,
       return ERROR_INVALID_PARAMETER;
 
    //Calculate the length of the label
-   labelLen = cryptoStrlen(label);
+   labelLen = osStrlen(label);
 
    //Encode the ASN.1 data using Base64
    base64Encode(input, inputLen, output, &n);
@@ -1028,27 +1028,27 @@ error_t pemEncodeFile(const void *input, size_t inputLen, const char_t *label,
    if(output != NULL)
    {
       //A PEM file starts with a beginning tag
-      p = output + cryptoStrlen("-----BEGIN -----\r\n") + labelLen;
+      p = output + osStrlen("-----BEGIN -----\r\n") + labelLen;
 
       //Make room for the beginning tag
-      cryptoMemmove(p, output, n);
+      osMemmove(p, output, n);
 
       //The type of data encoded is labeled depending on the type label in
       //the "-----BEGIN " line (refer to RFC 7468, section 2)
-      cryptoStrcpy(output, "-----BEGIN ");
-      cryptoStrcpy(output + 11, label);
-      cryptoStrncpy(p - 7, "-----\r\n", 7);
+      osStrcpy(output, "-----BEGIN ");
+      osStrcpy(output + 11, label);
+      osStrncpy(p - 7, "-----\r\n", 7);
 
       //Generators must put the same label on the "-----END " line as the
       //corresponding "-----BEGIN " line
-      cryptoStrcpy(p + n, "\r\n-----END ");
-      cryptoStrcpy(p + n + 11, label);
-      cryptoStrcpy(p + n + labelLen + 11, "-----\r\n");
+      osStrcpy(p + n, "\r\n-----END ");
+      osStrcpy(p + n + 11, label);
+      osStrcpy(p + n + labelLen + 11, "-----\r\n");
    }
 
    //Consider the length of the PEM tags
-   n += cryptoStrlen("-----BEGIN -----\r\n") + labelLen;
-   n += cryptoStrlen("\r\n-----END -----\r\n") + labelLen;
+   n += osStrlen("-----BEGIN -----\r\n") + labelLen;
+   n += osStrlen("\r\n-----END -----\r\n") + labelLen;
 
    //Total number of bytes that have been written
    *outputLen = n;

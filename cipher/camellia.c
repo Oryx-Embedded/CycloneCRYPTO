@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@
  * blocks of 128 bits under control of a 128/192/256-bit secret key
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -330,9 +330,9 @@ error_t camelliaInit(CamelliaContext *context, const uint8_t *key, size_t keyLen
    //Point to KA, KB, KL and KR
    k = context->k;
    //Clear key contents
-   cryptoMemset(k, 0, 64);
+   osMemset(k, 0, 64);
    //Save the supplied secret key
-   cryptoMemcpy(k, key, keyLen);
+   osMemcpy(k, key, keyLen);
 
    //192-bit keys require special processing
    if(keyLen == 24)
@@ -369,7 +369,7 @@ error_t camelliaInit(CamelliaContext *context, const uint8_t *key, size_t keyLen
       else if(i == 3)
       {
          //Save KA after the 4th round
-         cryptoMemcpy(k + KA, k + KB, 16);
+         osMemcpy(k + KA, k + KB, 16);
          //The result is XORed with KR
          k[KB + 0] ^= k[KR + 0];
          k[KB + 1] ^= k[KR + 1];

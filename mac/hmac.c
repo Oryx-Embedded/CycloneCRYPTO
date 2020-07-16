@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@
  * key. Refer to RFC 2104 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -134,15 +134,15 @@ void hmacInit(HmacContext *context, const HashAlgo *hash,
       hash->final(context->hashContext, context->key);
 
       //Key is padded to the right with extra zeros
-      cryptoMemset(context->key + hash->digestSize, 0,
+      osMemset(context->key + hash->digestSize, 0,
          hash->blockSize - hash->digestSize);
    }
    else
    {
       //Copy the key
-      cryptoMemcpy(context->key, key, keyLen);
+      osMemcpy(context->key, key, keyLen);
       //Key is padded to the right with extra zeros
-      cryptoMemset(context->key + keyLen, 0, hash->blockSize - keyLen);
+      osMemset(context->key + keyLen, 0, hash->blockSize - keyLen);
    }
 
    //XOR the resulting key with ipad
@@ -209,7 +209,7 @@ void hmacFinal(HmacContext *context, uint8_t *digest)
 
    //Copy the resulting HMAC value
    if(digest != NULL)
-      cryptoMemcpy(digest, context->digest, hash->digestSize);
+      osMemcpy(digest, context->digest, hash->digestSize);
 }
 
 
@@ -244,7 +244,7 @@ void hmacFinalRaw(HmacContext *context, uint8_t *digest)
 
    //Copy the resulting HMAC value
    if(digest != NULL)
-      cryptoMemcpy(digest, context->digest, hash->digestSize);
+      osMemcpy(digest, context->digest, hash->digestSize);
 }
 
 #endif

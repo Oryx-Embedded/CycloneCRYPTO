@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@
  * blocks of 128 bits under control of a 128/192/256-bit secret key
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -331,7 +331,7 @@ error_t blowfishExpandKey(BlowfishContext *context, const uint8_t *salt,
    }
 
    //Initialize the 64-bit data block to all zeroes
-   cryptoMemset(data, 0, BLOWFISH_BLOCK_SIZE);
+   osMemset(data, 0, BLOWFISH_BLOCK_SIZE);
 
    //In the second phase, the 64-bit data block is repeatedly encrypted to
    //yield the final P-array
@@ -346,7 +346,7 @@ error_t blowfishExpandKey(BlowfishContext *context, const uint8_t *salt,
       context->p[i + 1] = LOAD32BE(data + 4);
    }
 
-   //The process used for the second phase of the P-array initialisation is
+   //The process used for the second phase of the P-array initialization is
    //now repeated to initialize the S-boxes
    for(i = 0; i < 256; i += 2)
    {

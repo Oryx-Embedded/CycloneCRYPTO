@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -63,6 +63,23 @@
 error_t x509ParseCertificate(const uint8_t *data, size_t length,
    X509CertificateInfo *certInfo)
 {
+   //Parse the certificate
+   return x509ParseCertificateEx(data, length, certInfo, FALSE);
+}
+
+
+/**
+ * @brief Parse a X.509 certificate
+ * @param[in] data Pointer to the X.509 certificate to parse
+ * @param[in] length Length of the X.509 certificate
+ * @param[out] certInfo Information resulting from the parsing process
+ * @param[in] ignoreUnknown Ignore unknown extensions
+ * @return Error code
+ **/
+
+error_t x509ParseCertificateEx(const uint8_t *data, size_t length,
+   X509CertificateInfo *certInfo, bool_t ignoreUnknown)
+{
    error_t error;
    size_t totalLength;
    Asn1Tag tag;
@@ -75,7 +92,7 @@ error_t x509ParseCertificate(const uint8_t *data, size_t length,
       return ERROR_INVALID_PARAMETER;
 
    //Clear the certificate information structure
-   cryptoMemset(certInfo, 0, sizeof(X509CertificateInfo));
+   osMemset(certInfo, 0, sizeof(X509CertificateInfo));
 
    //Where pathLenConstraint does not appear, no limit is imposed
    certInfo->tbsCert.extensions.basicConstraints.pathLenConstraint = -1;
@@ -92,7 +109,7 @@ error_t x509ParseCertificate(const uint8_t *data, size_t length,
 
    //Parse TBSCertificate structure
    error = x509ParseTbsCertificate(data, length, &totalLength,
-      &certInfo->tbsCert);
+      &certInfo->tbsCert, ignoreUnknown);
    //Any error to report?
    if(error)
       return ERROR_BAD_CERTIFICATE;
@@ -139,11 +156,12 @@ error_t x509ParseCertificate(const uint8_t *data, size_t length,
  * @param[in] length Length of the ASN.1 structure
  * @param[out] totalLength Number of bytes that have been parsed
  * @param[out] tbsCert Information resulting from the parsing process
+ * @param[in] ignoreUnknown Ignore unknown extensions
  * @return Error code
  **/
 
 error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
-   size_t *totalLength, X509TbsCertificate *tbsCert)
+   size_t *totalLength, X509TbsCertificate *tbsCert, bool_t ignoreUnknown)
 {
    error_t error;
    size_t n;
@@ -278,7 +296,8 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
    length -= n;
 
    //Parse Extensions field
-   error = x509ParseExtensions(data, length, &n, &tbsCert->extensions);
+   error = x509ParseExtensions(data, length, &n, &tbsCert->extensions,
+      ignoreUnknown);
    //Any parsing error?
    if(error)
       return error;
@@ -426,7 +445,7 @@ error_t x509ParseName(const uint8_t *data, size_t length,
    TRACE_DEBUG("    Parsing Name...\r\n");
 
    //Clear the structure
-   cryptoMemset(name, 0, sizeof(X509Name));
+   osMemset(name, 0, sizeof(X509Name));
 
    //Read the contents of the Name structure
    error = asn1ReadSequence(data, length, &tag);
@@ -741,9 +760,13 @@ error_t x509ParseTime(const uint8_t *data, size_t length,
       //If YY is greater than or equal to 50, the year shall be interpreted
       //as 19YY. If YY is less than 50, the year shall be interpreted as 20YY
       if(value >= 50)
+      {
          dateTime->year = 1900 + value;
+      }
       else
+      {
          dateTime->year = 2000 + value;
+      }
 
       //Point to the next field
       data = tag.value + 2;
@@ -941,11 +964,12 @@ error_t x509ParseSubjectUniqueId(const uint8_t *data, size_t length,
  * @param[in] length Length of the ASN.1 structure
  * @param[out] totalLength Number of bytes that have been parsed
  * @param[out] extensions Information resulting from the parsing process
+ * @param[in] ignoreUnknown Ignore unknown extensions
  * @return Error code
  **/
 
 error_t x509ParseExtensions(const uint8_t *data, size_t length,
-   size_t *totalLength, X509Extensions *extensions)
+   size_t *totalLength, X509Extensions *extensions, bool_t ignoreUnknown)
 {
    error_t error;
    size_t n;
@@ -1106,7 +1130,10 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
             //An application must reject the certificate if it encounters a
             //critical extension it does not recognize or a critical extension
             //that contains information that it cannot process
-            error = ERROR_UNSUPPORTED_EXTENSION;
+            if(!ignoreUnknown)
+            {
+               error = ERROR_UNSUPPORTED_EXTENSION;
+            }
          }
       }
 
@@ -2146,7 +2173,7 @@ error_t x509ParseInt(const uint8_t *data, size_t length, uint_t *value)
    while(length > 0)
    {
       //Check whether the character is decimal digit
-      if(!cryptoIsdigit(*data))
+      if(!osIsdigit(*data))
          return ERROR_FAILURE;
 
       //Convert the string to integer

@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -59,7 +59,7 @@ error_t pukccInit(void)
    MCLK->AHBMASK.reg |= MCLK_AHBMASK_PUKCC;
 
    //Clear PUKCLParam structure
-   memset(&PUKCLParam, 0, sizeof(PUKCL_PARAM));
+   osMemset(&PUKCLParam, 0, sizeof(PUKCL_PARAM));
    pvPUKCLParam = &PUKCLParam;
 
    //Initialize PUKCC
@@ -586,29 +586,53 @@ error_t mpiCheckProbablePrime(const Mpi *a)
 
    //The number of repetitions controls the error probability
    if(n >= 1300)
+   {
       k = 2;
+   }
    else if(n >= 850)
+   {
       k = 3;
+   }
    else if(n >= 650)
+   {
       k = 4;
+   }
    else if(n >= 550)
+   {
       k = 5;
+   }
    else if(n >= 450)
+   {
       k = 6;
+   }
    else if(n >= 400)
+   {
       k = 7;
+   }
    else if(n >= 350)
+   {
       k = 8;
+   }
    else if(n >= 300)
+   {
       k = 9;
+   }
    else if(n >= 250)
+   {
       k = 12;
+   }
    else if(n >= 200)
+   {
       k = 15;
+   }
    else if(n >= 150)
+   {
       k = 18;
+   }
    else
+   {
       k = 27;
+   }
 
    //Retrieve the length of the input integer, in bytes
    n = mpiGetByteLength(a);
@@ -1143,7 +1167,7 @@ error_t ecMult(const EcDomainParameters *ecParams, EcPoint *r, const Mpi *d,
  **/
 
 error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, const Mpi *privateKey,
+   const EcDomainParameters *ecParams, const Mpi *privateKey,
    const uint8_t *digest, size_t digestLen, EcdsaSignature *signature)
 {
    error_t error;
@@ -1161,11 +1185,10 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
 
    //Retrieve the length of the base point order, in bytes
    orderLen = mpiGetByteLength(&ecParams->q);
-   orderLen = (orderLen + 3U) & ~3U;
-
    //Compute the length of the scalar
-   scalarLen = MAX(orderLen, digestLen);
-   scalarLen = (scalarLen + 3U) & ~3U;
+   scalarLen = (orderLen + 3U) & ~3U;
+   //Keep the leftmost bits of the hash value
+   digestLen = MIN(digestLen, orderLen);
 
    //Initialize multiple precision integer
    mpiInit(&k);
@@ -1333,11 +1356,10 @@ error_t ecdsaVerifySignature(const EcDomainParameters *ecParams,
 
    //Retrieve the length of the base point order, in bytes
    orderLen = mpiGetByteLength(&ecParams->q);
-   orderLen = (orderLen + 3U) & ~3U;
-
    //Compute the length of the scalar
-   scalarLen = MAX(orderLen, digestLen);
-   scalarLen = (scalarLen + 3U) & ~3U;
+   scalarLen = (orderLen + 3U) & ~3U;
+   //Keep the leftmost bits of the hash value
+   digestLen = MIN(digestLen, orderLen);
 
    //Acquire exclusive access to the PUKCC accelerator
    osAcquireMutex(&same54CryptoMutex);

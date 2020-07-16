@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -31,7 +31,7 @@
  * more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -117,7 +117,7 @@ error_t hkdfExtract(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
    if(salt == NULL)
    {
       //If the salt is not provided, it is set to a string of HashLen zeros
-      cryptoMemset(hmacContext->digest, 0, hash->digestSize);
+      osMemset(hmacContext->digest, 0, hash->digestSize);
       salt = hmacContext->digest;
       saltLen = hash->digestSize;
    }
@@ -193,7 +193,7 @@ error_t hkdfExpand(const HashAlgo *hash, const uint8_t *prk, size_t prkLen,
       //Number of octets in the current block
       tLen = MIN(okmLen, hash->digestSize);
       //Save the resulting block
-      cryptoMemcpy(okm, t, tLen);
+      osMemcpy(okm, t, tLen);
 
       //Point to the next block
       okm += tLen;

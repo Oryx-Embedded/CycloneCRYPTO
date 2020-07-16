@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@
  * storage. Refer to IEEE Std 1619 and SP 800-38E for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -139,11 +139,11 @@ error_t xtsEncrypt(XtsContext *context, const uint8_t *i, const uint8_t *p,
    if(length > 0)
    {
       //Copy the final ciphertext bytes
-      cryptoMemcpy(c, c - 16, length);
+      osMemcpy(c, c - 16, length);
       //Copy the final plaintext bytes
-      cryptoMemcpy(x, p, length);
+      osMemcpy(x, p, length);
       //Steal ciphertext to complete the block
-      cryptoMemcpy(x + length, c + length - 16, 16 - length);
+      osMemcpy(x + length, c + length - 16, 16 - length);
 
       //Merge the tweak into the input block
       xtsXorBlock(x, x, t);
@@ -219,16 +219,16 @@ error_t xtsDecrypt(XtsContext *context, const uint8_t *i, const uint8_t *c,
       length -= 16;
 
       //Copy the final plaintext bytes
-      cryptoMemcpy(p + 16, p, length);
+      osMemcpy(p + 16, p, length);
       //Copy the final ciphertext bytes
-      cryptoMemcpy(x, c + 16, length);
+      osMemcpy(x, c + 16, length);
       //Steal ciphertext to complete the block
-      cryptoMemcpy(x + length, p + length, 16 - length);
+      osMemcpy(x + length, p + length, 16 - length);
    }
    else
    {
       //The last block contains exactly 128 bits
-      cryptoMemcpy(x, c, 16);
+      osMemcpy(x, c, 16);
    }
 
    //Merge the tweak into the input block

@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1321
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -166,7 +166,7 @@ void md5Update(Md5Context *context, const void *data, size_t length)
       n = MIN(length, 64 - context->size);
 
       //Copy the data to the buffer
-      cryptoMemcpy(context->buffer + context->size, data, n);
+      osMemcpy(context->buffer + context->size, data, n);
 
       //Update the MD5 context
       context->size += n;
@@ -205,9 +205,13 @@ void md5Final(Md5Context *context, uint8_t *digest)
 
    //Pad the message so that its length is congruent to 56 modulo 64
    if(context->size < 56)
+   {
       paddingSize = 56 - context->size;
+   }
    else
+   {
       paddingSize = 64 + 56 - context->size;
+   }
 
    //Append padding
    md5Update(context, padding, paddingSize);
@@ -227,7 +231,7 @@ void md5Final(Md5Context *context, uint8_t *digest)
 
    //Copy the resulting digest
    if(digest != NULL)
-      cryptoMemcpy(digest, context->digest, MD5_DIGEST_SIZE);
+      osMemcpy(digest, context->digest, MD5_DIGEST_SIZE);
 }
 
 
@@ -248,7 +252,7 @@ void md5FinalRaw(Md5Context *context, uint8_t *digest)
    }
 
    //Copy the resulting digest
-   cryptoMemcpy(digest, context->digest, MD5_DIGEST_SIZE);
+   osMemcpy(digest, context->digest, MD5_DIGEST_SIZE);
 
    //Convert from little-endian byte order to host byte order
    for(i = 0; i < 4; i++)

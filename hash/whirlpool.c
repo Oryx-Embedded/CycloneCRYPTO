@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@
  * in length, and produces a message digest of 512 bits
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -242,7 +242,7 @@ void whirlpoolUpdate(WhirlpoolContext *context, const void *data, size_t length)
       n = MIN(length, 64 - context->size);
 
       //Copy the data to the buffer
-      cryptoMemcpy(context->buffer + context->size, data, n);
+      osMemcpy(context->buffer + context->size, data, n);
 
       //Update the Whirlpool context
       context->size += n;
@@ -305,7 +305,7 @@ void whirlpoolFinal(WhirlpoolContext *context, uint8_t *digest)
 
    //Copy the resulting digest
    if(digest != NULL)
-      cryptoMemcpy(digest, context->digest, WHIRLPOOL_DIGEST_SIZE);
+      osMemcpy(digest, context->digest, WHIRLPOOL_DIGEST_SIZE);
 }
 
 

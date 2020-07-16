@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -61,7 +61,7 @@ const PrngAlgo yarrowPrngAlgo =
 error_t yarrowInit(YarrowContext *context)
 {
    //Clear PRNG state
-   cryptoMemset(context, 0, sizeof(YarrowContext));
+   osMemset(context, 0, sizeof(YarrowContext));
 
    //Create a mutex to prevent simultaneous access to the PRNG state
    if(!osCreateMutex(&context->mutex))
@@ -93,7 +93,7 @@ void yarrowRelease(YarrowContext *context)
    osDeleteMutex(&context->mutex);
 
    //Clear PRNG state
-   cryptoMemset(context, 0, sizeof(YarrowContext));
+   osMemset(context, 0, sizeof(YarrowContext));
 }
 
 
@@ -224,7 +224,7 @@ error_t yarrowRead(YarrowContext *context, uint8_t *output, size_t length)
       //Generate a random block
       yarrowGenerateBlock(context, buffer);
       //Copy data to the output buffer
-      cryptoMemcpy(output, buffer, n);
+      osMemcpy(output, buffer, n);
 
       //We keep track of how many blocks we have output
       context->blockCount++;
@@ -295,7 +295,7 @@ void yarrowFastReseed(YarrowContext *context)
    aesInit(&context->cipherContext, context->key, sizeof(context->key));
 
    //Define the new value of the counter
-   cryptoMemset(context->counter, 0, sizeof(context->counter));
+   osMemset(context->counter, 0, sizeof(context->counter));
    aesEncryptBlock(&context->cipherContext, context->counter, context->counter);
 
    //Reset the hash context
@@ -334,7 +334,7 @@ void yarrowSlowReseed(YarrowContext *context)
    aesInit(&context->cipherContext, context->key, sizeof(context->key));
 
    //Define the new value of the counter
-   cryptoMemset(context->counter, 0, sizeof(context->counter));
+   osMemset(context->counter, 0, sizeof(context->counter));
    aesEncryptBlock(&context->cipherContext, context->counter, context->counter);
 
    //Reset the hash contexts

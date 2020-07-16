@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -160,7 +160,7 @@ error_t ed25519GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
    ed25519Encode(&state->sb, publicKey);
 
    //Erase working state
-   cryptoMemset(state, 0, sizeof(Ed25519State));
+   osMemset(state, 0, sizeof(Ed25519State));
    //Release working state
    cryptoFreeMem(state);
 
@@ -210,7 +210,7 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
    sha512Final(&state->sha512Context, NULL);
 
    //Construct the secret scalar s from the first half of the digest
-   cryptoMemcpy(state->s, state->sha512Context.digest, 32);
+   osMemcpy(state->s, state->sha512Context.digest, 32);
 
    //The lowest three bits of the first octet are cleared, the highest bit
    //of the last octet is cleared, and the second highest bit of the last
@@ -231,7 +231,7 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
    }
 
    //Let prefix denote the second half of the hash digest
-   cryptoMemcpy(state->p, state->sha512Context.digest + 32, 32);
+   osMemcpy(state->p, state->sha512Context.digest + 32, 32);
 
    //Initialize SHA-512 context
    sha512Init(&state->sha512Context);
@@ -291,7 +291,7 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
    ed25519SelectInt(signature + 32, state->p, state->s, c, 32);
 
    //Erase working state
-   cryptoMemset(state, 0, sizeof(Ed25519State));
+   osMemset(state, 0, sizeof(Ed25519State));
    //Release working state
    cryptoFreeMem(state);
 
@@ -335,10 +335,10 @@ error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
 
    //First split the signature into two 32-octet halves. Decode the first
    //half as a point R
-   cryptoMemcpy(state->r, signature, ED25519_SIGNATURE_LEN / 2);
+   osMemcpy(state->r, signature, ED25519_SIGNATURE_LEN / 2);
 
    //Decode the second half as an integer S, in the range 0 <= s < L
-   cryptoMemcpy(state->s, signature + ED25519_SIGNATURE_LEN / 2,
+   osMemcpy(state->s, signature + ED25519_SIGNATURE_LEN / 2,
       ED25519_SIGNATURE_LEN / 2);
 
    //Ed25519 signatures are not malleable due to the verification check that
@@ -389,7 +389,7 @@ error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
    ret |= ed25519CompInt(state->p, signature, ED25519_SIGNATURE_LEN / 2);
 
    //Erase working state
-   cryptoMemset(state, 0, sizeof(Ed25519State));
+   osMemset(state, 0, sizeof(Ed25519State));
    //Release working state
    cryptoFreeMem(state);
 

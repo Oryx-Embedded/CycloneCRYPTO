@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -157,7 +157,7 @@ void ripemd160Update(Ripemd160Context *context, const void *data, size_t length)
       n = MIN(length, 64 - context->size);
 
       //Copy the data to the buffer
-      cryptoMemcpy(context->buffer + context->size, data, n);
+      osMemcpy(context->buffer + context->size, data, n);
 
       //Update the RIPEMD-160 context
       context->size += n;
@@ -196,9 +196,13 @@ void ripemd160Final(Ripemd160Context *context, uint8_t *digest)
 
    //Pad the message so that its length is congruent to 56 modulo 64
    if(context->size < 56)
+   {
       paddingSize = 56 - context->size;
+   }
    else
+   {
       paddingSize = 64 + 56 - context->size;
+   }
 
    //Append padding
    ripemd160Update(context, padding, paddingSize);
@@ -218,7 +222,7 @@ void ripemd160Final(Ripemd160Context *context, uint8_t *digest)
 
    //Copy the resulting digest
    if(digest != NULL)
-      cryptoMemcpy(digest, context->digest, RIPEMD160_DIGEST_SIZE);
+      osMemcpy(digest, context->digest, RIPEMD160_DIGEST_SIZE);
 }
 
 

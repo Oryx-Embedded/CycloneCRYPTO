@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 #ifndef _CRYPTO_H
@@ -40,18 +40,18 @@
 
 
 /*
- * CycloneCrypto Open is licensed under GPL version 2. In particular:
+ * CycloneCRYPTO Open is licensed under GPL version 2. In particular:
  *
- * - If you link your program to CycloneCrypto Open, the result is a derivative
+ * - If you link your program to CycloneCRYPTO Open, the result is a derivative
  *   work that can only be distributed under the same GPL license terms.
  *
- * - If additions or changes to CycloneCrypto Open are made, the result is a
+ * - If additions or changes to CycloneCRYPTO Open are made, the result is a
  *   derivative work that can only be distributed under the same license terms.
  *
  * - The GPL license requires that you make the source code available to
  *   whoever you make the binary available to.
  *
- * - If you sell or distribute a hardware product that runs CycloneCrypto Open,
+ * - If you sell or distribute a hardware product that runs CycloneCRYPTO Open,
  *   the GPL license requires you to provide public and full access to all
  *   source code on a nondiscriminatory basis.
  *
@@ -62,17 +62,17 @@
  */
 
 #ifndef GPL_LICENSE_TERMS_ACCEPTED
-   #error Before compiling CycloneCrypto Open, you must accept the terms of the GPL license
+   #error Before compiling CycloneCRYPTO Open, you must accept the terms of the GPL license
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "1.9.6"
+#define CYCLONE_CRYPTO_VERSION_STRING "1.9.8"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 1
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 9
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 6
+#define CYCLONE_CRYPTO_REV_NUMBER 8
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -111,14 +111,14 @@
 
 //MD2 hash support
 #ifndef MD2_SUPPORT
-   #define MD2_SUPPORT ENABLED
+   #define MD2_SUPPORT DISABLED
 #elif (MD2_SUPPORT != ENABLED && MD2_SUPPORT != DISABLED)
    #error MD2_SUPPORT parameter is not valid
 #endif
 
 //MD4 hash support
 #ifndef MD4_SUPPORT
-   #define MD4_SUPPORT ENABLED
+   #define MD4_SUPPORT DISABLED
 #elif (MD4_SUPPORT != ENABLED && MD4_SUPPORT != DISABLED)
    #error MD4_SUPPORT parameter is not valid
 #endif
@@ -132,14 +132,14 @@
 
 //RIPEMD-128 hash support
 #ifndef RIPEMD128_SUPPORT
-   #define RIPEMD128_SUPPORT ENABLED
+   #define RIPEMD128_SUPPORT DISABLED
 #elif (RIPEMD128_SUPPORT != ENABLED && RIPEMD128_SUPPORT != DISABLED)
    #error RIPEMD128_SUPPORT parameter is not valid
 #endif
 
 //RIPEMD-160 hash support
 #ifndef RIPEMD160_SUPPORT
-   #define RIPEMD160_SUPPORT ENABLED
+   #define RIPEMD160_SUPPORT DISABLED
 #elif (RIPEMD160_SUPPORT != ENABLED && RIPEMD160_SUPPORT != DISABLED)
    #error RIPEMD160_SUPPORT parameter is not valid
 #endif
@@ -181,14 +181,14 @@
 
 //SHA-512/224 hash support
 #ifndef SHA512_224_SUPPORT
-   #define SHA512_224_SUPPORT ENABLED
+   #define SHA512_224_SUPPORT DISABLED
 #elif (SHA512_224_SUPPORT != ENABLED && SHA512_224_SUPPORT != DISABLED)
    #error SHA512_224_SUPPORT parameter is not valid
 #endif
 
 //SHA-512/256 hash support
 #ifndef SHA512_256_SUPPORT
-   #define SHA512_256_SUPPORT ENABLED
+   #define SHA512_256_SUPPORT DISABLED
 #elif (SHA512_256_SUPPORT != ENABLED && SHA512_256_SUPPORT != DISABLED)
    #error SHA512_256_SUPPORT parameter is not valid
 #endif
@@ -314,14 +314,14 @@
 
 //Tiger hash support
 #ifndef TIGER_SUPPORT
-   #define TIGER_SUPPORT ENABLED
+   #define TIGER_SUPPORT DISABLED
 #elif (TIGER_SUPPORT != ENABLED && TIGER_SUPPORT != DISABLED)
    #error TIGER_SUPPORT parameter is not valid
 #endif
 
 //Whirlpool hash support
 #ifndef WHIRLPOOL_SUPPORT
-   #define WHIRLPOOL_SUPPORT ENABLED
+   #define WHIRLPOOL_SUPPORT DISABLED
 #elif (WHIRLPOOL_SUPPORT != ENABLED && WHIRLPOOL_SUPPORT != DISABLED)
    #error WHIRLPOOL_SUPPORT parameter is not valid
 #endif
@@ -356,21 +356,21 @@
 
 //RC4 encryption support
 #ifndef RC4_SUPPORT
-   #define RC4_SUPPORT ENABLED
+   #define RC4_SUPPORT DISABLED
 #elif (RC4_SUPPORT != ENABLED && RC4_SUPPORT != DISABLED)
    #error RC4_SUPPORT parameter is not valid
 #endif
 
 //RC6 encryption support
 #ifndef RC6_SUPPORT
-   #define RC6_SUPPORT ENABLED
+   #define RC6_SUPPORT DISABLED
 #elif (RC6_SUPPORT != ENABLED && RC6_SUPPORT != DISABLED)
    #error RC6_SUPPORT parameter is not valid
 #endif
 
 //IDEA encryption support
 #ifndef IDEA_SUPPORT
-   #define IDEA_SUPPORT ENABLED
+   #define IDEA_SUPPORT DISABLED
 #elif (IDEA_SUPPORT != ENABLED && IDEA_SUPPORT != DISABLED)
    #error IDEA_SUPPORT parameter is not valid
 #endif
@@ -628,72 +628,6 @@
 //Deallocate memory block
 #ifndef cryptoFreeMem
    #define cryptoFreeMem(p) osFreeMem(p)
-#endif
-
-//Fill block of memory
-#ifndef cryptoMemset
-   #include <string.h>
-   #define cryptoMemset(p, value, length) (void) memset(p, value, length)
-#endif
-
-//Copy block of memory
-#ifndef cryptoMemcpy
-   #include <string.h>
-   #define cryptoMemcpy(dest, src, length) (void) memcpy(dest, src, length)
-#endif
-
-//Move block of memory
-#ifndef cryptoMemmove
-   #include <string.h>
-   #define cryptoMemmove(dest, src, length) (void) memmove(dest, src, length)
-#endif
-
-//Compare two blocks of memory
-#ifndef cryptoMemcmp
-   #include <string.h>
-   #define cryptoMemcmp(p1, p2, length) memcmp(p1, p2, length)
-#endif
-
-//Get string length
-#ifndef cryptoStrlen
-   #include <string.h>
-   #define cryptoStrlen(s) strlen(s)
-#endif
-
-//Copy string
-#ifndef cryptoStrcpy
-   #include <string.h>
-   #define cryptoStrcpy(s1, s2) (void) strcpy(s1, s2)
-#endif
-
-//Copy characters from string
-#ifndef cryptoStrncpy
-   #include <string.h>
-   #define cryptoStrncpy(s1, s2, length) (void) strncpy(s1, s2, length)
-#endif
-
-//Format string
-#ifndef cryptoSprintf
-   #include <stdio.h>
-   #define cryptoSprintf(dest, format, ...) sprintf(dest, format, __VA_ARGS__)
-#endif
-
-//Convert string to unsigned long integer
-#ifndef cryptoStrtoul
-   #include <stdlib.h>
-   #define cryptoStrtoul(s, endptr, base) strtoul(s, endptr, base)
-#endif
-
-//Convert a character to lowercase
-#ifndef cryptoTolower
-   #include <ctype.h>
-   #define cryptoTolower(c) tolower((uint8_t) (c))
-#endif
-
-//Check if a character is a decimal digit
-#ifndef cryptoIsdigit
-   #include <ctype.h>
-   #define cryptoIsdigit(c) isdigit((uint8_t) (c))
 #endif
 
 //Maximum context size (hash algorithms)

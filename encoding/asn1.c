@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -383,29 +383,51 @@ error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data,
 
    //Compute the number of octets that are necessary to encode the tag number
    if(tag->objType < 31)
+   {
       m = 0;
+   }
    else if(tag->objType < 128)
+   {
       m = 1;
+   }
    else if(tag->objType < 16384)
+   {
       m = 2;
+   }
    else if(tag->objType < 2097152)
+   {
       m = 3;
+   }
    else if(tag->objType < 268435456)
+   {
       m = 4;
+   }
    else
+   {
       m = 5;
+   }
 
    //Compute the number of octets that are necessary to encode the length field
    if(tag->length < 128)
+   {
       n = 0;
+   }
    else if(tag->length < 256)
+   {
       n = 1;
+   }
    else if(tag->length < 65536)
+   {
       n = 2;
+   }
    else if(tag->length < 16777216)
+   {
       n = 3;
+   }
    else
+   {
       n = 4;
+   }
 
    //Valid output stream?
    if(data != NULL)
@@ -419,7 +441,7 @@ error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data,
             //Make room for the data
             data -= tag->length;
             //Copy data
-            cryptoMemmove(data, tag->value, tag->length);
+            osMemmove(data, tag->value, tag->length);
          }
 
          //Move backward
@@ -431,7 +453,7 @@ error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data,
          if(tag->value != NULL && tag->length > 0)
          {
             //Copy data
-            cryptoMemmove(data + m + n + 2, tag->value, tag->length);
+            osMemmove(data + m + n + 2, tag->value, tag->length);
          }
       }
 
@@ -762,9 +784,13 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
 
       //Dump tag number, tag class, and contents length fields
       if(tag.objType < 32 && (tag.objClass & ASN1_CLASS_MASK) == ASN1_CLASS_UNIVERSAL)
+      {
          TRACE_DEBUG("%s%s (%" PRIuSIZE " bytes)\r\n", prefix[level], label[tag.objType], tag.length);
+      }
       else
+      {
          TRACE_DEBUG("%s[%u] (%" PRIuSIZE " bytes)\r\n", prefix[level], tag.objType, tag.length);
+      }
 
       //Constructed type?
       if(tag.constructed)

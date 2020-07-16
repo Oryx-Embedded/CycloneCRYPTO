@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -147,7 +147,7 @@ error_t ed448GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
    ed448Encode(&state->sb, publicKey);
 
    //Erase working state
-   cryptoMemset(state, 0, sizeof(Ed448State));
+   osMemset(state, 0, sizeof(Ed448State));
    //Release working state
    cryptoFreeMem(state);
 
@@ -262,7 +262,7 @@ error_t ed448GenerateSignature(const uint8_t *privateKey,
    ed448SelectInt(signature + 57, state->p, state->s, c, 57);
 
    //Erase working state
-   cryptoMemset(state, 0, sizeof(Ed448State));
+   osMemset(state, 0, sizeof(Ed448State));
    //Release working state
    cryptoFreeMem(state);
 
@@ -306,10 +306,10 @@ error_t ed448VerifySignature(const uint8_t *publicKey, const void *message,
 
    //First split the signature into two 32-octet halves. Decode the first
    //half as a point R
-   cryptoMemcpy(state->r, signature, ED448_SIGNATURE_LEN / 2);
+   osMemcpy(state->r, signature, ED448_SIGNATURE_LEN / 2);
 
    //Decode the second half as an integer S, in the range 0 <= s < L
-   cryptoMemcpy(state->s, signature + ED448_SIGNATURE_LEN / 2,
+   osMemcpy(state->s, signature + ED448_SIGNATURE_LEN / 2,
       ED448_SIGNATURE_LEN / 2);
 
    //Ed448 signatures are not malleable due to the verification check that
@@ -349,7 +349,7 @@ error_t ed448VerifySignature(const uint8_t *publicKey, const void *message,
    ret |= ed448CompInt(state->p, signature, ED448_SIGNATURE_LEN / 2);
 
    //Erase working state
-   cryptoMemset(state, 0, sizeof(Ed448State));
+   osMemset(state, 0, sizeof(Ed448State));
    //Release working state
    cryptoFreeMem(state);
 

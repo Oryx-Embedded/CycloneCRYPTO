@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -287,7 +287,7 @@ error_t keccakInit(KeccakContext *context, uint_t capacity)
    uint_t rate;
 
    //Clear Keccak context
-   cryptoMemset(context, 0, sizeof(KeccakContext));
+   osMemset(context, 0, sizeof(KeccakContext));
 
    //The capacity cannot exceed the width of a Keccak-p permutation
    if(capacity >= KECCAK_B)
@@ -331,7 +331,7 @@ void keccakAbsorb(KeccakContext *context, const void *input, size_t length)
       n = MIN(length, context->blockSize - context->length);
 
       //Copy the data to the buffer
-      cryptoMemcpy(context->buffer + context->length, input, n);
+      osMemcpy(context->buffer + context->length, input, n);
 
       //Number of data bytes that have been buffered
       context->length += n;
@@ -379,7 +379,7 @@ void keccakFinal(KeccakContext *context, uint8_t pad)
    q = context->blockSize - context->length;
 
    //Append padding
-   cryptoMemset(context->buffer + context->length, 0, q);
+   osMemset(context->buffer + context->length, 0, q);
    context->buffer[context->length] |= pad;
    context->buffer[context->blockSize - 1] |= 0x80;
 
@@ -450,7 +450,7 @@ void keccakSqueeze(KeccakContext *context, uint8_t *output, size_t length)
       //Copy the output string
       if(output != NULL)
       {
-         cryptoMemcpy(output, context->digest + context->blockSize -
+         osMemcpy(output, context->digest + context->blockSize -
             context->length, n);
       }
 

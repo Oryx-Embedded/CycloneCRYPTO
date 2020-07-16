@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -104,7 +104,7 @@ error_t pbkdf1(const HashAlgo *hash, const uint8_t *p, size_t pLen,
    }
 
    //Output the derived key DK
-   cryptoMemcpy(dk, t, dkLen);
+   osMemcpy(dk, t, dkLen);
 
    //Free previously allocated memory
    cryptoFreeMem(hashContext);
@@ -169,7 +169,7 @@ error_t pbkdf2(const HashAlgo *hash, const uint8_t *p, size_t pLen,
       hmacFinal(hashContext, u);
 
       //Save the resulting HMAC value
-      cryptoMemcpy(t, u, hash->digestSize);
+      osMemcpy(t, u, hash->digestSize);
 
       //Iterate as many times as required
       for(j = 1; j < c; j++)
@@ -189,7 +189,7 @@ error_t pbkdf2(const HashAlgo *hash, const uint8_t *p, size_t pLen,
       //Number of octets in the current block
       k = MIN(dkLen, hash->digestSize);
       //Save the resulting block
-      cryptoMemcpy(dk, t, k);
+      osMemcpy(dk, t, k);
 
       //Point to the next block
       dk += k;

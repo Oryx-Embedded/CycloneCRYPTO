@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 #ifndef _X509_CERT_CREATE_H
@@ -75,6 +75,9 @@ error_t x509FormatTime(const DateTime *dateTime, uint8_t *output,
 error_t x509FormatExtensions(const X509Extensions *extensions,
    const X509SubjectKeyId *subjectKeyId, const X509AuthorityKeyId *authKeyId,
    uint8_t *output, size_t *written);
+
+error_t x509FormatExtension(const X509Extension *extension, uint8_t *output,
+   size_t *written);
 
 error_t x509FormatBasicConstraints(const X509BasicConstraints *basicConstraints,
    uint8_t *output, size_t *written);

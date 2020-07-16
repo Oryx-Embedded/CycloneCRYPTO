@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -1339,7 +1339,7 @@ error_t emePkcs1v15Encode(const PrngAlgo *prngAlgo, void *prngContext,
    *p = 0x00;
 
    //Copy the message to be encrypted
-   cryptoMemcpy(p + 1, message, messageLen);
+   osMemcpy(p + 1, message, messageLen);
 
    //Successful processing
    return NO_ERROR;
@@ -1445,18 +1445,18 @@ error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
 
    //Let lHash = Hash(L)
    hash->init(hashContext);
-   hash->update(hashContext, label, cryptoStrlen(label));
+   hash->update(hashContext, label, osStrlen(label));
    hash->final(hashContext, db);
 
    //The padding string PS consists of k - mLen - 2hLen - 2 zero octets
    n = k - messageLen - 2 * hash->digestSize - 2;
    //Generate the padding string
-   cryptoMemset(db + hash->digestSize, 0, n);
+   osMemset(db + hash->digestSize, 0, n);
 
    //Concatenate lHash, PS, a single octet with hexadecimal value 0x01, and
    //the message M to form a data block DB of length k - hLen - 1 octets
    db[hash->digestSize + n] = 0x01;
-   cryptoMemcpy(db + hash->digestSize + n + 1, message, messageLen);
+   osMemcpy(db + hash->digestSize + n + 1, message, messageLen);
 
    //Calculate the length of the data block
    n = k - hash->digestSize - 1;
@@ -1513,7 +1513,7 @@ uint32_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
 
       //Let lHash = Hash(L)
       hash->init(hashContext);
-      hash->update(hashContext, label, cryptoStrlen(label));
+      hash->update(hashContext, label, osStrlen(label));
       hash->final(hashContext, lHash);
 
       //Separate the encoded message EM into a single octet Y, an octet string
@@ -1605,7 +1605,7 @@ error_t emsaPkcs1v15Encode(const HashAlgo *hash,
    n = emLen - hash->oidSize - hash->digestSize - 13;
 
    //Each byte of PS must be set to 0xFF when the block type is 0x01
-   cryptoMemset(em + i, 0xFF, n);
+   osMemset(em + i, 0xFF, n);
    i += n;
 
    //Append a 0x00 octet to the padding string
@@ -1620,7 +1620,7 @@ error_t emsaPkcs1v15Encode(const HashAlgo *hash,
    em[i++] = (uint8_t) hash->oidSize;
 
    //Copy the hash algorithm OID
-   cryptoMemcpy(em + i, hash->oid, hash->oidSize);
+   osMemcpy(em + i, hash->oid, hash->oidSize);
    i += hash->oidSize;
 
    //Encode the rest of the ASN.1 structure
@@ -1630,7 +1630,7 @@ error_t emsaPkcs1v15Encode(const HashAlgo *hash,
    em[i++] = (uint8_t) hash->digestSize;
 
    //Append the hash value
-   cryptoMemcpy(em + i, digest, hash->digestSize);
+   osMemcpy(em + i, digest, hash->digestSize);
 
    //Successful processing
    return NO_ERROR;
@@ -1769,7 +1769,7 @@ error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
    hash->final(hashContext, h);
 
    //Let DB = PS || 0x01 || salt
-   cryptoMemset(db, 0, n);
+   osMemset(db, 0, n);
    db[n] = 0x01;
 
    //Calculate the length of the data block
@@ -1783,7 +1783,7 @@ error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
    db[0] &= 0xFF >> (8 * emLen - emBits);
 
    //Let EM = maskedDB || H || 0xbc
-   cryptoMemcpy(em + n, h, hash->digestSize);
+   osMemcpy(em + n, h, hash->digestSize);
    em[n + hash->digestSize] = 0xBC;
 
    //Release hash context
@@ -2084,7 +2084,7 @@ error_t rsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
    TRACE_DEBUG("  Coefficient:\r\n");
    TRACE_DEBUG_MPI("    ", &privateKey->qinv);
 
-   //An public key can be optionally generated
+   //A public key can be optionally generated
    if(publicKey != NULL)
    {
       //The public key is (n, e)

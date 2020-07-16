@@ -6,9 +6,9 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2019 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
  *
- * This file is part of CycloneCrypto Open.
+ * This file is part of CycloneCRYPTO Open.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.6
+ * @version 1.9.8
  **/
 
 //Switch to the appropriate trace level
@@ -481,7 +481,7 @@ error_t x509FormatName(const X509Name *name, uint8_t *output,
    if(name->rawData != NULL && name->rawDataLen > 0)
    {
       //Copy raw ASN.1 sequence
-      cryptoMemcpy(output, name->rawData, name->rawDataLen);
+      osMemcpy(output, name->rawData, name->rawDataLen);
       //Total number of bytes that have been written
       *written = name->rawDataLen;
    }
@@ -793,7 +793,7 @@ error_t x509FormatTime(const DateTime *dateTime, uint8_t *output,
       //The UTCTime uses a 2-digit representation of the year. If YY is greater
       //than or equal to 50, the year shall be interpreted as 19YY. If YY is
       //less than 50, the year shall be interpreted as 20YY
-      sprintf(buffer, "%02" PRIu16 "%02" PRIu8 "%02" PRIu8
+      osSprintf(buffer, "%02" PRIu16 "%02" PRIu8 "%02" PRIu8
          "%02" PRIu8 "%02" PRIu8 "%02" PRIu8 "Z",
          dateTime->year % 100, dateTime->month, dateTime->day,
          dateTime->hours, dateTime->minutes, dateTime->seconds);
@@ -804,7 +804,7 @@ error_t x509FormatTime(const DateTime *dateTime, uint8_t *output,
       type = ASN1_TYPE_GENERALIZED_TIME;
 
       //The GeneralizedTime uses a 4-digit representation of the year
-      sprintf(buffer, "%04" PRIu16 "%02" PRIu8 "%02" PRIu8
+      osSprintf(buffer, "%04" PRIu16 "%02" PRIu8 "%02" PRIu8
          "%02" PRIu8 "%02" PRIu8 "%02" PRIu8 "Z",
          dateTime->year, dateTime->month, dateTime->day,
          dateTime->hours, dateTime->minutes, dateTime->seconds);
@@ -814,7 +814,7 @@ error_t x509FormatTime(const DateTime *dateTime, uint8_t *output,
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = type;
-   tag.length = cryptoStrlen(buffer);
+   tag.length = osStrlen(buffer);
    tag.value = (uint8_t *) buffer;
 
    //Write the corresponding ASN.1 tag
@@ -846,6 +846,7 @@ error_t x509FormatExtensions(const X509Extensions *extensions,
    uint8_t *output, size_t *written)
 {
    error_t error;
+   uint_t i;
    size_t n;
    size_t length;
    uint8_t *p;
@@ -916,6 +917,20 @@ error_t x509FormatExtensions(const X509Extensions *extensions,
    p += n;
    length += n;
 
+   //Add custom extensions, if any
+   for(i = 0; i < extensions->numCustomExtensions; i++)
+   {
+      //Format current extension
+      error = x509FormatExtension(&extensions->customExtensions[i], p, &n);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //Advance data pointer
+      p += n;
+      length += n;
+   }
+
    //Any extensions written?
    if(length > 0)
    {
@@ -945,6 +960,107 @@ error_t x509FormatExtensions(const X509Extensions *extensions,
       if(error)
          return error;
    }
+
+   //Total number of bytes that have been written
+   *written = length;
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Format X.509 certificate extension
+ * @param[in] extension Pointer to the extension
+ * @param[out] output Buffer where to format the ASN.1 structure
+ * @param[out] written Length of the resulting ASN.1 structure
+ * @return Error code
+ **/
+
+error_t x509FormatExtension(const X509Extension *extension, uint8_t *output,
+   size_t *written)
+{
+   error_t error;
+   size_t n;
+   size_t length;
+   uint8_t value;
+   uint8_t *p;
+   Asn1Tag tag;
+
+   //Point to the buffer where to write the ASN.1 structure
+   p = output;
+   //Length of the ASN.1 structure
+   length = 0;
+
+   //Format the extension identifier
+   tag.constructed = FALSE;
+   tag.objClass = ASN1_CLASS_UNIVERSAL;
+   tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
+   tag.length = extension->oidLen;
+   tag.value = extension->oid;
+
+   //Write the corresponding ASN.1 tag
+   error = asn1WriteTag(&tag, FALSE, p, &n);
+   //Any error to report?
+   if(error)
+      return error;
+
+   //Advance data pointer
+   p += n;
+   length += n;
+
+   //An extension includes the critical flag, with a default value of FALSE
+   if(extension->critical)
+   {
+      //Mark the extension as critical
+      value = 0xFF;
+
+      //Format the critical field
+      tag.constructed = FALSE;
+      tag.objClass = ASN1_CLASS_UNIVERSAL;
+      tag.objType = ASN1_TYPE_BOOLEAN;
+      tag.length = 1;
+      tag.value = &value;
+
+      //Write the corresponding ASN.1 tag
+      error = asn1WriteTag(&tag, FALSE, p, &n);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //Advance data pointer
+      p += n;
+      length += n;
+   }
+
+   //The extension value is encapsulated in an octet string
+   tag.constructed = FALSE;
+   tag.objClass = ASN1_CLASS_UNIVERSAL;
+   tag.objType = ASN1_TYPE_OCTET_STRING;
+   tag.length = extension->valueLen;
+   tag.value = extension->value;
+
+   //Write the corresponding ASN.1 tag
+   error = asn1WriteTag(&tag, FALSE, p, &n);
+   //Any error to report?
+   if(error)
+      return error;
+
+   //Adjust the length of the extension
+   length += n;
+
+   //The extension is encapsulated within a sequence
+   tag.constructed = TRUE;
+   tag.objClass = ASN1_CLASS_UNIVERSAL;
+   tag.objType = ASN1_TYPE_SEQUENCE;
+   tag.length = length;
+   tag.value = output;
+
+   //Write the corresponding ASN.1 tag
+   error = asn1WriteTag(&tag, FALSE, output, &length);
+   //Any error to report?
+   if(error)
+      return error;
 
    //Total number of bytes that have been written
    *written = length;
