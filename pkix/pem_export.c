@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -1023,8 +1023,8 @@ error_t pemEncodeFile(const void *input, size_t inputLen, const char_t *label,
    //Encode the ASN.1 data using Base64
    base64Encode(input, inputLen, output, &n);
 
-   //If the output parameter is NULL, then the function calculates the
-   //length of the resulting PEM file without copying any data
+   //If the output parameter is NULL, then the function calculates the length
+   //of the resulting PEM file without copying any data
    if(output != NULL)
    {
       //A PEM file starts with a beginning tag

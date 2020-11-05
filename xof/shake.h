@@ -1,6 +1,6 @@
 /**
- * @file shake128.h
- * @brief SHAKE128 extendable-output function (XOF)
+ * @file shake.h
+ * @brief SHAKE128 and SHAKE256 extendable-output functions
  *
  * @section License
  *
@@ -25,11 +25,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
-#ifndef _SHAKE128_H
-#define _SHAKE128_H
+#ifndef _SHAKE_H
+#define _SHAKE_H
 
 //Dependencies
 #include "core/crypto.h"
@@ -42,23 +42,27 @@ extern "C" {
 
 
 /**
- * @brief SHAKE128 algorithm context
+ * @brief SHAKE algorithm context
  **/
 
-typedef KeccakContext Shake128Context;
+typedef struct
+{
+   KeccakContext keccakContext;
+} ShakeContext;
 
 
-//SHAKE128 related constants
+//SHAKE related constants
 extern const uint8_t shake128Oid[9];
+extern const uint8_t shake256Oid[9];
 
-//SHAKE128 related functions
-error_t shake128Compute(const void *input, size_t inputLen,
+//SHAKE related functions
+error_t shakeCompute(uint_t strength, const void *input, size_t inputLen,
    uint8_t *output, size_t outputLen);
 
-void shake128Init(Shake128Context *context);
-void shake128Absorb(Shake128Context *context, const void *input, size_t length);
-void shake128Final(Shake128Context *context);
-void shake128Squeeze(Shake128Context *context, uint8_t *output, size_t length);
+error_t shakeInit(ShakeContext *context, uint_t strength);
+void shakeAbsorb(ShakeContext *context, const void *input, size_t length);
+void shakeFinal(ShakeContext *context);
+void shakeSqueeze(ShakeContext *context, uint8_t *output, size_t length);
 
 //C++ guard
 #ifdef __cplusplus

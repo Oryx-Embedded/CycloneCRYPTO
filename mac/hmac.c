@@ -32,7 +32,7 @@
  * key. Refer to RFC 2104 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -85,25 +85,38 @@ const uint8_t HMAC_WITH_SHA3_512_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0
 error_t hmacCompute(const HashAlgo *hash, const void *key, size_t keyLen,
    const void *data, size_t dataLen, uint8_t *digest)
 {
+   error_t error;
    HmacContext *context;
 
    //Allocate a memory buffer to hold the HMAC context
    context = cryptoAllocMem(sizeof(HmacContext));
-   //Failed to allocate memory?
-   if(context == NULL)
-      return ERROR_OUT_OF_MEMORY;
 
-   //Initialize the HMAC context
-   hmacInit(context, hash, key, keyLen);
-   //Digest the message
-   hmacUpdate(context, data, dataLen);
-   //Finalize the HMAC computation
-   hmacFinal(context, digest);
+   //Successful memory allocation?
+   if(context != NULL)
+   {
+      //Initialize the HMAC context
+      error = hmacInit(context, hash, key, keyLen);
 
-   //Free previously allocated memory
-   cryptoFreeMem(context);
-   //Successful processing
-   return NO_ERROR;
+      //Check status code
+      if(!error)
+      {
+         //Digest the message
+         hmacUpdate(context, data, dataLen);
+         //Finalize the HMAC computation
+         hmacFinal(context, digest);
+      }
+
+      //Free previously allocated memory
+      cryptoFreeMem(context);
+   }
+   else
+   {
+      //Failed to allocate memory
+      error = ERROR_OUT_OF_MEMORY;
+   }
+
+   //Return status code
+   return error;
 }
 
 
@@ -113,12 +126,21 @@ error_t hmacCompute(const HashAlgo *hash, const void *key, size_t keyLen,
  * @param[in] hash Hash algorithm used to compute HMAC
  * @param[in] key Key to use in the hash algorithm
  * @param[in] keyLen Length of the key
+ * @return Error code
  **/
 
-void hmacInit(HmacContext *context, const HashAlgo *hash,
+error_t hmacInit(HmacContext *context, const HashAlgo *hash,
    const void *key, size_t keyLen)
 {
    uint_t i;
+
+   //Check parameters
+   if(context == NULL || hash == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Make sure the supplied key is valid
+   if(key == NULL && keyLen != 0)
+      return ERROR_INVALID_PARAMETER;
 
    //Hash algorithm used to compute HMAC
    context->hash = hash;
@@ -155,6 +177,9 @@ void hmacInit(HmacContext *context, const HashAlgo *hash,
    hash->init(context->hashContext);
    //Start with the inner pad
    hash->update(context->hashContext, context->key, hash->blockSize);
+
+   //Successful initialization
+   return NO_ERROR;
 }
 
 
@@ -209,7 +234,9 @@ void hmacFinal(HmacContext *context, uint8_t *digest)
 
    //Copy the resulting HMAC value
    if(digest != NULL)
+   {
       osMemcpy(digest, context->digest, hash->digestSize);
+   }
 }
 
 
@@ -244,7 +271,9 @@ void hmacFinalRaw(HmacContext *context, uint8_t *digest)
 
    //Copy the resulting HMAC value
    if(digest != NULL)
+   {
       osMemcpy(digest, context->digest, hash->digestSize);
+   }
 }
 
 #endif

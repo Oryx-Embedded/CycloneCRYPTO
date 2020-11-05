@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 #ifndef _EDDSA_H
@@ -60,6 +60,17 @@ typedef struct
    Mpi d; ///<Private key
    Mpi q; ///<Public key
 } EddsaPrivateKey;
+
+
+/**
+ * @brief Message chunk descriptor
+ **/
+
+typedef struct
+{
+   const void *buffer;
+   size_t length;
+} EddsaMessageChunk;
 
 
 //EdDSA related functions

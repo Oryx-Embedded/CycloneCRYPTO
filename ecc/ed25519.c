@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -186,13 +186,49 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
    const uint8_t *publicKey, const void *message, size_t messageLen,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature)
 {
+   error_t error;
+   EddsaMessageChunk messageChunks[2];
+
+   //The message fits in a single chunk
+   messageChunks[0].buffer = message;
+   messageChunks[0].length = messageLen;
+   messageChunks[1].buffer = NULL;
+   messageChunks[1].length = 0;
+
+   //Ed25519 signature generation
+   error = ed25519GenerateSignatureEx(privateKey, publicKey, messageChunks,
+      context, contextLen, flag, signature);
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief EdDSA signature generation
+ * @param[in] privateKey Signer's EdDSA private key (32 bytes)
+ * @param[in] publicKey Signer's EdDSA public key (32 bytes)
+ * @param[in] messageChunks Collection of chunks representing the message to
+ *   be signed
+ * @param[in] context Constant string specified by the protocol using it
+ * @param[in] contextLen Length of the context, in bytes
+ * @param[in] flag Prehash flag for Ed25519ph scheme
+ * @param[out] signature EdDSA signature (64 bytes)
+ * @return Error code
+ **/
+
+error_t ed25519GenerateSignatureEx(const uint8_t *privateKey,
+   const uint8_t *publicKey, const EddsaMessageChunk *messageChunks,
+   const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature)
+{
+   uint_t i;
    uint8_t c;
    Ed25519State *state;
 
    //Check parameters
    if(privateKey == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
-   if(message == NULL && messageLen != 0)
+   if(messageChunks == NULL)
       return ERROR_INVALID_PARAMETER;
    if(context == NULL && contextLen != 0)
       return ERROR_INVALID_PARAMETER;
@@ -247,9 +283,18 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
       sha512Update(&state->sha512Context, context, contextLen);
    }
 
-   //Compute SHA-512(dom2(F, C) || prefix || PH(M))
+   //Digest prefix
    sha512Update(&state->sha512Context, state->p, 32);
-   sha512Update(&state->sha512Context, message, messageLen);
+
+   //The message is split over multiple chunks
+   for(i = 0; messageChunks[i].buffer != NULL; i++)
+   {
+      //Digest current chunk
+      sha512Update(&state->sha512Context, messageChunks[i].buffer,
+         messageChunks[i].length);
+   }
+
+   //Compute SHA-512(dom2(F, C) || prefix || PH(M))
    sha512Final(&state->sha512Context, NULL);
 
    //Reduce the 64-octet digest as a little-endian integer r
@@ -273,11 +318,20 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
       sha512Update(&state->sha512Context, context, contextLen);
    }
 
-   //Compute SHA512(dom2(F, C) || R || A || PH(M)) and interpret the 64-octet
-   //digest as a little-endian integer k
+   //Digest R || A
    sha512Update(&state->sha512Context, signature, ED25519_SIGNATURE_LEN / 2);
    sha512Update(&state->sha512Context, publicKey, ED25519_PUBLIC_KEY_LEN);
-   sha512Update(&state->sha512Context, message, messageLen);
+
+   //The message is split over multiple chunks
+   for(i = 0; messageChunks[i].buffer != NULL; i++)
+   {
+      //Digest current chunk
+      sha512Update(&state->sha512Context, messageChunks[i].buffer,
+         messageChunks[i].length);
+   }
+
+   //Compute SHA512(dom2(F, C) || R || A || PH(M)) and interpret the 64-octet
+   //digest as a little-endian integer k
    sha512Final(&state->sha512Context, state->k);
 
    //Compute S = (r + k * s) mod L. For efficiency, reduce k modulo L first
@@ -316,13 +370,48 @@ error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
    size_t messageLen, const void *context, uint8_t contextLen, uint8_t flag,
    const uint8_t *signature)
 {
+   error_t error;
+   EddsaMessageChunk messageChunks[2];
+
+   //The message fits in a single chunk
+   messageChunks[0].buffer = message;
+   messageChunks[0].length = messageLen;
+   messageChunks[1].buffer = NULL;
+   messageChunks[1].length = 0;
+
+   //Ed25519 signature verification
+   error = ed25519VerifySignatureEx(publicKey, messageChunks, context,
+      contextLen, flag, signature);
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief EdDSA signature verification
+ * @param[in] publicKey Signer's EdDSA public key (32 bytes)
+ * @param[in] messageChunks Collection of chunks representing the message
+ *   whose signature is to be verified
+ * @param[in] context Constant string specified by the protocol using it
+ * @param[in] contextLen Length of the context, in bytes
+ * @param[in] flag Prehash flag for Ed25519ph scheme
+ * @param[in] signature EdDSA signature (64 bytes)
+ * @return Error code
+ **/
+
+error_t ed25519VerifySignatureEx(const uint8_t *publicKey,
+   const EddsaMessageChunk *messageChunks, const void *context,
+   uint8_t contextLen, uint8_t flag, const uint8_t *signature)
+{
+   uint_t i;
    uint32_t ret;
    Ed25519State *state;
 
    //Check parameters
    if(publicKey == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
-   if(message == NULL && messageLen != 0)
+   if(messageChunks == NULL)
       return ERROR_INVALID_PARAMETER;
    if(context == NULL && contextLen != 0)
       return ERROR_INVALID_PARAMETER;
@@ -363,12 +452,20 @@ error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
       sha512Update(&state->sha512Context, context, contextLen);
    }
 
-   //Compute SHA512(dom2(F, C) || R || A || PH(M))
+   //Digest R || A
    sha512Update(&state->sha512Context, state->r, ED25519_SIGNATURE_LEN / 2);
    sha512Update(&state->sha512Context, publicKey, ED25519_PUBLIC_KEY_LEN);
-   sha512Update(&state->sha512Context, message, messageLen);
 
-   //Interpret the 64-octet digest as a little-endian integer k
+   //The message is split over multiple chunks
+   for(i = 0; messageChunks[i].buffer != NULL; i++)
+   {
+      //Digest current chunk
+      sha512Update(&state->sha512Context, messageChunks[i].buffer,
+         messageChunks[i].length);
+   }
+
+   //Compute SHA512(dom2(F, C) || R || A || PH(M)) and interpret the 64-octet
+   //digest as a little-endian integer k
    sha512Final(&state->sha512Context, state->k);
 
    //For efficiency, reduce k modulo L first

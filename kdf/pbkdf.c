@@ -1,6 +1,6 @@
 /**
- * @file pkcs5.c
- * @brief PKCS #5 (Password-Based Cryptography Standard)
+ * @file pbkdf.c
+ * @brief PBKDF (Password-Based Key Derivation Function)
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,14 +33,12 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "kdf/pkcs5.h"
+#include "kdf/pbkdf.h"
 #include "mac/hmac.h"
 
 //Check crypto library configuration
-#if (PKCS5_SUPPORT == ENABLED)
+#if (PBKDF_SUPPORT == ENABLED)
 
-//PKCS #5 OID (1.2.840.113549.1.5)
-const uint8_t PKCS5_OID[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05};
 //PBKDF2 OID (1.2.840.113549.1.5.12)
 const uint8_t PBKDF2_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x05, 0x0C};
 

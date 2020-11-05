@@ -1,6 +1,6 @@
 /**
- * @file pkcs5.h
- * @brief PKCS #5 (Password-Based Cryptography Standard)
+ * @file cshake.h
+ * @brief cSHAKE128 and cSHAKE256 (customizable SHAKE function)
  *
  * @section License
  *
@@ -25,30 +25,47 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
-#ifndef _PKCS5_H
-#define _PKCS5_H
+#ifndef _CSHAKE_H
+#define _CSHAKE_H
 
 //Dependencies
 #include "core/crypto.h"
+#include "xof/keccak.h"
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//PKCS #5 related constants
-extern const uint8_t PKCS5_OID[8];
-extern const uint8_t PBKDF2_OID[9];
 
-//PKCS #5 related functions
-error_t pbkdf1(const HashAlgo *hash, const uint8_t *p, size_t pLen,
-   const uint8_t *s, size_t sLen, uint_t c, uint8_t *dk, size_t dkLen);
+/**
+ * @brief cSHAKE algorithm context
+ **/
 
-error_t pbkdf2(const HashAlgo *hash, const uint8_t *p, size_t pLen,
-   const uint8_t *s, size_t sLen, uint_t c, uint8_t *dk, size_t dkLen);
+typedef struct
+{
+   size_t nameLen;
+   size_t customLen;
+   KeccakContext keccakContext;
+} CshakeContext;
+
+
+//cSHAKE related functions
+error_t cshakeCompute(uint_t strength, const void *input, size_t inputLen,
+   const char_t *name, size_t nameLen, const char_t *custom, size_t customLen,
+   uint8_t *output, size_t outputLen);
+
+error_t cshakeInit(CshakeContext *context, uint_t strength, const char_t *name,
+   size_t nameLen, const char_t *custom, size_t customLen);
+
+void cshakeAbsorb(CshakeContext *context, const void *input, size_t length);
+void cshakeFinal(CshakeContext *context);
+void cshakeSqueeze(CshakeContext *context, uint8_t *output, size_t length);
+
+void cshakeLeftEncode(size_t value, uint8_t *buffer, size_t *length);
 
 //C++ guard
 #ifdef __cplusplus

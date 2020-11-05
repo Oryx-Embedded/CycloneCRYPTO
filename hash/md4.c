@@ -30,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1320
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -93,23 +93,36 @@ const HashAlgo md4HashAlgo =
 
 error_t md4Compute(const void *data, size_t length, uint8_t *digest)
 {
+   error_t error;
+   Md4Context *context;
+
    //Allocate a memory buffer to hold the MD4 context
-   Md4Context *context = cryptoAllocMem(sizeof(Md4Context));
-   //Failed to allocate memory?
-   if(context == NULL)
-      return ERROR_OUT_OF_MEMORY;
+   context = cryptoAllocMem(sizeof(Md4Context));
 
-   //Initialize the MD4 context
-   md4Init(context);
-   //Digest the message
-   md4Update(context, data, length);
-   //Finalize the MD4 message digest
-   md4Final(context, digest);
+   //Successful memory allocation?
+   if(context != NULL)
+   {
+      //Initialize the MD4 context
+      md4Init(context);
+      //Digest the message
+      md4Update(context, data, length);
+      //Finalize the MD4 message digest
+      md4Final(context, digest);
 
-   //Free previously allocated memory
-   cryptoFreeMem(context);
-   //Successful processing
-   return NO_ERROR;
+      //Free previously allocated memory
+      cryptoFreeMem(context);
+
+      //Successful processing
+      error = NO_ERROR;
+   }
+   else
+   {
+      //Failed to allocate memory
+      error = ERROR_OUT_OF_MEMORY;
+   }
+
+   //Return status code
+   return error;
 }
 
 
@@ -216,7 +229,9 @@ void md4Final(Md4Context *context, uint8_t *digest)
 
    //Copy the resulting digest
    if(digest != NULL)
+   {
       osMemcpy(digest, context->digest, MD4_DIGEST_SIZE);
+   }
 }
 
 

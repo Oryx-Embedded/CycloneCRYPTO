@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -95,23 +95,36 @@ const HashAlgo ripemd128HashAlgo =
 
 error_t ripemd128Compute(const void *data, size_t length, uint8_t *digest)
 {
+   error_t error;
+   Ripemd128Context *context;
+
    //Allocate a memory buffer to hold the RIPEMD-128 context
-   Ripemd128Context *context = cryptoAllocMem(sizeof(Ripemd128Context));
-   //Failed to allocate memory?
-   if(context == NULL)
-      return ERROR_OUT_OF_MEMORY;
+   context = cryptoAllocMem(sizeof(Ripemd128Context));
 
-   //Initialize the RIPEMD-128 context
-   ripemd128Init(context);
-   //Digest the message
-   ripemd128Update(context, data, length);
-   //Finalize the RIPEMD-128 message digest
-   ripemd128Final(context, digest);
+   //Successful memory allocation?
+   if(context != NULL)
+   {
+      //Initialize the RIPEMD-128 context
+      ripemd128Init(context);
+      //Digest the message
+      ripemd128Update(context, data, length);
+      //Finalize the RIPEMD-128 message digest
+      ripemd128Final(context, digest);
 
-   //Free previously allocated memory
-   cryptoFreeMem(context);
-   //Successful processing
-   return NO_ERROR;
+      //Free previously allocated memory
+      cryptoFreeMem(context);
+
+      //Successful processing
+      error = NO_ERROR;
+   }
+   else
+   {
+      //Failed to allocate memory
+      error = ERROR_OUT_OF_MEMORY;
+   }
+
+   //Return status code
+   return error;
 }
 
 
@@ -218,7 +231,9 @@ void ripemd128Final(Ripemd128Context *context, uint8_t *digest)
 
    //Copy the resulting digest
    if(digest != NULL)
+   {
       osMemcpy(digest, context->digest, RIPEMD128_DIGEST_SIZE);
+   }
 }
 
 

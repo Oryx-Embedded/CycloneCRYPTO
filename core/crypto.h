@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "1.9.8"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.0.0"
 //Major version
-#define CYCLONE_CRYPTO_MAJOR_VERSION 1
+#define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
-#define CYCLONE_CRYPTO_MINOR_VERSION 9
+#define CYCLONE_CRYPTO_MINOR_VERSION 0
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 8
+#define CYCLONE_CRYPTO_REV_NUMBER 0
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -221,18 +221,18 @@
    #error SHA3_512_SUPPORT parameter is not valid
 #endif
 
-//SHAKE128 support
-#ifndef SHAKE128_SUPPORT
-   #define SHAKE128_SUPPORT DISABLED
-#elif (SHAKE128_SUPPORT != ENABLED && SHAKE128_SUPPORT != DISABLED)
-   #error SHAKE128_SUPPORT parameter is not valid
+//SHAKE support
+#ifndef SHAKE_SUPPORT
+   #define SHAKE_SUPPORT DISABLED
+#elif (SHAKE_SUPPORT != ENABLED && SHAKE_SUPPORT != DISABLED)
+   #error SHAKE_SUPPORT parameter is not valid
 #endif
 
-//SHAKE256 support
-#ifndef SHAKE256_SUPPORT
-   #define SHAKE256_SUPPORT DISABLED
-#elif (SHAKE256_SUPPORT != ENABLED && SHAKE256_SUPPORT != DISABLED)
-   #error SHAKE256_SUPPORT parameter is not valid
+//cSHAKE support
+#ifndef CSHAKE_SUPPORT
+   #define CSHAKE_SUPPORT DISABLED
+#elif (CSHAKE_SUPPORT != ENABLED && CSHAKE_SUPPORT != DISABLED)
+   #error CSHAKE_SUPPORT parameter is not valid
 #endif
 
 //Keccak support
@@ -333,6 +333,13 @@
    #error CMAC_SUPPORT parameter is not valid
 #endif
 
+//GMAC support
+#ifndef GMAC_SUPPORT
+   #define GMAC_SUPPORT DISABLED
+#elif (GMAC_SUPPORT != ENABLED && GMAC_SUPPORT != DISABLED)
+   #error GMAC_SUPPORT parameter is not valid
+#endif
+
 //HMAC support
 #ifndef HMAC_SUPPORT
    #define HMAC_SUPPORT ENABLED
@@ -340,11 +347,11 @@
    #error HMAC_SUPPORT parameter is not valid
 #endif
 
-//GMAC support
-#ifndef GMAC_SUPPORT
-   #define GMAC_SUPPORT DISABLED
-#elif (GMAC_SUPPORT != ENABLED && GMAC_SUPPORT != DISABLED)
-   #error GMAC_SUPPORT parameter is not valid
+//KMAC support
+#ifndef KMAC_SUPPORT
+   #define KMAC_SUPPORT DISABLED
+#elif (KMAC_SUPPORT != ENABLED && GMAC_SUPPORT != DISABLED)
+   #error KMAC_SUPPORT parameter is not valid
 #endif
 
 //RC2 encryption support
@@ -429,6 +436,13 @@
    #define PRESENT_SUPPORT DISABLED
 #elif (PRESENT_SUPPORT != ENABLED && PRESENT_SUPPORT != DISABLED)
    #error PRESENT_SUPPORT parameter is not valid
+#endif
+
+//Trivium encryption support
+#ifndef TRIVIUM_SUPPORT
+   #define TRIVIUM_SUPPORT DISABLED
+#elif (TRIVIUM_SUPPORT != ENABLED && TRIVIUM_SUPPORT != DISABLED)
+   #error TRIVIUM_SUPPORT parameter is not valid
 #endif
 
 //ECB mode support
@@ -564,11 +578,11 @@
    #error HKDF_SUPPORT parameter is not valid
 #endif
 
-//PKCS #5 support
-#ifndef PKCS5_SUPPORT
-   #define PKCS5_SUPPORT ENABLED
-#elif (PKCS5_SUPPORT != ENABLED && PKCS5_SUPPORT != DISABLED)
-   #error PKCS5_SUPPORT parameter is not valid
+//PBKDF support
+#ifndef PBKDF_SUPPORT
+   #define PBKDF_SUPPORT ENABLED
+#elif (PBKDF_SUPPORT != ENABLED && PKCS5_SUPPORT != DISABLED)
+   #error PBKDF_SUPPORT parameter is not valid
 #endif
 
 //bcrypt support
@@ -1109,6 +1123,7 @@ typedef struct
    PrngAlgoAddEntropy addEntropy;
    PrngAlgoRead read;
 } PrngAlgo;
+
 
 //C++ guard
 #ifdef __cplusplus

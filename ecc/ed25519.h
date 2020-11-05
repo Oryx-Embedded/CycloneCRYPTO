@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 #ifndef _ED25519_H
@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "ecc/eddsa.h"
 #include "hash/sha512.h"
 
 //Length of EdDSA private keys
@@ -101,9 +102,17 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
    const uint8_t *publicKey, const void *message, size_t messageLen,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature);
 
+error_t ed25519GenerateSignatureEx(const uint8_t *privateKey,
+   const uint8_t *publicKey, const EddsaMessageChunk *messageChunks,
+   const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature);
+
 error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
    size_t messageLen, const void *context, uint8_t contextLen, uint8_t flag,
    const uint8_t *signature);
+
+error_t ed25519VerifySignatureEx(const uint8_t *publicKey,
+   const EddsaMessageChunk *messageChunks, const void *context,
+   uint8_t contextLen, uint8_t flag, const uint8_t *signature);
 
 void ed25519Mul(Ed25519State *state, Ed25519Point *r, const uint8_t *k,
    const Ed25519Point *p);

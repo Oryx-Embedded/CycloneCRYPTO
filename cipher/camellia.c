@@ -30,7 +30,7 @@
  * blocks of 128 bits under control of a 128/192/256-bit secret key
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -278,7 +278,7 @@ static const uint8_t sbox4[256] =
 //Common interface for encryption algorithms
 const CipherAlgo camelliaCipherAlgo =
 {
-   "CAMELLIA",
+   "Camellia",
    sizeof(CamelliaContext),
    CIPHER_ALGO_TYPE_BLOCK,
    CAMELLIA_BLOCK_SIZE,

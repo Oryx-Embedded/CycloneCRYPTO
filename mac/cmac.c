@@ -29,7 +29,7 @@
  * CMAC is a block cipher-based MAC algorithm specified in NIST SP 800-38B
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -107,6 +107,10 @@ error_t cmacInit(CmacContext *context, const CipherAlgo *cipher,
 {
    error_t error;
    uint8_t rb;
+
+   //Check parameters
+   if(context == NULL || cipher == NULL)
+      return ERROR_INVALID_PARAMETER;
 
    //CMAC supports only block ciphers whose block size is 64 or 128 bits
    if(cipher->type != CIPHER_ALGO_TYPE_BLOCK)
@@ -221,13 +225,17 @@ void cmacUpdate(CmacContext *context, const void *data, size_t dataLen)
 /**
  * @brief Finish the CMAC calculation
  * @param[in] context Pointer to the CMAC context
- * @param[out] mac Calculated MAC value
+ * @param[out] mac Calculated MAC value (optional parameter)
  * @param[in] macLen Expected length of the MAC
  * @return Error code
  **/
 
 error_t cmacFinal(CmacContext *context, uint8_t *mac, size_t macLen)
 {
+   //Make sure the CMAC context is valid
+   if(context == NULL)
+      return ERROR_INVALID_PARAMETER;
+
    //Check the length of the MAC
    if(macLen < 1 || macLen > context->cipher->blockSize)
       return ERROR_INVALID_PARAMETER;

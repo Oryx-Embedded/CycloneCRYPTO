@@ -32,7 +32,7 @@
  * hardware. Refer to RFC 7914 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -41,7 +41,7 @@
 //Dependencies
 #include "core/crypto.h"
 #include "kdf/scrypt.h"
-#include "kdf/pkcs5.h"
+#include "kdf/pbkdf.h"
 #include "hash/sha256.h"
 #include "cipher/salsa20.h"
 

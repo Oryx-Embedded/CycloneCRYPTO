@@ -1,6 +1,6 @@
 /**
- * @file shake256.h
- * @brief SHAKE256 extendable-output function (XOF)
+ * @file trivium.h
+ * @brief Trivium stream cipher
  *
  * @section License
  *
@@ -25,15 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
-#ifndef _SHAKE256_H
-#define _SHAKE256_H
+#ifndef _TRIVIUM_H
+#define _TRIVIUM_H
 
 //Dependencies
 #include "core/crypto.h"
-#include "xof/keccak.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -42,23 +41,24 @@ extern "C" {
 
 
 /**
- * @brief SHAKE256 algorithm context
+ * @brief Trivium algorithm context
  **/
 
-typedef KeccakContext Shake256Context;
+typedef struct
+{
+   uint8_t s[36];
+} TriviumContext;
 
 
-//SHAKE256 related constants
-extern const uint8_t shake256Oid[9];
+//Trivium related functions
+error_t triviumInit(TriviumContext *context, const uint8_t *key,
+   size_t keyLen, const uint8_t *iv, size_t ivLen);
 
-//SHAKE256 related functions
-error_t shake256Compute(const void *input, size_t inputLen,
-   uint8_t *output, size_t outputLen);
+void triviumCipher(TriviumContext *context, const uint8_t *input,
+   uint8_t *output, size_t length);
 
-void shake256Init(Shake256Context *context);
-void shake256Absorb(Shake256Context *context, const void *input, size_t length);
-void shake256Final(Shake256Context *context);
-void shake256Squeeze(Shake256Context *context, uint8_t *output, size_t length);
+uint8_t triviumGenerateBit(TriviumContext *context);
+uint8_t triviumGenerateByte(TriviumContext *context);
 
 //C++ guard
 #ifdef __cplusplus

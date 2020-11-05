@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -75,23 +75,36 @@ const HashAlgo sha224HashAlgo =
 
 error_t sha224Compute(const void *data, size_t length, uint8_t *digest)
 {
+   error_t error;
+   Sha224Context *context;
+
    //Allocate a memory buffer to hold the SHA-224 context
-   Sha224Context *context = cryptoAllocMem(sizeof(Sha224Context));
-   //Failed to allocate memory?
-   if(context == NULL)
-      return ERROR_OUT_OF_MEMORY;
+   context = cryptoAllocMem(sizeof(Sha224Context));
 
-   //Initialize the SHA-224 context
-   sha224Init(context);
-   //Digest the message
-   sha224Update(context, data, length);
-   //Finalize the SHA-224 message digest
-   sha224Final(context, digest);
+   //Successful memory allocation?
+   if(context != NULL)
+   {
+      //Initialize the SHA-224 context
+      sha224Init(context);
+      //Digest the message
+      sha224Update(context, data, length);
+      //Finalize the SHA-224 message digest
+      sha224Final(context, digest);
 
-   //Free previously allocated memory
-   cryptoFreeMem(context);
-   //Successful processing
-   return NO_ERROR;
+      //Free previously allocated memory
+      cryptoFreeMem(context);
+
+      //Successful processing
+      error = NO_ERROR;
+   }
+   else
+   {
+      //Failed to allocate memory
+      error = ERROR_OUT_OF_MEMORY;
+   }
+
+   //Return status code
+   return error;
 }
 
 
@@ -146,7 +159,9 @@ void sha224Final(Sha224Context *context, uint8_t *digest)
 
    //Copy the resulting digest
    if(digest != NULL)
+   {
       osMemcpy(digest, context->digest, SHA224_DIGEST_SIZE);
+   }
 }
 
 #endif

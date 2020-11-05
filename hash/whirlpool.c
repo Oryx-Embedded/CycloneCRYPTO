@@ -30,7 +30,7 @@
  * in length, and produces a message digest of 512 bits
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -156,7 +156,7 @@ const uint8_t whirlpoolOid[6] = {0x28, 0xCF, 0x06, 0x03, 0x00, 0x37};
 //Common interface for hash algorithms
 const HashAlgo whirlpoolHashAlgo =
 {
-   "WHIRLPOOL",
+   "Whirlpool",
    whirlpoolOid,
    sizeof(whirlpoolOid),
    sizeof(WhirlpoolContext),
@@ -182,23 +182,36 @@ const HashAlgo whirlpoolHashAlgo =
 
 error_t whirlpoolCompute(const void *data, size_t length, uint8_t *digest)
 {
+   error_t error;
+   WhirlpoolContext *context;
+
    //Allocate a memory buffer to hold the Whirlpool context
-   WhirlpoolContext *context = cryptoAllocMem(sizeof(WhirlpoolContext));
-   //Failed to allocate memory?
-   if(context == NULL)
-      return ERROR_OUT_OF_MEMORY;
+   context = cryptoAllocMem(sizeof(WhirlpoolContext));
 
-   //Initialize the Whirlpool context
-   whirlpoolInit(context);
-   //Digest the message
-   whirlpoolUpdate(context, data, length);
-   //Finalize the Whirlpool message digest
-   whirlpoolFinal(context, digest);
+   //Successful memory allocation?
+   if(context != NULL)
+   {
+      //Initialize the Whirlpool context
+      whirlpoolInit(context);
+      //Digest the message
+      whirlpoolUpdate(context, data, length);
+      //Finalize the Whirlpool message digest
+      whirlpoolFinal(context, digest);
 
-   //Free previously allocated memory
-   cryptoFreeMem(context);
-   //Successful processing
-   return NO_ERROR;
+      //Free previously allocated memory
+      cryptoFreeMem(context);
+
+      //Successful processing
+      error = NO_ERROR;
+   }
+   else
+   {
+      //Failed to allocate memory
+      error = ERROR_OUT_OF_MEMORY;
+   }
+
+   //Return status code
+   return error;
 }
 
 
@@ -305,7 +318,9 @@ void whirlpoolFinal(WhirlpoolContext *context, uint8_t *digest)
 
    //Copy the resulting digest
    if(digest != NULL)
+   {
       osMemcpy(digest, context->digest, WHIRLPOOL_DIGEST_SIZE);
+   }
 }
 
 

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -125,14 +125,14 @@ error_t ed448GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
    if(state == NULL)
       return ERROR_OUT_OF_MEMORY;
 
-   //Hash the 57-byte private key using SHA-512
-   shake256Init(&state->shake256Context);
-   shake256Absorb(&state->shake256Context, privateKey, ED448_PRIVATE_KEY_LEN);
-   shake256Final(&state->shake256Context);
+   //Hash the 57-byte private key using SHAKE256(x, 57)
+   shakeInit(&state->shakeContext, 256);
+   shakeAbsorb(&state->shakeContext, privateKey, ED448_PRIVATE_KEY_LEN);
+   shakeFinal(&state->shakeContext);
 
    //Only the lower 57 bytes are used for generating the public key. Interpret
    //the buffer as the little-endian integer, forming a secret scalar s
-   shake256Squeeze(&state->shake256Context, s, 57);
+   shakeSqueeze(&state->shakeContext, s, 57);
 
    //The two least significant bits of the first octet are cleared, all eight
    //bits the last octet are cleared, and the highest bit of the second to
@@ -173,13 +173,49 @@ error_t ed448GenerateSignature(const uint8_t *privateKey,
    const uint8_t *publicKey, const void *message, size_t messageLen,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature)
 {
+   error_t error;
+   EddsaMessageChunk messageChunks[2];
+
+   //The message fits in a single chunk
+   messageChunks[0].buffer = message;
+   messageChunks[0].length = messageLen;
+   messageChunks[1].buffer = NULL;
+   messageChunks[1].length = 0;
+
+   //Ed448 signature generation
+   error = ed448GenerateSignatureEx(privateKey, publicKey, messageChunks,
+      context, contextLen, flag, signature);
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief EdDSA signature generation
+ * @param[in] privateKey Signer's EdDSA private key (57 bytes)
+ * @param[in] publicKey Signer's EdDSA public key (57 bytes)
+ * @param[in] messageChunks Collection of chunks representing the message to
+ *   be signed
+ * @param[in] context Constant string specified by the protocol using it
+ * @param[in] contextLen Length of the context, in bytes
+ * @param[in] flag Prehash flag for Ed448ph scheme
+ * @param[out] signature EdDSA signature (114 bytes)
+ * @return Error code
+ **/
+
+error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
+   const uint8_t *publicKey, const EddsaMessageChunk *messageChunks,
+   const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature)
+{
+   uint_t i;
    uint8_t c;
    Ed448State *state;
 
    //Check parameters
    if(privateKey == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
-   if(message == NULL && messageLen != 0)
+   if(messageChunks == NULL)
       return ERROR_INVALID_PARAMETER;
    if(context == NULL && contextLen != 0)
       return ERROR_INVALID_PARAMETER;
@@ -192,12 +228,12 @@ error_t ed448GenerateSignature(const uint8_t *privateKey,
 
    //Hash the private key, 57 octets, using SHAKE256(x, 114). Let h denote
    //the resulting digest
-   shake256Init(&state->shake256Context);
-   shake256Absorb(&state->shake256Context, privateKey, ED448_PRIVATE_KEY_LEN);
-   shake256Final(&state->shake256Context);
+   shakeInit(&state->shakeContext, 256);
+   shakeAbsorb(&state->shakeContext, privateKey, ED448_PRIVATE_KEY_LEN);
+   shakeFinal(&state->shakeContext);
 
    //Construct the secret scalar s from the first half of the digest
-   shake256Squeeze(&state->shake256Context, state->s, 57);
+   shakeSqueeze(&state->shakeContext, state->s, 57);
 
    //The two least significant bits of the first octet are cleared, all eight
    //bits the last octet are cleared, and the highest bit of the second to
@@ -218,18 +254,29 @@ error_t ed448GenerateSignature(const uint8_t *privateKey,
    }
 
    //Let prefix denote the second half of the hash digest
-   shake256Squeeze(&state->shake256Context, state->p, 57);
+   shakeSqueeze(&state->shakeContext, state->p, 57);
+
+   //Initialize SHAKE256 context
+   shakeInit(&state->shakeContext, 256);
+
+   //Absorb dom4(F, C) || prefix
+   shakeAbsorb(&state->shakeContext, "SigEd448", 8);
+   shakeAbsorb(&state->shakeContext, &flag, sizeof(uint8_t));
+   shakeAbsorb(&state->shakeContext, &contextLen, sizeof(uint8_t));
+   shakeAbsorb(&state->shakeContext, context, contextLen);
+   shakeAbsorb(&state->shakeContext, state->p, 57);
+
+   //The message is split over multiple chunks
+   for(i = 0; messageChunks[i].buffer != NULL; i++)
+   {
+      //Absorb current chunk
+      shakeAbsorb(&state->shakeContext, messageChunks[i].buffer,
+         messageChunks[i].length);
+   }
 
    //Compute SHAKE256(dom4(F, C) || prefix || PH(M), 114)
-   shake256Init(&state->shake256Context);
-   shake256Absorb(&state->shake256Context, "SigEd448", 8);
-   shake256Absorb(&state->shake256Context, &flag, sizeof(uint8_t));
-   shake256Absorb(&state->shake256Context, &contextLen, sizeof(uint8_t));
-   shake256Absorb(&state->shake256Context, context, contextLen);
-   shake256Absorb(&state->shake256Context, state->p, 57);
-   shake256Absorb(&state->shake256Context, message, messageLen);
-   shake256Final(&state->shake256Context);
-   shake256Squeeze(&state->shake256Context, state->k, 114);
+   shakeFinal(&state->shakeContext);
+   shakeSqueeze(&state->shakeContext, state->k, 114);
 
    //Reduce the 114-octet digest as a little-endian integer r
    ed448RedInt(state->r, state->k);
@@ -238,18 +285,29 @@ error_t ed448GenerateSignature(const uint8_t *privateKey,
    //Let the string R be the encoding of this point
    ed448Encode(&state->rb, signature);
 
+   //Initialize SHAKE256 context
+   shakeInit(&state->shakeContext, 256);
+
+   //Absorb dom4(F, C) || R || A
+   shakeAbsorb(&state->shakeContext, "SigEd448", 8);
+   shakeAbsorb(&state->shakeContext, &flag, sizeof(uint8_t));
+   shakeAbsorb(&state->shakeContext, &contextLen, sizeof(uint8_t));
+   shakeAbsorb(&state->shakeContext, context, contextLen);
+   shakeAbsorb(&state->shakeContext, signature, ED448_SIGNATURE_LEN / 2);
+   shakeAbsorb(&state->shakeContext, publicKey, ED448_PUBLIC_KEY_LEN);
+
+   //The message is split over multiple chunks
+   for(i = 0; messageChunks[i].buffer != NULL; i++)
+   {
+      //Absorb current chunk
+      shakeAbsorb(&state->shakeContext, messageChunks[i].buffer,
+         messageChunks[i].length);
+   }
+
    //Compute SHAKE256(dom4(F, C) || R || A || PH(M), 114) and interpret the
    //114-octet digest as a little-endian integer k
-   shake256Init(&state->shake256Context);
-   shake256Absorb(&state->shake256Context, "SigEd448", 8);
-   shake256Absorb(&state->shake256Context, &flag, sizeof(uint8_t));
-   shake256Absorb(&state->shake256Context, &contextLen, sizeof(uint8_t));
-   shake256Absorb(&state->shake256Context, context, contextLen);
-   shake256Absorb(&state->shake256Context, signature, ED448_SIGNATURE_LEN / 2);
-   shake256Absorb(&state->shake256Context, publicKey, ED448_PUBLIC_KEY_LEN);
-   shake256Absorb(&state->shake256Context, message, messageLen);
-   shake256Final(&state->shake256Context);
-   shake256Squeeze(&state->shake256Context, state->k, 114);
+   shakeFinal(&state->shakeContext);
+   shakeSqueeze(&state->shakeContext, state->k, 114);
 
    //Compute S = (r + k * s) mod L. For efficiency, reduce k modulo L first
    ed448RedInt(state->p, state->k);
@@ -287,13 +345,48 @@ error_t ed448VerifySignature(const uint8_t *publicKey, const void *message,
    size_t messageLen, const void *context, uint8_t contextLen, uint8_t flag,
    const uint8_t *signature)
 {
+   error_t error;
+   EddsaMessageChunk messageChunks[2];
+
+   //The message fits in a single chunk
+   messageChunks[0].buffer = message;
+   messageChunks[0].length = messageLen;
+   messageChunks[1].buffer = NULL;
+   messageChunks[1].length = 0;
+
+   //Ed448 signature verification
+   error = ed448VerifySignatureEx(publicKey, messageChunks, context,
+      contextLen, flag, signature);
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief EdDSA signature verification
+ * @param[in] publicKey Signer's EdDSA public key (57 bytes)
+ * @param[in] messageChunks Collection of chunks representing the message
+ *   whose signature is to be verified
+ * @param[in] context Constant string specified by the protocol using it
+ * @param[in] contextLen Length of the context, in bytes
+ * @param[in] flag Prehash flag for Ed448ph scheme
+ * @param[in] signature EdDSA signature (114 bytes)
+ * @return Error code
+ **/
+
+error_t ed448VerifySignatureEx(const uint8_t *publicKey,
+   const EddsaMessageChunk *messageChunks, const void *context,
+   uint8_t contextLen, uint8_t flag, const uint8_t *signature)
+{
+   uint_t i;
    uint32_t ret;
    Ed448State *state;
 
    //Check parameters
    if(publicKey == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
-   if(message == NULL && messageLen != 0)
+   if(messageChunks == NULL)
       return ERROR_INVALID_PARAMETER;
    if(context == NULL && contextLen != 0)
       return ERROR_INVALID_PARAMETER;
@@ -319,18 +412,29 @@ error_t ed448VerifySignature(const uint8_t *publicKey, const void *message,
    //Decode the public key A as point A'
    ret |= ed448Decode(&state->ka, publicKey);
 
+   //Initialize SHAKE256 context
+   shakeInit(&state->shakeContext, 256);
+
+   //Absorb dom4(F, C) || R || A
+   shakeAbsorb(&state->shakeContext, "SigEd448", 8);
+   shakeAbsorb(&state->shakeContext, &flag, sizeof(uint8_t));
+   shakeAbsorb(&state->shakeContext, &contextLen, sizeof(uint8_t));
+   shakeAbsorb(&state->shakeContext, context, contextLen);
+   shakeAbsorb(&state->shakeContext, state->r, ED448_SIGNATURE_LEN / 2);
+   shakeAbsorb(&state->shakeContext, publicKey, ED448_PUBLIC_KEY_LEN);
+
+   //The message is split over multiple chunks
+   for(i = 0; messageChunks[i].buffer != NULL; i++)
+   {
+      //Absorb current chunk
+      shakeAbsorb(&state->shakeContext, messageChunks[i].buffer,
+         messageChunks[i].length);
+   }
+
    //Compute SHAKE256(dom4(F, C) || R || A || PH(M), 114) and interpret the
    //114-octet digest as a little-endian integer k
-   shake256Init(&state->shake256Context);
-   shake256Absorb(&state->shake256Context, "SigEd448", 8);
-   shake256Absorb(&state->shake256Context, &flag, sizeof(uint8_t));
-   shake256Absorb(&state->shake256Context, &contextLen, sizeof(uint8_t));
-   shake256Absorb(&state->shake256Context, context, contextLen);
-   shake256Absorb(&state->shake256Context, state->r, ED448_SIGNATURE_LEN / 2);
-   shake256Absorb(&state->shake256Context, publicKey, ED448_PUBLIC_KEY_LEN);
-   shake256Absorb(&state->shake256Context, message, messageLen);
-   shake256Final(&state->shake256Context);
-   shake256Squeeze(&state->shake256Context, state->k, 114);
+   shakeFinal(&state->shakeContext);
+   shakeSqueeze(&state->shakeContext, state->k, 114);
 
    //For efficiency, reduce k modulo L first
    ed448RedInt(state->k, state->k);

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 #ifndef _KECCAK_H
@@ -91,8 +91,10 @@
 #define KECCAK_PAD 0x01
 //SHA-3 padding byte
 #define KECCAK_SHA3_PAD 0x06
-//XOF padding byte
-#define KECCAK_XOF_PAD 0x1F
+//SHAKE padding byte
+#define KECCAK_SHAKE_PAD 0x1F
+//cSHAKE padding byte
+#define KECCAK_CSHAKE_PAD 0x04
 
 //C++ guard
 #ifdef __cplusplus

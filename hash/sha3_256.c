@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 202 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -75,25 +75,36 @@ const HashAlgo sha3_256HashAlgo =
 
 error_t sha3_256Compute(const void *data, size_t length, uint8_t *digest)
 {
+   error_t error;
    Sha3_256Context *context;
 
    //Allocate a memory buffer to hold the SHA3-256 context
    context = cryptoAllocMem(sizeof(Sha3_256Context));
-   //Failed to allocate memory?
-   if(context == NULL)
-      return ERROR_OUT_OF_MEMORY;
 
-   //Initialize the SHA3-256 context
-   sha3_256Init(context);
-   //Digest the message
-   sha3_256Update(context, data, length);
-   //Finalize the SHA3-256 message digest
-   sha3_256Final(context, digest);
+   //Successful memory allocation?
+   if(context != NULL)
+   {
+      //Initialize the SHA3-256 context
+      sha3_256Init(context);
+      //Digest the message
+      sha3_256Update(context, data, length);
+      //Finalize the SHA3-256 message digest
+      sha3_256Final(context, digest);
 
-   //Free previously allocated memory
-   cryptoFreeMem(context);
-   //Successful processing
-   return NO_ERROR;
+      //Free previously allocated memory
+      cryptoFreeMem(context);
+
+      //Successful processing
+      error = NO_ERROR;
+   }
+   else
+   {
+      //Failed to allocate memory
+      error = ERROR_OUT_OF_MEMORY;
+   }
+
+   //Return status code
+   return error;
 }
 
 

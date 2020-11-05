@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -286,6 +286,10 @@ error_t keccakInit(KeccakContext *context, uint_t capacity)
 {
    uint_t rate;
 
+   //Make sure the Keccak context is valid
+   if(context == NULL)
+      return ERROR_INVALID_PARAMETER;
+
    //Clear Keccak context
    osMemset(context, 0, sizeof(KeccakContext));
 
@@ -363,7 +367,7 @@ void keccakAbsorb(KeccakContext *context, const void *input, size_t length)
 /**
  * @brief Finish absorbing phase
  * @param[in] context Pointer to the Keccak context
- * @param[in] pad Value of the padding byte (0x01 for Keccak, 0x06 for SHA-3 and 0x1F for XOF)
+ * @param[in] pad Padding byte used for domain separation
  **/
 
 void keccakFinal(KeccakContext *context, uint8_t pad)

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -359,7 +359,7 @@ const uint8_t tigerOid[9] = {0x2B, 0x06, 0x01, 0x04, 0x01, 0xDA, 0x47, 0x0C, 0x0
 //Common interface for hash algorithms
 const HashAlgo tigerHashAlgo =
 {
-   "TIGER",
+   "Tiger",
    tigerOid,
    sizeof(tigerOid),
    sizeof(TigerContext),
@@ -385,23 +385,36 @@ const HashAlgo tigerHashAlgo =
 
 error_t tigerCompute(const void *data, size_t length, uint8_t *digest)
 {
+   error_t error;
+   TigerContext *context;
+
    //Allocate a memory buffer to hold the Tiger context
-   TigerContext *context = cryptoAllocMem(sizeof(TigerContext));
-   //Failed to allocate memory?
-   if(context == NULL)
-      return ERROR_OUT_OF_MEMORY;
+   context = cryptoAllocMem(sizeof(TigerContext));
 
-   //Initialize the Tiger context
-   tigerInit(context);
-   //Digest the message
-   tigerUpdate(context, data, length);
-   //Finalize the Tiger message digest
-   tigerFinal(context, digest);
+   //Successful memory allocation?
+   if(context != NULL)
+   {
+      //Initialize the Tiger context
+      tigerInit(context);
+      //Digest the message
+      tigerUpdate(context, data, length);
+      //Finalize the Tiger message digest
+      tigerFinal(context, digest);
 
-   //Free previously allocated memory
-   cryptoFreeMem(context);
-   //Successful processing
-   return NO_ERROR;
+      //Free previously allocated memory
+      cryptoFreeMem(context);
+
+      //Successful processing
+      error = NO_ERROR;
+   }
+   else
+   {
+      //Failed to allocate memory
+      error = ERROR_OUT_OF_MEMORY;
+   }
+
+   //Return status code
+   return error;
 }
 
 
@@ -506,7 +519,9 @@ void tigerFinal(TigerContext *context, uint8_t *digest)
 
    //Copy the resulting digest
    if(digest != NULL)
+   {
       osMemcpy(digest, context->digest, TIGER_DIGEST_SIZE);
+   }
 }
 
 

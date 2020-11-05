@@ -30,7 +30,7 @@
  * SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 1.9.8
+ * @version 2.0.0
  **/
 
 //Switch to the appropriate trace level
@@ -142,6 +142,10 @@ error_t gmacInit(GmacContext *context, const CipherAlgo *cipher,
    uint_t j;
    uint32_t c;
    uint32_t h[4];
+
+   //Check parameters
+   if(context == NULL || cipher == NULL)
+      return ERROR_INVALID_PARAMETER;
 
    //GMAC supports only symmetric block ciphers whose block size is 128 bits
    if(cipher->type != CIPHER_ALGO_TYPE_BLOCK || cipher->blockSize != 16)
@@ -371,12 +375,16 @@ void gmacUpdate(GmacContext *context, const void *data, size_t dataLen)
 /**
  * @brief Finish the GMAC calculation
  * @param[in] context Pointer to the GMAC context
- * @param[out] mac Calculated MAC value
+ * @param[out] mac Calculated MAC value (optional parameter)
  * @param[in] macLen Expected length of the MAC
  **/
 
 error_t gmacFinal(GmacContext *context, uint8_t *mac, size_t macLen)
 {
+   //Make sure the GMAC context is valid
+   if(context == NULL)
+      return ERROR_INVALID_PARAMETER;
+
    //Check the length of the MAC
    if(macLen < 4 || macLen > 16)
       return ERROR_INVALID_PARAMETER;
