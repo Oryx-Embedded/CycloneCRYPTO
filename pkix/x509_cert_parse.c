@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.0
+ * @version 2.0.2
  **/
 
 //Switch to the appropriate trace level
@@ -1572,11 +1572,15 @@ error_t x509ParseKeyUsage(bool_t critical, const uint8_t *data,
 
    //Read bits b0 to b7
    if(tag.length >= 2)
+   {
       keyUsage->bitmap |= reverseInt8(tag.value[1]);
+   }
 
    //Read bits b8 to b15
    if(tag.length >= 3)
+   {
       keyUsage->bitmap |= reverseInt8(tag.value[2]) << 8;
+   }
 
    //When the key usage extension appears in a certificate, at least one of
    //the bits must be set to 1 (refer to RFC 5280, section 4.2.1.3)

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.0
+ * @version 2.0.2
  **/
 
 //Switch to the appropriate trace level
@@ -747,7 +747,7 @@ error_t rsassaPkcs1v15Sign(const RsaPrivateKey *key, const HashAlgo *hash,
       if(error)
          break;
 
-      //When unprotected, RSA–CRT is vulnerable to the Bellcore attack
+      //When unprotected, RSA-CRT is vulnerable to the Bellcore attack
       if(key->n.size && key->e.size && key->p.size && key->q.size &&
          key->dp.size && key->dq.size && key->qinv.size)
       {

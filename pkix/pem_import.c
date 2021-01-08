@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.0
+ * @version 2.0.2
  **/
 
 //Switch to the appropriate trace level
@@ -678,7 +678,7 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length,
    }
    else
    {
-      //The PEM file does not contain a valid RSA private key
+      //The PEM file does not contain a valid DSA private key
       error = ERROR_END_OF_FILE;
    }
 
@@ -873,7 +873,7 @@ error_t pemImportEcParameters(const char_t *input, size_t length,
    }
    else
    {
-      //The PEM file does not contain a valid RSA private key
+      //The PEM file does not contain valid EC domain parameters
       error = ERROR_END_OF_FILE;
    }
 
@@ -1076,7 +1076,7 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length,
    }
    else
    {
-      //The PEM file does not contain a valid RSA private key
+      //The PEM file does not contain a valid EC private key
       error = ERROR_END_OF_FILE;
    }
 
@@ -1257,7 +1257,7 @@ error_t pemImportEddsaPrivateKey(const char_t *input, size_t length,
  * @brief Retrieve the type of a PEM-encoded public key
  * @param[in] input Pointer to the PEM encoding
  * @param[in] length Length of the PEM encoding
- * @param[out] Public key type
+ * @param[out] keyType Public key type
  * @return Error code
  **/
 
@@ -1349,7 +1349,7 @@ error_t pemGetPublicKeyType(const char_t *input, size_t length,
  * @brief Retrieve the type of a PEM-encoded private key
  * @param[in] input Pointer to the PEM encoding
  * @param[in] length Length of the PEM encoding
- * @param[out] Private key type
+ * @param[out] keyType Private key type
  * @return Error code
  **/
 

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2020 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -29,7 +29,7 @@
  * RC6 is a symmetric key block cipher derived from RC5
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.0
+ * @version 2.0.2
  **/
 
 //Switch to the appropriate trace level
@@ -124,9 +124,14 @@ error_t rc6Init(Rc6Context *context, const uint8_t *key, size_t keyLen)
       b = context->l[j];
 
       if(++i >= (2 * RC6_NB_ROUNDS + 4))
+      {
          i = 0;
+      }
+
       if(++j >= c)
+      {
          j = 0;
+      }
    }
 
    //No error to report
