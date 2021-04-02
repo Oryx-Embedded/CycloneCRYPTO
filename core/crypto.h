@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.2
+ * @version 2.0.4
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.0.2"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.0.4"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 0
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 2
+#define CYCLONE_CRYPTO_REV_NUMBER 4
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT

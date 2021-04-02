@@ -30,7 +30,7 @@
  * NIST SP 800-185 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.2
+ * @version 2.0.4
  **/
 
 //Switch to the appropriate trace level
@@ -159,7 +159,7 @@ error_t cshakeInit(CshakeContext *context, uint_t strength, const char_t *name,
       cshakeAbsorb(context, buffer, n);
       i = n;
 
-      //Absorb the string representation of N 
+      //Absorb the string representation of N
       cshakeLeftEncode(nameLen * 8, buffer, &n);
       cshakeAbsorb(context, buffer, n);
       cshakeAbsorb(context, name, nameLen);

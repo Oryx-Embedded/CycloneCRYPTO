@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.2
+ * @version 2.0.4
  **/
 
 #ifndef _ED448_H
@@ -96,6 +96,11 @@ typedef struct
 //Ed448 related functions
 error_t ed448GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
    uint8_t *privateKey, uint8_t *publicKey);
+
+error_t ed448GeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
+   uint8_t *privateKey);
+
+error_t ed448GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey);
 
 error_t ed448GenerateSignature(const uint8_t *privateKey,
    const uint8_t *publicKey, const void *message, size_t messageLen,

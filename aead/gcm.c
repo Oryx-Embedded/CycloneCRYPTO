@@ -31,7 +31,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.2
+ * @version 2.0.4
  **/
 
 //Switch to the appropriate trace level
@@ -46,7 +46,7 @@
 #if (GCM_SUPPORT == ENABLED)
 
 //Reduction table
-static const uint32_t r[16] =
+static const uint32_t red[16] =
 {
    0x00000000,
    0x1C200000,
@@ -156,7 +156,7 @@ error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
 
          //If the highest term of the result is equal to one, then perform
          //reduction
-         h[3] ^= r[reverseInt4(1)] & ~(c - 1);
+         h[3] ^= red[reverseInt4(1)] & ~(c - 1);
       }
 
       //Save M(i)
@@ -513,7 +513,7 @@ void gcmMul(GcmContext *context, uint8_t *x)
       z[3] ^= context->m[b][3];
 
       //Perform reduction
-      z[3] ^= r[c];
+      z[3] ^= red[c];
 
       //Get the upper nibble
       b = (x[i] >> 4) & 0x0F;
@@ -531,7 +531,7 @@ void gcmMul(GcmContext *context, uint8_t *x)
       z[3] ^= context->m[b][3];
 
       //Perform reduction
-      z[3] ^= r[c];
+      z[3] ^= red[c];
    }
 
    //Save the result

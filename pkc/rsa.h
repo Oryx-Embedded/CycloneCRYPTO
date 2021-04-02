@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.2
+ * @version 2.0.4
  **/
 
 #ifndef _RSA_H
@@ -161,6 +161,12 @@ void mgf1(const HashAlgo *hash, HashContext *hashContext, const uint8_t *seed,
 
 error_t rsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
    size_t k, uint_t e, RsaPrivateKey *privateKey, RsaPublicKey *publicKey);
+
+error_t rsaGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
+   size_t k, uint_t e, RsaPrivateKey *privateKey);
+
+error_t rsaGeneratePublicKey(const RsaPrivateKey *privateKey,
+   RsaPublicKey *publicKey);
 
 //C++ guard
 #ifdef __cplusplus

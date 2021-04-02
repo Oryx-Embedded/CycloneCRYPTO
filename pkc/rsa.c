@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.2
+ * @version 2.0.4
  **/
 
 //Switch to the appropriate trace level
@@ -1952,6 +1952,36 @@ error_t rsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
    size_t k, uint_t e, RsaPrivateKey *privateKey, RsaPublicKey *publicKey)
 {
    error_t error;
+
+   //Generate a private key
+   error = rsaGeneratePrivateKey(prngAlgo, prngContext, k, e, privateKey);
+
+   //Check status code
+   if(!error)
+   {
+      //Derive the public key from the private key
+      error = rsaGeneratePublicKey(privateKey, publicKey);
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief RSA private key generation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[in] k Required bit length of the modulus n
+ * @param[in] e Public exponent (3, 5, 17, 257 or 65537)
+ * @param[out] privateKey RSA private key
+ * @return Error code
+ **/
+
+error_t rsaGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
+   size_t k, uint_t e, RsaPrivateKey *privateKey)
+{
+   error_t error;
    Mpi t1;
    Mpi t2;
    Mpi phy;
@@ -2084,21 +2114,6 @@ error_t rsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
    TRACE_DEBUG("  Coefficient:\r\n");
    TRACE_DEBUG_MPI("    ", &privateKey->qinv);
 
-   //A public key can be optionally generated
-   if(publicKey != NULL)
-   {
-      //The public key is (n, e)
-      MPI_CHECK(mpiCopy(&publicKey->n, &privateKey->n));
-      MPI_CHECK(mpiCopy(&publicKey->e, &privateKey->e));
-
-      //Debug message
-      TRACE_DEBUG("RSA public key:\r\n");
-      TRACE_DEBUG("  Modulus:\r\n");
-      TRACE_DEBUG_MPI("    ", &publicKey->n);
-      TRACE_DEBUG("  Public exponent:\r\n");
-      TRACE_DEBUG_MPI("    ", &publicKey->e);
-   }
-
 end:
    //Release multiple precision integers
    mpiFree(&t1);
@@ -2110,10 +2125,46 @@ end:
    {
       //Release RSA private key
       rsaFreePrivateKey(privateKey);
+   }
 
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Derive the public key from an RSA private key
+ * @param[in] privateKey RSA private key
+ * @param[out] publicKey RSA public key
+ * @return Error code
+ **/
+
+error_t rsaGeneratePublicKey(const RsaPrivateKey *privateKey,
+   RsaPublicKey *publicKey)
+{
+   error_t error;
+
+   //Check parameters
+   if(privateKey == NULL || publicKey == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //The public key is (n, e)
+   MPI_CHECK(mpiCopy(&publicKey->n, &privateKey->n));
+   MPI_CHECK(mpiCopy(&publicKey->e, &privateKey->e));
+
+   //Debug message
+   TRACE_DEBUG("RSA public key:\r\n");
+   TRACE_DEBUG("  Modulus:\r\n");
+   TRACE_DEBUG_MPI("    ", &publicKey->n);
+   TRACE_DEBUG("  Public exponent:\r\n");
+   TRACE_DEBUG_MPI("    ", &publicKey->e);
+
+end:
+   //Any error to report?
+   if(error)
+   {
       //Release RSA public key
-      if(publicKey != NULL)
-         rsaFreePublicKey(publicKey);
+      rsaFreePublicKey(publicKey);
    }
 
    //Return status code

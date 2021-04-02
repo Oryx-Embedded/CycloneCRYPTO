@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.2
+ * @version 2.0.4
  **/
 
 //Switch to the appropriate trace level
@@ -131,7 +131,7 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
       //If the keyUsage extension is present, then the subject public key must
       //not be used to verify signatures on certificates unless the keyCertSign
       //bit is set (refer to RFC 5280, section 4.2.1.3)
-      if(!(extensions->keyUsage.bitmap & X509_KEY_USAGE_KEY_CERT_SIGN))
+      if((extensions->keyUsage.bitmap & X509_KEY_USAGE_KEY_CERT_SIGN) == 0)
          return ERROR_BAD_CERTIFICATE;
    }
 

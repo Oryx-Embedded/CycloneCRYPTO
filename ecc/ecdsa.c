@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.2
+ * @version 2.0.4
  **/
 
 //Switch to the appropriate trace level
@@ -59,6 +59,113 @@ const uint8_t ECDSA_WITH_SHA3_256_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 
 const uint8_t ECDSA_WITH_SHA3_384_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0B};
 //ECDSA with SHA-3-512 OID (2.16.840.1.101.3.4.3.12)
 const uint8_t ECDSA_WITH_SHA3_512_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x0C};
+
+
+/**
+ * @brief ECDSA key pair generation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[in] params EC domain parameters
+ * @param[out] privateKey EC private key
+ * @param[out] publicKey EC public key
+ * @return Error code
+ **/
+
+error_t ecdsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
+   const EcDomainParameters *params, Mpi *privateKey, EcPoint *publicKey)
+{
+   error_t error;
+
+   //Generate a private key
+   error = ecdsaGeneratePrivateKey(prngAlgo, prngContext, params, privateKey);
+
+   //Check status code
+   if(!error)
+   {
+      //Derive the public key from the private key
+      error = ecdsaGeneratePublicKey(params, privateKey, publicKey);
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief ECDSA private key generation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[in] params EC domain parameters
+ * @param[out] privateKey EC private key
+ * @return Error code
+ **/
+
+error_t ecdsaGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
+   const EcDomainParameters *params, Mpi *privateKey)
+{
+   error_t error;
+   uint_t n;
+
+   //Check parameters
+   if(prngAlgo == NULL || prngContext == NULL || params == NULL ||
+      privateKey == NULL)
+   {
+      return ERROR_INVALID_PARAMETER;
+   }
+
+   //Let N be the bit length of q
+   n = mpiGetBitLength(&params->q);
+
+   //Generated a pseudorandom number
+   MPI_CHECK(mpiRand(privateKey, n, prngAlgo, prngContext));
+
+   //Make sure that 0 < d < q
+   if(mpiComp(privateKey, &params->q) >= 0)
+   {
+      EC_CHECK(mpiShiftRight(privateKey, 1));
+   }
+
+   //Debug message
+   TRACE_DEBUG("  Private key:\r\n");
+   TRACE_DEBUG_MPI("    ", privateKey);
+
+end:
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Derive the public key from an ECDSA private key
+ * @param[in] params EC domain parameters
+ * @param[in] privateKey EC private key
+ * @param[out] publicKey EC public key
+ * @return Error code
+ **/
+
+error_t ecdsaGeneratePublicKey(const EcDomainParameters *params,
+   const Mpi *privateKey, EcPoint *publicKey)
+{
+   error_t error;
+
+   //Check parameters
+   if(params == NULL || privateKey == NULL || publicKey == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Compute Q = d.G
+   EC_CHECK(ecMult(params, publicKey, privateKey, &params->g));
+   EC_CHECK(ecAffinify(params, publicKey, publicKey));
+
+   //Debug message
+   TRACE_DEBUG("  Public key X:\r\n");
+   TRACE_DEBUG_MPI("    ", &publicKey->x);
+   TRACE_DEBUG("  Public key Y:\r\n");
+   TRACE_DEBUG_MPI("    ", &publicKey->y);
+
+end:
+   //Return status code
+   return error;
+}
 
 
 /**
@@ -372,61 +479,6 @@ error_t ecdsaReadSignature(const uint8_t *data, size_t length,
       ecdsaFreeSignature(signature);
    }
 
-   //Return status code
-   return error;
-}
-
-
-/**
- * @brief ECDSA key pair generation
- * @param[in] prngAlgo PRNG algorithm
- * @param[in] prngContext Pointer to the PRNG context
- * @param[in] params EC domain parameters
- * @param[out] privateKey EC private key
- * @param[out] publicKey EC public key
- * @return Error code
- **/
-
-error_t ecdsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, Mpi *privateKey, EcPoint *publicKey)
-{
-   error_t error;
-   uint_t n;
-
-   //Check parameters
-   if(params == NULL || privateKey == NULL || publicKey == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Debug message
-   TRACE_DEBUG("Generating ECDSA key pair...\r\n");
-
-   //Let N be the bit length of q
-   n = mpiGetBitLength(&params->q);
-
-   //Generated a pseudorandom number
-   MPI_CHECK(mpiRand(privateKey, n, prngAlgo, prngContext));
-
-   //Make sure that 0 < d < q
-   if(mpiComp(privateKey, &params->q) >= 0)
-   {
-      EC_CHECK(mpiShiftRight(privateKey, 1));
-   }
-
-   //Debug message
-   TRACE_DEBUG("  Private key:\r\n");
-   TRACE_DEBUG_MPI("    ", privateKey);
-
-   //Compute Q = d.G
-   EC_CHECK(ecMult(params, publicKey, privateKey, &params->g));
-   EC_CHECK(ecAffinify(params, publicKey, publicKey));
-
-   //Debug message
-   TRACE_DEBUG("  Public key X:\r\n");
-   TRACE_DEBUG_MPI("    ", &publicKey->x);
-   TRACE_DEBUG("  Public key Y:\r\n");
-   TRACE_DEBUG_MPI("    ", &publicKey->y);
-
-end:
    //Return status code
    return error;
 }

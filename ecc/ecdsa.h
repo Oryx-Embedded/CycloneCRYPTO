@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.2
+ * @version 2.0.4
  **/
 
 #ifndef _ECDSA_H
@@ -64,6 +64,15 @@ extern const uint8_t ECDSA_WITH_SHA3_384_OID[9];
 extern const uint8_t ECDSA_WITH_SHA3_512_OID[9];
 
 //ECDSA related functions
+error_t ecdsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
+   const EcDomainParameters *params, Mpi *privateKey, EcPoint *publicKey);
+
+error_t ecdsaGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
+   const EcDomainParameters *params, Mpi *privateKey);
+
+error_t ecdsaGeneratePublicKey(const EcDomainParameters *params,
+   const Mpi *privateKey, EcPoint *publicKey);
+
 void ecdsaInitSignature(EcdsaSignature *signature);
 void ecdsaFreeSignature(EcdsaSignature *signature);
 
@@ -72,9 +81,6 @@ error_t ecdsaWriteSignature(const EcdsaSignature *signature, uint8_t *data,
 
 error_t ecdsaReadSignature(const uint8_t *data, size_t length,
    EcdsaSignature *signature);
-
-error_t ecdsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, Mpi *privateKey, EcPoint *publicKey);
 
 error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    const EcDomainParameters *params, const Mpi *privateKey,

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.2
+ * @version 2.0.4
  **/
 
 //Switch to the appropriate trace level
@@ -68,8 +68,10 @@ error_t oidCheck(const uint8_t *oid, size_t oidLen)
       for(i = 1, n = 2; i < oidLen; i++)
       {
          //Update the total number of nodes
-         if(!(oid[i] & OID_MORE_FLAG))
+         if((oid[i] & OID_MORE_FLAG) == 0)
+         {
             n++;
+         }
 
          //SNMP limits object identifier values to a maximum of 128 nodes
          if(n > 128)
@@ -304,8 +306,10 @@ uint_t oidCountSubIdentifiers(const uint8_t *oid, size_t oidLen)
       for(i = 1; i < oidLen; i++)
       {
          //Update the total number of sub-identifiers
-         if(!(oid[i] & OID_MORE_FLAG))
+         if((oid[i] & OID_MORE_FLAG) == 0)
+         {
             n++;
+         }
       }
    }
 
@@ -392,7 +396,7 @@ error_t oidDecodeSubIdentifier(const uint8_t *oid, size_t oidLen,
       *value |= oid[i] & OID_VALUE_MASK;
 
       //Bit b8 is set to zero to indicate the last byte
-      if(!(oid[i] & OID_MORE_FLAG))
+      if((oid[i] & OID_MORE_FLAG) == 0)
       {
          //Update offset value
          *pos = i + 1;
@@ -607,7 +611,7 @@ char_t *oidToString(const uint8_t *oid, size_t oidLen, char_t *str,
          value |= oid[i] & OID_VALUE_MASK;
 
          //Bit b8 is set to zero to indicate the last byte
-         if(!(oid[i] & OID_MORE_FLAG))
+         if((oid[i] & OID_MORE_FLAG) == 0)
          {
             //Dump current value
             n = osSprintf(temp, ".%" PRIu32, value);

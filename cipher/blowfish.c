@@ -30,7 +30,7 @@
  * blocks of 128 bits under control of a 128/192/256-bit secret key
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.2
+ * @version 2.0.4
  **/
 
 //Switch to the appropriate trace level

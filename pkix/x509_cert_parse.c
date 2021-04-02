@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.2
+ * @version 2.0.4
  **/
 
 //Switch to the appropriate trace level
@@ -1147,7 +1147,7 @@ error_t x509ParseExtensions(const uint8_t *data, size_t length,
    }
 
    //Check whether the keyCertSign bit is asserted
-   if(extensions->keyUsage.bitmap & X509_KEY_USAGE_KEY_CERT_SIGN)
+   if((extensions->keyUsage.bitmap & X509_KEY_USAGE_KEY_CERT_SIGN) != 0)
    {
       //If the keyCertSign bit is asserted, then the cA bit in the basic
       //constraints extension must also be asserted (refer to RFC 5280,

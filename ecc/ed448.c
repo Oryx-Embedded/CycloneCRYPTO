@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.2
+ * @version 2.0.4
  **/
 
 //Switch to the appropriate trace level
@@ -104,20 +104,62 @@ error_t ed448GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
    uint8_t *privateKey, uint8_t *publicKey)
 {
    error_t error;
-   uint8_t s[57];
-   Ed448State *state;
+
+   //Generate a private key
+   error = ed448GeneratePrivateKey(prngAlgo, prngContext, privateKey);
+
+   //Check status code
+   if(!error)
+   {
+      //Derive the public key from the private key
+      error = ed448GeneratePublicKey(privateKey, publicKey);
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief EdDSA private key generation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[out] privateKey EdDSA private key (57 bytes)
+ * @return Error code
+ **/
+
+error_t ed448GeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
+   uint8_t *privateKey)
+{
+   error_t error;
 
    //Check parameters
-   if(prngAlgo == NULL || prngContext == NULL)
-      return ERROR_INVALID_PARAMETER;
-   if(privateKey == NULL || publicKey == NULL)
+   if(prngAlgo == NULL || prngContext == NULL || privateKey == NULL )
       return ERROR_INVALID_PARAMETER;
 
    //The private key is 57 octets of cryptographically secure random data
    error = prngAlgo->read(prngContext, privateKey, ED448_PRIVATE_KEY_LEN);
-   //Any error to report?
-   if(error)
-      return error;
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Derive the public key from an EdDSA private key
+ * @param[in] privateKey EdDSA private key (57 bytes)
+ * @param[out] publicKey EdDSA public key (57 bytes)
+ * @return Error code
+ **/
+
+error_t ed448GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey)
+{
+   uint8_t s[57];
+   Ed448State *state;
+
+   //Check parameters
+   if(privateKey == NULL || publicKey == NULL)
+      return ERROR_INVALID_PARAMETER;
 
    //Allocate working state
    state = cryptoAllocMem(sizeof(Ed448State));
