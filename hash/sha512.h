@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 #ifndef _SHA512_H
@@ -69,6 +69,10 @@ typedef struct
    };
    size_t size;
    uint64_t totalSize;
+#if (MIMXRT1170_CRYPTO_HASH_SUPPORT == ENABLED)
+   uint32_t caamHandle[3];
+   uint32_t caamContext[58];
+#endif
 } Sha512Context;
 
 

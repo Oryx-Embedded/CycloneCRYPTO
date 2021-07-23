@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,10 +34,6 @@
 //Dependencies
 #include "core/crypto.h"
 #include "ecc/ec.h"
-#include "ecc/curve25519.h"
-#include "ecc/curve448.h"
-#include "ecc/ed25519.h"
-#include "ecc/ed448.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -149,6 +145,115 @@ end:
 
 
 /**
+ * @brief EC key pair generation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[in] params EC domain parameters
+ * @param[out] privateKey EC private key
+ * @param[out] publicKey EC public key
+ * @return Error code
+ **/
+
+__weak error_t ecGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
+   const EcDomainParameters *params, Mpi *privateKey, EcPoint *publicKey)
+{
+   error_t error;
+
+   //Generate a private key
+   error = ecGeneratePrivateKey(prngAlgo, prngContext, params, privateKey);
+
+   //Check status code
+   if(!error)
+   {
+      //Derive the public key from the private key
+      error = ecGeneratePublicKey(params, privateKey, publicKey);
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief EC private key generation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[in] params EC domain parameters
+ * @param[out] privateKey EC private key
+ * @return Error code
+ **/
+
+error_t ecGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
+   const EcDomainParameters *params, Mpi *privateKey)
+{
+   error_t error;
+   uint_t n;
+
+   //Check parameters
+   if(prngAlgo == NULL || prngContext == NULL || params == NULL ||
+      privateKey == NULL)
+   {
+      return ERROR_INVALID_PARAMETER;
+   }
+
+   //Let N be the bit length of q
+   n = mpiGetBitLength(&params->q);
+
+   //Generated a pseudorandom number
+   MPI_CHECK(mpiRand(privateKey, n, prngAlgo, prngContext));
+
+   //Make sure that 0 < d < q
+   if(mpiComp(privateKey, &params->q) >= 0)
+   {
+      EC_CHECK(mpiShiftRight(privateKey, 1));
+   }
+
+   //Debug message
+   TRACE_DEBUG("  Private key:\r\n");
+   TRACE_DEBUG_MPI("    ", privateKey);
+
+end:
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Derive the public key from an EC private key
+ * @param[in] params EC domain parameters
+ * @param[in] privateKey EC private key
+ * @param[out] publicKey EC public key
+ * @return Error code
+ **/
+
+error_t ecGeneratePublicKey(const EcDomainParameters *params,
+   const Mpi *privateKey, EcPoint *publicKey)
+{
+   error_t error;
+
+   //Check parameters
+   if(params == NULL || privateKey == NULL || publicKey == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Compute Q = d.G
+   EC_CHECK(ecMult(params, publicKey, privateKey, &params->g));
+
+   //Convert the public key to affine representation
+   EC_CHECK(ecAffinify(params, publicKey, publicKey));
+
+   //Debug message
+   TRACE_DEBUG("  Public key X:\r\n");
+   TRACE_DEBUG_MPI("    ", &publicKey->x);
+   TRACE_DEBUG("  Public key Y:\r\n");
+   TRACE_DEBUG_MPI("    ", &publicKey->y);
+
+end:
+   //Return status code
+   return error;
+}
+
+
+/**
  * @brief Initialize elliptic curve point
  * @param[in,out] r Pointer to the EC point to be initialized
  **/
@@ -227,10 +332,10 @@ error_t ecImport(const EcDomainParameters *params, EcPoint *r,
          return ERROR_ILLEGAL_PARAMETER;
 
       //Check the length of the octet string
-      if((params->type == EC_CURVE_TYPE_X25519 && length != CURVE25519_BYTE_LEN) ||
-         (params->type == EC_CURVE_TYPE_X448 && length != CURVE448_BYTE_LEN) ||
-         (params->type == EC_CURVE_TYPE_ED25519 && length != ED25519_PUBLIC_KEY_LEN) ||
-         (params->type == EC_CURVE_TYPE_ED448 && length != ED448_PUBLIC_KEY_LEN))
+      if((params->type == EC_CURVE_TYPE_X25519 && length != 32) ||
+         (params->type == EC_CURVE_TYPE_X448 && length != 56) ||
+         (params->type == EC_CURVE_TYPE_ED25519 && length != 32) ||
+         (params->type == EC_CURVE_TYPE_ED448 && length != 57))
       {
          return ERROR_ILLEGAL_PARAMETER;
       }
@@ -1209,7 +1314,7 @@ end:
  * @return Error code
  **/
 
-error_t ecMulMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
+__weak error_t ecMulMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
    const Mpi *b)
 {
    error_t error;
@@ -1241,7 +1346,7 @@ end:
  * @return Error code
  **/
 
-error_t ecSqrMod(const EcDomainParameters *params, Mpi *r, const Mpi *a)
+__weak error_t ecSqrMod(const EcDomainParameters *params, Mpi *r, const Mpi *a)
 {
    error_t error;
 

@@ -34,7 +34,7 @@
  * Refer to SP 800-38A for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -61,7 +61,7 @@
  * @return Error code
  **/
 
-error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
+__weak error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
    uint8_t *iv, const uint8_t *p, uint8_t *c, size_t length)
 {
    size_t i;
@@ -124,48 +124,8 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
 error_t ofbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
    uint8_t *iv, const uint8_t *c, uint8_t *p, size_t length)
 {
-   size_t i;
-   size_t n;
-   uint8_t o[16];
-
-   //The parameter must be a multiple of 8
-   if((s % 8) != 0)
-      return ERROR_INVALID_PARAMETER;
-
-   //Determine the size, in bytes, of the plaintext and ciphertext segments
-   s = s / 8;
-
-   //Check the resulting value
-   if(s < 1 || s > cipher->blockSize)
-      return ERROR_INVALID_PARAMETER;
-
-   //Process each ciphertext segment
-   while(length > 0)
-   {
-      //Compute the number of bytes to process at a time
-      n = MIN(length, s);
-
-      //Compute O(j) = CIPH(I(j))
-      cipher->encryptBlock(context, iv, o);
-
-      //Compute P(j) = C(j) XOR MSB(O(j))
-      for(i = 0; i < n; i++)
-      {
-         p[i] = c[i] ^ o[i];
-      }
-
-      //Compute I(j+1) = LSB(I(j)) | O(j)
-      osMemmove(iv, iv + s, cipher->blockSize - s);
-      osMemcpy(iv + cipher->blockSize - s, o, s);
-
-      //Next block
-      c += n;
-      p += n;
-      length -= n;
-   }
-
-   //Successful encryption
-   return NO_ERROR;
+   //Decryption is the same the as encryption with P and C interchanged
+   return ofbEncrypt(cipher, context, s, iv, c, p, length);
 }
 
 #endif

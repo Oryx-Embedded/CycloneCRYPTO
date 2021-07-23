@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -87,7 +87,13 @@ const HashAlgo sha1HashAlgo =
    (HashAlgoInit) sha1Init,
    (HashAlgoUpdate) sha1Update,
    (HashAlgoFinal) sha1Final,
+#if (MIMXRT1050_CRYPTO_HASH_SUPPORT == ENABLED || \
+   MIMXRT1060_CRYPTO_HASH_SUPPORT == ENABLED || \
+   MIMXRT1170_CRYPTO_HASH_SUPPORT == ENABLED)
+   NULL,
+#else
    (HashAlgoFinalRaw) sha1FinalRaw
+#endif
 };
 
 
@@ -99,7 +105,7 @@ const HashAlgo sha1HashAlgo =
  * @return Error code
  **/
 
-error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
+__weak error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
 {
    error_t error;
    Sha1Context *context;
@@ -139,7 +145,7 @@ error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
  * @param[in] context Pointer to the SHA-1 context to initialize
  **/
 
-void sha1Init(Sha1Context *context)
+__weak void sha1Init(Sha1Context *context)
 {
    //Set initial hash value
    context->h[0] = 0x67452301;
@@ -162,7 +168,7 @@ void sha1Init(Sha1Context *context)
  * @param[in] length Length of the buffer
  **/
 
-void sha1Update(Sha1Context *context, const void *data, size_t length)
+__weak void sha1Update(Sha1Context *context, const void *data, size_t length)
 {
    size_t n;
 
@@ -201,7 +207,7 @@ void sha1Update(Sha1Context *context, const void *data, size_t length)
  * @param[out] digest Calculated digest (optional parameter)
  **/
 
-void sha1Final(Sha1Context *context, uint8_t *digest)
+__weak void sha1Final(Sha1Context *context, uint8_t *digest)
 {
    uint_t i;
    size_t paddingSize;
@@ -245,12 +251,12 @@ void sha1Final(Sha1Context *context, uint8_t *digest)
 
 
 /**
- * @brief Finish the SHA-1 message digest (no padding is added)
+ * @brief Finish the SHA-1 message digest (no padding added)
  * @param[in] context Pointer to the SHA-1 context
  * @param[out] digest Calculated digest
  **/
 
-void sha1FinalRaw(Sha1Context *context, uint8_t *digest)
+__weak void sha1FinalRaw(Sha1Context *context, uint8_t *digest)
 {
    uint_t i;
 
@@ -276,7 +282,7 @@ void sha1FinalRaw(Sha1Context *context, uint8_t *digest)
  * @param[in] context Pointer to the SHA-1 context
  **/
 
-void sha1ProcessBlock(Sha1Context *context)
+__weak void sha1ProcessBlock(Sha1Context *context)
 {
    uint_t t;
    uint32_t temp;
@@ -302,17 +308,27 @@ void sha1ProcessBlock(Sha1Context *context)
    {
       //Prepare the message schedule
       if(t >= 16)
+      {
          W(t) = ROL32(W(t + 13) ^ W(t + 8) ^ W(t + 2) ^ W(t), 1);
+      }
 
       //Calculate T
       if(t < 20)
+      {
          temp = ROL32(a, 5) + CH(b, c, d) + e + W(t) + k[0];
+      }
       else if(t < 40)
+      {
          temp = ROL32(a, 5) + PARITY(b, c, d) + e + W(t) + k[1];
+      }
       else if(t < 60)
+      {
          temp = ROL32(a, 5) + MAJ(b, c, d) + e + W(t) + k[2];
+      }
       else
+      {
          temp = ROL32(a, 5) + PARITY(b, c, d) + e + W(t) + k[3];
+      }
 
       //Update the working registers
       e = d;

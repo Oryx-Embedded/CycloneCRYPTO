@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 #ifndef _SHA256_H
@@ -69,6 +69,20 @@ typedef struct
    };
    size_t size;
    uint64_t totalSize;
+#if (MIMXRT1050_CRYPTO_HASH_SUPPORT == ENABLED || \
+   MIMXRT1060_CRYPTO_HASH_SUPPORT == ENABLED)
+   uint32_t dcpHandle[11];
+   uint32_t dcpContext[64];
+#elif (MIMXRT1170_CRYPTO_HASH_SUPPORT == ENABLED)
+   uint32_t caamHandle[3];
+   uint32_t caamContext[58];
+#elif (STM32F2XX_CRYPTO_HASH_SUPPORT == ENABLED || \
+   STM32F4XX_CRYPTO_HASH_SUPPORT == ENABLED || \
+   STM32F7XX_CRYPTO_HASH_SUPPORT == ENABLED || \
+   STM32H7XX_CRYPTO_HASH_SUPPORT == ENABLED || \
+   STM32L4XX_CRYPTO_HASH_SUPPORT == ENABLED)
+   uint32_t hwContext[58];
+#endif
 } Sha256Context;
 
 

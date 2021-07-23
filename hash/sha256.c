@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -94,7 +94,13 @@ const HashAlgo sha256HashAlgo =
    (HashAlgoInit) sha256Init,
    (HashAlgoUpdate) sha256Update,
    (HashAlgoFinal) sha256Final,
+#if (MIMXRT1050_CRYPTO_HASH_SUPPORT == ENABLED || \
+   MIMXRT1060_CRYPTO_HASH_SUPPORT == ENABLED || \
+   MIMXRT1170_CRYPTO_HASH_SUPPORT == ENABLED)
+   NULL,
+#else
    (HashAlgoFinalRaw) sha256FinalRaw
+#endif
 };
 
 
@@ -106,7 +112,7 @@ const HashAlgo sha256HashAlgo =
  * @return Error code
  **/
 
-error_t sha256Compute(const void *data, size_t length, uint8_t *digest)
+__weak error_t sha256Compute(const void *data, size_t length, uint8_t *digest)
 {
    error_t error;
    Sha256Context *context;
@@ -146,7 +152,7 @@ error_t sha256Compute(const void *data, size_t length, uint8_t *digest)
  * @param[in] context Pointer to the SHA-256 context to initialize
  **/
 
-void sha256Init(Sha256Context *context)
+__weak void sha256Init(Sha256Context *context)
 {
    //Set initial hash value
    context->h[0] = 0x6A09E667;
@@ -172,7 +178,7 @@ void sha256Init(Sha256Context *context)
  * @param[in] length Length of the buffer
  **/
 
-void sha256Update(Sha256Context *context, const void *data, size_t length)
+__weak void sha256Update(Sha256Context *context, const void *data, size_t length)
 {
    size_t n;
 
@@ -211,7 +217,7 @@ void sha256Update(Sha256Context *context, const void *data, size_t length)
  * @param[out] digest Calculated digest (optional parameter)
  **/
 
-void sha256Final(Sha256Context *context, uint8_t *digest)
+__weak void sha256Final(Sha256Context *context, uint8_t *digest)
 {
    uint_t i;
    size_t paddingSize;
@@ -255,12 +261,12 @@ void sha256Final(Sha256Context *context, uint8_t *digest)
 
 
 /**
- * @brief Finish the SHA-256 message digest (no padding is added)
+ * @brief Finish the SHA-256 message digest (no padding added)
  * @param[in] context Pointer to the SHA-256 context
  * @param[out] digest Calculated digest
  **/
 
-void sha256FinalRaw(Sha256Context *context, uint8_t *digest)
+__weak void sha256FinalRaw(Sha256Context *context, uint8_t *digest)
 {
    uint_t i;
 
@@ -286,7 +292,7 @@ void sha256FinalRaw(Sha256Context *context, uint8_t *digest)
  * @param[in] context Pointer to the SHA-256 context
  **/
 
-void sha256ProcessBlock(Sha256Context *context)
+__weak void sha256ProcessBlock(Sha256Context *context)
 {
    uint_t t;
    uint32_t temp1;
@@ -316,7 +322,9 @@ void sha256ProcessBlock(Sha256Context *context)
    {
       //Prepare the message schedule
       if(t >= 16)
+      {
          W(t) += SIGMA4(W(t + 14)) + W(t + 9) + SIGMA3(W(t + 1));
+      }
 
       //Calculate T1 and T2
       temp1 = h + SIGMA2(e) + CH(e, f, g) + k[t] + W(t);

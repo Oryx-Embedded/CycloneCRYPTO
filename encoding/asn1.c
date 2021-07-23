@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -323,49 +323,6 @@ error_t asn1ReadInt32(const uint8_t *data, size_t length, Asn1Tag *tag,
 
 
 /**
- * @brief Read a multiple-precision integer from the input stream
- * @param[in] data Input stream where to read the tag
- * @param[in] length Number of bytes available in the input stream
- * @param[out] tag Structure describing the ASN.1 tag
- * @param[out] value Integer value
- * @return Error code
- **/
-
-error_t asn1ReadMpi(const uint8_t *data, size_t length, Asn1Tag *tag,
-   Mpi *value)
-{
-#if (MPI_SUPPORT == ENABLED)
-   error_t error;
-
-   //Read ASN.1 tag
-   error = asn1ReadTag(data, length, tag);
-   //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
-   //Invalid tag?
-   if(error)
-      return error;
-
-   //Negative integer?
-   if(tag->length > 0 && (tag->value[0] & 0x80) != 0)
-      return ERROR_INVALID_SYNTAX;
-
-   //Convert the octet string to a multiple precision integer
-   error = mpiImport(value, tag->value, tag->length, MPI_FORMAT_BIG_ENDIAN);
-
-   //Return status code
-   return error;
-#else
-   //Not implemented
-   return ERROR_NOT_IMPLEMENTED;
-#endif
-}
-
-
-/**
  * @brief Write an ASN.1 tag
  * @param[in] tag Structure describing the ASN.1 tag
  * @param[in] reverse Use reverse encoding
@@ -582,6 +539,46 @@ error_t asn1WriteInt32(int32_t value, bool_t reverse, uint8_t *data,
 }
 
 
+#if (MPI_SUPPORT == ENABLED)
+
+/**
+ * @brief Read a multiple-precision integer from the input stream
+ * @param[in] data Input stream where to read the tag
+ * @param[in] length Number of bytes available in the input stream
+ * @param[out] tag Structure describing the ASN.1 tag
+ * @param[out] value Integer value
+ * @return Error code
+ **/
+
+error_t asn1ReadMpi(const uint8_t *data, size_t length, Asn1Tag *tag,
+   Mpi *value)
+{
+   error_t error;
+
+   //Read ASN.1 tag
+   error = asn1ReadTag(data, length, tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Enforce encoding, class and type
+   error = asn1CheckTag(tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
+   //Invalid tag?
+   if(error)
+      return error;
+
+   //Negative integer?
+   if(tag->length > 0 && (tag->value[0] & 0x80) != 0)
+      return ERROR_INVALID_SYNTAX;
+
+   //Convert the octet string to a multiple precision integer
+   error = mpiImport(value, tag->value, tag->length, MPI_FORMAT_BIG_ENDIAN);
+
+   //Return status code
+   return error;
+}
+
+
 /**
  * @brief Write a multiple-precision integer from the output stream
  * @param[in] value Integer value
@@ -594,7 +591,6 @@ error_t asn1WriteInt32(int32_t value, bool_t reverse, uint8_t *data,
 error_t asn1WriteMpi(const Mpi *value, bool_t reverse, uint8_t *data,
    size_t *written)
 {
-#if (MPI_SUPPORT == ENABLED)
    error_t error;
    size_t n;
    Asn1Tag tag;
@@ -639,11 +635,9 @@ error_t asn1WriteMpi(const Mpi *value, bool_t reverse, uint8_t *data,
 
    //Successful processing
    return NO_ERROR;
-#else
-   //Not implemented
-   return ERROR_NOT_IMPLEMENTED;
-#endif
 }
+
+#endif
 
 
 /**

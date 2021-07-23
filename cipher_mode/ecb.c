@@ -32,7 +32,7 @@
  * Refer to SP 800-38A for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -57,7 +57,7 @@
  * @return Error code
  **/
 
-error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
+__weak error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
    const uint8_t *p, uint8_t *c, size_t length)
 {
    //ECB mode operates in a block-by-block fashion
@@ -91,7 +91,7 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
  * @return Error code
  **/
 
-error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
+__weak error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    const uint8_t *c, uint8_t *p, size_t length)
 {
    //ECB mode operates in a block-by-block fashion

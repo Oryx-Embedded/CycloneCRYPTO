@@ -30,7 +30,7 @@
  * storage. Refer to IEEE Std 1619 and SP 800-38E for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -77,13 +77,13 @@ error_t xtsInit(XtsContext *context, const CipherAlgo *cipherAlgo,
    k2 = (uint8_t *) key + (keyLen / 2);
 
    //Initialize first cipher context using K1
-   error = cipherAlgo->init(context->cipherContext1, k1, keyLen / 2);
+   error = cipherAlgo->init(&context->cipherContext1, k1, keyLen / 2);
    //Any error to report?
    if(error)
       return error;
 
    //Initialize second cipher context using K2
-   error = cipherAlgo->init(context->cipherContext2, k2, keyLen / 2);
+   error = cipherAlgo->init(&context->cipherContext2, k2, keyLen / 2);
    //Any error to report?
    if(error)
       return error;
@@ -114,7 +114,7 @@ error_t xtsEncrypt(XtsContext *context, const uint8_t *i, const uint8_t *p,
       return ERROR_INVALID_PARAMETER;
 
    //Encrypt the tweak using K2
-   context->cipherAlgo->encryptBlock(context->cipherContext2, i, t);
+   context->cipherAlgo->encryptBlock(&context->cipherContext2, i, t);
 
    //XTS mode operates in a block-by-block fashion
    while(length >= 16)
@@ -122,7 +122,7 @@ error_t xtsEncrypt(XtsContext *context, const uint8_t *i, const uint8_t *p,
       //Merge the tweak into the input block
       xtsXorBlock(x, p, t);
       //Encrypt the block using K1
-      context->cipherAlgo->encryptBlock(context->cipherContext1, x, x);
+      context->cipherAlgo->encryptBlock(&context->cipherContext1, x, x);
       //Merge the tweak into the output block
       xtsXorBlock(c, x, t);
 
@@ -148,7 +148,7 @@ error_t xtsEncrypt(XtsContext *context, const uint8_t *i, const uint8_t *p,
       //Merge the tweak into the input block
       xtsXorBlock(x, x, t);
       //Encrypt the final block using K1
-      context->cipherAlgo->encryptBlock(context->cipherContext1, x, x);
+      context->cipherAlgo->encryptBlock(&context->cipherContext1, x, x);
       //Merge the tweak into the output block
       xtsXorBlock(c - 16, x, t);
    }
@@ -179,7 +179,7 @@ error_t xtsDecrypt(XtsContext *context, const uint8_t *i, const uint8_t *c,
       return ERROR_INVALID_PARAMETER;
 
    //Encrypt the tweak using K2
-   context->cipherAlgo->encryptBlock(context->cipherContext2, i, t);
+   context->cipherAlgo->encryptBlock(&context->cipherContext2, i, t);
 
    //XTS mode operates in a block-by-block fashion
    while(length >= 32)
@@ -187,7 +187,7 @@ error_t xtsDecrypt(XtsContext *context, const uint8_t *i, const uint8_t *c,
       //Merge the tweak into the input block
       xtsXorBlock(x, c, t);
       //Decrypt the block using K1
-      context->cipherAlgo->decryptBlock(context->cipherContext1, x, x);
+      context->cipherAlgo->decryptBlock(&context->cipherContext1, x, x);
       //Merge the tweak into the output block
       xtsXorBlock(p, x, t);
 
@@ -211,7 +211,7 @@ error_t xtsDecrypt(XtsContext *context, const uint8_t *i, const uint8_t *c,
       //Merge the tweak into the input block
       xtsXorBlock(x, c, tt);
       //Decrypt the next-to-last block using K1
-      context->cipherAlgo->decryptBlock(context->cipherContext1, x, x);
+      context->cipherAlgo->decryptBlock(&context->cipherContext1, x, x);
       //Merge the tweak into the output block
       xtsXorBlock(p, x, tt);
 
@@ -234,7 +234,7 @@ error_t xtsDecrypt(XtsContext *context, const uint8_t *i, const uint8_t *c,
    //Merge the tweak into the input block
    xtsXorBlock(x, x, t);
    //Decrypt the final block using K1
-   context->cipherAlgo->decryptBlock(context->cipherContext1, x, x);
+   context->cipherAlgo->decryptBlock(&context->cipherContext1, x, x);
    //Merge the tweak into the output block
    xtsXorBlock(p, x, t);
 

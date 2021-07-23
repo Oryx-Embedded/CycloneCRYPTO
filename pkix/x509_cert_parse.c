@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -40,12 +40,7 @@
 #include "pkc/rsa.h"
 #include "pkc/dsa.h"
 #include "ecc/ecdsa.h"
-#include "hash/md5.h"
-#include "hash/sha1.h"
-#include "hash/sha224.h"
-#include "hash/sha256.h"
-#include "hash/sha384.h"
-#include "hash/sha512.h"
+#include "hash/hash_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration

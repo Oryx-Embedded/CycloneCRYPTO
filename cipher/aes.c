@@ -31,7 +31,7 @@
  * lengths of 128, 192, and 256 bits. Refer to FIPS 197 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -199,7 +199,7 @@ const CipherAlgo aesCipherAlgo =
  * @return Error code
  **/
 
-error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
+__weak error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
 {
    uint_t i;
    uint32_t temp;
@@ -277,8 +277,8 @@ error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
    //Generate the key schedule (decryption)
    for(i = 0; i < keyScheduleSize; i++)
    {
-      //Apply the InvMixColumns transformation to all round keys
-      //but the first and the last
+      //Apply the InvMixColumns transformation to all round keys but the first
+      //and the last
       if(i < 4 || i >= (keyScheduleSize - 4))
       {
          context->dk[i] = context->ek[i];
@@ -307,7 +307,7 @@ error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
+__weak void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 {
    uint_t i;
    uint32_t s0;
@@ -417,7 +417,7 @@ void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
+__weak void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 {
    uint_t i;
    uint32_t s0;

@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -73,7 +73,7 @@ const HashAlgo sha224HashAlgo =
  * @return Error code
  **/
 
-error_t sha224Compute(const void *data, size_t length, uint8_t *digest)
+__weak error_t sha224Compute(const void *data, size_t length, uint8_t *digest)
 {
    error_t error;
    Sha224Context *context;
@@ -113,7 +113,7 @@ error_t sha224Compute(const void *data, size_t length, uint8_t *digest)
  * @param[in] context Pointer to the SHA-224 context to initialize
  **/
 
-void sha224Init(Sha224Context *context)
+__weak void sha224Init(Sha224Context *context)
 {
    //Set initial hash value
    context->h[0] = 0xC1059ED8;
@@ -139,7 +139,7 @@ void sha224Init(Sha224Context *context)
  * @param[in] length Length of the buffer
  **/
 
-void sha224Update(Sha224Context *context, const void *data, size_t length)
+__weak void sha224Update(Sha224Context *context, const void *data, size_t length)
 {
    //The function is defined in the exact same manner as SHA-256
    sha256Update(context, data, length);
@@ -152,7 +152,7 @@ void sha224Update(Sha224Context *context, const void *data, size_t length)
  * @param[out] digest Calculated digest (optional parameter)
  **/
 
-void sha224Final(Sha224Context *context, uint8_t *digest)
+__weak void sha224Final(Sha224Context *context, uint8_t *digest)
 {
    //The function is defined in the exact same manner as SHA-256
    sha256Final(context, NULL);

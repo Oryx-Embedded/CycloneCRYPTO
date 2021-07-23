@@ -29,7 +29,7 @@
  * CMAC is a block cipher-based MAC algorithm specified in NIST SP 800-38B
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -137,15 +137,17 @@ error_t cmacInit(CmacContext *context, const CipherAlgo *cipher,
    context->cipher = cipher;
 
    //Initialize cipher context
-   error = cipher->init(context->cipherContext, key, keyLen);
+   error = cipher->init(&context->cipherContext, key, keyLen);
    //Any error to report?
    if(error)
       return error;
 
    //Let L = 0
    osMemset(context->buffer, 0, cipher->blockSize);
+
    //Compute L = CIPH(L)
-   cipher->encryptBlock(context->cipherContext, context->buffer, context->buffer);
+   cipher->encryptBlock(&context->cipherContext, context->buffer,
+      context->buffer);
 
    //The subkey K1 is obtained by multiplying L by x in GF(2^b)
    cmacMul(context->k1, context->buffer, cipher->blockSize, rb);
@@ -199,7 +201,7 @@ void cmacUpdate(CmacContext *context, const void *data, size_t dataLen)
             context->cipher->blockSize);
 
          //Compute C(i) = CIPH(M(i) ^ C(i-1))
-         context->cipher->encryptBlock(context->cipherContext, context->buffer,
+         context->cipher->encryptBlock(&context->cipherContext, context->buffer,
             context->mac);
 
          //Empty the buffer
@@ -268,7 +270,7 @@ error_t cmacFinal(CmacContext *context, uint8_t *mac, size_t macLen)
       context->cipher->blockSize);
 
    //Compute T = CIPH(M(n) ^ C(n-1))
-   context->cipher->encryptBlock(context->cipherContext, context->buffer,
+   context->cipher->encryptBlock(&context->cipherContext, context->buffer,
       context->mac);
 
    //Copy the resulting MAC value

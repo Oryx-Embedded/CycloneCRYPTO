@@ -1,6 +1,6 @@
 /**
- * @file samd51_crypto_pukcc.c
- * @brief SAMD51 PUKCC public key accelerator
+ * @file samd51_crypto_pkc.c
+ * @brief SAMD51 public-key hardware accelerator (PUKCC)
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -37,12 +37,15 @@
 #include "pukcc/CryptoLib_Headers_pb.h"
 #include "core/crypto.h"
 #include "hardware/samd51_crypto.h"
-#include "hardware/samd51_crypto_pukcc.h"
+#include "hardware/samd51_crypto_pkc.h"
 #include "pkc/rsa.h"
 #include "ecc/ec.h"
 #include "ecc/ecdsa.h"
 #include "mpi/mpi.h"
 #include "debug.h"
+
+//Check crypto library configuration
+#if (SAMD51_CRYPTO_PKC_SUPPORT == ENABLED)
 
 //Global variables
 PPUKCL_PARAM pvPUKCLParam;
@@ -50,7 +53,7 @@ PUKCL_PARAM PUKCLParam;
 
 
 /**
- * @brief Initialize PUKCC public key accelerator
+ * @brief Initialize PUKCC module
  **/
 
 error_t pukccInit(void)
@@ -356,7 +359,7 @@ error_t mpiInvMod(Mpi *r, const Mpi *a, const Mpi *p)
    //Retrieve the length of the modulus, in bytes
    n = mpiGetByteLength(p);
 
-   //Compute the length of the the areas X, Y, A and Z
+   //Compute the length of the areas X, Y, A and Z
    n = MAX(n, m);
    n = (n + 7U) & ~3U;
 
@@ -1462,3 +1465,5 @@ error_t ecdsaVerifySignature(const EcDomainParameters *ecParams,
    //Return status code
    return error;
 }
+
+#endif

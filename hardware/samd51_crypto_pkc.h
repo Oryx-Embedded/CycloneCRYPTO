@@ -1,6 +1,6 @@
 /**
- * @file samd51_crypto_pukcc.h
- * @brief SAMD51 PUKCC public key accelerator
+ * @file samd51_crypto_pkc.h
+ * @brief SAMD51 public-key hardware accelerator (PUKCC)
  *
  * @section License
  *
@@ -25,14 +25,21 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
-#ifndef _SAMD51_CRYPTO_PUKCC_H
-#define _SAMD51_CRYPTO_PUKCC_H
+#ifndef _SAMD51_CRYPTO_PKC_H
+#define _SAMD51_CRYPTO_PKC_H
 
 //Dependencies
 #include "core/crypto.h"
+
+//Public-key hardware accelerator
+#ifndef SAMD51_CRYPTO_PKC_SUPPORT
+   #define SAMD51_CRYPTO_PKC_SUPPORT DISABLED
+#elif (SAMD51_CRYPTO_PKC_SUPPORT != ENABLED && SAMD51_CRYPTO_PKC_SUPPORT != DISABLED)
+   #error SAMD51_CRYPTO_PKC_SUPPORT parameter is not valid
+#endif
 
 //Crypto memory base address
 #define PUKCC_CRYPTO_RAM_BASE 0x02011000UL
@@ -238,7 +245,7 @@ typedef struct
 } PukccZpEcDsaVerifyParams;
 
 
-//PUKCC related function
+//PUKCC related functions
 error_t pukccInit(void);
 
 //C++ guard

@@ -30,7 +30,7 @@
  * SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -155,7 +155,7 @@ error_t gmacInit(GmacContext *context, const CipherAlgo *cipher,
    context->cipher = cipher;
 
    //Initialize cipher context
-   error = cipher->init(context->cipherContext, key, keyLen);
+   error = cipher->init(&context->cipherContext, key, keyLen);
    //Any error to report?
    if(error)
       return error;
@@ -167,8 +167,8 @@ error_t gmacInit(GmacContext *context, const CipherAlgo *cipher,
    h[3] = 0;
 
    //Generate the hash subkey H
-   context->cipher->encryptBlock(context->cipherContext,
-      (uint8_t *) h, (uint8_t *) h);
+   context->cipher->encryptBlock(&context->cipherContext, (uint8_t *) h,
+      (uint8_t *) h);
 
    //Pre-compute M(0) = H * 0
    j = reverseInt4(0);
@@ -313,7 +313,7 @@ error_t gmacReset(GmacContext *context, const uint8_t *iv, size_t ivLen)
    }
 
    //Compute MSB(CIPH(J(0)))
-   context->cipher->encryptBlock(context->cipherContext, j, b);
+   context->cipher->encryptBlock(&context->cipherContext, j, b);
    osMemcpy(context->mac, b, 16);
 
    //Initialize GHASH calculation

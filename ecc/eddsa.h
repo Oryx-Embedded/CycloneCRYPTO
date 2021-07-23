@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 #ifndef _EDDSA_H
@@ -84,6 +84,16 @@ void eddsaFreePrivateKey(EddsaPrivateKey *key);
 //C++ guard
 #ifdef __cplusplus
 }
+#endif
+
+//Ed25519 supported?
+#if (ED25519_SUPPORT == ENABLED)
+   #include "ecc/ed25519.h"
+#endif
+
+//Ed448 supported?
+#if (ED448_SUPPORT == ENABLED)
+   #include "ecc/ed448.h"
 #endif
 
 #endif

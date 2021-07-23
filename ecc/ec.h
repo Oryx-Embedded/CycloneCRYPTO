@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 #ifndef _EC_H
@@ -83,6 +83,15 @@ void ecFreeDomainParameters(EcDomainParameters *params);
 
 error_t ecLoadDomainParameters(EcDomainParameters *params,
    const EcCurveInfo *curveInfo);
+
+error_t ecGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
+   const EcDomainParameters *params, Mpi *privateKey, EcPoint *publicKey);
+
+error_t ecGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
+   const EcDomainParameters *params, Mpi *privateKey);
+
+error_t ecGeneratePublicKey(const EcDomainParameters *params,
+   const Mpi *privateKey, EcPoint *publicKey);
 
 void ecInit(EcPoint *r);
 void ecFree(EcPoint *r);

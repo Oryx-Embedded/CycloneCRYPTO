@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,8 +34,6 @@
 //Dependencies
 #include "core/crypto.h"
 #include "ecc/ecdh.h"
-#include "ecc/x25519.h"
-#include "ecc/x448.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -84,8 +82,8 @@ void ecdhFree(EcdhContext *context)
  * @return Error code
  **/
 
-error_t ecdhGenerateKeyPair(EcdhContext *context,
-   const PrngAlgo *prngAlgo, void *prngContext)
+error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
+   void *prngContext)
 {
    error_t error;
 
@@ -101,52 +99,9 @@ error_t ecdhGenerateKeyPair(EcdhContext *context,
       context->params.type == EC_CURVE_TYPE_SECP_R2 ||
       context->params.type == EC_CURVE_TYPE_BRAINPOOLP_R1)
    {
-      uint_t n;
-
-      //Let N be the bit length of q
-      n = mpiGetBitLength(&context->params.q);
-
-      //Generated a pseudorandom number
-      error = mpiRand(&context->da, n, prngAlgo, prngContext);
-
-      //Check status code
-      if(!error)
-      {
-         //Make sure that 0 < da < q
-         if(mpiComp(&context->da, &context->params.q) >= 0)
-         {
-            error = mpiShiftRight(&context->da, 1);
-         }
-      }
-
-      //Check status code
-      if(!error)
-      {
-         //Debug message
-         TRACE_DEBUG("  Private key:\r\n");
-         TRACE_DEBUG_MPI("    ", &context->da);
-
-         //Compute Qa = da.G
-         error = ecMult(&context->params, &context->qa, &context->da,
-            &context->params.g);
-      }
-
-      //Check status code
-      if(!error)
-      {
-         //Convert the public key to affine representation
-         error = ecAffinify(&context->params, &context->qa, &context->qa);
-      }
-
-      //Check status code
-      if(!error)
-      {
-         //Debug message
-         TRACE_DEBUG("  Public key X:\r\n");
-         TRACE_DEBUG_MPI("    ", &context->qa.x);
-         TRACE_DEBUG("  Public key Y:\r\n");
-         TRACE_DEBUG_MPI("    ", &context->qa.y);
-      }
+      //Generate an EC key pair
+      error = ecGenerateKeyPair(prngAlgo, prngContext, &context->params,
+         &context->da, &context->qa);
    }
 #if (X25519_SUPPORT == ENABLED)
    //Curve25519 elliptic curve?

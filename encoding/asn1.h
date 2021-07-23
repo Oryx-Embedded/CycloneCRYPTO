@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 #ifndef _ASN1_H
@@ -33,7 +33,11 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "mpi/mpi.h"
+
+//Multiple precision integer arithmetic supported?
+#if (MPI_SUPPORT == ENABLED)
+   #include "mpi/mpi.h"
+#endif
 
 //Tag number mask
 #define ASN1_TAG_NUMBER_MASK        0x1F
@@ -117,17 +121,21 @@ error_t asn1ReadBoolean(const uint8_t *data, size_t length, Asn1Tag *tag,
 error_t asn1ReadInt32(const uint8_t *data, size_t length, Asn1Tag *tag,
    int32_t *value);
 
-error_t asn1ReadMpi(const uint8_t *data, size_t length, Asn1Tag *tag,
-   Mpi *value);
-
 error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data,
    size_t *written);
 
 error_t asn1WriteInt32(int32_t value, bool_t reverse, uint8_t *data,
    size_t *written);
 
+#if (MPI_SUPPORT == ENABLED)
+
+error_t asn1ReadMpi(const uint8_t *data, size_t length, Asn1Tag *tag,
+   Mpi *value);
+
 error_t asn1WriteMpi(const Mpi *value, bool_t reverse, uint8_t *data,
    size_t *written);
+
+#endif
 
 error_t asn1CheckTag(const Asn1Tag *tag, bool_t constructed, uint_t objClass,
    uint_t objType);

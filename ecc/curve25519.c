@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -188,7 +188,7 @@ void curve25519SubInt(uint32_t *r, const uint32_t *a, uint32_t b)
  * @param[in] b An integer such as 0 <= B < p
  **/
 
-void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
+__weak void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
 {
    uint_t i;
    uint_t j;
@@ -314,7 +314,7 @@ void curve25519MulInt(uint32_t *r, const uint32_t *a, uint32_t b)
  * @param[in] a An integer such as 0 <= A < p
  **/
 
-void curve25519Sqr(uint32_t *r, const uint32_t *a)
+__weak void curve25519Sqr(uint32_t *r, const uint32_t *a)
 {
    //Compute R = (A ^ 2) mod p
    curve25519Mul(r, a, a);

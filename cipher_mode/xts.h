@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 #ifndef _XTS_H
@@ -33,61 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
-
-//RC2 support?
-#if (RC2_SUPPORT == ENABLED)
-   #include "cipher/rc2.h"
-#endif
-
-//RC6 support?
-#if (RC6_SUPPORT == ENABLED)
-   #include "cipher/rc6.h"
-#endif
-
-//IDEA support?
-#if (IDEA_SUPPORT == ENABLED)
-   #include "cipher/idea.h"
-#endif
-
-//DES support?
-#if (DES_SUPPORT == ENABLED)
-   #include "cipher/des.h"
-#endif
-
-//Triple DES support?
-#if (DES3_SUPPORT == ENABLED)
-   #include "cipher/des3.h"
-#endif
-
-//AES support?
-#if (AES_SUPPORT == ENABLED)
-   #include "cipher/aes.h"
-#endif
-
-//Blowfish support?
-#if (BLOWFISH_SUPPORT == ENABLED)
-   #include "cipher/blowfish.h"
-#endif
-
-//Camellia support?
-#if (CAMELLIA_SUPPORT == ENABLED)
-   #include "cipher/camellia.h"
-#endif
-
-//SEED support?
-#if (SEED_SUPPORT == ENABLED)
-   #include "cipher/seed.h"
-#endif
-
-//ARIA support?
-#if (ARIA_SUPPORT == ENABLED)
-   #include "cipher/aria.h"
-#endif
-
-//PRESENT support?
-#if (PRESENT_SUPPORT == ENABLED)
-   #include "cipher/present.h"
-#endif
+#include "cipher/cipher_algorithms.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -102,8 +48,8 @@ extern "C" {
 typedef struct
 {
    const CipherAlgo *cipherAlgo;
-   uint8_t cipherContext1[MAX_CIPHER_CONTEXT_SIZE];
-   uint8_t cipherContext2[MAX_CIPHER_CONTEXT_SIZE];
+   CipherContext cipherContext1;
+   CipherContext cipherContext2;
 } XtsContext;
 
 

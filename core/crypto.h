@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.0.4"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.1.0"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
-#define CYCLONE_CRYPTO_MINOR_VERSION 0
+#define CYCLONE_CRYPTO_MINOR_VERSION 1
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 4
+#define CYCLONE_CRYPTO_REV_NUMBER 0
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -417,18 +417,18 @@
    #error CAMELLIA_SUPPORT parameter is not valid
 #endif
 
-//SEED encryption support
-#ifndef SEED_SUPPORT
-   #define SEED_SUPPORT ENABLED
-#elif (SEED_SUPPORT != ENABLED && SEED_SUPPORT != DISABLED)
-   #error SEED_SUPPORT parameter is not valid
-#endif
-
 //ARIA encryption support
 #ifndef ARIA_SUPPORT
    #define ARIA_SUPPORT ENABLED
 #elif (ARIA_SUPPORT != ENABLED && ARIA_SUPPORT != DISABLED)
    #error ARIA_SUPPORT parameter is not valid
+#endif
+
+//SEED encryption support
+#ifndef SEED_SUPPORT
+   #define SEED_SUPPORT ENABLED
+#elif (SEED_SUPPORT != ENABLED && SEED_SUPPORT != DISABLED)
+   #error SEED_SUPPORT parameter is not valid
 #endif
 
 //PRESENT encryption support
@@ -644,221 +644,6 @@
    #define cryptoFreeMem(p) osFreeMem(p)
 #endif
 
-//Maximum context size (hash algorithms)
-#if (SHA3_512_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Sha3_512Context)
-#elif (SHA3_384_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Sha3_384Context)
-#elif (SHA3_256_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Sha3_256Context)
-#elif (SHA3_224_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Sha3_224Context)
-#elif (WHIRLPOOL_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(WhirlpoolContext)
-#elif (BLAKE2B512_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Blake2b512Context)
-#elif (BLAKE2B384_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Blake2b384Context)
-#elif (BLAKE2B256_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Blake2b256Context)
-#elif (BLAKE2B160_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Blake2b160Context)
-#elif (SHA512_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Sha512Context)
-#elif (SHA384_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Sha384Context)
-#elif (SHA512_256_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Sha512_256Context)
-#elif (SHA512_224_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Sha512_224Context)
-#elif (BLAKE2S256_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Blake2s256Context)
-#elif (BLAKE2S224_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Blake2s224Context)
-#elif (BLAKE2S160_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Blake2s160Context)
-#elif (BLAKE2S128_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Blake2s128Context)
-#elif (SHA256_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Sha256Context)
-#elif (SHA224_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Sha224Context)
-#elif (TIGER_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(TigerContext)
-#elif (SHA1_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Sha1Context)
-#elif (RIPEMD160_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Ripemd160Context)
-#elif (RIPEMD128_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Ripemd128Context)
-#elif (MD5_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Md5Context)
-#elif (MD4_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Md4Context)
-#elif (MD2_SUPPORT == ENABLED)
-   #define MAX_HASH_CONTEXT_SIZE sizeof(Md2Context)
-#endif
-
-//Maximum block size (hash algorithms)
-#if (SHA3_224_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE SHA3_224_BLOCK_SIZE
-#elif (SHA3_256_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE SHA3_256_BLOCK_SIZE
-#elif (BLAKE2B512_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE BLAKE2B512_BLOCK_SIZE
-#elif (BLAKE2B384_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE BLAKE2B384_BLOCK_SIZE
-#elif (BLAKE2B256_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE BLAKE2B256_BLOCK_SIZE
-#elif (BLAKE2B160_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE BLAKE2B160_BLOCK_SIZE
-#elif (SHA512_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE SHA512_BLOCK_SIZE
-#elif (SHA384_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE SHA384_BLOCK_SIZE
-#elif (SHA512_256_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE SHA512_256_BLOCK_SIZE
-#elif (SHA512_224_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE SHA512_224_BLOCK_SIZE
-#elif (SHA3_384_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE SHA3_384_BLOCK_SIZE
-#elif (SHA3_512_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE SHA3_512_BLOCK_SIZE
-#elif (BLAKE2S256_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE BLAKE2S256_BLOCK_SIZE
-#elif (BLAKE2S224_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE BLAKE2S224_BLOCK_SIZE
-#elif (BLAKE2S160_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE BLAKE2S160_BLOCK_SIZE
-#elif (BLAKE2S128_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE BLAKE2S128_BLOCK_SIZE
-#elif (SHA256_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE SHA256_BLOCK_SIZE
-#elif (SHA224_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE SHA224_BLOCK_SIZE
-#elif (SHA1_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE SHA1_BLOCK_SIZE
-#elif (WHIRLPOOL_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE WHIRLPOOL_BLOCK_SIZE
-#elif (TIGER_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE TIGER_BLOCK_SIZE
-#elif (RIPEMD160_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE RIPEMD160_BLOCK_SIZE
-#elif (RIPEMD128_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE RIPEMD128_BLOCK_SIZE
-#elif (MD5_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE MD5_BLOCK_SIZE
-#elif (MD4_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE MD4_BLOCK_SIZE
-#elif (MD2_SUPPORT == ENABLED)
-   #define MAX_HASH_BLOCK_SIZE MD2_BLOCK_SIZE
-#endif
-
-//Maximum digest size (hash algorithms)
-#if (WHIRLPOOL_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE WHIRLPOOL_DIGEST_SIZE
-#elif (BLAKE2B512_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE BLAKE2B512_DIGEST_SIZE
-#elif (SHA3_512_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE SHA3_512_DIGEST_SIZE
-#elif (SHA512_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE SHA512_DIGEST_SIZE
-#elif (BLAKE2B384_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE BLAKE2B384_DIGEST_SIZE
-#elif (SHA3_384_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE SHA3_384_DIGEST_SIZE
-#elif (SHA384_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE SHA384_DIGEST_SIZE
-#elif (BLAKE2B256_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE BLAKE2B256_DIGEST_SIZE
-#elif (BLAKE2S256_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE BLAKE2S256_DIGEST_SIZE
-#elif (SHA3_256_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE SHA3_256_DIGEST_SIZE
-#elif (SHA512_256_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE SHA512_256_DIGEST_SIZE
-#elif (SHA256_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE SHA256_DIGEST_SIZE
-#elif (BLAKE2S224_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE BLAKE2S224_DIGEST_SIZE
-#elif (SHA3_224_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE SHA3_224_DIGEST_SIZE
-#elif (SHA512_224_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE SHA512_224_DIGEST_SIZE
-#elif (SHA224_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE SHA224_DIGEST_SIZE
-#elif (TIGER_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE TIGER_DIGEST_SIZE
-#elif (BLAKE2B160_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE BLAKE2B160_DIGEST_SIZE
-#elif (BLAKE2S160_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE BLAKE2S160_DIGEST_SIZE
-#elif (SHA1_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE SHA1_DIGEST_SIZE
-#elif (RIPEMD160_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE RIPEMD160_DIGEST_SIZE
-#elif (BLAKE2S128_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE BLAKE2S128_DIGEST_SIZE
-#elif (RIPEMD128_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE RIPEMD128_DIGEST_SIZE
-#elif (MD5_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE MD5_DIGEST_SIZE
-#elif (MD4_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE MD4_DIGEST_SIZE
-#elif (MD2_SUPPORT == ENABLED)
-   #define MAX_HASH_DIGEST_SIZE MD2_DIGEST_SIZE
-#endif
-
-//Maximum context size (block cipher algorithms)
-#if (BLOWFISH_SUPPORT == ENABLED)
-   #define MAX_CIPHER_CONTEXT_SIZE sizeof(BlowfishContext)
-#elif (ARIA_SUPPORT == ENABLED)
-   #define MAX_CIPHER_CONTEXT_SIZE sizeof(AriaContext)
-#elif (AES_SUPPORT == ENABLED)
-   #define MAX_CIPHER_CONTEXT_SIZE sizeof(AesContext)
-#elif (DES3_SUPPORT == ENABLED)
-   #define MAX_CIPHER_CONTEXT_SIZE sizeof(Des3Context)
-#elif (CAMELLIA_SUPPORT == ENABLED)
-   #define MAX_CIPHER_CONTEXT_SIZE sizeof(CamelliaContext)
-#elif (PRESENT_SUPPORT == ENABLED)
-   #define MAX_CIPHER_CONTEXT_SIZE sizeof(PresentContext)
-#elif (RC6_SUPPORT == ENABLED)
-   #define MAX_CIPHER_CONTEXT_SIZE sizeof(Rc6Context)
-#elif (IDEA_SUPPORT == ENABLED)
-   #define MAX_CIPHER_CONTEXT_SIZE sizeof(IdeaContext)
-#elif (DES_SUPPORT == ENABLED)
-   #define MAX_CIPHER_CONTEXT_SIZE sizeof(DesContext)
-#elif (SEED_SUPPORT == ENABLED)
-   #define MAX_CIPHER_CONTEXT_SIZE sizeof(SeedContext)
-#elif (RC2_SUPPORT == ENABLED)
-   #define MAX_CIPHER_CONTEXT_SIZE sizeof(Rc2Context)
-#endif
-
-//Maximum block size (block cipher algorithms)
-#if (CAMELLIA_SUPPORT == ENABLED)
-   #define MAX_CIPHER_BLOCK_SIZE CAMELLIA_BLOCK_SIZE
-#elif (AES_SUPPORT == ENABLED)
-   #define MAX_CIPHER_BLOCK_SIZE AES_BLOCK_SIZE
-#elif (ARIA_SUPPORT == ENABLED)
-   #define MAX_CIPHER_BLOCK_SIZE ARIA_BLOCK_SIZE
-#elif (SEED_SUPPORT == ENABLED)
-   #define MAX_CIPHER_BLOCK_SIZE SEED_BLOCK_SIZE
-#elif (RC6_SUPPORT == ENABLED)
-   #define MAX_CIPHER_BLOCK_SIZE RC6_BLOCK_SIZE
-#elif (DES3_SUPPORT == ENABLED)
-   #define MAX_CIPHER_BLOCK_SIZE DES3_BLOCK_SIZE
-#elif (DES_SUPPORT == ENABLED)
-   #define MAX_CIPHER_BLOCK_SIZE DES_BLOCK_SIZE
-#elif (IDEA_SUPPORT == ENABLED)
-   #define MAX_CIPHER_BLOCK_SIZE IDEA_BLOCK_SIZE
-#elif (BLOWFISH_SUPPORT == ENABLED)
-   #define MAX_CIPHER_BLOCK_SIZE BLOWFISH_BLOCK_SIZE
-#elif (PRESENT_SUPPORT == ENABLED)
-   #define MAX_CIPHER_BLOCK_SIZE PRESENT_BLOCK_SIZE
-#elif (RC2_SUPPORT == ENABLED)
-   #define MAX_CIPHER_BLOCK_SIZE RC2_BLOCK_SIZE
-#endif
-
 //Rotate left operation
 #define ROL8(a, n) (((a) << (n)) | ((a) >> (8 - (n))))
 #define ROL16(a, n) (((a) << (n)) | ((a) >> (16 - (n))))
@@ -1057,16 +842,6 @@ typedef void (*PrngAlgoRelease)(void *context);
 typedef error_t (*PrngAlgoSeed)(void *context, const uint8_t *input, size_t length);
 typedef error_t (*PrngAlgoAddEntropy)(void *context, uint_t source, const uint8_t *input, size_t length, size_t entropy);
 typedef error_t (*PrngAlgoRead)(void *context, uint8_t *output, size_t length);
-
-
-/**
- * @brief Generic hash algorithm context
- **/
-
-typedef struct
-{
-   uint8_t digest[1];
-} HashContext;
 
 
 /**

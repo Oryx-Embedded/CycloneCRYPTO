@@ -34,7 +34,7 @@
  * unpredictable. Refer to SP 800-38A for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -61,7 +61,7 @@
  * @return Error code
  **/
 
-error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
+__weak error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
    uint8_t *iv, const uint8_t *p, uint8_t *c, size_t length)
 {
    size_t i;
@@ -121,7 +121,7 @@ error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
  * @return Error code
  **/
 
-error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
+__weak error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
    uint8_t *iv, const uint8_t *c, uint8_t *p, size_t length)
 {
    size_t i;

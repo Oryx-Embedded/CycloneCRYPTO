@@ -32,7 +32,7 @@
  * key. Refer to RFC 2104 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -149,11 +149,11 @@ error_t hmacInit(HmacContext *context, const HashAlgo *hash,
    if(keyLen > hash->blockSize)
    {
       //Initialize the hash function context
-      hash->init(context->hashContext);
+      hash->init(&context->hashContext);
       //Digest the original key
-      hash->update(context->hashContext, key, keyLen);
+      hash->update(&context->hashContext, key, keyLen);
       //Finalize the message digest computation
-      hash->final(context->hashContext, context->key);
+      hash->final(&context->hashContext, context->key);
 
       //Key is padded to the right with extra zeros
       osMemset(context->key + hash->digestSize, 0,
@@ -174,9 +174,9 @@ error_t hmacInit(HmacContext *context, const HashAlgo *hash,
    }
 
    //Initialize context for the first pass
-   hash->init(context->hashContext);
+   hash->init(&context->hashContext);
    //Start with the inner pad
-   hash->update(context->hashContext, context->key, hash->blockSize);
+   hash->update(&context->hashContext, context->key, hash->blockSize);
 
    //Successful initialization
    return NO_ERROR;
@@ -197,7 +197,7 @@ void hmacUpdate(HmacContext *context, const void *data, size_t length)
    //Hash algorithm used to compute HMAC
    hash = context->hash;
    //Digest the message (first pass)
-   hash->update(context->hashContext, data, length);
+   hash->update(&context->hashContext, data, length);
 }
 
 
@@ -215,7 +215,7 @@ void hmacFinal(HmacContext *context, uint8_t *digest)
    //Hash algorithm used to compute HMAC
    hash = context->hash;
    //Finish the first pass
-   hash->final(context->hashContext, context->digest);
+   hash->final(&context->hashContext, context->digest);
 
    //XOR the original key with opad
    for(i = 0; i < hash->blockSize; i++)
@@ -224,13 +224,13 @@ void hmacFinal(HmacContext *context, uint8_t *digest)
    }
 
    //Initialize context for the second pass
-   hash->init(context->hashContext);
+   hash->init(&context->hashContext);
    //Start with outer pad
-   hash->update(context->hashContext, context->key, hash->blockSize);
+   hash->update(&context->hashContext, context->key, hash->blockSize);
    //Then digest the result of the first hash
-   hash->update(context->hashContext, context->digest, hash->digestSize);
+   hash->update(&context->hashContext, context->digest, hash->digestSize);
    //Finish the second pass
-   hash->final(context->hashContext, context->digest);
+   hash->final(&context->hashContext, context->digest);
 
    //Copy the resulting HMAC value
    if(digest != NULL)
@@ -241,7 +241,7 @@ void hmacFinal(HmacContext *context, uint8_t *digest)
 
 
 /**
- * @brief Finish the HMAC calculation (no padding is added)
+ * @brief Finish the HMAC calculation (no padding added)
  * @param[in] context Pointer to the HMAC context
  * @param[out] digest Calculated HMAC value (optional parameter)
  **/
@@ -261,13 +261,13 @@ void hmacFinalRaw(HmacContext *context, uint8_t *digest)
    }
 
    //Initialize context for the second pass
-   hash->init(context->hashContext);
+   hash->init(&context->hashContext);
    //Start with outer pad
-   hash->update(context->hashContext, context->key, hash->blockSize);
+   hash->update(&context->hashContext, context->key, hash->blockSize);
    //Then digest the result of the first hash
-   hash->update(context->hashContext, context->digest, hash->digestSize);
+   hash->update(&context->hashContext, context->digest, hash->digestSize);
    //Finish the second pass
-   hash->final(context->hashContext, context->digest);
+   hash->final(&context->hashContext, context->digest);
 
    //Copy the resulting HMAC value
    if(digest != NULL)

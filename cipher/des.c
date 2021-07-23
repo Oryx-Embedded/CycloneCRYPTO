@@ -30,7 +30,7 @@
  * 64 bits under control of a 64-bit key. Refer to FIPS 46-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -268,7 +268,7 @@ const CipherAlgo desCipherAlgo =
  * @return Error code
  **/
 
-error_t desInit(DesContext *context, const uint8_t *key, size_t keyLen)
+__weak error_t desInit(DesContext *context, const uint8_t *key, size_t keyLen)
 {
    uint_t i;
    uint32_t c;
@@ -344,7 +344,7 @@ error_t desInit(DesContext *context, const uint8_t *key, size_t keyLen)
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-void desEncryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
+__weak void desEncryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
 {
    uint_t i;
    uint32_t left;
@@ -383,7 +383,7 @@ void desEncryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-void desDecryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
+__weak void desDecryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
 {
    uint_t i;
    uint32_t left;

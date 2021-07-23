@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -38,27 +38,8 @@
 #include "encoding/oid.h"
 #include "pkc/rsa.h"
 #include "pkc/dsa.h"
-#include "hash/md5.h"
-#include "hash/sha1.h"
-#include "hash/sha224.h"
-#include "hash/sha256.h"
-#include "hash/sha384.h"
-#include "hash/sha512.h"
+#include "hash/hash_algorithms.h"
 #include "debug.h"
-
-//SHA-3 dependencies
-#if (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
-   #include "hash/sha3_224.h"
-#endif
-#if (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
-   #include "hash/sha3_256.h"
-#endif
-#if (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
-   #include "hash/sha3_384.h"
-#endif
-#if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
-   #include "hash/sha3_512.h"
-#endif
 
 //Check crypto library configuration
 #if (X509_SUPPORT == ENABLED)

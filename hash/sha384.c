@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -61,7 +61,11 @@ const HashAlgo sha384HashAlgo =
    (HashAlgoInit) sha384Init,
    (HashAlgoUpdate) sha384Update,
    (HashAlgoFinal) sha384Final,
+#if (MIMXRT1170_CRYPTO_HASH_SUPPORT == ENABLED)
+   NULL,
+#else
    (HashAlgoFinalRaw) sha384FinalRaw
+#endif
 };
 
 
@@ -73,7 +77,7 @@ const HashAlgo sha384HashAlgo =
  * @return Error code
  **/
 
-error_t sha384Compute(const void *data, size_t length, uint8_t *digest)
+__weak error_t sha384Compute(const void *data, size_t length, uint8_t *digest)
 {
    error_t error;
    Sha384Context *context;
@@ -113,7 +117,7 @@ error_t sha384Compute(const void *data, size_t length, uint8_t *digest)
  * @param[in] context Pointer to the SHA-384 context to initialize
  **/
 
-void sha384Init(Sha384Context *context)
+__weak void sha384Init(Sha384Context *context)
 {
    //Set initial hash value
    context->h[0] = 0xCBBB9D5DC1059ED8;
@@ -139,7 +143,7 @@ void sha384Init(Sha384Context *context)
  * @param[in] length Length of the buffer
  **/
 
-void sha384Update(Sha384Context *context, const void *data, size_t length)
+__weak void sha384Update(Sha384Context *context, const void *data, size_t length)
 {
    //The function is defined in the exact same manner as SHA-512
    sha512Update(context, data, length);
@@ -152,7 +156,7 @@ void sha384Update(Sha384Context *context, const void *data, size_t length)
  * @param[out] digest Calculated digest (optional parameter)
  **/
 
-void sha384Final(Sha384Context *context, uint8_t *digest)
+__weak void sha384Final(Sha384Context *context, uint8_t *digest)
 {
    //The function is defined in the exact same manner as SHA-512
    sha512Final(context, NULL);
@@ -166,12 +170,12 @@ void sha384Final(Sha384Context *context, uint8_t *digest)
 
 
 /**
- * @brief Finish the SHA-384 message digest (no padding is added)
+ * @brief Finish the SHA-384 message digest (no padding added)
  * @param[in] context Pointer to the SHA-384 context
  * @param[out] digest Calculated digest
  **/
 
-void sha384FinalRaw(Sha384Context *context, uint8_t *digest)
+__weak void sha384FinalRaw(Sha384Context *context, uint8_t *digest)
 {
    uint_t i;
 

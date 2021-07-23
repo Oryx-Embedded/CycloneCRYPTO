@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 #ifndef _ECDH_H
@@ -34,6 +34,16 @@
 //Dependencies
 #include "core/crypto.h"
 #include "ecc/ec.h"
+
+//X25519 supported?
+#if (X25519_SUPPORT == ENABLED)
+   #include "ecc/x25519.h"
+#endif
+
+//X448 supported?
+#if (X448_SUPPORT == ENABLED)
+   #include "ecc/x448.h"
+#endif
 
 //C++ guard
 #ifdef __cplusplus
@@ -58,8 +68,8 @@ typedef struct
 void ecdhInit(EcdhContext *context);
 void ecdhFree(EcdhContext *context);
 
-error_t ecdhGenerateKeyPair(EcdhContext *context,
-   const PrngAlgo *prngAlgo, void *prngContext);
+error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
+   void *prngContext);
 
 error_t ecdhCheckPublicKey(const EcDomainParameters *params, EcPoint *publicKey);
 

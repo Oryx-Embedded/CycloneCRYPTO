@@ -1,6 +1,6 @@
 /**
  * @file samd51_crypto.c
- * @brief SAMD51 hardware cryptography accelerator
+ * @brief SAMD51 hardware cryptographic accelerator
  *
  * @section License
  *
@@ -25,19 +25,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
-#include "samd51.h"
-#include "pukcc/CryptoLib_typedef_pb.h"
-#include "pukcc/CryptoLib_Headers_pb.h"
 #include "core/crypto.h"
 #include "hardware/samd51_crypto.h"
-#include "hardware/samd51_crypto_pukcc.h"
+#include "hardware/samd51_crypto_trng.h"
+#include "hardware/samd51_crypto_pkc.h"
 #include "debug.h"
 
 //Global variables
@@ -45,28 +43,42 @@ OsMutex samd51CryptoMutex;
 
 
 /**
- * @brief Cryptography accelerator initialization
+ * @brief Initialize hardware cryptographic accelerator
+ * @return Error code
  **/
 
 error_t samd51CryptoInit(void)
 {
    error_t error;
 
-   //Create a mutex to prevent simultaneous access to the cryptography
-   //accelerator
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Create a mutex to prevent simultaneous access to the hardware
+   //cryptographic accelerator
    if(!osCreateMutex(&samd51CryptoMutex))
    {
       //Failed to create mutex
-      return ERROR_OUT_OF_RESOURCES;
+      error = ERROR_OUT_OF_RESOURCES;
    }
 
-   //Enable TRNG peripheral clock
-   MCLK->APBCMASK.reg |= MCLK_APBCMASK_TRNG;
-   //Enable TRNG
-   TRNG->CTRLA.reg |= TRNG_CTRLA_ENABLE;
+#if (SAMD51_CRYPTO_TRNG_SUPPORT == ENABLED)
+   //Check status code
+   if(!error)
+   {
+      //Initialize TRNG module
+      error = trngInit();
+   }
+#endif
 
-   //Initialize public key accelerator
-   error = pukccInit();
+#if (SAMD51_CRYPTO_PKC_SUPPORT == ENABLED)
+   //Check status code
+   if(!error)
+   {
+      //Initialize public key accelerator
+      error = pukccInit();
+   }
+#endif
 
    //Return status code
    return error;

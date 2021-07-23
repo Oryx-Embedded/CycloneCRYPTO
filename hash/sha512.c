@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -123,7 +123,7 @@ const HashAlgo sha512HashAlgo =
  * @return Error code
  **/
 
-error_t sha512Compute(const void *data, size_t length, uint8_t *digest)
+__weak error_t sha512Compute(const void *data, size_t length, uint8_t *digest)
 {
    error_t error;
    Sha512Context *context;
@@ -163,7 +163,7 @@ error_t sha512Compute(const void *data, size_t length, uint8_t *digest)
  * @param[in] context Pointer to the SHA-512 context to initialize
  **/
 
-void sha512Init(Sha512Context *context)
+__weak void sha512Init(Sha512Context *context)
 {
    //Set initial hash value
    context->h[0] = 0x6A09E667F3BCC908;
@@ -189,7 +189,7 @@ void sha512Init(Sha512Context *context)
  * @param[in] length Length of the buffer
  **/
 
-void sha512Update(Sha512Context *context, const void *data, size_t length)
+__weak void sha512Update(Sha512Context *context, const void *data, size_t length)
 {
    size_t n;
 
@@ -228,7 +228,7 @@ void sha512Update(Sha512Context *context, const void *data, size_t length)
  * @param[out] digest Calculated digest (optional parameter)
  **/
 
-void sha512Final(Sha512Context *context, uint8_t *digest)
+__weak void sha512Final(Sha512Context *context, uint8_t *digest)
 {
    uint_t i;
    size_t paddingSize;
@@ -276,7 +276,7 @@ void sha512Final(Sha512Context *context, uint8_t *digest)
  * @param[in] context Pointer to the SHA-512 context
  **/
 
-void sha512ProcessBlock(Sha512Context *context)
+__weak void sha512ProcessBlock(Sha512Context *context)
 {
    uint_t t;
    uint64_t temp1;
@@ -306,7 +306,9 @@ void sha512ProcessBlock(Sha512Context *context)
    {
       //Prepare the message schedule
       if(t >= 16)
+      {
          W(t) += SIGMA4(W(t + 14)) + W(t + 9) + SIGMA3(W(t + 1));
+      }
 
       //Calculate T1 and T2
       temp1 = h + SIGMA2(e) + CH(e, f, g) + k[t] + W(t);

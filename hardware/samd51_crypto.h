@@ -1,6 +1,6 @@
 /**
  * @file samd51_crypto.h
- * @brief SAMD51 hardware cryptography accelerator
+ * @brief SAMD51 hardware cryptographic accelerator
  *
  * @section License
  *
@@ -25,14 +25,13 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 #ifndef _SAMD51_CRYPTO_H
 #define _SAMD51_CRYPTO_H
 
 //Dependencies
-#include "os_port.h"
 #include "core/crypto.h"
 
 //C++ guard
@@ -43,7 +42,7 @@ extern "C" {
 //Global variables
 extern OsMutex samd51CryptoMutex;
 
-//SAMD51 hardware cryptography accelerator related functions
+//SAMD51 hardware cryptographic accelerator related functions
 error_t samd51CryptoInit(void);
 
 //C++ guard

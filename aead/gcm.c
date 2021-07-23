@@ -31,7 +31,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -75,7 +75,7 @@ static const uint32_t red[16] =
  * @return Error code
  **/
 
-error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
+__weak error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
    void *cipherContext)
 {
    uint_t i;
@@ -98,8 +98,8 @@ error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
    h[3] = 0;
 
    //Generate the hash subkey H
-   context->cipherAlgo->encryptBlock(context->cipherContext,
-      (uint8_t *) h, (uint8_t *) h);
+   context->cipherAlgo->encryptBlock(context->cipherContext, (uint8_t *) h,
+      (uint8_t *) h);
 
    //Pre-compute M(0) = H * 0
    j = reverseInt4(0);
@@ -187,7 +187,7 @@ error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
  * @return Error code
  **/
 
-error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
+__weak error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
    size_t ivLen, const uint8_t *a, size_t aLen, const uint8_t *p,
    uint8_t *c, size_t length, uint8_t *t, size_t tLen)
 {
@@ -334,7 +334,7 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
  * @return Error code
  **/
 
-error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
+__weak error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    size_t ivLen, const uint8_t *a, size_t aLen, const uint8_t *c,
    uint8_t *p, size_t length, const uint8_t *t, size_t tLen)
 {
@@ -481,7 +481,7 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
  * @param[in, out] x 16-byte block to be multiplied by H
  **/
 
-void gcmMul(GcmContext *context, uint8_t *x)
+__weak void gcmMul(GcmContext *context, uint8_t *x)
 {
    int_t i;
    uint8_t b;

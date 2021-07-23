@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.0.4
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -1151,7 +1151,7 @@ error_t rsassaPssVerify(const RsaPublicKey *key, const HashAlgo *hash,
  * @return Error code
  **/
 
-error_t rsaep(const RsaPublicKey *key, const Mpi *m, Mpi *c)
+__weak error_t rsaep(const RsaPublicKey *key, const Mpi *m, Mpi *c)
 {
    //Ensure the RSA public key is valid
    if(!key->n.size || !key->e.size)
@@ -1698,7 +1698,7 @@ error_t emsaPkcs1v15Verify(const HashAlgo *hash, const uint8_t *digest,
    bad |= em[i++] ^ (uint8_t) ASN1_TYPE_OCTET_STRING;
    bad |= em[i++] ^ (uint8_t) hash->digestSize;
 
-   //Recover the underlying hash value, and then compare it to a newly
+   //Recover the underlying hash value, and then compare it to the newly
    //computed hash value
    for(j = 0; j < hash->digestSize; j++)
    {
@@ -1978,7 +1978,7 @@ error_t rsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t rsaGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
+__weak error_t rsaGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
    size_t k, uint_t e, RsaPrivateKey *privateKey)
 {
    error_t error;
