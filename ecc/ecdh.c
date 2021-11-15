@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -51,9 +51,9 @@ void ecdhInit(EcdhContext *context)
    ecInitDomainParameters(&context->params);
 
    //Initialize private and public keys
-   mpiInit(&context->da);
-   ecInit(&context->qa);
-   ecInit(&context->qb);
+   ecInitPrivateKey(&context->da);
+   ecInitPublicKey(&context->qa);
+   ecInitPublicKey(&context->qb);
 }
 
 
@@ -68,9 +68,9 @@ void ecdhFree(EcdhContext *context)
    ecFreeDomainParameters(&context->params);
 
    //Release private and public keys
-   mpiFree(&context->da);
-   ecFree(&context->qa);
-   ecFree(&context->qb);
+   ecFreePrivateKey(&context->da);
+   ecFreePublicKey(&context->qa);
+   ecFreePublicKey(&context->qb);
 }
 
 
@@ -137,7 +137,7 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
       if(!error)
       {
          //Save private key
-         error = mpiImport(&context->da, da, CURVE25519_BYTE_LEN,
+         error = mpiImport(&context->da.d, da, CURVE25519_BYTE_LEN,
             MPI_FORMAT_LITTLE_ENDIAN);
       }
 
@@ -149,7 +149,7 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
          TRACE_DEBUG_ARRAY("    ", qa, CURVE25519_BYTE_LEN);
 
          //Save public key
-         error = mpiImport(&context->qa.x, qa, CURVE25519_BYTE_LEN,
+         error = mpiImport(&context->qa.q.x, qa, CURVE25519_BYTE_LEN,
             MPI_FORMAT_LITTLE_ENDIAN);
       }
    }
@@ -188,7 +188,7 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
       if(!error)
       {
          //Save private key
-         error = mpiImport(&context->da, da, CURVE448_BYTE_LEN,
+         error = mpiImport(&context->da.d, da, CURVE448_BYTE_LEN,
             MPI_FORMAT_LITTLE_ENDIAN);
       }
 
@@ -200,7 +200,7 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
          TRACE_DEBUG_ARRAY("    ", qa, CURVE448_BYTE_LEN);
 
          //Save public key
-         error = mpiImport(&context->qa.x, qa, CURVE448_BYTE_LEN,
+         error = mpiImport(&context->qa.q.x, qa, CURVE448_BYTE_LEN,
             MPI_FORMAT_LITTLE_ENDIAN);
       }
    }
@@ -370,13 +370,13 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
          ecInit(&z);
 
          //Convert the peer's public key to projective representation
-         error = ecProjectify(&context->params, &context->qb, &context->qb);
+         error = ecProjectify(&context->params, &context->qb.q, &context->qb.q);
 
          //Check status code
          if(!error)
          {
             //Compute Z = da.Qb
-            error = ecMult(&context->params, &z, &context->da, &context->qb);
+            error = ecMult(&context->params, &z, &context->da.d, &context->qb.q);
          }
 
          //Check status code
@@ -418,14 +418,14 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
          *outputLen = CURVE25519_BYTE_LEN;
 
          //Retrieve private key
-         error = mpiExport(&context->da, da, CURVE25519_BYTE_LEN,
+         error = mpiExport(&context->da.d, da, CURVE25519_BYTE_LEN,
             MPI_FORMAT_LITTLE_ENDIAN);
 
          //Check status code
          if(!error)
          {
             //Get peer's public key
-            error = mpiExport(&context->qb.x, qb, CURVE25519_BYTE_LEN,
+            error = mpiExport(&context->qb.q.x, qb, CURVE25519_BYTE_LEN,
                MPI_FORMAT_LITTLE_ENDIAN);
          }
 
@@ -477,14 +477,14 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
          *outputLen = CURVE448_BYTE_LEN;
 
          //Retrieve private key
-         error = mpiExport(&context->da, da, CURVE448_BYTE_LEN,
+         error = mpiExport(&context->da.d, da, CURVE448_BYTE_LEN,
             MPI_FORMAT_LITTLE_ENDIAN);
 
          //Check status code
          if(!error)
          {
             //Get peer's public key
-            error = mpiExport(&context->qb.x, qb, CURVE448_BYTE_LEN,
+            error = mpiExport(&context->qb.q.x, qb, CURVE448_BYTE_LEN,
                MPI_FORMAT_LITTLE_ENDIAN);
          }
 

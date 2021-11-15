@@ -31,7 +31,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -569,18 +569,18 @@ void gcmXorBlock(uint8_t *x, const uint8_t *a, const uint8_t *b, size_t n)
 
 void gcmIncCounter(uint8_t *x)
 {
-   size_t i;
+   uint16_t temp;
 
    //The function increments the right-most 32 bits of the block. The remaining
    //left-most 96 bits remain unchanged
-   for(i = 0; i < 4; i++)
-   {
-      //Increment the current byte and propagate the carry if necessary
-      if(++(x[15 - i]) != 0)
-      {
-         break;
-      }
-   }
+   temp = x[15] + 1;
+   x[15] = temp & 0xFF;
+   temp = (temp >> 8) + x[14];
+   x[14] = temp & 0xFF;
+   temp = (temp >> 8) + x[13];
+   x[13] = temp & 0xFF;
+   temp = (temp >> 8) + x[12];
+   x[12] = temp & 0xFF;
 }
 
 #endif

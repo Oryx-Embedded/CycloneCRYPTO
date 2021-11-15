@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -45,7 +45,7 @@ const uint8_t EC_PUBLIC_KEY_OID[7] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x02, 0x01};
 
 /**
  * @brief Initialize EC domain parameters
- * @param[in] params Pointer to the EC domain parameters to be initialized
+ * @param[in] params Pointer to the EC domain parameters to initialize
  **/
 
 void ecInitDomainParameters(EcDomainParameters *params)
@@ -145,6 +145,57 @@ end:
 
 
 /**
+ * @brief Initialize an EC public key
+ * @param[in] key Pointer to the EC public key to initialize
+ **/
+
+void ecInitPublicKey(EcPublicKey *key)
+{
+   //Initialize EC point
+   ecInit(&key->q);
+}
+
+
+/**
+ * @brief Release an EC public key
+ * @param[in] key Pointer to the EC public key to free
+ **/
+
+void ecFreePublicKey(EcPublicKey *key)
+{
+   //Free EC point
+   ecFree(&key->q);
+}
+
+
+/**
+ * @brief Initialize an EC private key
+ * @param[in] key Pointer to the EC private key to initialize
+ **/
+
+void ecInitPrivateKey(EcPrivateKey *key)
+{
+   //Initialize multiple precision integer
+   mpiInit(&key->d);
+
+   //Initialize private key slot
+   key->slot = -1;
+}
+
+
+/**
+ * @brief Release an EdDSA private key
+ * @param[in] key Pointer to the EC public key to free
+ **/
+
+void ecFreePrivateKey(EcPrivateKey *key)
+{
+   //Free multiple precision integer
+   mpiFree(&key->d);
+}
+
+
+/**
  * @brief EC key pair generation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
@@ -155,7 +206,8 @@ end:
  **/
 
 __weak error_t ecGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, Mpi *privateKey, EcPoint *publicKey)
+   const EcDomainParameters *params, EcPrivateKey *privateKey,
+   EcPublicKey *publicKey)
 {
    error_t error;
 
@@ -184,10 +236,9 @@ __weak error_t ecGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
  **/
 
 error_t ecGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, Mpi *privateKey)
+   const EcDomainParameters *params, EcPrivateKey *privateKey)
 {
    error_t error;
-   uint_t n;
 
    //Check parameters
    if(prngAlgo == NULL || prngContext == NULL || params == NULL ||
@@ -196,23 +247,17 @@ error_t ecGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
       return ERROR_INVALID_PARAMETER;
    }
 
-   //Let N be the bit length of q
-   n = mpiGetBitLength(&params->q);
+   //Generate a random number d such as 0 < d < q - 1
+   error = mpiRandRange(&privateKey->d, &params->q, prngAlgo, prngContext);
 
-   //Generated a pseudorandom number
-   MPI_CHECK(mpiRand(privateKey, n, prngAlgo, prngContext));
-
-   //Make sure that 0 < d < q
-   if(mpiComp(privateKey, &params->q) >= 0)
+   //Check status code
+   if(!error)
    {
-      EC_CHECK(mpiShiftRight(privateKey, 1));
+      //Debug message
+      TRACE_DEBUG("  Private key:\r\n");
+      TRACE_DEBUG_MPI("    ", &privateKey->d);
    }
 
-   //Debug message
-   TRACE_DEBUG("  Private key:\r\n");
-   TRACE_DEBUG_MPI("    ", privateKey);
-
-end:
    //Return status code
    return error;
 }
@@ -227,7 +272,7 @@ end:
  **/
 
 error_t ecGeneratePublicKey(const EcDomainParameters *params,
-   const Mpi *privateKey, EcPoint *publicKey)
+   const EcPrivateKey *privateKey, EcPublicKey *publicKey)
 {
    error_t error;
 
@@ -236,16 +281,16 @@ error_t ecGeneratePublicKey(const EcDomainParameters *params,
       return ERROR_INVALID_PARAMETER;
 
    //Compute Q = d.G
-   EC_CHECK(ecMult(params, publicKey, privateKey, &params->g));
+   EC_CHECK(ecMult(params, &publicKey->q, &privateKey->d, &params->g));
 
    //Convert the public key to affine representation
-   EC_CHECK(ecAffinify(params, publicKey, publicKey));
+   EC_CHECK(ecAffinify(params, &publicKey->q, &publicKey->q));
 
    //Debug message
    TRACE_DEBUG("  Public key X:\r\n");
-   TRACE_DEBUG_MPI("    ", &publicKey->x);
+   TRACE_DEBUG_MPI("    ", &publicKey->q.x);
    TRACE_DEBUG("  Public key Y:\r\n");
-   TRACE_DEBUG_MPI("    ", &publicKey->y);
+   TRACE_DEBUG_MPI("    ", &publicKey->q.y);
 
 end:
    //Return status code

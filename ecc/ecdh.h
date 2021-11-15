@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 #ifndef _ECDH_H
@@ -57,10 +57,10 @@ extern "C" {
 
 typedef struct
 {
-   EcDomainParameters params; //EC domain parameters
-   Mpi da;                    ///<One's own private key
-   EcPoint qa;                ///<One's own public key
-   EcPoint qb;                ///<Peer's public key
+   EcDomainParameters params; ///<EC domain parameters
+   EcPrivateKey da;           ///<One's own EC private key
+   EcPublicKey qa;            ///<One's own EC public key
+   EcPublicKey qb;            ///<Peer's EC public key
 } EcdhContext;
 
 

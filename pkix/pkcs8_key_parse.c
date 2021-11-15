@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -890,14 +890,14 @@ error_t pkcs8ImportDsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
          privateKeyInfo->dsaPrivateKey.x != NULL)
       {
          //Read parameter p
-         error = mpiImport(&privateKey->p, privateKeyInfo->dsaParams.p,
+         error = mpiImport(&privateKey->params.p, privateKeyInfo->dsaParams.p,
             privateKeyInfo->dsaParams.pLen, MPI_FORMAT_BIG_ENDIAN);
 
          //Check status code
          if(!error)
          {
             //Read parameter q
-            error = mpiImport(&privateKey->q, privateKeyInfo->dsaParams.q,
+            error = mpiImport(&privateKey->params.q, privateKeyInfo->dsaParams.q,
                privateKeyInfo->dsaParams.qLen, MPI_FORMAT_BIG_ENDIAN);
          }
 
@@ -905,7 +905,7 @@ error_t pkcs8ImportDsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
          if(!error)
          {
             //Read parameter g
-            error = mpiImport(&privateKey->g, privateKeyInfo->dsaParams.g,
+            error = mpiImport(&privateKey->params.g, privateKeyInfo->dsaParams.g,
                privateKeyInfo->dsaParams.gLen, MPI_FORMAT_BIG_ENDIAN);
          }
 
@@ -923,11 +923,11 @@ error_t pkcs8ImportDsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
             //Debug message
             TRACE_DEBUG("DSA private key:\r\n");
             TRACE_DEBUG("  Parameter p:\r\n");
-            TRACE_DEBUG_MPI("    ", &privateKey->p);
+            TRACE_DEBUG_MPI("    ", &privateKey->params.p);
             TRACE_DEBUG("  Parameter q:\r\n");
-            TRACE_DEBUG_MPI("    ", &privateKey->q);
+            TRACE_DEBUG_MPI("    ", &privateKey->params.q);
             TRACE_DEBUG("  Parameter g:\r\n");
-            TRACE_DEBUG_MPI("    ", &privateKey->g);
+            TRACE_DEBUG_MPI("    ", &privateKey->params.g);
             TRACE_DEBUG("  Private value x:\r\n");
             TRACE_DEBUG_MPI("    ", &privateKey->x);
          }
@@ -959,7 +959,7 @@ error_t pkcs8ImportDsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
  **/
 
 error_t pkcs8ImportEcPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
-   Mpi *privateKey)
+   EcPrivateKey *privateKey)
 {
    error_t error;
 
@@ -972,7 +972,7 @@ error_t pkcs8ImportEcPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
       if(privateKeyInfo->ecPrivateKey.d != NULL)
       {
          //Read the EC private key
-         error = mpiImport(privateKey, privateKeyInfo->ecPrivateKey.d,
+         error = mpiImport(&privateKey->d, privateKeyInfo->ecPrivateKey.d,
             privateKeyInfo->ecPrivateKey.dLen, MPI_FORMAT_BIG_ENDIAN);
 
          //Check status code
@@ -980,7 +980,7 @@ error_t pkcs8ImportEcPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
          {
             //Debug message
             TRACE_DEBUG("EC private key:\r\n");
-            TRACE_DEBUG_MPI("  ", privateKey);
+            TRACE_DEBUG_MPI("  ", &privateKey->d);
          }
       }
       else

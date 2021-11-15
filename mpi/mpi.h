@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 #ifndef _MPI_H
@@ -95,6 +95,9 @@ error_t mpiCopy(Mpi *r, const Mpi *a);
 error_t mpiSetValue(Mpi *a, int_t b);
 
 error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo,
+   void *prngContext);
+
+error_t mpiRandRange(Mpi *r, const Mpi *p, const PrngAlgo *prngAlgo,
    void *prngContext);
 
 error_t mpiCheckProbablePrime(const Mpi *a);

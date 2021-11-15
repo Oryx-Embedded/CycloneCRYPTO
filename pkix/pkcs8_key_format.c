@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -138,8 +138,8 @@ error_t pkcs8FormatDsaPrivateKey(const DsaPrivateKey *privateKey,
  **/
 
 error_t pkcs8FormatEcPrivateKey(const EcCurveInfo *curveInfo,
-   const Mpi *privateKey, const EcPoint *publicKey, uint8_t *output,
-   size_t *written)
+   const EcPrivateKey *privateKey, const EcPublicKey *publicKey,
+   uint8_t *output, size_t *written)
 {
    error_t error;
    size_t n;
@@ -169,7 +169,7 @@ error_t pkcs8FormatEcPrivateKey(const EcCurveInfo *curveInfo,
       p += n;
 
       //Write the EC private key
-      error = mpiWriteRaw(privateKey, p, curveInfo->pLen);
+      error = mpiWriteRaw(&privateKey->d, p, curveInfo->pLen);
       //Any error to report?
       if(error)
          return error;
@@ -261,7 +261,7 @@ error_t pkcs8FormatEcPrivateKey(const EcCurveInfo *curveInfo,
  **/
 
 error_t pkcs8FormatEcPublicKey(const EcCurveInfo *curveInfo,
-   const EcPoint *publicKey, uint8_t *output, size_t *written)
+   const EcPublicKey *publicKey, uint8_t *output, size_t *written)
 {
 #if (EC_SUPPORT == ENABLED)
    error_t error;
@@ -283,7 +283,7 @@ error_t pkcs8FormatEcPublicKey(const EcCurveInfo *curveInfo,
    if(!error)
    {
       //Format ECPublicKey structure
-      error = ecExport(&params, publicKey, output + 1, &n);
+      error = ecExport(&params, &publicKey->q, output + 1, &n);
    }
 
    //Check status code

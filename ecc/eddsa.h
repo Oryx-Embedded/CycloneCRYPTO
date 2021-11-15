@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 #ifndef _EDDSA_H
@@ -57,8 +57,9 @@ typedef struct
 
 typedef struct
 {
-   Mpi d; ///<Private key
-   Mpi q; ///<Public key
+   Mpi d;      ///<Private key
+   Mpi q;      ///<Public key
+   int_t slot; ///<Private key slot
 } EddsaPrivateKey;
 
 

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 #ifndef _PEM_EXPORT_H
@@ -76,11 +76,11 @@ error_t pemExportEcParameters(const EcCurveInfo *curveInfo,
    char_t *output, size_t *written);
 
 error_t pemExportEcPublicKey(const EcCurveInfo *curveInfo,
-   const EcPoint *publicKey, char_t *output, size_t *written);
+   const EcPublicKey *publicKey, char_t *output, size_t *written);
 
 error_t pemExportEcPrivateKey(const EcCurveInfo *curveInfo,
-   const Mpi *privateKey, const EcPoint *publicKey, char_t *output,
-   size_t *written);
+   const EcPrivateKey *privateKey, const EcPublicKey *publicKey,
+   char_t *output, size_t *written);
 
 error_t pemExportEddsaPublicKey(const EcCurveInfo *curveInfo,
    const EddsaPublicKey *publicKey, char_t *output, size_t *written);

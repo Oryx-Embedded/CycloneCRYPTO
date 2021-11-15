@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 #ifndef _CRYPTO_LEGACY_H
@@ -49,5 +49,13 @@
 
 #define MAX_HASH_CONTEXT_SIZE sizeof(HashContext)
 #define MAX_CIPHER_CONTEXT_SIZE sizeof(CipherContext)
+
+#ifdef SAMD51_CRYPTO_PUKCC_SUPPORT
+   #define SAMD51_CRYPTO_PKC_SUPPORT SAMD51_CRYPTO_PUKCC_SUPPORT
+#endif
+
+#ifdef SAME54_CRYPTO_PUKCC_SUPPORT
+   #define SAME54_CRYPTO_PKC_SUPPORT SAME54_CRYPTO_PUKCC_SUPPORT
+#endif
 
 #endif

@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -87,9 +87,9 @@ const HashAlgo sha1HashAlgo =
    (HashAlgoInit) sha1Init,
    (HashAlgoUpdate) sha1Update,
    (HashAlgoFinal) sha1Final,
-#if (MIMXRT1050_CRYPTO_HASH_SUPPORT == ENABLED || \
-   MIMXRT1060_CRYPTO_HASH_SUPPORT == ENABLED || \
-   MIMXRT1170_CRYPTO_HASH_SUPPORT == ENABLED)
+#if ((defined(MIMXRT1050_CRYPTO_HASH_SUPPORT) && MIMXRT1050_CRYPTO_HASH_SUPPORT == ENABLED) || \
+   (defined(MIMXRT1060_CRYPTO_HASH_SUPPORT) && MIMXRT1060_CRYPTO_HASH_SUPPORT == ENABLED) || \
+   (defined(MIMXRT1170_CRYPTO_HASH_SUPPORT) && MIMXRT1170_CRYPTO_HASH_SUPPORT == ENABLED))
    NULL,
 #else
    (HashAlgoFinalRaw) sha1FinalRaw

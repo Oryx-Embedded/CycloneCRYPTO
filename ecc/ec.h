@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 #ifndef _EC_H
@@ -45,7 +45,7 @@ extern "C" {
 
 
 /**
- * @brief Elliptic curve point
+ * @brief EC point
  **/
 
 typedef struct
@@ -74,6 +74,27 @@ typedef struct
 } EcDomainParameters;
 
 
+/**
+ * @brief EC public key
+ **/
+
+typedef struct
+{
+   EcPoint q; ///<Public key
+} EcPublicKey;
+
+
+/**
+ * @brief EC private key
+ **/
+
+typedef struct
+{
+   Mpi d;      ///<Private key
+   int_t slot; ///<Private key slot
+} EcPrivateKey;
+
+
 //EC related constants
 extern const uint8_t EC_PUBLIC_KEY_OID[7];
 
@@ -84,14 +105,21 @@ void ecFreeDomainParameters(EcDomainParameters *params);
 error_t ecLoadDomainParameters(EcDomainParameters *params,
    const EcCurveInfo *curveInfo);
 
+void ecInitPublicKey(EcPublicKey *key);
+void ecFreePublicKey(EcPublicKey *key);
+
+void ecInitPrivateKey(EcPrivateKey *key);
+void ecFreePrivateKey(EcPrivateKey *key);
+
 error_t ecGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, Mpi *privateKey, EcPoint *publicKey);
+   const EcDomainParameters *params, EcPrivateKey *privateKey,
+   EcPublicKey *publicKey);
 
 error_t ecGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, Mpi *privateKey);
+   const EcDomainParameters *params, EcPrivateKey *privateKey);
 
 error_t ecGeneratePublicKey(const EcDomainParameters *params,
-   const Mpi *privateKey, EcPoint *publicKey);
+   const EcPrivateKey *privateKey, EcPublicKey *publicKey);
 
 void ecInit(EcPoint *r);
 void ecFree(EcPoint *r);

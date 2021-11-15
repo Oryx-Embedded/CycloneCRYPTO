@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -139,6 +139,9 @@ void rsaInitPrivateKey(RsaPrivateKey *key)
    mpiInit(&key->dp);
    mpiInit(&key->dq);
    mpiInit(&key->qinv);
+
+   //Initialize private key slot
+   key->slot = -1;
 }
 
 
@@ -1195,8 +1198,9 @@ __weak error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    mpiInit(&h);
 
    //Use the Chinese remainder algorithm?
-   if(key->n.size && key->p.size && key->q.size &&
-      key->dp.size && key->dq.size && key->qinv.size)
+   if(mpiGetLength(&key->n) > 0 && mpiGetLength(&key->p) > 0 &&
+      mpiGetLength(&key->q) > 0 && mpiGetLength(&key->dp) > 0 &&
+      mpiGetLength(&key->dq) > 0 && mpiGetLength(&key->qinv) > 0)
    {
       //Compute m1 = c ^ dP mod p
       MPI_CHECK(mpiExpMod(&m1, c, &key->dp, &key->p));
@@ -1210,7 +1214,7 @@ __weak error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
       MPI_CHECK(mpiAdd(m, m, &m2));
    }
    //Use modular exponentiation?
-   else if(key->n.size && key->d.size)
+   else if(mpiGetLength(&key->n) > 0 && mpiGetLength(&key->d) > 0)
    {
       //Let m = c ^ d mod n
       error = mpiExpMod(m, c, &key->d, &key->n);

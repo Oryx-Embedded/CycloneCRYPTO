@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -389,8 +389,8 @@ error_t ecdsaReadSignature(const uint8_t *data, size_t length,
  * @return Error code
  **/
 
-__weak error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo,
-   void *prngContext, const EcDomainParameters *params, const Mpi *privateKey,
+__weak error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
+   const EcDomainParameters *params, const EcPrivateKey *privateKey,
    const uint8_t *digest, size_t digestLen, EcdsaSignature *signature)
 {
    error_t error;
@@ -406,7 +406,7 @@ __weak error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo,
    //Debug message
    TRACE_DEBUG("ECDSA signature generation...\r\n");
    TRACE_DEBUG("  private key:\r\n");
-   TRACE_DEBUG_MPI("    ", privateKey);
+   TRACE_DEBUG_MPI("    ", &privateKey->d);
    TRACE_DEBUG("  digest:\r\n");
    TRACE_DEBUG_ARRAY("    ", digest, digestLen);
 
@@ -416,20 +416,15 @@ __weak error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo,
    //Initialize EC point
    ecInit(&r1);
 
-   //Let N be the bit length of q
-   n = mpiGetBitLength(&params->q);
-
-   //Generated a pseudorandom number
-   MPI_CHECK(mpiRand(&k, n, prngAlgo, prngContext));
-
-   //Make sure that 0 < k < q
-   if(mpiComp(&k, &params->q) >= 0)
-      mpiShiftRight(&k, 1);
+   //Generate a random number k such as 0 < k < q - 1
+   MPI_CHECK(mpiRandRange(&k, &params->q, prngAlgo, prngContext));
 
    //Debug message
    TRACE_DEBUG("  k:\r\n");
    TRACE_DEBUG_MPI("    ", &k);
 
+   //Let N be the bit length of q
+   n = mpiGetBitLength(&params->q);
    //Compute N = MIN(N, outlen)
    n = MIN(n, digestLen * 8);
 
@@ -463,7 +458,7 @@ __weak error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo,
    MPI_CHECK(mpiInvMod(&k, &k, &params->q));
 
    //Compute s = k ^ -1 * (z + x * r) mod q
-   MPI_CHECK(mpiMul(&signature->s, privateKey, &signature->r));
+   MPI_CHECK(mpiMul(&signature->s, &privateKey->d, &signature->r));
    MPI_CHECK(mpiAdd(&signature->s, &signature->s, &z));
    MPI_CHECK(mpiMod(&signature->s, &signature->s, &params->q));
    MPI_CHECK(mpiMulMod(&signature->s, &signature->s, &k, &params->q));
@@ -505,7 +500,7 @@ end:
  **/
 
 __weak error_t ecdsaVerifySignature(const EcDomainParameters *params,
-   const EcPoint *publicKey, const uint8_t *digest, size_t digestLen,
+   const EcPublicKey *publicKey, const uint8_t *digest, size_t digestLen,
    const EcdsaSignature *signature)
 {
    error_t error;
@@ -525,9 +520,9 @@ __weak error_t ecdsaVerifySignature(const EcDomainParameters *params,
    //Debug message
    TRACE_DEBUG("ECDSA signature verification...\r\n");
    TRACE_DEBUG("  public key X:\r\n");
-   TRACE_DEBUG_MPI("    ", &publicKey->x);
+   TRACE_DEBUG_MPI("    ", &publicKey->q.x);
    TRACE_DEBUG("  public key Y:\r\n");
-   TRACE_DEBUG_MPI("    ", &publicKey->y);
+   TRACE_DEBUG_MPI("    ", &publicKey->q.y);
    TRACE_DEBUG("  digest:\r\n");
    TRACE_DEBUG_ARRAY("    ", digest, digestLen);
    TRACE_DEBUG("  r:\r\n");
@@ -536,14 +531,16 @@ __weak error_t ecdsaVerifySignature(const EcDomainParameters *params,
    TRACE_DEBUG_MPI("    ", &signature->s);
 
    //The verifier shall check that 0 < r < q
-   if(mpiCompInt(&signature->r, 0) <= 0 || mpiComp(&signature->r, &params->q) >= 0)
+   if(mpiCompInt(&signature->r, 0) <= 0 ||
+      mpiComp(&signature->r, &params->q) >= 0)
    {
       //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
    }
 
    //The verifier shall check that 0 < s < q
-   if(mpiCompInt(&signature->s, 0) <= 0 || mpiComp(&signature->s, &params->q) >= 0)
+   if(mpiCompInt(&signature->s, 0) <= 0 ||
+      mpiComp(&signature->s, &params->q) >= 0)
    {
       //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
@@ -581,7 +578,7 @@ __weak error_t ecdsaVerifySignature(const EcDomainParameters *params,
    MPI_CHECK(mpiMulMod(&u2, &signature->r, &w, &params->q));
 
    //Compute V0 = (x0, y0) = u1.G + u2.Q
-   EC_CHECK(ecProjectify(params, &v1, publicKey));
+   EC_CHECK(ecProjectify(params, &v1, &publicKey->q));
    EC_CHECK(ecTwinMult(params, &v0, &u1, &params->g, &u2, &v1));
    EC_CHECK(ecAffinify(params, &v0, &v0));
 

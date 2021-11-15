@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -73,7 +73,7 @@ const HashAlgo sha512_256HashAlgo =
  * @return Error code
  **/
 
-error_t sha512_256Compute(const void *data, size_t length, uint8_t *digest)
+__weak error_t sha512_256Compute(const void *data, size_t length, uint8_t *digest)
 {
    error_t error;
    Sha512_256Context *context;
@@ -113,7 +113,7 @@ error_t sha512_256Compute(const void *data, size_t length, uint8_t *digest)
  * @param[in] context Pointer to the SHA-512/256 context to initialize
  **/
 
-void sha512_256Init(Sha512_256Context *context)
+__weak void sha512_256Init(Sha512_256Context *context)
 {
    //Set initial hash value
    context->h[0] = 0x22312194FC2BF72C;
@@ -139,7 +139,7 @@ void sha512_256Init(Sha512_256Context *context)
  * @param[in] length Length of the buffer
  **/
 
-void sha512_256Update(Sha512_256Context *context, const void *data, size_t length)
+__weak void sha512_256Update(Sha512_256Context *context, const void *data, size_t length)
 {
    //The function is defined in the exact same manner as SHA-512
    sha512Update(context, data, length);
@@ -152,7 +152,7 @@ void sha512_256Update(Sha512_256Context *context, const void *data, size_t lengt
  * @param[out] digest Calculated digest (optional parameter)
  **/
 
-void sha512_256Final(Sha512_256Context *context, uint8_t *digest)
+__weak void sha512_256Final(Sha512_256Context *context, uint8_t *digest)
 {
    //The function is defined in the exact same manner as SHA-512
    sha512Final(context, NULL);

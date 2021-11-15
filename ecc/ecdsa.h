@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 #ifndef _ECDSA_H
@@ -74,11 +74,11 @@ error_t ecdsaReadSignature(const uint8_t *data, size_t length,
    EcdsaSignature *signature);
 
 error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, const Mpi *privateKey,
+   const EcDomainParameters *params, const EcPrivateKey *privateKey,
    const uint8_t *digest, size_t digestLen, EcdsaSignature *signature);
 
 error_t ecdsaVerifySignature(const EcDomainParameters *params,
-   const EcPoint *publicKey, const uint8_t *digest, size_t digestLen,
+   const EcPublicKey *publicKey, const uint8_t *digest, size_t digestLen,
    const EcdsaSignature *signature);
 
 //C++ guard

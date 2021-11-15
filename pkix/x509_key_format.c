@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -78,15 +78,14 @@ error_t x509FormatSubjectPublicKeyInfo(const X509SubjectPublicKeyInfo *publicKey
    //Valid DSA public key?
    if(publicKey != NULL && !oidComp(oid, oidLen, DSA_OID, sizeof(DSA_OID)))
    {
-      DsaDomainParameters params;
+      const DsaPublicKey *dsaPublicKey;
 
-      //Retrieve DSA domain parameters
-      params.p = ((DsaPublicKey *) publicKey)->p;
-      params.q = ((DsaPublicKey *) publicKey)->q;
-      params.g = ((DsaPublicKey *) publicKey)->g;
+      //Point to the DSA public key
+      dsaPublicKey = (DsaPublicKey *) publicKey;
 
       //Format AlgorithmIdentifier field
-      error = x509FormatAlgorithmIdentifier(publicKeyInfo, &params, p, &n);
+      error = x509FormatAlgorithmIdentifier(publicKeyInfo,
+         &dsaPublicKey->params, p, &n);
    }
    else
 #endif

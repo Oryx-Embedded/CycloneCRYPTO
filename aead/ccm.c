@@ -33,7 +33,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -426,16 +426,16 @@ void ccmXorBlock(uint8_t *x, const uint8_t *a, const uint8_t *b, size_t n)
 void ccmIncCounter(uint8_t *x, size_t n)
 {
    size_t i;
+   uint16_t temp;
 
    //The function increments the right-most bytes of the block. The remaining
    //left-most bytes remain unchanged
-   for(i = 0; i < n; i++)
+   for(temp = 1, i = 0; i < n; i++)
    {
-      //Increment the current byte and propagate the carry if necessary
-      if(++(x[15 - i]) != 0)
-      {
-         break;
-      }
+      //Increment the current byte and propagate the carry
+      temp += x[15 - i];
+      x[15 - i] = temp & 0xFF;
+      temp >>= 8;
    }
 }
 

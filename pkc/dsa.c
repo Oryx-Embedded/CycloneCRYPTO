@@ -31,7 +31,7 @@
  * documents. Refer to FIPS 186-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -70,16 +70,43 @@ const uint8_t DSA_WITH_SHA3_512_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x
 
 
 /**
+ * @brief Initialize DSA domain parameters
+ * @param[in] params Pointer to the DSA domain parameters to initialize
+ **/
+
+void dsaInitDomainParameters(DsaDomainParameters *params)
+{
+   //Initialize multiple precision integers
+   mpiInit(&params->p);
+   mpiInit(&params->q);
+   mpiInit(&params->g);
+}
+
+
+/**
+ * @brief Release DSA domain parameters
+ * @param[in] params Pointer to the DSA domain parameters to free
+ **/
+
+void dsaFreeDomainParameters(DsaDomainParameters *params)
+{
+   //Free multiple precision integers
+   mpiFree(&params->p);
+   mpiFree(&params->q);
+   mpiFree(&params->g);
+}
+
+
+/**
  * @brief Initialize a DSA public key
  * @param[in] key Pointer to the DSA public key to initialize
  **/
 
 void dsaInitPublicKey(DsaPublicKey *key)
 {
-   //Initialize multiple precision integers
-   mpiInit(&key->p);
-   mpiInit(&key->q);
-   mpiInit(&key->g);
+   //Initialize DSA domain parameters
+   dsaInitDomainParameters(&key->params);
+   //Initialize public key value
    mpiInit(&key->y);
 }
 
@@ -91,10 +118,9 @@ void dsaInitPublicKey(DsaPublicKey *key)
 
 void dsaFreePublicKey(DsaPublicKey *key)
 {
-   //Free multiple precision integers
-   mpiFree(&key->p);
-   mpiFree(&key->q);
-   mpiFree(&key->g);
+   //Free DSA domain parameters
+   dsaFreeDomainParameters(&key->params);
+   //Free public key value
    mpiFree(&key->y);
 }
 
@@ -106,11 +132,13 @@ void dsaFreePublicKey(DsaPublicKey *key)
 
 void dsaInitPrivateKey(DsaPrivateKey *key)
 {
-   //Initialize multiple precision integers
-   mpiInit(&key->p);
-   mpiInit(&key->q);
-   mpiInit(&key->g);
+   //Initialize DSA domain parameters
+   dsaInitDomainParameters(&key->params);
+   //Initialize secret exponent
    mpiInit(&key->x);
+
+   //Initialize private key slot
+   key->slot = -1;
 }
 
 
@@ -121,10 +149,9 @@ void dsaInitPrivateKey(DsaPrivateKey *key)
 
 void dsaFreePrivateKey(DsaPrivateKey *key)
 {
-   //Free multiple precision integers
-   mpiFree(&key->p);
-   mpiFree(&key->q);
-   mpiFree(&key->g);
+   //Free DSA domain parameters
+   dsaFreeDomainParameters(&key->params);
+   //Free secret exponent
    mpiFree(&key->x);
 }
 
@@ -470,11 +497,11 @@ error_t dsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    //Debug message
    TRACE_DEBUG("DSA signature generation...\r\n");
    TRACE_DEBUG("  p:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->p);
+   TRACE_DEBUG_MPI("    ", &key->params.p);
    TRACE_DEBUG("  q:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->q);
+   TRACE_DEBUG_MPI("    ", &key->params.q);
    TRACE_DEBUG("  g:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->g);
+   TRACE_DEBUG_MPI("    ", &key->params.g);
    TRACE_DEBUG("  x:\r\n");
    TRACE_DEBUG_MPI("    ", &key->x);
    TRACE_DEBUG("  digest:\r\n");
@@ -484,20 +511,15 @@ error_t dsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    mpiInit(&k);
    mpiInit(&z);
 
-   //Let N be the bit length of q
-   n = mpiGetBitLength(&key->q);
-
-   //Generated a pseudorandom number
-   MPI_CHECK(mpiRand(&k, n, prngAlgo, prngContext));
-
-   //Make sure that 0 < k < q
-   if(mpiComp(&k, &key->q) >= 0)
-      mpiShiftRight(&k, 1);
+   //Generate a random number k such as 0 < k < q - 1
+   MPI_CHECK(mpiRandRange(&k, &key->params.q, prngAlgo, prngContext));
 
    //Debug message
    TRACE_DEBUG("  k:\r\n");
    TRACE_DEBUG_MPI("    ", &k);
 
+   //Let N be the bit length of q
+   n = mpiGetBitLength(&key->params.q);
    //Compute N = MIN(N, outlen)
    n = MIN(n, digestLen * 8);
 
@@ -515,17 +537,17 @@ error_t dsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    TRACE_DEBUG_MPI("    ", &z);
 
    //Compute r = (g ^ k mod p) mod q
-   MPI_CHECK(mpiExpMod(&signature->r, &key->g, &k, &key->p));
-   MPI_CHECK(mpiMod(&signature->r, &signature->r, &key->q));
+   MPI_CHECK(mpiExpMod(&signature->r, &key->params.g, &k, &key->params.p));
+   MPI_CHECK(mpiMod(&signature->r, &signature->r, &key->params.q));
 
    //Compute k ^ -1 mod q
-   MPI_CHECK(mpiInvMod(&k, &k, &key->q));
+   MPI_CHECK(mpiInvMod(&k, &k, &key->params.q));
 
    //Compute s = k ^ -1 * (z + x * r) mod q
    MPI_CHECK(mpiMul(&signature->s, &key->x, &signature->r));
    MPI_CHECK(mpiAdd(&signature->s, &signature->s, &z));
-   MPI_CHECK(mpiMod(&signature->s, &signature->s, &key->q));
-   MPI_CHECK(mpiMulMod(&signature->s, &signature->s, &k, &key->q));
+   MPI_CHECK(mpiMod(&signature->s, &signature->s, &key->params.q));
+   MPI_CHECK(mpiMulMod(&signature->s, &signature->s, &k, &key->params.q));
 
    //Dump DSA signature
    TRACE_DEBUG("  r:\r\n");
@@ -578,11 +600,11 @@ error_t dsaVerifySignature(const DsaPublicKey *key,
    //Debug message
    TRACE_DEBUG("DSA signature verification...\r\n");
    TRACE_DEBUG("  p:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->p);
+   TRACE_DEBUG_MPI("    ", &key->params.p);
    TRACE_DEBUG("  q:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->q);
+   TRACE_DEBUG_MPI("    ", &key->params.q);
    TRACE_DEBUG("  g:\r\n");
-   TRACE_DEBUG_MPI("    ", &key->g);
+   TRACE_DEBUG_MPI("    ", &key->params.g);
    TRACE_DEBUG("  y:\r\n");
    TRACE_DEBUG_MPI("    ", &key->y);
    TRACE_DEBUG("  digest:\r\n");
@@ -593,14 +615,16 @@ error_t dsaVerifySignature(const DsaPublicKey *key,
    TRACE_DEBUG_MPI("    ", &signature->s);
 
    //The verifier shall check that 0 < r < q
-   if(mpiCompInt(&signature->r, 0) <= 0 || mpiComp(&signature->r, &key->q) >= 0)
+   if(mpiCompInt(&signature->r, 0) <= 0 ||
+      mpiComp(&signature->r, &key->params.q) >= 0)
    {
       //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
    }
 
    //The verifier shall check that 0 < s < q
-   if(mpiCompInt(&signature->s, 0) <= 0 || mpiComp(&signature->s, &key->q) >= 0)
+   if(mpiCompInt(&signature->s, 0) <= 0 ||
+      mpiComp(&signature->s, &key->params.q) >= 0)
    {
       //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
@@ -614,7 +638,7 @@ error_t dsaVerifySignature(const DsaPublicKey *key,
    mpiInit(&v);
 
    //Let N be the bit length of q
-   n = mpiGetBitLength(&key->q);
+   n = mpiGetBitLength(&key->params.q);
    //Compute N = MIN(N, outlen)
    n = MIN(n, digestLen * 8);
 
@@ -628,17 +652,17 @@ error_t dsaVerifySignature(const DsaPublicKey *key,
    }
 
    //Compute w = s ^ -1 mod q
-   MPI_CHECK(mpiInvMod(&w, &signature->s, &key->q));
+   MPI_CHECK(mpiInvMod(&w, &signature->s, &key->params.q));
    //Compute u1 = z * w mod q
-   MPI_CHECK(mpiMulMod(&u1, &z, &w, &key->q));
+   MPI_CHECK(mpiMulMod(&u1, &z, &w, &key->params.q));
    //Compute u2 = r * w mod q
-   MPI_CHECK(mpiMulMod(&u2, &signature->r, &w, &key->q));
+   MPI_CHECK(mpiMulMod(&u2, &signature->r, &w, &key->params.q));
 
    //Compute v = ((g ^ u1) * (y ^ u2) mod p) mod q
-   MPI_CHECK(mpiExpMod(&v, &key->g, &u1, &key->p));
-   MPI_CHECK(mpiExpMod(&w, &key->y, &u2, &key->p));
-   MPI_CHECK(mpiMulMod(&v, &v, &w, &key->p));
-   MPI_CHECK(mpiMod(&v, &v, &key->q));
+   MPI_CHECK(mpiExpMod(&v, &key->params.g, &u1, &key->params.p));
+   MPI_CHECK(mpiExpMod(&w, &key->y, &u2, &key->params.p));
+   MPI_CHECK(mpiMulMod(&v, &v, &w, &key->params.p));
+   MPI_CHECK(mpiMod(&v, &v, &key->params.q));
 
    //Debug message
    TRACE_DEBUG("  v:\r\n");

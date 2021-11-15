@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -502,6 +502,50 @@ error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo,
 
    //Successful operation
    return NO_ERROR;
+}
+
+
+/**
+ * @brief Generate a random value in the range 1 to p-1
+ * @param[out] r Pointer to a multiple precision integer
+ * @param[in] p The upper bound of the range
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @return Error code
+ **/
+
+error_t mpiRandRange(Mpi *r, const Mpi *p, const PrngAlgo *prngAlgo,
+   void *prngContext)
+{
+   error_t error;
+   uint_t n;
+   Mpi a;
+
+   //Make sure p is greater than 1
+   if(mpiCompInt(p, 1) <= 0)
+      return ERROR_INVALID_PARAMETER;
+
+   //Initialize multiple precision integer
+   mpiInit(&a);
+
+   //Get the actual length of p
+   n = mpiGetBitLength(p);
+
+   //Generate extra random bits so that the bias produced by the modular
+   //reduction is negligible
+   MPI_CHECK(mpiRand(r, n + 64, prngAlgo, prngContext));
+
+   //Compute r = (r mod (p - 1)) + 1
+   MPI_CHECK(mpiSubInt(&a, p, 1));
+   MPI_CHECK(mpiMod(r, r, &a));
+   MPI_CHECK(mpiAddInt(r, r, 1));
+
+end:
+   //Release previously allocated memory
+   mpiFree(&a);
+
+   //Return status code
+   return error;
 }
 
 

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 #ifndef _DSA_H
@@ -59,10 +59,8 @@ typedef struct
 
 typedef struct
 {
-   Mpi p; ///<Prime modulus
-   Mpi q; ///<Group order
-   Mpi g; ///<Group generator
-   Mpi y; ///<Public key value
+   DsaDomainParameters params; ///<DSA domain parameters
+   Mpi y;                      ///<Public key value
 } DsaPublicKey;
 
 
@@ -72,10 +70,9 @@ typedef struct
 
 typedef struct
 {
-   Mpi p; ///<Prime modulus
-   Mpi q; ///<Group order
-   Mpi g; ///<Group generator
-   Mpi x; ///<Secret exponent
+   DsaDomainParameters params; ///<DSA domain parameters
+   Mpi x;                      ///<Secret exponent
+   int_t slot;                 ///<Private key slot
 } DsaPrivateKey;
 
 
@@ -103,6 +100,9 @@ extern const uint8_t DSA_WITH_SHA3_384_OID[9];
 extern const uint8_t DSA_WITH_SHA3_512_OID[9];
 
 //DSA related functions
+void dsaInitDomainParameters(DsaDomainParameters *params);
+void dsaFreeDomainParameters(DsaDomainParameters *params);
+
 void dsaInitPublicKey(DsaPublicKey *key);
 void dsaFreePublicKey(DsaPublicKey *key);
 

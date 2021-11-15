@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 #ifndef _PEM_IMPORT_H
@@ -74,10 +74,10 @@ error_t pemImportEcParameters(const char_t *input, size_t length,
    EcDomainParameters *params);
 
 error_t pemImportEcPublicKey(const char_t *input, size_t length,
-   EcPoint *publicKey);
+   EcPublicKey *publicKey);
 
 error_t pemImportEcPrivateKey(const char_t *input, size_t length,
-   Mpi *privateKey);
+   EcPrivateKey *privateKey);
 
 error_t pemImportEddsaPublicKey(const char_t *input, size_t length,
    EddsaPublicKey *publicKey);

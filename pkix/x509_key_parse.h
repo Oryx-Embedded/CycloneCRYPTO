@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 #ifndef _X509_KEY_PARSE_H
@@ -84,7 +84,7 @@ error_t x509ImportDsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
    DsaPublicKey *publicKey);
 
 error_t x509ImportEcPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
-   EcPoint *publicKey);
+   EcPublicKey *publicKey);
 
 error_t x509ImportEcParameters(const X509EcParameters *ecParams,
    EcDomainParameters *params);

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.1.0"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.1.2"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 1
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 0
+#define CYCLONE_CRYPTO_REV_NUMBER 2
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -581,7 +581,7 @@
 //PBKDF support
 #ifndef PBKDF_SUPPORT
    #define PBKDF_SUPPORT ENABLED
-#elif (PBKDF_SUPPORT != ENABLED && PKCS5_SUPPORT != DISABLED)
+#elif (PBKDF_SUPPORT != ENABLED && PBKDF_SUPPORT != DISABLED)
    #error PBKDF_SUPPORT parameter is not valid
 #endif
 

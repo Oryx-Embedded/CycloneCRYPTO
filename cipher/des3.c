@@ -30,7 +30,7 @@
  * of 64 bits under control of a 192-bit key. Refer to FIPS 46-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.0
+ * @version 2.1.2
  **/
 
 //Switch to the appropriate trace level
@@ -93,7 +93,7 @@ __weak error_t des3Init(Des3Context *context, const uint8_t *key, size_t keyLen)
    }
    else if(keyLen == 24)
    {
-      //If the key length is 192 bits including parity, then three independent DES
+      //If the key length is 192 bits including parity, then 3 independent DES
       //keys are represented, in the order in which they are used for encryption
       desInit(&context->k1, key, 8);
       desInit(&context->k2, key + 8, 8);
