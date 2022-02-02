@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -31,7 +31,7 @@
  * PKCS #3 (Diffie-Hellman Key-Agreement Standard)
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Switch to the appropriate trace level
@@ -124,7 +124,8 @@ error_t dhGenerateKeyPair(DhContext *context,
    TRACE_DEBUG_MPI("    ", &context->xa);
 
    //Calculate the corresponding public value (ya = g ^ xa mod p)
-   error = mpiExpMod(&context->ya, &context->params.g, &context->xa, &context->params.p);
+   error = mpiExpModRegular(&context->ya, &context->params.g, &context->xa,
+      &context->params.p);
    //Any error to report?
    if(error)
       return error;
@@ -215,7 +216,8 @@ error_t dhComputeSharedSecret(DhContext *context,
    do
    {
       //Calculate the shared secret key (k = yb ^ xa mod p)
-      error = mpiExpMod(&z, &context->yb, &context->xa, &context->params.p);
+      error = mpiExpModRegular(&z, &context->yb, &context->xa,
+         &context->params.p);
       //Any error to report?
       if(error)
          break;

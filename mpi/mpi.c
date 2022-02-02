@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Switch to the appropriate trace level
@@ -555,7 +555,7 @@ end:
  * @return Error code
  **/
 
-__weak error_t mpiCheckProbablePrime(const Mpi *a)
+__weak_func error_t mpiCheckProbablePrime(const Mpi *a)
 {
    //The algorithm is implemented by hardware
    return ERROR_NOT_IMPLEMENTED;
@@ -1173,7 +1173,7 @@ error_t mpiShiftRight(Mpi *r, uint_t n)
  * @return Error code
  **/
 
-__weak error_t mpiMul(Mpi *r, const Mpi *a, const Mpi *b)
+__weak_func error_t mpiMul(Mpi *r, const Mpi *a, const Mpi *b)
 {
    error_t error;
    int_t i;
@@ -1499,7 +1499,7 @@ end:
  * @return Error code
  **/
 
-__weak error_t mpiInvMod(Mpi *r, const Mpi *a, const Mpi *p)
+__weak_func error_t mpiInvMod(Mpi *r, const Mpi *a, const Mpi *p)
 {
    error_t error;
    Mpi b;
@@ -1575,7 +1575,7 @@ end:
  * @return Error code
  **/
 
-__weak error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
+__weak_func error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
 {
    error_t error;
    int_t i;
@@ -1753,6 +1753,38 @@ end:
 
    //Return status code
    return error;
+}
+
+
+/**
+ * @brief Modular exponentiation (fast calculation)
+ * @param[out] r Resulting integer R = A ^ E mod P
+ * @param[in] a Pointer to a multiple precision integer
+ * @param[in] e Exponent
+ * @param[in] p Modulus
+ * @return Error code
+ **/
+
+__weak_func error_t mpiExpModFast(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
+{
+   //Perform modular exponentiation
+   return mpiExpMod(r, a, e, p);
+}
+
+
+/**
+ * @brief Modular exponentiation (regular calculation)
+ * @param[out] r Resulting integer R = A ^ E mod P
+ * @param[in] a Pointer to a multiple precision integer
+ * @param[in] e Exponent
+ * @param[in] p Modulus
+ * @return Error code
+ **/
+
+__weak_func error_t mpiExpModRegular(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
+{
+   //Perform modular exponentiation
+   return mpiExpMod(r, a, e, p);
 }
 
 

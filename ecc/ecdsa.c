@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Switch to the appropriate trace level
@@ -389,7 +389,7 @@ error_t ecdsaReadSignature(const uint8_t *data, size_t length,
  * @return Error code
  **/
 
-__weak error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
+__weak_func error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    const EcDomainParameters *params, const EcPrivateKey *privateKey,
    const uint8_t *digest, size_t digestLen, EcdsaSignature *signature)
 {
@@ -499,7 +499,7 @@ end:
  * @return Error code
  **/
 
-__weak error_t ecdsaVerifySignature(const EcDomainParameters *params,
+__weak_func error_t ecdsaVerifySignature(const EcDomainParameters *params,
    const EcPublicKey *publicKey, const uint8_t *digest, size_t digestLen,
    const EcdsaSignature *signature)
 {

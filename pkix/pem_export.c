@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Switch to the appropriate trace level
@@ -1032,7 +1032,7 @@ error_t pemEncodeFile(const void *input, size_t inputLen, const char_t *label,
       //the "-----BEGIN " line (refer to RFC 7468, section 2)
       osStrcpy(output, "-----BEGIN ");
       osStrcpy(output + 11, label);
-      osStrncpy(p - 7, "-----\r\n", 7);
+      osMemcpy(p - 7, "-----\r\n", 7);
 
       //Generators must put the same label on the "-----END " line as the
       //corresponding "-----BEGIN " line

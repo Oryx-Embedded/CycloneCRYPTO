@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1321
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Switch to the appropriate trace level
@@ -106,7 +106,7 @@ const HashAlgo md5HashAlgo =
  * @return Error code
  **/
 
-__weak error_t md5Compute(const void *data, size_t length, uint8_t *digest)
+__weak_func error_t md5Compute(const void *data, size_t length, uint8_t *digest)
 {
    error_t error;
    Md5Context *context;
@@ -146,7 +146,7 @@ __weak error_t md5Compute(const void *data, size_t length, uint8_t *digest)
  * @param[in] context Pointer to the MD5 context to initialize
  **/
 
-__weak void md5Init(Md5Context *context)
+__weak_func void md5Init(Md5Context *context)
 {
    //Set initial hash value
    context->h[0] = 0x67452301;
@@ -168,7 +168,7 @@ __weak void md5Init(Md5Context *context)
  * @param[in] length Length of the buffer
  **/
 
-__weak void md5Update(Md5Context *context, const void *data, size_t length)
+__weak_func void md5Update(Md5Context *context, const void *data, size_t length)
 {
    size_t n;
 
@@ -207,7 +207,7 @@ __weak void md5Update(Md5Context *context, const void *data, size_t length)
  * @param[out] digest Calculated digest (optional parameter)
  **/
 
-__weak void md5Final(Md5Context *context, uint8_t *digest)
+__weak_func void md5Final(Md5Context *context, uint8_t *digest)
 {
    uint_t i;
    size_t paddingSize;
@@ -256,7 +256,7 @@ __weak void md5Final(Md5Context *context, uint8_t *digest)
  * @param[out] digest Calculated digest
  **/
 
-__weak void md5FinalRaw(Md5Context *context, uint8_t *digest)
+__weak_func void md5FinalRaw(Md5Context *context, uint8_t *digest)
 {
    uint_t i;
 
@@ -282,7 +282,7 @@ __weak void md5FinalRaw(Md5Context *context, uint8_t *digest)
  * @param[in] context Pointer to the MD5 context
  **/
 
-__weak void md5ProcessBlock(Md5Context *context)
+__weak_func void md5ProcessBlock(Md5Context *context)
 {
    uint_t i;
 

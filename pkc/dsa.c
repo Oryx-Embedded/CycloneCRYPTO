@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -31,7 +31,7 @@
  * documents. Refer to FIPS 186-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Switch to the appropriate trace level
@@ -537,7 +537,7 @@ error_t dsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    TRACE_DEBUG_MPI("    ", &z);
 
    //Compute r = (g ^ k mod p) mod q
-   MPI_CHECK(mpiExpMod(&signature->r, &key->params.g, &k, &key->params.p));
+   MPI_CHECK(mpiExpModRegular(&signature->r, &key->params.g, &k, &key->params.p));
    MPI_CHECK(mpiMod(&signature->r, &signature->r, &key->params.q));
 
    //Compute k ^ -1 mod q
@@ -659,8 +659,8 @@ error_t dsaVerifySignature(const DsaPublicKey *key,
    MPI_CHECK(mpiMulMod(&u2, &signature->r, &w, &key->params.q));
 
    //Compute v = ((g ^ u1) * (y ^ u2) mod p) mod q
-   MPI_CHECK(mpiExpMod(&v, &key->params.g, &u1, &key->params.p));
-   MPI_CHECK(mpiExpMod(&w, &key->y, &u2, &key->params.p));
+   MPI_CHECK(mpiExpModFast(&v, &key->params.g, &u1, &key->params.p));
+   MPI_CHECK(mpiExpModFast(&w, &key->y, &u2, &key->params.p));
    MPI_CHECK(mpiMulMod(&v, &v, &w, &key->params.p));
    MPI_CHECK(mpiMod(&v, &v, &key->params.q));
 

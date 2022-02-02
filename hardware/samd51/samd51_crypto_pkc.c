@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Switch to the appropriate trace level
@@ -248,6 +248,13 @@ error_t mpiMul(Mpi *r, const Mpi *a, const Mpi *b)
    {
       //If FMult is without reduction, R is filled with the final result
       error = mpiImport(r, params.r, m + n, MPI_FORMAT_LITTLE_ENDIAN);
+
+      //Check status code
+      if(!error)
+      {
+         //Set the sign of the result
+         r->sign = (a->sign == b->sign) ? 1 : -1;
+      }
    }
    else
    {

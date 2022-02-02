@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * 64 bits under control of a 64-bit key. Refer to FIPS 46-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Switch to the appropriate trace level
@@ -268,7 +268,7 @@ const CipherAlgo desCipherAlgo =
  * @return Error code
  **/
 
-__weak error_t desInit(DesContext *context, const uint8_t *key, size_t keyLen)
+__weak_func error_t desInit(DesContext *context, const uint8_t *key, size_t keyLen)
 {
    uint_t i;
    uint32_t c;
@@ -344,7 +344,7 @@ __weak error_t desInit(DesContext *context, const uint8_t *key, size_t keyLen)
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-__weak void desEncryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
+__weak_func void desEncryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
 {
    uint_t i;
    uint32_t left;
@@ -383,7 +383,7 @@ __weak void desEncryptBlock(DesContext *context, const uint8_t *input, uint8_t *
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-__weak void desDecryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
+__weak_func void desDecryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
 {
    uint_t i;
    uint32_t left;

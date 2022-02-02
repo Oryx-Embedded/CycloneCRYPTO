@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Switch to the appropriate trace level
@@ -196,7 +196,7 @@ void curve448SubInt(uint32_t *r, const uint32_t *a, uint32_t b)
  * @param[in] b An integer such as 0 <= B < p
  **/
 
-void curve448Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
+__weak_func void curve448Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
 {
    uint_t i;
    uint_t j;

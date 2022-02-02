@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Switch to the appropriate trace level
@@ -205,7 +205,7 @@ void ecFreePrivateKey(EcPrivateKey *key)
  * @return Error code
  **/
 
-__weak error_t ecGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
+__weak_func error_t ecGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
    const EcDomainParameters *params, EcPrivateKey *privateKey,
    EcPublicKey *publicKey)
 {
@@ -515,7 +515,7 @@ end:
  * @return Error code
  **/
 
-__weak error_t ecAffinify(const EcDomainParameters *params, EcPoint *r,
+__weak_func error_t ecAffinify(const EcDomainParameters *params, EcPoint *r,
    const EcPoint *s)
 {
    error_t error;
@@ -561,7 +561,7 @@ end:
  * @return TRUE if the affine point S is on the curve, else FALSE
  **/
 
-__weak bool_t ecIsPointAffine(const EcDomainParameters *params, const EcPoint *s)
+__weak_func bool_t ecIsPointAffine(const EcDomainParameters *params, const EcPoint *s)
 {
    error_t error;
    Mpi t1;
@@ -982,7 +982,7 @@ end:
  * @return Error code
  **/
 
-__weak error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
+__weak_func error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    const EcPoint *s)
 {
    error_t error;
@@ -1359,7 +1359,7 @@ end:
  * @return Error code
  **/
 
-__weak error_t ecMulMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
+__weak_func error_t ecMulMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
    const Mpi *b)
 {
    error_t error;
@@ -1391,7 +1391,7 @@ end:
  * @return Error code
  **/
 
-__weak error_t ecSqrMod(const EcDomainParameters *params, Mpi *r, const Mpi *a)
+__weak_func error_t ecSqrMod(const EcDomainParameters *params, Mpi *r, const Mpi *a)
 {
    error_t error;
 

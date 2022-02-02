@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Switch to the appropriate trace level
@@ -73,7 +73,7 @@ const HashAlgo sha224HashAlgo =
  * @return Error code
  **/
 
-__weak error_t sha224Compute(const void *data, size_t length, uint8_t *digest)
+__weak_func error_t sha224Compute(const void *data, size_t length, uint8_t *digest)
 {
    error_t error;
    Sha224Context *context;
@@ -113,7 +113,7 @@ __weak error_t sha224Compute(const void *data, size_t length, uint8_t *digest)
  * @param[in] context Pointer to the SHA-224 context to initialize
  **/
 
-__weak void sha224Init(Sha224Context *context)
+__weak_func void sha224Init(Sha224Context *context)
 {
    //Set initial hash value
    context->h[0] = 0xC1059ED8;
@@ -139,7 +139,7 @@ __weak void sha224Init(Sha224Context *context)
  * @param[in] length Length of the buffer
  **/
 
-__weak void sha224Update(Sha224Context *context, const void *data, size_t length)
+__weak_func void sha224Update(Sha224Context *context, const void *data, size_t length)
 {
    //The function is defined in the exact same manner as SHA-256
    sha256Update(context, data, length);
@@ -152,7 +152,7 @@ __weak void sha224Update(Sha224Context *context, const void *data, size_t length
  * @param[out] digest Calculated digest (optional parameter)
  **/
 
-__weak void sha224Final(Sha224Context *context, uint8_t *digest)
+__weak_func void sha224Final(Sha224Context *context, uint8_t *digest)
 {
    //The function is defined in the exact same manner as SHA-256
    sha256Final(context, NULL);

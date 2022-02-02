@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * of 64 bits under control of a 192-bit key. Refer to FIPS 46-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Switch to the appropriate trace level
@@ -67,7 +67,7 @@ const CipherAlgo des3CipherAlgo =
  * @return Error code
  **/
 
-__weak error_t des3Init(Des3Context *context, const uint8_t *key, size_t keyLen)
+__weak_func error_t des3Init(Des3Context *context, const uint8_t *key, size_t keyLen)
 {
    //Check parameters
    if(context == NULL || key == NULL)
@@ -117,7 +117,7 @@ __weak error_t des3Init(Des3Context *context, const uint8_t *key, size_t keyLen)
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-__weak void des3EncryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output)
+__weak_func void des3EncryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output)
 {
    //The first pass is a DES encryption
    desEncryptBlock(&context->k1, input, output);
@@ -135,7 +135,7 @@ __weak void des3EncryptBlock(Des3Context *context, const uint8_t *input, uint8_t
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-__weak void des3DecryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output)
+__weak_func void des3DecryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output)
 {
    //The first pass is a DES decryption
    desDecryptBlock(&context->k3, input, output);

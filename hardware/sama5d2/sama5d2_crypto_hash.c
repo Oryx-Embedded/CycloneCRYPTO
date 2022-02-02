@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 //Switch to the appropriate trace level
@@ -534,6 +534,19 @@ void sha384Init(Sha384Context *context)
    context->size = 0;
    //Total length of the message
    context->totalSize = 0;
+}
+
+
+/**
+ * @brief Finish the SHA-384 message digest (no padding added)
+ * @param[in] context Pointer to the SHA-384 context
+ * @param[out] digest Calculated digest
+ **/
+
+void sha384FinalRaw(Sha384Context *context, uint8_t *digest)
+{
+   //Copy the resulting digest
+   osMemcpy(digest, context->digest, SHA384_DIGEST_SIZE);
 }
 
 

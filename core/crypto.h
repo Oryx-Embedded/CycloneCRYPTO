@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.2
+ * @version 2.1.4
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.1.2"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.1.4"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 1
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 2
+#define CYCLONE_CRYPTO_REV_NUMBER 4
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -350,7 +350,7 @@
 //KMAC support
 #ifndef KMAC_SUPPORT
    #define KMAC_SUPPORT DISABLED
-#elif (KMAC_SUPPORT != ENABLED && GMAC_SUPPORT != DISABLED)
+#elif (KMAC_SUPPORT != ENABLED && KMAC_SUPPORT != DISABLED)
    #error KMAC_SUPPORT parameter is not valid
 #endif
 
