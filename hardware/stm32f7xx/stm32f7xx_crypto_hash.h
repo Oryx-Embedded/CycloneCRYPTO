@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 #ifndef _STM32F7XX_CRYPTO_HASH_H
@@ -40,6 +40,18 @@
 #elif (STM32F7XX_CRYPTO_HASH_SUPPORT != ENABLED && STM32F7XX_CRYPTO_HASH_SUPPORT != DISABLED)
    #error STM32F7XX_CRYPTO_HASH_SUPPORT parameter is not valid
 #endif
+
+//ALGO bitfield
+#define HASH_CR_ALGO_SHA1    0
+#define HASH_CR_ALGO_MD5     HASH_CR_ALGO_0
+#define HASH_CR_ALGO_SHA224  HASH_CR_ALGO_1
+#define HASH_CR_ALGO_SHA256  (HASH_CR_ALGO_1 | HASH_CR_ALGO_0)
+
+//DATATYPE bitfield
+#define HASH_CR_DATATYPE_32B 0
+#define HASH_CR_DATATYPE_16B HASH_CR_DATATYPE_0
+#define HASH_CR_DATATYPE_8B  HASH_CR_DATATYPE_1
+#define HASH_CR_DATATYPE_1B  (HASH_CR_DATATYPE_1 | HASH_CR_DATATYPE_0)
 
 //C++ guard
 #ifdef __cplusplus

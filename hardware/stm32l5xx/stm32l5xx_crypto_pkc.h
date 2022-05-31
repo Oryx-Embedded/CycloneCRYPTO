@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 #ifndef _STM32L5XX_CRYPTO_PKC_H
@@ -41,55 +41,39 @@
    #error STM32L5XX_CRYPTO_PKC_SUPPORT parameter is not valid
 #endif
 
-//Maximum RSA operand size, in bytes
-#define STM32L5XX_MAX_ROS 392
-//Maximum ECC operand size, in bytes
-#define STM32L5XX_MAX_EOS 80
+//Maximum RSA operand size, in bits
+#define PKA_MAX_ROS 3136
+//Maximum ECC operand size, in bits
+#define PKA_MAX_EOS 640
+
+//PKA operation modes
+#define PKA_CR_MODE_MODULAR_EXP           0x00
+#define PKA_CR_MODE_MONTGOMERY_PARAM      0x01
+#define PKA_CR_MODE_MODULAR_EXP_FAST_MODE 0x02
+#define PKA_CR_MODE_RSA_CRT_EXP           0x07
+#define PKA_CR_MODE_MODULAR_INV           0x08
+#define PKA_CR_MODE_ARITHMETIC_ADD        0x09
+#define PKA_CR_MODE_ARITHMETIC_SUB        0x0A
+#define PKA_CR_MODE_ARITHMETIC_MUL        0x0B
+#define PKA_CR_MODE_COMPARISON            0x0C
+#define PKA_CR_MODE_MODULAR_RED           0x0D
+#define PKA_CR_MODE_MODULAR_ADD           0x0E
+#define PKA_CR_MODE_MODULAR_SUB           0x0F
+#define PKA_CR_MODE_MONTGOMERY_MUL        0x10
+#define PKA_CR_MODE_ECC_MUL               0x20
+#define PKA_CR_MODE_ECC_MUL_FAST_MODE     0x22
+#define PKA_CR_MODE_ECDSA_SIGN            0x24
+#define PKA_CR_MODE_ECDSA_VERIFY          0x26
+#define PKA_CR_MODE_POINT_CHECK           0x28
+
+//PKA status codes
+#define PKA_STATUS_SUCCESS 0x00000000
+#define PKA_STATUS_INVALID 0xFFFFFFFF
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-/**
- * @brief RSA primitive arguments
- **/
-
-typedef struct
-{
-   uint8_t a[STM32L5XX_MAX_ROS];
-   uint8_t d[STM32L5XX_MAX_ROS];
-   uint8_t e[STM32L5XX_MAX_ROS];
-   uint8_t n[STM32L5XX_MAX_ROS];
-   uint8_t p[STM32L5XX_MAX_ROS];
-   uint8_t q[STM32L5XX_MAX_ROS];
-   uint8_t dp[STM32L5XX_MAX_ROS];
-   uint8_t dq[STM32L5XX_MAX_ROS];
-   uint8_t qinv[STM32L5XX_MAX_ROS];
-} Stm32l5xxRsaArgs;
-
-
-/**
- * @brief ECC primitive arguments
- **/
-
-typedef struct
-{
-   uint8_t p[STM32L5XX_MAX_EOS];
-   uint8_t a[STM32L5XX_MAX_EOS];
-   uint8_t gx[STM32L5XX_MAX_EOS];
-   uint8_t gy[STM32L5XX_MAX_EOS];
-   uint8_t q[STM32L5XX_MAX_EOS];
-   uint8_t h[STM32L5XX_MAX_EOS];
-   uint8_t k[STM32L5XX_MAX_EOS];
-   uint8_t d[STM32L5XX_MAX_EOS];
-   uint8_t qx[STM32L5XX_MAX_EOS];
-   uint8_t qy[STM32L5XX_MAX_EOS];
-   uint8_t r[STM32L5XX_MAX_EOS];
-   uint8_t s[STM32L5XX_MAX_EOS];
-} Stm32l5xxEccArgs;
-
 
 //PKA related functions
 error_t pkaInit(void);

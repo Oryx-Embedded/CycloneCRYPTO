@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -36,14 +36,8 @@
 #include "core/crypto.h"
 #include "hardware/sama5d3/sama5d3_crypto.h"
 #include "hardware/sama5d3/sama5d3_crypto_cipher.h"
-#include "cipher/des.h"
-#include "cipher/des3.h"
-#include "cipher/aes.h"
-#include "cipher_mode/ecb.h"
-#include "cipher_mode/cbc.h"
-#include "cipher_mode/cfb.h"
-#include "cipher_mode/ofb.h"
-#include "aead/gcm.h"
+#include "cipher/cipher_algorithms.h"
+#include "cipher_mode/cipher_modes.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -79,6 +73,8 @@ void desProcessDataBlock(const uint8_t *input, uint8_t *output)
    p[1] = TDES->TDES_ODATAR[1];
 }
 
+
+#if (DES_SUPPORT == ENABLED)
 
 /**
  * @brief Perform DES encryption or decryption
@@ -205,6 +201,8 @@ void desDecryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
       TDES_MR_OPMOD_ECB);
 }
 
+#endif
+#if (DES3_SUPPORT == ENABLED)
 
 /**
  * @brief Perform Triple DES encryption or decryption
@@ -360,6 +358,8 @@ void des3DecryptBlock(Des3Context *context, const uint8_t *input, uint8_t *outpu
       TDES_MR_OPMOD_ECB);
 }
 
+#endif
+#if (AES_SUPPORT == ENABLED)
 
 /**
  * @brief Load AES key
@@ -593,6 +593,8 @@ void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
       AES_MR_OPMOD_ECB);
 }
 
+#endif
+#if (ECB_SUPPORT == ENABLED)
 
 /**
  * @brief ECB encryption
@@ -816,6 +818,8 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    return error;
 }
 
+#endif
+#if (CBC_SUPPORT == ENABLED)
 
 /**
  * @brief CBC encryption
@@ -1101,6 +1105,8 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
    return error;
 }
 
+#endif
+#if (CFB_SUPPORT == ENABLED)
 
 /**
  * @brief CFB encryption
@@ -1401,6 +1407,8 @@ error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
    return error;
 }
 
+#endif
+#if (OFB_SUPPORT == ENABLED)
 
 /**
  * @brief OFB encryption
@@ -1551,4 +1559,5 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
    return error;
 }
 
+#endif
 #endif

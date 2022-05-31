@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -39,10 +39,7 @@
 #include "core/crypto.h"
 #include "hardware/msp432e4/msp432e4_crypto.h"
 #include "hardware/msp432e4/msp432e4_crypto_hash.h"
-#include "hash/md5.h"
-#include "hash/sha1.h"
-#include "hash/sha224.h"
-#include "hash/sha256.h"
+#include "hash/hash_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -150,6 +147,8 @@ void hashProcessData(const uint8_t *data, size_t length, uint8_t *digest,
    }
 }
 
+
+#if (MD5_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using MD5
@@ -337,6 +336,8 @@ void md5FinalRaw(Md5Context *context, uint8_t *digest)
    osMemcpy(digest, context->digest, MD5_DIGEST_SIZE);
 }
 
+#endif
+#if (SHA1_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-1
@@ -527,6 +528,8 @@ void sha1FinalRaw(Sha1Context *context, uint8_t *digest)
    osMemcpy(digest, context->digest, SHA1_DIGEST_SIZE);
 }
 
+#endif
+#if (SHA224_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-224
@@ -627,6 +630,8 @@ void sha224Final(Sha224Context *context, uint8_t *digest)
    }
 }
 
+#endif
+#if (SHA256_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-256
@@ -826,4 +831,5 @@ void sha256FinalRaw(Sha256Context *context, uint8_t *digest)
    osMemcpy(digest, context->digest, SHA256_DIGEST_SIZE);
 }
 
+#endif
 #endif

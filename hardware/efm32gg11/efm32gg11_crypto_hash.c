@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -37,13 +37,12 @@
 #include "core/crypto.h"
 #include "hardware/efm32gg11/efm32gg11_crypto.h"
 #include "hardware/efm32gg11/efm32gg11_crypto_hash.h"
-#include "hash/sha1.h"
-#include "hash/sha256.h"
+#include "hash/hash_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
 #if (EFM32GG11_CRYPTO_HASH_SUPPORT == ENABLED)
-
+#if (SHA1_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-1
@@ -130,6 +129,8 @@ void sha1ProcessBlock(Sha1Context *context)
    context->h[4] = betoh32(temp[4]);
 }
 
+#endif
+#if (SHA256_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-256
@@ -207,4 +208,5 @@ void sha256ProcessBlock(Sha256Context *context)
    context->h[7] = betoh32(context->h[7]);
 }
 
+#endif
 #endif

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 #ifndef _MD5_H
@@ -69,15 +69,6 @@ typedef struct
    };
    size_t size;
    uint64_t totalSize;
-#if ((defined(STM32F2XX_CRYPTO_HASH_SUPPORT) && STM32F2XX_CRYPTO_HASH_SUPPORT == ENABLED) || \
-   (defined(STM32F4XX_CRYPTO_HASH_SUPPORT) && STM32F4XX_CRYPTO_HASH_SUPPORT == ENABLED) || \
-   (defined(STM32F7XX_CRYPTO_HASH_SUPPORT) && STM32F7XX_CRYPTO_HASH_SUPPORT == ENABLED) || \
-   (defined(STM32H7XX_CRYPTO_HASH_SUPPORT) && STM32H7XX_CRYPTO_HASH_SUPPORT == ENABLED) || \
-   (defined(STM32L4XX_CRYPTO_HASH_SUPPORT) && STM32L4XX_CRYPTO_HASH_SUPPORT == ENABLED) || \
-   (defined(STM32L5XX_CRYPTO_HASH_SUPPORT) && STM32L5XX_CRYPTO_HASH_SUPPORT == ENABLED) || \
-   (defined(STM32MP1XX_CRYPTO_HASH_SUPPORT) && STM32MP1XX_CRYPTO_HASH_SUPPORT == ENABLED))
-   uint32_t hwContext[58];
-#endif
 } Md5Context;
 
 

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -34,22 +34,18 @@
 //Dependencies
 #include "stm32u5xx.h"
 #include "stm32u5xx_hal.h"
-#include "stm32u5xx_hal_pka.h"
 #include "core/crypto.h"
 #include "hardware/stm32u5xx/stm32u5xx_crypto.h"
 #include "hardware/stm32u5xx/stm32u5xx_crypto_pkc.h"
 #include "pkc/rsa.h"
 #include "ecc/ec.h"
 #include "ecc/ecdsa.h"
+#include "ecc/curve25519.h"
+#include "ecc/curve448.h"
 #include "debug.h"
 
 //Check crypto library configuration
 #if (STM32U5XX_CRYPTO_PKC_SUPPORT == ENABLED)
-
-//Global variable
-static Stm32u5xxRsaArgs rsaArgs;
-static Stm32u5xxEccArgs eccArgs;
-static PKA_HandleTypeDef PKA_Handle;
 
 
 /**
@@ -59,26 +55,171 @@ static PKA_HandleTypeDef PKA_Handle;
 
 error_t pkaInit(void)
 {
-   HAL_StatusTypeDef status;
-
    //Enable PKA peripheral clock
    __HAL_RCC_PKA_CLK_ENABLE();
 
-   //Set instance
-   PKA_Handle.Instance = PKA;
+   //Reset the PKA peripheral
+   PKA->CR = 0;
 
-   //Reset PKA module
-   status = HAL_PKA_DeInit(&PKA_Handle);
+   //Enable the PKA peripheral
+   while((PKA->CR & PKA_CR_EN) == 0)
+   {
+      PKA->CR = PKA_CR_EN;
+   }
+
+   //Clear flags
+   PKA->CLRFR = PKA_CLRFR_ADDRERRFC | PKA_CLRFR_RAMERRFC | PKA_CLRFR_PROCENDFC;
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Import byte array
+ * @param[in] src Pointer to the byte array
+ * @param[in] srcLen Length of the array to be copied, in bytes
+ * @param[in] destLen Length of the operand, in bits
+ * @param[in] offset PKA ram offset
+ **/
+
+void pkaImportArray(const uint8_t *src, size_t srcLen, uint_t destLen,
+   uint_t offset)
+{
+   uint_t i;
+   uint_t j;
+   uint32_t temp;
+
+   //Retrieve the length of the operand, in 64-bit words
+   destLen = (destLen + 63) / 64;
+
+   //Copy the array to the PKA RAM
+   for(i = 0, j = 0; i < srcLen; i++)
+   {
+      switch(i % 4)
+      {
+      case 0:
+         temp = src[srcLen - i - 1];
+         break;
+      case 1:
+         temp |= src[srcLen - i - 1] << 8;
+         break;
+      case 2:
+         temp |= src[srcLen - i - 1] << 16;
+         break;
+      default:
+         temp |= src[srcLen - i - 1] << 24;
+         PKA->RAM[offset + j] = temp;
+         j++;
+         break;
+      }
+   }
+
+   //Pad the operand with zeroes
+   for(; i < (destLen * 8); i++)
+   {
+      switch(i % 4)
+      {
+      case 0:
+         temp = 0;
+         break;
+      case 3:
+         PKA->RAM[offset + j] = temp;
+         j++;
+         break;
+      default:
+         break;
+      }
+   }
+
+   //An additional 64-bit word with all bits equal to zero must be added
+   PKA->RAM[offset + j] = 0;
+   PKA->RAM[offset + j + 1] = 0;
+}
+
+
+/**
+ * @brief Import multiple-precision integer
+ * @param[in] a Pointer to the multiple-precision integer
+ * @param[in] length Length of the operand, in bits
+ * @param[in] offset PKA ram offset
+ **/
+
+void pkaImportMpi(const Mpi *a, uint_t length, uint_t offset)
+{
+   uint_t i;
+   uint_t n;
+
+   //Retrieve the length of the operand, in 64-bit words
+   length = (length + 63) / 64;
+
+   //Get the actual length of the multiple-precision integer, in words
+   n = mpiGetLength(a);
+
+   //Copy the multiple-precision integer to the PKA RAM
+   for(i = 0; i < n && i < (length * 2); i++)
+   {
+      PKA->RAM[offset + i] = a->data[i];
+   }
+
+   //Pad the operand with zeroes
+   for(; i < (length * 2); i++)
+   {
+      PKA->RAM[offset + i] = 0;
+   }
+
+   //An additional 64-bit word with all bits equal to zero must be added
+   PKA->RAM[offset + i] = 0;
+   PKA->RAM[offset + i + 1] = 0;
+}
+
+
+/**
+ * @brief Export multiple-precision integer
+ * @param[out] r Pointer to the multiple-precision integer
+ * @param[in] length Length of the operand, in bits
+ * @param[in] offset PKA ram offset
+ * @return Error code
+ **/
+
+error_t pkaExportMpi(Mpi *r, uint_t length, uint_t offset)
+{
+   error_t error;
+   uint_t i;
+
+   //Retrieve the length of the operand, in 32-bit words
+   length = (length + 31) / 32;
+
+   //Skip trailing zeroes
+   while(length > 0 && PKA->RAM[offset + length - 1] == 0)
+   {
+      length--;
+   }
+
+   //Ajust the size of the multiple precision integer
+   error = mpiGrow(r, length);
 
    //Check status code
-   if(status == HAL_OK)
+   if(!error)
    {
-      //Initialize PKA module
-      status = HAL_PKA_Init(&PKA_Handle);
+      //Copy the multiple-precision integer from the PKA RAM
+      for(i = 0; i < length; i++)
+      {
+         r->data[i] = PKA->RAM[offset + i];
+      }
+
+      //Pad the resulting value with zeroes
+      for(; i < r->size; i++)
+      {
+         r->data[i] = 0;
+      }
+
+      //Set the sign
+      r->sign = 1;
    }
 
    //Return status code
-   return (status == HAL_OK) ? NO_ERROR : ERROR_FAILURE;
+   return error;
 }
 
 
@@ -94,16 +235,17 @@ error_t pkaInit(void)
 error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
 {
    error_t error;
-   size_t modLen;
-   size_t expLen;
+   uint_t modLen;
+   uint_t expLen;
+   uint32_t temp;
 
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(p);
-   //Retrieve the length of the exponent, in bytes
-   expLen = mpiGetByteLength(e);
+   //Retrieve the length of the modulus, in bits
+   modLen = mpiGetBitLength(p);
+   //Retrieve the length of the exponent, in bits
+   expLen = mpiGetBitLength(e);
 
    //Check the length of the operands
-   if(modLen <= STM32U5XX_MAX_ROS && expLen <= STM32U5XX_MAX_ROS)
+   if(modLen <= PKA_MAX_ROS && expLen <= PKA_MAX_ROS)
    {
       //Reduce the operand first
       error = mpiMod(r, a, p);
@@ -111,46 +253,44 @@ error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
       //Check status code
       if(!error)
       {
-         HAL_StatusTypeDef status;
-         PKA_ModExpInTypeDef modExpIn;
-
          //Acquire exclusive access to the PKA module
          osAcquireMutex(&stm32u5xxCryptoMutex);
 
-         //Copy operand
-         mpiWriteRaw(r, rsaArgs.a, modLen);
-         //Copy exponent
-         mpiWriteRaw(e, rsaArgs.e, expLen);
-         //Copy modulus
-         mpiWriteRaw(p, rsaArgs.p, modLen);
+         //Specify the length of the operand, in bits
+         PKA->RAM[PKA_MODULAR_EXP_IN_OP_NB_BITS] = modLen;
+         PKA->RAM[PKA_MODULAR_EXP_IN_OP_NB_BITS + 1] = 0;
 
-         //Set input parameters
-         modExpIn.expSize = expLen;
-         modExpIn.OpSize = modLen;
-         modExpIn.pExp = rsaArgs.e;
-         modExpIn.pOp1 = rsaArgs.a;
-         modExpIn.pMod = rsaArgs.p;
+         //Specify the length of the exponent, in bits
+         PKA->RAM[PKA_MODULAR_EXP_IN_EXP_NB_BITS] = expLen;
+         PKA->RAM[PKA_MODULAR_EXP_IN_EXP_NB_BITS + 1] = 0;
 
-         //Perform modular exponentiation
-         status = HAL_PKA_ModExp(&PKA_Handle, &modExpIn, HAL_MAX_DELAY);
+         //Load input arguments into the PKA internal RAM
+         pkaImportMpi(r, modLen, PKA_MODULAR_EXP_IN_EXPONENT_BASE);
+         pkaImportMpi(e, expLen, PKA_MODULAR_EXP_IN_EXPONENT);
+         pkaImportMpi(p, modLen, PKA_MODULAR_EXP_IN_MODULUS);
 
-         //Check status code
-         if(status == HAL_OK)
+         //Disable interrupts
+         PKA->CR &= ~(PKA_CR_ADDRERRIE | PKA_CR_RAMERRIE | PKA_CR_PROCENDIE);
+
+         //Write in the MODE field of PKA_CR register, specifying the operation
+         //which is to be executed
+         temp = PKA->CR & ~PKA_CR_MODE;
+         PKA->CR = temp | (PKA_CR_MODE_MODULAR_EXP << PKA_CR_MODE_Pos);
+
+         //Then assert the START bit in PKA_CR register
+         PKA->CR |= PKA_CR_START;
+
+         //Wait until the PROCENDF bit in the PKA_SR register is set to 1,
+         //indicating that the computation is complete
+         while((PKA->SR & PKA_SR_PROCENDF) == 0)
          {
-            //Get the result of the modular exponentiation
-            HAL_PKA_ModExp_GetResult(&PKA_Handle, rsaArgs.a);
-
-            //Copy resulting integer
-            error = mpiReadRaw(r, rsaArgs.a, modLen);
-         }
-         else
-         {
-            //Report an error
-            error = ERROR_FAILURE;
          }
 
-         //Clear PKA RAM
-         HAL_PKA_RAMReset(&PKA_Handle);
+         //Read the result data from the PKA internal RAM
+         error = pkaExportMpi(r, modLen, PKA_MODULAR_EXP_OUT_RESULT);
+
+         //Then clear PROCENDF bit by setting PROCENDFC bit in PKA_CLRFR
+         PKA->CLRFR = PKA_CLRFR_PROCENDFC;
 
          //Release exclusive access to the PKA module
          osReleaseMutex(&stm32u5xxCryptoMutex);
@@ -178,70 +318,63 @@ error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
 error_t pkaRsaCrtExp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
 {
    error_t error;
-   size_t nLen;
-   size_t pLen;
-   size_t qLen;
-   size_t dpLen;
-   size_t dqLen;
-   size_t qinvLen;
+   uint_t nLen;
+   uint_t pLen;
+   uint_t qLen;
+   uint_t dpLen;
+   uint_t dqLen;
+   uint_t qinvLen;
+   uint32_t temp;
 
    //Retrieve the length of the private key
-   nLen = mpiGetByteLength(&key->n);
-   pLen = mpiGetByteLength(&key->p);
-   qLen = mpiGetByteLength(&key->q);
-   dpLen = mpiGetByteLength(&key->dp);
-   dqLen = mpiGetByteLength(&key->dq);
-   qinvLen = mpiGetByteLength(&key->qinv);
+   nLen = mpiGetBitLength(&key->n);
+   pLen = mpiGetBitLength(&key->p);
+   qLen = mpiGetBitLength(&key->q);
+   dpLen = mpiGetBitLength(&key->dp);
+   dqLen = mpiGetBitLength(&key->dq);
+   qinvLen = mpiGetBitLength(&key->qinv);
 
    //Check the length of the operands
-   if(nLen <= STM32U5XX_MAX_ROS && pLen <= (nLen / 2) && qLen <= (nLen / 2) &&
+   if(nLen <= PKA_MAX_ROS && pLen <= (nLen / 2) && qLen <= (nLen / 2) &&
       dpLen <= (nLen / 2) && dqLen <= (nLen / 2) && qinvLen <= (nLen / 2))
    {
-      HAL_StatusTypeDef status;
-      PKA_RSACRTExpInTypeDef rsaCrtExpIn;
-
       //Acquire exclusive access to the PKA module
       osAcquireMutex(&stm32u5xxCryptoMutex);
 
-      //Copy private key
-      mpiWriteRaw(&key->p, rsaArgs.p, nLen / 2);
-      mpiWriteRaw(&key->q, rsaArgs.q, nLen / 2);
-      mpiWriteRaw(&key->dp, rsaArgs.dp, nLen / 2);
-      mpiWriteRaw(&key->dq, rsaArgs.dq, nLen / 2);
-      mpiWriteRaw(&key->qinv, rsaArgs.qinv, nLen / 2);
+      //Specify the length of the operand, in bits
+      PKA->RAM[PKA_RSA_CRT_EXP_IN_MOD_NB_BITS] = nLen;
+      PKA->RAM[PKA_RSA_CRT_EXP_IN_MOD_NB_BITS + 1] = 0;
 
-      //Copy ciphertext representative
-      mpiWriteRaw(c, rsaArgs.a, nLen);
+      //Load input arguments into the PKA internal RAM
+      pkaImportMpi(&key->p, nLen / 2, PKA_RSA_CRT_EXP_IN_PRIME_P);
+      pkaImportMpi(&key->q, nLen / 2, PKA_RSA_CRT_EXP_IN_PRIME_Q);
+      pkaImportMpi(&key->dp, nLen / 2, PKA_RSA_CRT_EXP_IN_DP_CRT);
+      pkaImportMpi(&key->dq, nLen / 2, PKA_RSA_CRT_EXP_IN_DQ_CRT);
+      pkaImportMpi(&key->qinv, nLen / 2, PKA_RSA_CRT_EXP_IN_QINV_CRT);
+      pkaImportMpi(c, nLen, PKA_RSA_CRT_EXP_IN_EXPONENT_BASE);
 
-      //Set input parameters
-      rsaCrtExpIn.size = nLen;
-      rsaCrtExpIn.pOpDp = rsaArgs.dp;
-      rsaCrtExpIn.pOpDq = rsaArgs.dq;
-      rsaCrtExpIn.pOpQinv = rsaArgs.qinv;
-      rsaCrtExpIn.pPrimeP = rsaArgs.p;
-      rsaCrtExpIn.pPrimeQ = rsaArgs.q;
-      rsaCrtExpIn.popA = rsaArgs.a;
+      //Disable interrupts
+      PKA->CR &= ~(PKA_CR_ADDRERRIE | PKA_CR_RAMERRIE | PKA_CR_PROCENDIE);
 
-      //Perform modular exponentiation (with CRT)
-      status = HAL_PKA_RSACRTExp(&PKA_Handle, &rsaCrtExpIn, HAL_MAX_DELAY);
+      //Write in the MODE field of PKA_CR register, specifying the operation
+      //which is to be executed
+      temp = PKA->CR & ~PKA_CR_MODE;
+      PKA->CR = temp | (PKA_CR_MODE_RSA_CRT_EXP << PKA_CR_MODE_Pos);
 
-      //Check status code
-      if(status == HAL_OK)
+      //Then assert the START bit in PKA_CR register
+      PKA->CR |= PKA_CR_START;
+
+      //Wait until the PROCENDF bit in the PKA_SR register is set to 1,
+      //indicating that the computation is complete
+      while((PKA->SR & PKA_SR_PROCENDF) == 0)
       {
-         //Get the result of the modular exponentiation
-         HAL_PKA_RSACRTExp_GetResult(&PKA_Handle, rsaArgs.a);
-
-         //Copy the message representative
-         error = mpiReadRaw(m, rsaArgs.a, nLen);
-      }
-      else
-      {
-         //Report an error
-         error = ERROR_FAILURE;
       }
 
-      //Clear PKA RAM
-      HAL_PKA_RAMReset(&PKA_Handle);
+      //Read the result data from the PKA internal RAM
+      error = pkaExportMpi(m, nLen, PKA_RSA_CRT_EXP_OUT_RESULT);
+
+      //Then clear PROCENDF bit by setting PROCENDFC bit in PKA_CLRFR
+      PKA->CLRFR = PKA_CLRFR_PROCENDFC;
 
       //Release exclusive access to the PKA module
       osReleaseMutex(&stm32u5xxCryptoMutex);
@@ -313,89 +446,97 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    size_t modLen;
    size_t orderLen;
    size_t scalarLen;
-   HAL_StatusTypeDef status;
-   PKA_ECCMulInTypeDef eccMulIn;
-   PKA_ECCMulOutTypeDef eccMulOut;
+   uint32_t temp;
 
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&params->p);
-   //Retrieve the length of the base point order, in bytes
-   orderLen = mpiGetByteLength(&params->q);
+   //Retrieve the length of the modulus, in bits
+   modLen = mpiGetBitLength(&params->p);
+   //Retrieve the length of the base point order, in bits
+   orderLen = mpiGetBitLength(&params->q);
 
-   //Retrieve the length of the scalar, in bytes
-   scalarLen = mpiGetByteLength(d);
+   //Retrieve the length of the scalar, in bits
+   scalarLen = mpiGetBitLength(d);
    scalarLen = MAX(scalarLen, orderLen);
 
    //Check the length of the operands
-   if(modLen <= STM32U5XX_MAX_EOS && scalarLen <= STM32U5XX_MAX_EOS)
+   if(modLen <= PKA_MAX_EOS && scalarLen <= PKA_MAX_EOS)
    {
       //Acquire exclusive access to the PKA module
       osAcquireMutex(&stm32u5xxCryptoMutex);
 
-      //Copy domain parameters
-      mpiWriteRaw(&params->p, eccArgs.p, modLen);
-      mpiWriteRaw(&params->a, eccArgs.a, modLen);
-      mpiWriteRaw(&params->b, eccArgs.b, modLen);
-      mpiWriteRaw(&params->q, eccArgs.q, scalarLen);
+      //Specify the length of the modulus, in bits
+      PKA->RAM[PKA_ECC_SCALAR_MUL_IN_OP_NB_BITS] = modLen;
+      PKA->RAM[PKA_ECC_SCALAR_MUL_IN_OP_NB_BITS + 1] = 0;
 
-      //Copy scalar
-      mpiWriteRaw(d, eccArgs.d, scalarLen);
+      //Specify the length of the scalar, in bits
+      PKA->RAM[PKA_ECC_SCALAR_MUL_IN_EXP_NB_BITS] = scalarLen;
+      PKA->RAM[PKA_ECC_SCALAR_MUL_IN_EXP_NB_BITS + 1] = 0;
 
-      //Copy input point
-      mpiWriteRaw(&s->x, eccArgs.gx, modLen);
-      mpiWriteRaw(&s->y, eccArgs.gy, modLen);
+      //Set the sign of the coefficient A
+      PKA->RAM[PKA_ECC_SCALAR_MUL_IN_A_COEFF_SIGN] = 0;
+      PKA->RAM[PKA_ECC_SCALAR_MUL_IN_A_COEFF_SIGN + 1] = 0;
 
-      //Set input parameters
-      eccMulIn.scalarMulSize = scalarLen;
-      eccMulIn.modulusSize = modLen;
-      eccMulIn.coefSign = 0;
-      eccMulIn.coefA = eccArgs.a;
-      eccMulIn.coefB = eccArgs.b;
-      eccMulIn.modulus = eccArgs.p;
-      eccMulIn.pointX = eccArgs.gx;
-      eccMulIn.pointY = eccArgs.gy;
-      eccMulIn.scalarMul = eccArgs.d;
-      eccMulIn.primeOrder = eccArgs.q;
+      //Load input arguments into the PKA internal RAM
+      pkaImportMpi(&params->p, modLen, PKA_ECC_SCALAR_MUL_IN_MOD_GF);
+      pkaImportMpi(&params->a, modLen, PKA_ECC_SCALAR_MUL_IN_A_COEFF);
+      pkaImportMpi(&params->b, modLen, PKA_ECC_SCALAR_MUL_IN_B_COEFF);
+      pkaImportMpi(&params->q, scalarLen, PKA_ECC_SCALAR_MUL_IN_N_PRIME_ORDER);
+      pkaImportMpi(d, scalarLen, PKA_ECC_SCALAR_MUL_IN_K);
+      pkaImportMpi(&s->x, modLen, PKA_ECC_SCALAR_MUL_IN_INITIAL_POINT_X);
+      pkaImportMpi(&s->y, modLen, PKA_ECC_SCALAR_MUL_IN_INITIAL_POINT_Y);
 
-      //Perform scalar multiplication
-      status = HAL_PKA_ECCMul(&PKA_Handle, &eccMulIn, HAL_MAX_DELAY);
+      //Clear error code
+      PKA->RAM[PKA_ECC_SCALAR_MUL_OUT_ERROR] = PKA_STATUS_INVALID;
 
-      //Check status code
-      if(status == HAL_OK)
+      //Disable interrupts
+      PKA->CR &= ~(PKA_CR_ADDRERRIE | PKA_CR_RAMERRIE | PKA_CR_PROCENDIE);
+
+      //Write in the MODE field of PKA_CR register, specifying the operation
+      //which is to be executed
+      temp = PKA->CR & ~PKA_CR_MODE;
+      PKA->CR = temp | (PKA_CR_MODE_ECC_MUL << PKA_CR_MODE_Pos);
+
+      //Then assert the START bit in PKA_CR register
+      PKA->CR |= PKA_CR_START;
+
+      //Wait until the PROCENDF bit in the PKA_SR register is set to 1,
+      //indicating that the computation is complete
+      while((PKA->SR & PKA_SR_PROCENDF) == 0)
       {
-         //Set output parameters
-         eccMulOut.modulusSize = modLen;
-         eccMulOut.ptX = eccArgs.qx;
-         eccMulOut.ptY = eccArgs.qy;
+      }
 
-         //Get the output point
-         HAL_PKA_ECCMul_GetResult(&PKA_Handle, &eccMulOut);
-
-         //Copy the x-coordinate of the result
-         error = mpiReadRaw(&r->x, eccArgs.qx, modLen);
-
-         //Check status code
-         if(!error)
-         {
-            //Copy the y-coordinate of the result
-            error = mpiReadRaw(&r->y, eccArgs.qy, modLen);
-         }
-
-         //Check status code
-         if(!error)
-         {
-            //Set the z-coordinate of the result
-            error = mpiSetValue(&r->z, 1);
-         }
+      //Successful computation?
+      if(PKA->RAM[PKA_ECC_SCALAR_MUL_OUT_ERROR] == PKA_STATUS_SUCCESS)
+      {
+         error = NO_ERROR;
       }
       else
       {
-         //Report an error
          error = ERROR_FAILURE;
       }
 
-      //Clear PKA RAM
-      HAL_PKA_RAMReset(&PKA_Handle);
+      //Check status code
+      if(!error)
+      {
+         //Copy the x-coordinate of the result
+         error = pkaExportMpi(&r->x, modLen, PKA_ECC_SCALAR_MUL_OUT_RESULT_X);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Copy the y-coordinate of the result
+         error = pkaExportMpi(&r->y, modLen, PKA_ECC_SCALAR_MUL_OUT_RESULT_Y);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Set the z-coordinate of the result
+         error = mpiSetValue(&r->z, 1);
+      }
+
+      //Then clear PROCENDF bit by setting PROCENDFC bit in PKA_CLRFR
+      PKA->CLRFR = PKA_CLRFR_PROCENDFC;
 
       //Release exclusive access to the PKA module
       osReleaseMutex(&stm32u5xxCryptoMutex);
@@ -430,22 +571,20 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    error_t error;
    size_t modLen;
    size_t orderLen;
+   uint32_t temp;
    Mpi k;
-   HAL_StatusTypeDef status;
-   PKA_ECDSASignInTypeDef ecdsaSignIn;
-   PKA_ECDSASignOutTypeDef ecdsaSignOut;
 
    //Check parameters
    if(params == NULL || privateKey == NULL || digest == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&params->p);
-   //Retrieve the length of the base point order, in bytes
-   orderLen = mpiGetByteLength(&params->q);
+   //Retrieve the length of the modulus, in bits
+   modLen = mpiGetBitLength(&params->p);
+   //Retrieve the length of the base point order, in bits
+   orderLen = mpiGetBitLength(&params->q);
 
    //Check the length of the operands
-   if(modLen > STM32U5XX_MAX_EOS || orderLen > STM32U5XX_MAX_EOS)
+   if(modLen > PKA_MAX_EOS || orderLen > PKA_MAX_EOS)
       return ERROR_FAILURE;
 
    //Initialize multiple precision integers
@@ -460,73 +599,79 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
       //Acquire exclusive access to the PKA module
       osAcquireMutex(&stm32u5xxCryptoMutex);
 
-      //Copy domain parameters
-      mpiWriteRaw(&params->p, eccArgs.p, modLen);
-      mpiWriteRaw(&params->a, eccArgs.a, modLen);
-      mpiWriteRaw(&params->b, eccArgs.b, modLen);
-      mpiWriteRaw(&params->g.x, eccArgs.gx, modLen);
-      mpiWriteRaw(&params->g.y, eccArgs.gy, modLen);
-      mpiWriteRaw(&params->q, eccArgs.q, orderLen);
+      //Specify the length of the modulus, in bits
+      PKA->RAM[PKA_ECDSA_SIGN_IN_MOD_NB_BITS] = modLen;
+      PKA->RAM[PKA_ECDSA_SIGN_IN_MOD_NB_BITS + 1] = 0;
 
-      //Copy private key
-      mpiWriteRaw(&privateKey->d, eccArgs.d, orderLen);
+      //Specify the length of the base point order, in bits
+      PKA->RAM[PKA_ECDSA_SIGN_IN_ORDER_NB_BITS] = orderLen;
+      PKA->RAM[PKA_ECDSA_SIGN_IN_ORDER_NB_BITS + 1] = 0;
 
-      //Copy random integer
-      mpiWriteRaw(&k, eccArgs.k, orderLen);
+      //Set the sign of the coefficient A
+      PKA->RAM[PKA_ECDSA_SIGN_IN_A_COEFF_SIGN] = 0;
+      PKA->RAM[PKA_ECDSA_SIGN_IN_A_COEFF_SIGN + 1] = 0;
+
+      //Load input arguments into the PKA internal RAM
+      pkaImportMpi(&params->p, modLen, PKA_ECDSA_SIGN_IN_MOD_GF);
+      pkaImportMpi(&params->a, modLen, PKA_ECDSA_SIGN_IN_A_COEFF);
+      pkaImportMpi(&params->b, modLen, PKA_ECDSA_SIGN_IN_B_COEFF);
+      pkaImportMpi(&params->g.x, modLen, PKA_ECDSA_SIGN_IN_INITIAL_POINT_X);
+      pkaImportMpi(&params->g.y, modLen, PKA_ECDSA_SIGN_IN_INITIAL_POINT_Y);
+      pkaImportMpi(&params->q, orderLen, PKA_ECDSA_SIGN_IN_ORDER_N);
+      pkaImportMpi(&privateKey->d, orderLen, PKA_ECDSA_SIGN_IN_PRIVATE_KEY_D);
+      pkaImportMpi(&k, orderLen, PKA_ECDSA_SIGN_IN_K);
 
       //Keep the leftmost bits of the hash value
-      digestLen = MIN(digestLen, orderLen);
+      digestLen = MIN(digestLen, (orderLen + 7) / 8);
+      //Load the hash value into the PKA internal RAM
+      pkaImportArray(digest, digestLen, orderLen, PKA_ECDSA_SIGN_IN_HASH_E);
 
-      //Pad the digest with leading zeroes if necessary
-      osMemset(eccArgs.h, 0, orderLen);
-      osMemcpy(eccArgs.h + orderLen - digestLen, digest, digestLen);
+      //Clear error code
+      PKA->RAM[PKA_ECDSA_SIGN_OUT_ERROR] = PKA_STATUS_INVALID;
 
-      //Set input parameters
-      ecdsaSignIn.primeOrderSize = orderLen;
-      ecdsaSignIn.modulusSize = modLen;
-      ecdsaSignIn.coefSign = 0;
-      ecdsaSignIn.coef = eccArgs.a;
-      ecdsaSignIn.coefB = eccArgs.b;
-      ecdsaSignIn.modulus = eccArgs.p;
-      ecdsaSignIn.integer = eccArgs.k;
-      ecdsaSignIn.basePointX = eccArgs.gx;
-      ecdsaSignIn.basePointY = eccArgs.gy;
-      ecdsaSignIn.hash = eccArgs.h;
-      ecdsaSignIn.privateKey = eccArgs.d;
-      ecdsaSignIn.primeOrder = eccArgs.q;
+      //Disable interrupts
+      PKA->CR &= ~(PKA_CR_ADDRERRIE | PKA_CR_RAMERRIE | PKA_CR_PROCENDIE);
 
-      //Generate ECDSA signature
-      status = HAL_PKA_ECDSASign(&PKA_Handle, &ecdsaSignIn, HAL_MAX_DELAY);
+      //Write in the MODE field of PKA_CR register, specifying the operation
+      //which is to be executed
+      temp = PKA->CR & ~PKA_CR_MODE;
+      PKA->CR = temp | (PKA_CR_MODE_ECDSA_SIGN << PKA_CR_MODE_Pos);
 
-      //Check status code
-      if(status == HAL_OK)
+      //Then assert the START bit in PKA_CR register
+      PKA->CR |= PKA_CR_START;
+
+      //Wait until the PROCENDF bit in the PKA_SR register is set to 1,
+      //indicating that the computation is complete
+      while((PKA->SR & PKA_SR_PROCENDF) == 0)
       {
-         //Set output parameters
-         ecdsaSignOut.primeOrderSize = orderLen;
-         ecdsaSignOut.RSign = eccArgs.r;
-         ecdsaSignOut.SSign = eccArgs.s;
+      }
 
-         //Get the resulting ECDSA signature
-         HAL_PKA_ECDSASign_GetResult(&PKA_Handle, &ecdsaSignOut, NULL);
-
-         //Copy integer R
-         error = mpiReadRaw(&signature->r, eccArgs.r, orderLen);
-
-         //Check status code
-         if(!error)
-         {
-            //Copy integer S
-            error = mpiReadRaw(&signature->s, eccArgs.s, orderLen);
-         }
+      //Successful computation?
+      if(PKA->RAM[PKA_ECDSA_SIGN_OUT_ERROR] == PKA_STATUS_SUCCESS)
+      {
+         error = NO_ERROR;
       }
       else
       {
-         //Report an error
          error = ERROR_FAILURE;
       }
 
-      //Clear PKA RAM
-      HAL_PKA_RAMReset(&PKA_Handle);
+      //Check status code
+      if(!error)
+      {
+         //Copy integer R
+         error = pkaExportMpi(&signature->r, orderLen, PKA_ECDSA_SIGN_OUT_SIGNATURE_R);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Copy integer S
+         error = pkaExportMpi(&signature->s, orderLen, PKA_ECDSA_SIGN_OUT_SIGNATURE_S);
+      }
+
+      //Then clear PROCENDF bit by setting PROCENDFC bit in PKA_CLRFR
+      PKA->CLRFR = PKA_CLRFR_PROCENDFC;
 
       //Release exclusive access to the PKA module
       osReleaseMutex(&stm32u5xxCryptoMutex);
@@ -557,8 +702,7 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    error_t error;
    size_t modLen;
    size_t orderLen;
-   HAL_StatusTypeDef status;
-   PKA_ECDSAVerifInTypeDef ecdsaVerifIn;
+   uint32_t temp;
 
    //Check parameters
    if(params == NULL || publicKey == NULL || digest == NULL || signature == NULL)
@@ -580,79 +724,78 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
       return ERROR_INVALID_SIGNATURE;
    }
 
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&params->p);
-   //Retrieve the length of the base point order, in bytes
-   orderLen = mpiGetByteLength(&params->q);
+   //Retrieve the length of the modulus, in bits
+   modLen = mpiGetBitLength(&params->p);
+   //Retrieve the length of the base point order, in bits
+   orderLen = mpiGetBitLength(&params->q);
 
    //Check the length of the operands
-   if(modLen > STM32U5XX_MAX_EOS || orderLen > STM32U5XX_MAX_EOS)
+   if(modLen > PKA_MAX_EOS || orderLen > PKA_MAX_EOS)
       return ERROR_FAILURE;
 
    //Acquire exclusive access to the PKA module
    osAcquireMutex(&stm32u5xxCryptoMutex);
 
-   //Copy domain parameters
-   mpiWriteRaw(&params->p, eccArgs.p, modLen);
-   mpiWriteRaw(&params->a, eccArgs.a, modLen);
-   mpiWriteRaw(&params->g.x, eccArgs.gx, modLen);
-   mpiWriteRaw(&params->g.y, eccArgs.gy, modLen);
-   mpiWriteRaw(&params->q, eccArgs.q, orderLen);
+   //Specify the length of the modulus, in bits
+   PKA->RAM[PKA_ECDSA_VERIF_IN_MOD_NB_BITS] = modLen;
+   PKA->RAM[PKA_ECDSA_VERIF_IN_MOD_NB_BITS + 1] = 0;
 
-   //Copy public key
-   mpiWriteRaw(&publicKey->q.x, eccArgs.qx, modLen);
-   mpiWriteRaw(&publicKey->q.y, eccArgs.qy, modLen);
+   //Specify the length of the base point order, in bits
+   PKA->RAM[PKA_ECDSA_VERIF_IN_ORDER_NB_BITS] = orderLen;
+   PKA->RAM[PKA_ECDSA_VERIF_IN_ORDER_NB_BITS + 1] = 0;
 
-   //Copy the signature
-   mpiWriteRaw(&signature->r, eccArgs.r, orderLen);
-   mpiWriteRaw(&signature->s, eccArgs.s, orderLen);
+   //Set the sign of the coefficient A
+   PKA->RAM[PKA_ECDSA_VERIF_IN_A_COEFF_SIGN] = 0;
+   PKA->RAM[PKA_ECDSA_VERIF_IN_A_COEFF_SIGN + 1] = 0;
+
+   //Load input arguments into the PKA internal RAM
+   pkaImportMpi(&params->p, modLen, PKA_ECDSA_VERIF_IN_MOD_GF);
+   pkaImportMpi(&params->a, modLen, PKA_ECDSA_VERIF_IN_A_COEFF);
+   pkaImportMpi(&params->g.x, modLen, PKA_ECDSA_VERIF_IN_INITIAL_POINT_X);
+   pkaImportMpi(&params->g.y, modLen, PKA_ECDSA_VERIF_IN_INITIAL_POINT_Y);
+   pkaImportMpi(&params->q, orderLen, PKA_ECDSA_VERIF_IN_ORDER_N);
+   pkaImportMpi(&publicKey->q.x, modLen, PKA_ECDSA_VERIF_IN_PUBLIC_KEY_POINT_X);
+   pkaImportMpi(&publicKey->q.y, modLen, PKA_ECDSA_VERIF_IN_PUBLIC_KEY_POINT_Y);
+   pkaImportMpi(&signature->r, orderLen, PKA_ECDSA_VERIF_IN_SIGNATURE_R);
+   pkaImportMpi(&signature->s, orderLen, PKA_ECDSA_VERIF_IN_SIGNATURE_S);
 
    //Keep the leftmost bits of the hash value
-   digestLen = MIN(digestLen, orderLen);
+   digestLen = MIN(digestLen, (orderLen + 7) / 8);
+   //Load the hash value into the PKA internal RAM
+   pkaImportArray(digest, digestLen, orderLen, PKA_ECDSA_VERIF_IN_HASH_E);
 
-   //Pad the digest with leading zeroes if necessary
-   osMemset(eccArgs.h, 0, orderLen);
-   osMemcpy(eccArgs.h + orderLen - digestLen, digest, digestLen);
+   //Clear result
+   PKA->RAM[PKA_ECDSA_VERIF_OUT_RESULT] = PKA_STATUS_INVALID;
 
-   //Set input parameters
-   ecdsaVerifIn.primeOrderSize = orderLen;
-   ecdsaVerifIn.modulusSize = modLen;
-   ecdsaVerifIn.coefSign = 0;
-   ecdsaVerifIn.coef = eccArgs.a;
-   ecdsaVerifIn.modulus = eccArgs.p;
-   ecdsaVerifIn.basePointX = eccArgs.gx;
-   ecdsaVerifIn.basePointY = eccArgs.gy;
-   ecdsaVerifIn.pPubKeyCurvePtX = eccArgs.qx;
-   ecdsaVerifIn.pPubKeyCurvePtY = eccArgs.qy;
-   ecdsaVerifIn.RSign = eccArgs.r;
-   ecdsaVerifIn.SSign = eccArgs.s;
-   ecdsaVerifIn.hash = eccArgs.h;
-   ecdsaVerifIn.primeOrder = eccArgs.q;
+   //Disable interrupts
+   PKA->CR &= ~(PKA_CR_ADDRERRIE | PKA_CR_RAMERRIE | PKA_CR_PROCENDIE);
 
-   //Verify ECDSA signature
-   status = HAL_PKA_ECDSAVerif(&PKA_Handle, &ecdsaVerifIn, HAL_MAX_DELAY);
+   //Write in the MODE field of PKA_CR register, specifying the operation
+   //which is to be executed
+   temp = PKA->CR & ~PKA_CR_MODE;
+   PKA->CR = temp | (PKA_CR_MODE_ECDSA_VERIFY << PKA_CR_MODE_Pos);
 
-   //Check status code
-   if(status == HAL_OK)
+   //Then assert the START bit in PKA_CR register
+   PKA->CR |= PKA_CR_START;
+
+   //Wait until the PROCENDF bit in the PKA_SR register is set to 1,
+   //indicating that the computation is complete
+   while((PKA->SR & PKA_SR_PROCENDF) == 0)
    {
-      //Test if the ECDSA signature is valid
-      if(HAL_PKA_ECDSAVerif_IsValidSignature(&PKA_Handle) == 1)
-      {
-         error = NO_ERROR;
-      }
-      else
-      {
-         error = ERROR_INVALID_SIGNATURE;
-      }
+   }
+
+   //Test if the ECDSA signature is valid
+   if(PKA->RAM[PKA_ECDSA_VERIF_OUT_RESULT] == PKA_STATUS_SUCCESS)
+   {
+      error = NO_ERROR;
    }
    else
    {
-      //Report an error
-      error = ERROR_FAILURE;
+      error = ERROR_INVALID_SIGNATURE;
    }
 
-   //Clear PKA RAM
-   HAL_PKA_RAMReset(&PKA_Handle);
+   //Then clear PROCENDF bit by setting PROCENDFC bit in PKA_CLRFR
+   PKA->CLRFR = PKA_CLRFR_PROCENDFC;
 
    //Release exclusive access to the PKA module
    osReleaseMutex(&stm32u5xxCryptoMutex);
@@ -661,4 +804,284 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    return error;
 }
 
+
+#if (X25519_SUPPORT == ENABLED || ED25519_SUPPORT == ENABLED)
+
+/**
+ * @brief Modular multiplication
+ * @param[out] r Resulting integer R = (A * B) mod p
+ * @param[in] a An integer such as 0 <= A < p
+ * @param[in] b An integer such as 0 <= B < p
+ **/
+
+void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
+{
+   uint_t i;
+   uint64_t temp;
+   uint32_t u[16];
+
+   //Acquire exclusive access to the PKA module
+   osAcquireMutex(&stm32u5xxCryptoMutex);
+
+   //Specify the length of the operands, in bits
+   PKA->RAM[PKA_ARITHMETIC_MUL_NB_BITS] = 255;
+
+   //Load the first operand into the PKA internal RAM
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1] = a[0];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 1] = a[1];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 2] = a[2];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 3] = a[3];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 4] = a[4];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 5] = a[5];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 6] = a[6];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 7] = a[7];
+
+   //An additional 64-bit word with all bits equal to zero must be added
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 8] = 0;
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 9] = 0;
+
+   //Load the second operand into the PKA internal RAM
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2] = b[0];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 1] = b[1];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 2] = b[2];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 3] = b[3];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 4] = b[4];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 5] = b[5];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 6] = b[6];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 7] = b[7];
+
+   //An additional 64-bit word with all bits equal to zero must be added
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 8] = 0;
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 9] = 0;
+
+   //Disable interrupts
+   PKA->CR &= ~(PKA_CR_ADDRERRIE | PKA_CR_RAMERRIE | PKA_CR_PROCENDIE);
+
+   //Write in the MODE field of PKA_CR register, specifying the operation
+   //which is to be executed
+   temp = PKA->CR & ~PKA_CR_MODE;
+   PKA->CR = temp | (PKA_CR_MODE_ARITHMETIC_MUL << PKA_CR_MODE_Pos);
+
+   //Then assert the START bit in PKA_CR register
+   PKA->CR |= PKA_CR_START;
+
+   //Wait until the PROCENDF bit in the PKA_SR register is set to 1,
+   //indicating that the computation is complete
+   while((PKA->SR & PKA_SR_PROCENDF) == 0)
+   {
+   }
+
+   //Read the result data from the PKA internal RAM
+   u[0] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT];
+   u[1] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 1];
+   u[2] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 2];
+   u[3] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 3];
+   u[4] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 4];
+   u[5] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 5];
+   u[6] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 6];
+   u[7] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 7];
+   u[8] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 8];
+   u[9] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 9];
+   u[10] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 10];
+   u[11] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 11];
+   u[12] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 12];
+   u[13] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 13];
+   u[14] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 14];
+   u[15] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 15];
+
+   //Then clear PROCENDF bit by setting PROCENDFC bit in PKA_CLRFR
+   PKA->CLRFR = PKA_CLRFR_PROCENDFC;
+
+   //Release exclusive access to the PKA module
+   osReleaseMutex(&stm32u5xxCryptoMutex);
+
+   //Reduce bit 255 (2^255 = 19 mod p)
+   temp = (u[7] >> 31) * 19;
+   //Mask the most significant bit
+   u[7] &= 0x7FFFFFFF;
+
+   //Perform fast modular reduction (first pass)
+   for(i = 0; i < 8; i++)
+   {
+      temp += u[i];
+      temp += (uint64_t) u[i + 8] * 38;
+      u[i] = temp & 0xFFFFFFFF;
+      temp >>= 32;
+   }
+
+   //Reduce bit 256 (2^256 = 38 mod p)
+   temp *= 38;
+   //Reduce bit 255 (2^255 = 19 mod p)
+   temp += (u[7] >> 31) * 19;
+   //Mask the most significant bit
+   u[7] &= 0x7FFFFFFF;
+
+   //Perform fast modular reduction (second pass)
+   for(i = 0; i < 8; i++)
+   {
+      temp += u[i];
+      u[i] = temp & 0xFFFFFFFF;
+      temp >>= 32;
+   }
+
+   //Reduce non-canonical values
+   curve25519Red(r, u);
+}
+
+#endif
+#if (X448_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
+
+/**
+ * @brief Modular multiplication
+ * @param[out] r Resulting integer R = (A * B) mod p
+ * @param[in] a An integer such as 0 <= A < p
+ * @param[in] b An integer such as 0 <= B < p
+ **/
+
+void curve448Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
+{
+   uint_t i;
+   uint64_t c;
+   uint64_t temp;
+   uint32_t u[28];
+
+   //Acquire exclusive access to the PKA module
+   osAcquireMutex(&stm32u5xxCryptoMutex);
+
+   //Specify the length of the operands, in bits
+   PKA->RAM[PKA_ARITHMETIC_MUL_NB_BITS] = 448;
+
+   //Load the first operand into the PKA internal RAM
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1] = a[0];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 1] = a[1];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 2] = a[2];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 3] = a[3];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 4] = a[4];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 5] = a[5];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 6] = a[6];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 7] = a[7];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 8] = a[8];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 9] = a[9];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 10] = a[10];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 11] = a[11];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 12] = a[12];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 13] = a[13];
+
+   //An additional 64-bit word with all bits equal to zero must be added
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 14] = 0;
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP1 + 15] = 0;
+
+   //Load the second operand into the PKA internal RAM
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2] = b[0];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 1] = b[1];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 2] = b[2];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 3] = b[3];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 4] = b[4];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 5] = b[5];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 6] = b[6];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 7] = b[7];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 8] = b[8];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 9] = b[9];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 10] = b[10];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 11] = b[11];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 12] = b[12];
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 13] = b[13];
+
+   //An additional 64-bit word with all bits equal to zero must be added
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 14] = 0;
+   PKA->RAM[PKA_ARITHMETIC_MUL_IN_OP2 + 15] = 0;
+
+   //Disable interrupts
+   PKA->CR &= ~(PKA_CR_ADDRERRIE | PKA_CR_RAMERRIE | PKA_CR_PROCENDIE);
+
+   //Write in the MODE field of PKA_CR register, specifying the operation
+   //which is to be executed
+   temp = PKA->CR & ~PKA_CR_MODE;
+   PKA->CR = temp | (PKA_CR_MODE_ARITHMETIC_MUL << PKA_CR_MODE_Pos);
+
+   //Then assert the START bit in PKA_CR register
+   PKA->CR |= PKA_CR_START;
+
+   //Wait until the PROCENDF bit in the PKA_SR register is set to 1,
+   //indicating that the computation is complete
+   while((PKA->SR & PKA_SR_PROCENDF) == 0)
+   {
+   }
+
+   //Read the result data from the PKA internal RAM
+   u[0] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT];
+   u[1] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 1];
+   u[2] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 2];
+   u[3] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 3];
+   u[4] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 4];
+   u[5] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 5];
+   u[6] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 6];
+   u[7] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 7];
+   u[8] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 8];
+   u[9] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 9];
+   u[10] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 10];
+   u[11] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 11];
+   u[12] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 12];
+   u[13] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 13];
+   u[14] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 14];
+   u[15] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 15];
+   u[16] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 16];
+   u[17] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 17];
+   u[18] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 18];
+   u[19] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 19];
+   u[20] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 20];
+   u[21] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 21];
+   u[22] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 22];
+   u[23] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 23];
+   u[24] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 24];
+   u[25] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 25];
+   u[26] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 26];
+   u[27] = PKA->RAM[PKA_ARITHMETIC_MUL_OUT_RESULT + 27];
+
+   //Then clear PROCENDF bit by setting PROCENDFC bit in PKA_CLRFR
+   PKA->CLRFR = PKA_CLRFR_PROCENDFC;
+
+   //Release exclusive access to the PKA module
+   osReleaseMutex(&stm32u5xxCryptoMutex);
+
+   //Perform fast modular reduction (first pass)
+   for(temp = 0, i = 0; i < 7; i++)
+   {
+      temp += u[i];
+      temp += u[i + 14];
+      temp += u[i + 21];
+      u[i] = temp & 0xFFFFFFFF;
+      temp >>= 32;
+   }
+
+   for(i = 7; i < 14; i++)
+   {
+      temp += u[i];
+      temp += u[i + 7];
+      temp += u[i + 14];
+      temp += u[i + 14];
+      u[i] = temp & 0xFFFFFFFF;
+      temp >>= 32;
+   }
+
+   //Perform fast modular reduction (second pass)
+   for(c = temp, i = 0; i < 7; i++)
+   {
+      temp += u[i];
+      u[i] = temp & 0xFFFFFFFF;
+      temp >>= 32;
+   }
+
+   for(temp += c, i = 7; i < 14; i++)
+   {
+      temp += u[i];
+      u[i] = temp & 0xFFFFFFFF;
+      temp >>= 32;
+   }
+
+   //Reduce non-canonical values
+   curve448Red(r, u, (uint32_t) temp);
+}
+
+#endif
 #endif

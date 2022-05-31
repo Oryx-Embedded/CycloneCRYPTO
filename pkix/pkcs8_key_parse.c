@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -867,7 +867,7 @@ error_t pkcs8ImportRsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
 
 
 /**
- * @brief Import an DSA private key
+ * @brief Import a DSA private key
  * @param[in] privateKeyInfo Private key information
  * @param[out] privateKey DSA private key
  * @return Error code

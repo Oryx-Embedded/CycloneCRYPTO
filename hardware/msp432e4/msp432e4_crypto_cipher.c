@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -39,13 +39,9 @@
 #include "core/crypto.h"
 #include "hardware/msp432e4/msp432e4_crypto.h"
 #include "hardware/msp432e4/msp432e4_crypto_cipher.h"
-#include "cipher/des.h"
-#include "cipher/des3.h"
-#include "cipher/aes.h"
-#include "cipher_mode/ecb.h"
-#include "cipher_mode/cbc.h"
-#include "cipher_mode/ctr.h"
-#include "aead/gcm.h"
+#include "cipher/cipher_algorithms.h"
+#include "cipher_mode/cipher_modes.h"
+#include "aead/aead_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -77,6 +73,8 @@ void desSetMode(uint32_t mode)
    DES->CTRL = mode;
 }
 
+
+#if (DES_SUPPORT == ENABLED)
 
 /**
  * @brief Perform DES encryption or decryption
@@ -244,6 +242,8 @@ void desDecryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
       DES_CFG_DIR_DECRYPT | DES_CFG_MODE_ECB);
 }
 
+#endif
+#if (DES3_SUPPORT == ENABLED)
 
 /**
  * @brief Perform Triple DES encryption or decryption
@@ -440,6 +440,8 @@ void des3DecryptBlock(Des3Context *context, const uint8_t *input, uint8_t *outpu
       DES_CFG_DIR_DECRYPT | DES_CFG_MODE_ECB);
 }
 
+#endif
+#if (AES_SUPPORT == ENABLED)
 
 /**
  * @brief Set AES operation mode
@@ -717,6 +719,8 @@ void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
       AES_CFG_DIR_DECRYPT | AES_CFG_MODE_ECB);
 }
 
+#endif
+#if (ECB_SUPPORT == ENABLED)
 
 /**
  * @brief ECB encryption
@@ -943,6 +947,8 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    return error;
 }
 
+#endif
+#if (CBC_SUPPORT == ENABLED)
 
 /**
  * @brief CBC encryption
@@ -1198,6 +1204,8 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
    return error;
 }
 
+#endif
+#if (CFB_SUPPORT == ENABLED)
 
 /**
  * @brief CFB encryption
@@ -1498,6 +1506,8 @@ error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
    return error;
 }
 
+#endif
+#if (CTR_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
 
 /**
  * @brief CTR encryption
@@ -1519,7 +1529,6 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    //Initialize status code
    error = NO_ERROR;
 
-#if (AES_SUPPORT == ENABLED)
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
    {
@@ -1545,8 +1554,6 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
       }
    }
    else
-#endif
-   //Unknown cipher algorithm?
    {
       //Check the value of the parameter
       if((m % 8) == 0 && m <= (cipher->blockSize * 8))
@@ -1601,6 +1608,8 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    return error;
 }
 
+#endif
+#if (GCM_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
 
 /**
  * @brief Perform AES-GCM encryption or decryption
@@ -1934,4 +1943,5 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    return (mask == 0) ? NO_ERROR : ERROR_FAILURE;
 }
 
+#endif
 #endif

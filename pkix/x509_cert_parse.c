@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -1684,6 +1684,20 @@ error_t x509ParseExtendedKeyUsage(bool_t critical, const uint8_t *data,
       {
          //Signing OCSP responses
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_OCSP_SIGNING;
+      }
+      //id-kp-secureShellClient?
+      else if(!oidComp(tag.value, tag.length,
+         X509_KP_SSH_CLIENT_OID, sizeof(X509_KP_SSH_CLIENT_OID)))
+      {
+         //The key can be used for a Secure Shell client
+         extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_SSH_CLIENT;
+      }
+      //id-kp-secureShellServer?
+      else if(!oidComp(tag.value, tag.length,
+         X509_KP_SSH_SERVER_OID, sizeof(X509_KP_SSH_SERVER_OID)))
+      {
+         //The key can be used for a Secure Shell server
+         extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_SSH_SERVER;
       }
       //Unknown key purpose?
       else

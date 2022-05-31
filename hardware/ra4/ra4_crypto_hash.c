@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -36,8 +36,7 @@
 #include "core/crypto.h"
 #include "hardware/ra4/ra4_crypto.h"
 #include "hardware/ra4/ra4_crypto_hash.h"
-#include "hash/sha224.h"
-#include "hash/sha256.h"
+#include "hash/hash_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -52,6 +51,8 @@ static const uint8_t padding[64] =
    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
+
+#if (SHA224_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize SHA-224 message digest context
@@ -76,6 +77,8 @@ void sha224Init(Sha224Context *context)
    context->totalSize = 0;
 }
 
+#endif
+#if (SHA256_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize SHA-256 message digest context
@@ -237,4 +240,5 @@ void sha256ProcessBlock(Sha256Context *context)
    osReleaseMutex(&ra4CryptoMutex);
 }
 
+#endif
 #endif

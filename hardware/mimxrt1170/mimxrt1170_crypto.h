@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 #ifndef _MIMXRT1170_CRYPTO_H
@@ -39,11 +39,6 @@
    #define MIMXRT1170_CAAM_BUFFER_SIZE 1024
 #elif (MIMXRT1170_CAAM_BUFFER_SIZE < 256)
    #error MIMXRT1170_CAAM_BUFFER_SIZE parameter is not valid
-#endif
-
-//Name of the section where to place CAAM buffers
-#ifndef MIMXRT1170_CAAM_RAM_SECTION
-   #define MIMXRT1170_CAAM_RAM_SECTION ".caam_ram"
 #endif
 
 //C++ guard

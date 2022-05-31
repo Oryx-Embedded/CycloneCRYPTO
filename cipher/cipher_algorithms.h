@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 #ifndef _CIPHER_ALGORITHMS_H
@@ -97,6 +97,16 @@
 //Trivium cipher support?
 #if (TRIVIUM_SUPPORT == ENABLED)
    #include "cipher/trivium.h"
+#endif
+
+//Salsa20 cipher support?
+#if (SALSA20_SUPPORT == ENABLED)
+   #include "cipher/salsa20.h"
+#endif
+
+//ChaCha cipher support?
+#if (CHACHA_SUPPORT == ENABLED)
+   #include "cipher/chacha.h"
 #endif
 
 //Maximum block size

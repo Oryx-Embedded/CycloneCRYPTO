@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -34,25 +34,16 @@
 //Dependencies
 #include "stm32mp1xx.h"
 #include "stm32mp1xx_hal.h"
-#include "stm32mp1xx_hal_cryp.h"
-#include "stm32mp1xx_hal_cryp_ex.h"
 #include "core/crypto.h"
 #include "hardware/stm32mp1xx/stm32mp1xx_crypto.h"
 #include "hardware/stm32mp1xx/stm32mp1xx_crypto_cipher.h"
-#include "cipher/des.h"
-#include "cipher/des3.h"
-#include "cipher/aes.h"
-#include "cipher_mode/ecb.h"
-#include "cipher_mode/cbc.h"
-#include "cipher_mode/ctr.h"
-#include "aead/gcm.h"
+#include "cipher/cipher_algorithms.h"
+#include "cipher_mode/cipher_modes.h"
+#include "aead/aead_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
 #if (STM32MP1XX_CRYPTO_CIPHER_SUPPORT == ENABLED)
-
-//Global variable
-static CRYP_HandleTypeDef CRYP_Handle;
 
 
 /**
@@ -62,188 +53,101 @@ static CRYP_HandleTypeDef CRYP_Handle;
 
 error_t crypInit(void)
 {
-   HAL_StatusTypeDef status;
-
    //Enable CRYP peripheral clock
    __HAL_RCC_CRYP2_CLK_ENABLE();
 
-   //Set instance
-   CRYP_Handle.Instance = CRYP2;
-
-   //Reset CRYP module
-   status = HAL_CRYP_DeInit(&CRYP_Handle);
-
-   //Return status code
-   return (status == HAL_OK) ? NO_ERROR : ERROR_FAILURE;
+   //Successful processing
+   return NO_ERROR;
 }
 
 
+#if (DES_SUPPORT == ENABLED)
+
 /**
- * @brief Perform encryption or decryption
- * @param[in] context Cipher algorithm context
+ * @brief Perform DES encryption or decryption
+ * @param[in] context DES algorithm context
  * @param[in,out] iv Initialization vector
  * @param[in] input Data to be encrypted/decrypted
  * @param[out] output Data resulting from the encryption/decryption process
  * @param[in] length Total number of data bytes to be processed
- * @param[in] mode Operation mode (TRUE for encryption, FALSE for decryption)
- * @return Error code
+ * @param[in] mode Operation mode
  **/
 
-error_t crypProcessData(void *context, uint8_t *iv, const uint8_t *input,
-   uint8_t *output, size_t length, bool_t mode)
+void desProcessData(DesContext *context, uint8_t *iv, const uint8_t *input,
+   uint8_t *output, size_t length, uint32_t mode)
 {
-   HAL_StatusTypeDef status;
-   uint32_t initVect[4];
+   uint32_t temp;
 
-   //Initialize status code
-   status = HAL_OK;
+   //Acquire exclusive access to the CRYP module
+   osAcquireMutex(&stm32mp1xxCryptoMutex);
 
-   //Check cipher algorithm?
-   if(CRYP_Handle.Init.Algorithm == CRYP_DES_ECB ||
-      CRYP_Handle.Init.Algorithm == CRYP_DES_CBC)
+   //Configure the data type
+   CRYP2->CR = CRYP_CR_DATATYPE_8B;
+
+   //Set encryption key
+   CRYP2->K1LR = context->ks[0];
+   CRYP2->K1RR = context->ks[1];
+
+   //Configure the algorithm and chaining mode
+   CRYP2->CR |= mode;
+
+   //Valid initialization vector?
+   if(iv != NULL)
    {
-      DesContext *desContext;
-
-      //Point to the DES context
-      desContext = (DesContext *) context;
-
-      //Set key
-      CRYP_Handle.Init.pKey = desContext->ks;
-
-      //Valid initialization vector?
-      if(iv != NULL)
-      {
-         //Set the 64-bit value of the initialization vector
-         initVect[0] = LOAD32BE(iv);
-         initVect[1] = LOAD32BE(iv + 4);
-      }
-   }
-   else if(CRYP_Handle.Init.Algorithm == CRYP_TDES_ECB ||
-      CRYP_Handle.Init.Algorithm == CRYP_TDES_CBC)
-   {
-      Des3Context *des3Context;
-
-      //Point to the Triple DES context
-      des3Context = (Des3Context *) context;
-
-      //Set key
-      CRYP_Handle.Init.pKey = des3Context->k1.ks;
-
-      //Valid initialization vector?
-      if(iv != NULL)
-      {
-         //Set the 64-bit value of the initialization vector
-         initVect[0] = LOAD32BE(iv);
-         initVect[1] = LOAD32BE(iv + 4);
-      }
-   }
-   else if(CRYP_Handle.Init.Algorithm == CRYP_AES_ECB ||
-      CRYP_Handle.Init.Algorithm == CRYP_AES_CBC ||
-      CRYP_Handle.Init.Algorithm == CRYP_AES_CTR)
-   {
-      AesContext *aesContext;
-
-      //Point to the AES context
-      aesContext = (AesContext *) context;
-
-      //Set key
-      CRYP_Handle.Init.pKey = aesContext->ek;
-
-      //Valid initialization vector?
-      if(iv != NULL)
-      {
-         //Set the 128-bit value of the initialization vector
-         initVect[0] = LOAD32BE(iv);
-         initVect[1] = LOAD32BE(iv + 4);
-         initVect[2] = LOAD32BE(iv + 8);
-         initVect[3] = LOAD32BE(iv + 12);
-      }
-
-      //Check the length of the key
-      if(aesContext->nr == 10)
-      {
-         //128-bit key
-         CRYP_Handle.Init.KeySize = CRYP_KEYSIZE_128B;
-      }
-      else if(aesContext->nr == 12)
-      {
-         //192-bit key
-         CRYP_Handle.Init.KeySize = CRYP_KEYSIZE_192B;
-      }
-      else if(aesContext->nr == 14)
-      {
-         //256-bit key
-         CRYP_Handle.Init.KeySize = CRYP_KEYSIZE_256B;
-      }
-      else
-      {
-         //Report an error
-         status = HAL_ERROR;
-      }
-   }
-   else
-   {
-      //Unknown cipher algorithm
-      status = HAL_ERROR;
+      //Set initialization vector
+      CRYP2->IV0LR = LOAD32BE(iv);
+      CRYP2->IV0RR = LOAD32BE(iv + 4);
    }
 
-   //Check status code
-   if(status == HAL_OK)
-   {
-      //Set CRYP parameters
-      CRYP_Handle.Instance = CRYP2;
-      CRYP_Handle.Init.DataType = CRYP_DATATYPE_8B;
-      CRYP_Handle.Init.DataWidthUnit = CRYP_DATAWIDTHUNIT_BYTE;
-      CRYP_Handle.Init.KeyIVConfigSkip = CRYP_KEYIVCONFIG_ALWAYS;
-      CRYP_Handle.Init.pInitVect = initVect;
+   //Flush the input and output FIFOs
+   CRYP2->CR |= CRYP_CR_FFLUSH;
+   //Enable the cryptographic processor
+   CRYP2->CR |= CRYP_CR_CRYPEN;
 
-      //Initialize CRYP module
-      status = HAL_CRYP_Init(&CRYP_Handle);
+   //Process data
+   while(length >= DES_BLOCK_SIZE)
+   {
+      //Wait for the input FIFO to be ready to accept data
+      while((CRYP2->SR & CRYP_SR_IFNF) == 0)
+      {
+      }
+
+      //Write the input FIFO
+      CRYP2->DIN = LOAD32LE(input);
+      CRYP2->DIN = LOAD32LE(input + 4);
+
+      //Wait for the output to be ready
+      while((CRYP2->SR & CRYP_SR_OFNE) == 0)
+      {
+      }
+
+      //Read the output FIFO
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output);
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output + 4);
+
+      //Next block
+      input += DES_BLOCK_SIZE;
+      output += DES_BLOCK_SIZE;
+      length -= DES_BLOCK_SIZE;
    }
 
-   //Check status code
-   if(status == HAL_OK)
+   //Valid initialization vector?
+   if(iv != NULL)
    {
-      //Perform encryption or decryption
-      if(mode)
-      {
-         status = HAL_CRYP_Encrypt(&CRYP_Handle, (uint32_t *) input,
-            length, (uint32_t *) output, HAL_MAX_DELAY);
-      }
-      else
-      {
-         status = HAL_CRYP_Decrypt(&CRYP_Handle, (uint32_t *) input,
-            length, (uint32_t *) output, HAL_MAX_DELAY);
-      }
+      //Update the value of the initialization vector
+      temp = CRYP2->IV0LR;
+      STORE32BE(temp, iv);
+      temp = CRYP2->IV0RR;
+      STORE32BE(temp, iv + 4);
    }
 
-   //Check status code
-   if(status == HAL_OK)
-   {
-      //Valid initialization vector?
-      if(iv != NULL)
-      {
-         //Update the value of the initialization vector
-         initVect[0] = CRYP_Handle.Instance->IV0LR;
-         STORE32BE(initVect[0], iv);
-         initVect[1] = CRYP_Handle.Instance->IV0RR;
-         STORE32BE(initVect[1], iv + 4);
+   //Disable the cryptographic processor by clearing the CRYPEN bit
+   CRYP2->CR = 0;
 
-         //128-bit initialization vector?
-         if(CRYP_Handle.Init.Algorithm == CRYP_AES_ECB ||
-            CRYP_Handle.Init.Algorithm == CRYP_AES_CBC ||
-            CRYP_Handle.Init.Algorithm == CRYP_AES_CTR)
-         {
-            initVect[2] = CRYP_Handle.Instance->IV1LR;
-            STORE32BE(initVect[2], iv + 8);
-            initVect[3] = CRYP_Handle.Instance->IV1RR;
-            STORE32BE(initVect[3], iv + 12);
-         }
-      }
-   }
-
-   //Return status code
-   return (status == HAL_OK) ? NO_ERROR : ERROR_FAILURE;
+   //Release exclusive access to the CRYP module
+   osReleaseMutex(&stm32mp1xxCryptoMutex);
 }
 
 
@@ -283,16 +187,9 @@ error_t desInit(DesContext *context, const uint8_t *key, size_t keyLen)
 
 void desEncryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
 {
-   //Acquire exclusive access to the CRYP module
-   osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-   //Set operation mode
-   CRYP_Handle.Init.Algorithm = CRYP_DES_ECB;
-   //Encrypt payload data
-   crypProcessData(context, NULL, input, output, DES_BLOCK_SIZE, TRUE);
-
-   //Release exclusive access to the CRYP module
-   osReleaseMutex(&stm32mp1xxCryptoMutex);
+   //Perform DES encryption
+   desProcessData(context, NULL, input, output, DES_BLOCK_SIZE,
+      CRYP_CR_ALGOMODE_DES_ECB);
 }
 
 
@@ -305,13 +202,100 @@ void desEncryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
 
 void desDecryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
 {
+   //Perform DES decryption
+   desProcessData(context, NULL, input, output, DES_BLOCK_SIZE,
+      CRYP_CR_ALGOMODE_DES_ECB | CRYP_CR_ALGODIR);
+}
+
+#endif
+#if (DES3_SUPPORT == ENABLED)
+
+/**
+ * @brief Perform Triple DES encryption or decryption
+ * @param[in] context Triple DES algorithm context
+ * @param[in,out] iv Initialization vector
+ * @param[in] input Data to be encrypted/decrypted
+ * @param[out] output Data resulting from the encryption/decryption process
+ * @param[in] length Total number of data bytes to be processed
+ * @param[in] mode Operation mode
+ **/
+
+void des3ProcessData(Des3Context *context, uint8_t *iv, const uint8_t *input,
+   uint8_t *output, size_t length, uint32_t mode)
+{
+   uint32_t temp;
+
    //Acquire exclusive access to the CRYP module
    osAcquireMutex(&stm32mp1xxCryptoMutex);
 
-   //Set operation mode
-   CRYP_Handle.Init.Algorithm = CRYP_DES_ECB;
-   //Decrypt payload data
-   crypProcessData(context, NULL, input, output, DES_BLOCK_SIZE, FALSE);
+   //Configure the data type
+   CRYP2->CR = CRYP_CR_DATATYPE_8B;
+
+   //Set encryption key
+   CRYP2->K1LR = context->k1.ks[0];
+   CRYP2->K1RR = context->k1.ks[1];
+   CRYP2->K2LR = context->k2.ks[0];
+   CRYP2->K2RR = context->k2.ks[1];
+   CRYP2->K3LR = context->k3.ks[0];
+   CRYP2->K3RR = context->k3.ks[1];
+
+   //Configure the algorithm and chaining mode
+   CRYP2->CR |= mode;
+
+   //Valid initialization vector?
+   if(iv != NULL)
+   {
+      //Set initialization vector
+      CRYP2->IV0LR = LOAD32BE(iv);
+      CRYP2->IV0RR = LOAD32BE(iv + 4);
+   }
+
+   //Flush the input and output FIFOs
+   CRYP2->CR |= CRYP_CR_FFLUSH;
+   //Enable the cryptographic processor
+   CRYP2->CR |= CRYP_CR_CRYPEN;
+
+   //Process data
+   while(length >= DES3_BLOCK_SIZE)
+   {
+      //Wait for the input FIFO to be ready to accept data
+      while((CRYP2->SR & CRYP_SR_IFNF) == 0)
+      {
+      }
+
+      //Write the input FIFO
+      CRYP2->DIN = LOAD32LE(input);
+      CRYP2->DIN = LOAD32LE(input + 4);
+
+      //Wait for the output to be ready
+      while((CRYP2->SR & CRYP_SR_OFNE) == 0)
+      {
+      }
+
+      //Read the output FIFO
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output);
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output + 4);
+
+      //Next block
+      input += DES3_BLOCK_SIZE;
+      output += DES3_BLOCK_SIZE;
+      length -= DES3_BLOCK_SIZE;
+   }
+
+   //Valid initialization vector?
+   if(iv != NULL)
+   {
+      //Update the value of the initialization vector
+      temp = CRYP2->IV0LR;
+      STORE32BE(temp, iv);
+      temp = CRYP2->IV0RR;
+      STORE32BE(temp, iv + 4);
+   }
+
+   //Disable the cryptographic processor by clearing the CRYPEN bit
+   CRYP2->CR = 0;
 
    //Release exclusive access to the CRYP module
    osReleaseMutex(&stm32mp1xxCryptoMutex);
@@ -339,10 +323,10 @@ error_t des3Init(Des3Context *context, const uint8_t *key, size_t keyLen)
       //first and second DES operations cancel out
       context->k1.ks[0] = LOAD32BE(key + 0);
       context->k1.ks[1] = LOAD32BE(key + 4);
-      context->k1.ks[2] = LOAD32BE(key + 0);
-      context->k1.ks[3] = LOAD32BE(key + 4);
-      context->k1.ks[4] = LOAD32BE(key + 0);
-      context->k1.ks[5] = LOAD32BE(key + 4);
+      context->k2.ks[0] = LOAD32BE(key + 0);
+      context->k2.ks[1] = LOAD32BE(key + 4);
+      context->k3.ks[0] = LOAD32BE(key + 0);
+      context->k3.ks[1] = LOAD32BE(key + 4);
    }
    else if(keyLen == 16)
    {
@@ -351,10 +335,10 @@ error_t des3Init(Des3Context *context, const uint8_t *key, size_t keyLen)
       //the second 8 bytes represent the key used for the inner DES operation
       context->k1.ks[0] = LOAD32BE(key + 0);
       context->k1.ks[1] = LOAD32BE(key + 4);
-      context->k1.ks[2] = LOAD32BE(key + 8);
-      context->k1.ks[3] = LOAD32BE(key + 12);
-      context->k1.ks[4] = LOAD32BE(key + 0);
-      context->k1.ks[5] = LOAD32BE(key + 4);
+      context->k2.ks[0] = LOAD32BE(key + 8);
+      context->k2.ks[1] = LOAD32BE(key + 12);
+      context->k3.ks[0] = LOAD32BE(key + 0);
+      context->k3.ks[1] = LOAD32BE(key + 4);
    }
    else if(keyLen == 24)
    {
@@ -362,10 +346,10 @@ error_t des3Init(Des3Context *context, const uint8_t *key, size_t keyLen)
       //keys are represented, in the order in which they are used for encryption
       context->k1.ks[0] = LOAD32BE(key + 0);
       context->k1.ks[1] = LOAD32BE(key + 4);
-      context->k1.ks[2] = LOAD32BE(key + 8);
-      context->k1.ks[3] = LOAD32BE(key + 12);
-      context->k1.ks[4] = LOAD32BE(key + 16);
-      context->k1.ks[5] = LOAD32BE(key + 20);
+      context->k2.ks[0] = LOAD32BE(key + 8);
+      context->k2.ks[1] = LOAD32BE(key + 12);
+      context->k3.ks[0] = LOAD32BE(key + 16);
+      context->k3.ks[1] = LOAD32BE(key + 20);
    }
    else
    {
@@ -387,16 +371,9 @@ error_t des3Init(Des3Context *context, const uint8_t *key, size_t keyLen)
 
 void des3EncryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output)
 {
-   //Acquire exclusive access to the CRYP module
-   osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-   //Set operation mode
-   CRYP_Handle.Init.Algorithm = CRYP_TDES_ECB;
-   //Encrypt payload data
-   crypProcessData(context, NULL, input, output, DES3_BLOCK_SIZE, TRUE);
-
-   //Release exclusive access to the CRYP module
-   osReleaseMutex(&stm32mp1xxCryptoMutex);
+   //Perform Triple DES encryption
+   des3ProcessData(context, NULL, input, output, DES3_BLOCK_SIZE,
+      CRYP_CR_ALGOMODE_TDES_ECB);
 }
 
 
@@ -409,13 +386,212 @@ void des3EncryptBlock(Des3Context *context, const uint8_t *input, uint8_t *outpu
 
 void des3DecryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output)
 {
+   //Perform Triple DES decryption
+   des3ProcessData(context, NULL, input, output, DES3_BLOCK_SIZE,
+      CRYP_CR_ALGOMODE_TDES_ECB | CRYP_CR_ALGODIR);
+}
+
+#endif
+#if (AES_SUPPORT == ENABLED)
+
+/**
+ * @brief Load AES key
+ * @param[in] context AES algorithm context
+ **/
+
+void aesLoadKey(AesContext *context)
+{
+   uint32_t temp;
+
+   //Read control register
+   temp = CRYP2->CR & ~CRYP_CR_KEYSIZE;
+
+   //Check the length of the key
+   if(context->nr == 10)
+   {
+      //10 rounds are required for 128-bit key
+      CRYP2->CR = temp | CRYP_CR_KEYSIZE_128B;
+
+      //Set the 128-bit encryption key
+      CRYP2->K2LR = context->ek[0];
+      CRYP2->K2RR = context->ek[1];
+      CRYP2->K3LR = context->ek[2];
+      CRYP2->K3RR = context->ek[3];
+   }
+   else if(context->nr == 12)
+   {
+      //12 rounds are required for 192-bit key
+      CRYP2->CR = temp | CRYP_CR_KEYSIZE_192B;
+
+      //Set the 192-bit encryption key
+      CRYP2->K1LR = context->ek[0];
+      CRYP2->K1RR = context->ek[1];
+      CRYP2->K2LR = context->ek[2];
+      CRYP2->K2RR = context->ek[3];
+      CRYP2->K3LR = context->ek[4];
+      CRYP2->K3RR = context->ek[5];
+   }
+   else
+   {
+      //14 rounds are required for 256-bit key
+      CRYP2->CR = temp | CRYP_CR_KEYSIZE_256B;
+
+      //Set the 256-bit encryption key
+      CRYP2->K0LR = context->ek[0];
+      CRYP2->K0RR = context->ek[1];
+      CRYP2->K1LR = context->ek[2];
+      CRYP2->K1RR = context->ek[3];
+      CRYP2->K2LR = context->ek[4];
+      CRYP2->K2RR = context->ek[5];
+      CRYP2->K3LR = context->ek[6];
+      CRYP2->K3RR = context->ek[7];
+   }
+}
+
+
+/**
+ * @brief Perform AES encryption or decryption
+ * @param[in] context AES algorithm context
+ * @param[in,out] iv Initialization vector
+ * @param[in] input Data to be encrypted/decrypted
+ * @param[out] output Data resulting from the encryption/decryption process
+ * @param[in] length Total number of data bytes to be processed
+ * @param[in] mode Operation mode
+ **/
+
+void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
+   uint8_t *output, size_t length, uint32_t mode)
+{
+   uint32_t temp;
+
    //Acquire exclusive access to the CRYP module
    osAcquireMutex(&stm32mp1xxCryptoMutex);
 
-   //Set operation mode
-   CRYP_Handle.Init.Algorithm = CRYP_TDES_ECB;
-   //Decrypt payload data
-   crypProcessData(context, NULL, input, output, DES3_BLOCK_SIZE, FALSE);
+   //Configure the data type
+   CRYP2->CR = CRYP_CR_DATATYPE_8B;
+
+   //Set encryption key
+   aesLoadKey(context);
+
+   //AES-ECB or AES-CBC decryption?
+   if((mode & CRYP_CR_ALGODIR) != 0)
+   {
+      //Configure the key preparation mode by setting the ALGOMODE bits to '111'
+      CRYP2->CR |= CRYP_CR_ALGOMODE_AES_KEY;
+      //Write the CRYPEN bit to 1
+      CRYP2->CR |= CRYP_CR_CRYPEN;
+
+      //Wait until BUSY returns to 0
+      while((CRYP2->SR & CRYP_SR_BUSY) != 0)
+      {
+      }
+   }
+
+   //The algorithm must be configured once the key has been prepared
+   temp = CRYP2->CR & ~(CRYP_CR_ALGOMODE | CRYP_CR_ALGODIR);
+   CRYP2->CR = temp | mode;
+
+   //Valid initialization vector?
+   if(iv != NULL)
+   {
+      //Set initialization vector
+      CRYP2->IV0LR = LOAD32BE(iv);
+      CRYP2->IV0RR = LOAD32BE(iv + 4);
+      CRYP2->IV1LR = LOAD32BE(iv + 8);
+      CRYP2->IV1RR = LOAD32BE(iv + 12);
+   }
+
+   //Flush the input and output FIFOs
+   CRYP2->CR |= CRYP_CR_FFLUSH;
+   //Enable the cryptographic processor
+   CRYP2->CR |= CRYP_CR_CRYPEN;
+
+   //Process data
+   while(length >= AES_BLOCK_SIZE)
+   {
+      //Wait for the input FIFO to be ready to accept data
+      while((CRYP2->SR & CRYP_SR_IFNF) == 0)
+      {
+      }
+
+      //Write the input FIFO
+      CRYP2->DIN = LOAD32LE(input);
+      CRYP2->DIN = LOAD32LE(input + 4);
+      CRYP2->DIN = LOAD32LE(input + 8);
+      CRYP2->DIN = LOAD32LE(input + 12);
+
+      //Wait for the output to be ready
+      while((CRYP2->SR & CRYP_SR_OFNE) == 0)
+      {
+      }
+
+      //Read the output FIFO
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output);
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output + 4);
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output + 8);
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output + 12);
+
+      //Next block
+      input += AES_BLOCK_SIZE;
+      output += AES_BLOCK_SIZE;
+      length -= AES_BLOCK_SIZE;
+   }
+
+   //Process final block of data
+   if(length > 0)
+   {
+      uint32_t buffer[4];
+
+      //Copy partial block
+      osMemset(buffer, 0, AES_BLOCK_SIZE);
+      osMemcpy(buffer, input, length);
+
+      //Wait for the input FIFO to be ready to accept data
+      while((CRYP2->SR & CRYP_SR_IFNF) == 0)
+      {
+      }
+
+      //Write input block
+      CRYP2->DIN = buffer[0];
+      CRYP2->DIN = buffer[1];
+      CRYP2->DIN = buffer[2];
+      CRYP2->DIN = buffer[3];
+
+      //Wait for the output to be ready
+      while((CRYP2->SR & CRYP_SR_OFNE) == 0)
+      {
+      }
+
+      //Read output block
+      buffer[0] = CRYP2->DOUT;
+      buffer[1] = CRYP2->DOUT;
+      buffer[2] = CRYP2->DOUT;
+      buffer[3] = CRYP2->DOUT;
+
+      //Copy partial block
+      osMemcpy(output, buffer, length);
+   }
+
+   //Valid initialization vector?
+   if(iv != NULL)
+   {
+      //Update the value of the initialization vector
+      temp = CRYP2->IV0LR;
+      STORE32BE(temp, iv);
+      temp = CRYP2->IV0RR;
+      STORE32BE(temp, iv + 4);
+      temp = CRYP2->IV1LR;
+      STORE32BE(temp, iv + 8);
+      temp = CRYP2->IV1RR;
+      STORE32BE(temp, iv + 12);
+   }
+
+   //Disable the cryptographic processor by clearing the CRYPEN bit
+   CRYP2->CR = 0;
 
    //Release exclusive access to the CRYP module
    osReleaseMutex(&stm32mp1xxCryptoMutex);
@@ -483,16 +659,9 @@ error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
 
 void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 {
-   //Acquire exclusive access to the CRYP module
-   osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-   //Set operation mode
-   CRYP_Handle.Init.Algorithm = CRYP_AES_ECB;
-   //Encrypt payload data
-   crypProcessData(context, NULL, input, output, AES_BLOCK_SIZE, TRUE);
-
-   //Release exclusive access to the CRYP module
-   osReleaseMutex(&stm32mp1xxCryptoMutex);
+   //Perform AES encryption
+   aesProcessData(context, NULL, input, output, AES_BLOCK_SIZE,
+      CRYP_CR_ALGOMODE_AES_ECB);
 }
 
 
@@ -505,18 +674,13 @@ void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 
 void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 {
-   //Acquire exclusive access to the CRYP module
-   osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-   //Set operation mode
-   CRYP_Handle.Init.Algorithm = CRYP_AES_ECB;
-   //Decrypt payload data
-   crypProcessData(context, NULL, input, output, AES_BLOCK_SIZE, FALSE);
-
-   //Release exclusive access to the CRYP module
-   osReleaseMutex(&stm32mp1xxCryptoMutex);
+   //Perform AES decryption
+   aesProcessData(context, NULL, input, output, AES_BLOCK_SIZE,
+      CRYP_CR_ALGOMODE_AES_ECB | CRYP_CR_ALGODIR);
 }
 
+#endif
+#if (ECB_SUPPORT == ENABLED)
 
 /**
  * @brief ECB encryption
@@ -547,16 +711,8 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % DES_BLOCK_SIZE) == 0)
       {
-         //Acquire exclusive access to the CRYP module
-         osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-         //Set operation mode
-         CRYP_Handle.Init.Algorithm = CRYP_DES_ECB;
          //Encrypt payload data
-         error = crypProcessData(context, NULL, p, c, length, TRUE);
-
-         //Release exclusive access to the CRYP module
-         osReleaseMutex(&stm32mp1xxCryptoMutex);
+         desProcessData(context, NULL, p, c, length, CRYP_CR_ALGOMODE_DES_ECB);
       }
       else
       {
@@ -577,16 +733,8 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % DES3_BLOCK_SIZE) == 0)
       {
-         //Acquire exclusive access to the CRYP module
-         osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-         //Set operation mode
-         CRYP_Handle.Init.Algorithm = CRYP_TDES_ECB;
          //Encrypt payload data
-         error = crypProcessData(context, NULL, p, c, length, TRUE);
-
-         //Release exclusive access to the CRYP module
-         osReleaseMutex(&stm32mp1xxCryptoMutex);
+         des3ProcessData(context, NULL, p, c, length, CRYP_CR_ALGOMODE_TDES_ECB);
       }
       else
       {
@@ -607,16 +755,8 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % AES_BLOCK_SIZE) == 0)
       {
-         //Acquire exclusive access to the CRYP module
-         osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-         //Set operation mode
-         CRYP_Handle.Init.Algorithm = CRYP_AES_ECB;
          //Encrypt payload data
-         error = crypProcessData(context, NULL, p, c, length, TRUE);
-
-         //Release exclusive access to the CRYP module
-         osReleaseMutex(&stm32mp1xxCryptoMutex);
+         aesProcessData(context, NULL, p, c, length, CRYP_CR_ALGOMODE_AES_ECB);
       }
       else
       {
@@ -681,16 +821,9 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % DES_BLOCK_SIZE) == 0)
       {
-         //Acquire exclusive access to the CRYP module
-         osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-         //Set operation mode
-         CRYP_Handle.Init.Algorithm = CRYP_DES_ECB;
          //Decrypt payload data
-         error = crypProcessData(context, NULL, c, p, length, FALSE);
-
-         //Release exclusive access to the CRYP module
-         osReleaseMutex(&stm32mp1xxCryptoMutex);
+         desProcessData(context, NULL, c, p, length, CRYP_CR_ALGOMODE_DES_ECB |
+            CRYP_CR_ALGODIR);
       }
       else
       {
@@ -711,16 +844,9 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % DES3_BLOCK_SIZE) == 0)
       {
-         //Acquire exclusive access to the CRYP module
-         osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-         //Set operation mode
-         CRYP_Handle.Init.Algorithm = CRYP_TDES_ECB;
          //Decrypt payload data
-         error = crypProcessData(context, NULL, c, p, length, FALSE);
-
-         //Release exclusive access to the CRYP module
-         osReleaseMutex(&stm32mp1xxCryptoMutex);
+         des3ProcessData(context, NULL, c, p, length, CRYP_CR_ALGOMODE_TDES_ECB |
+            CRYP_CR_ALGODIR);
       }
       else
       {
@@ -741,16 +867,9 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % AES_BLOCK_SIZE) == 0)
       {
-         //Acquire exclusive access to the CRYP module
-         osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-         //Set operation mode
-         CRYP_Handle.Init.Algorithm = CRYP_AES_ECB;
          //Decrypt payload data
-         error = crypProcessData(context, NULL, c, p, length, FALSE);
-
-         //Release exclusive access to the CRYP module
-         osReleaseMutex(&stm32mp1xxCryptoMutex);
+         aesProcessData(context, NULL, c, p, length, CRYP_CR_ALGOMODE_AES_ECB |
+            CRYP_CR_ALGODIR);
       }
       else
       {
@@ -785,6 +904,8 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    return error;
 }
 
+#endif
+#if (CBC_SUPPORT == ENABLED)
 
 /**
  * @brief CBC encryption
@@ -816,16 +937,8 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % DES_BLOCK_SIZE) == 0)
       {
-         //Acquire exclusive access to the CRYP module
-         osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-         //Set operation mode
-         CRYP_Handle.Init.Algorithm = CRYP_DES_CBC;
          //Encrypt payload data
-         error = crypProcessData(context, iv, p, c, length, TRUE);
-
-         //Release exclusive access to the CRYP module
-         osReleaseMutex(&stm32mp1xxCryptoMutex);
+         desProcessData(context, iv, p, c, length, CRYP_CR_ALGOMODE_DES_CBC);
       }
       else
       {
@@ -846,16 +959,8 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % DES3_BLOCK_SIZE) == 0)
       {
-         //Acquire exclusive access to the CRYP module
-         osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-         //Set operation mode
-         CRYP_Handle.Init.Algorithm = CRYP_TDES_CBC;
          //Encrypt payload data
-         error = crypProcessData(context, iv, p, c, length, TRUE);
-
-         //Release exclusive access to the CRYP module
-         osReleaseMutex(&stm32mp1xxCryptoMutex);
+         des3ProcessData(context, iv, p, c, length, CRYP_CR_ALGOMODE_TDES_CBC);
       }
       else
       {
@@ -876,16 +981,8 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % AES_BLOCK_SIZE) == 0)
       {
-         //Acquire exclusive access to the CRYP module
-         osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-         //Set operation mode
-         CRYP_Handle.Init.Algorithm = CRYP_AES_CBC;
          //Encrypt payload data
-         error = crypProcessData(context, iv, p, c, length, TRUE);
-
-         //Release exclusive access to the CRYP module
-         osReleaseMutex(&stm32mp1xxCryptoMutex);
+         aesProcessData(context, iv, p, c, length, CRYP_CR_ALGOMODE_AES_CBC);
       }
       else
       {
@@ -963,16 +1060,9 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % DES_BLOCK_SIZE) == 0)
       {
-         //Acquire exclusive access to the CRYP module
-         osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-         //Set operation mode
-         CRYP_Handle.Init.Algorithm = CRYP_DES_CBC;
          //Decrypt payload data
-         error = crypProcessData(context, iv, c, p, length, FALSE);
-
-         //Release exclusive access to the CRYP module
-         osReleaseMutex(&stm32mp1xxCryptoMutex);
+         desProcessData(context, iv, c, p, length, CRYP_CR_ALGOMODE_DES_CBC |
+            CRYP_CR_ALGODIR);
       }
       else
       {
@@ -993,16 +1083,9 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % DES3_BLOCK_SIZE) == 0)
       {
-         //Acquire exclusive access to the CRYP module
-         osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-         //Set operation mode
-         CRYP_Handle.Init.Algorithm = CRYP_TDES_CBC;
          //Decrypt payload data
-         error = crypProcessData(context, iv, c, p, length, FALSE);
-
-         //Release exclusive access to the CRYP module
-         osReleaseMutex(&stm32mp1xxCryptoMutex);
+         des3ProcessData(context, iv, c, p, length, CRYP_CR_ALGOMODE_TDES_CBC |
+            CRYP_CR_ALGODIR);
       }
       else
       {
@@ -1023,16 +1106,9 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % AES_BLOCK_SIZE) == 0)
       {
-         //Acquire exclusive access to the CRYP module
-         osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-         //Set operation mode
-         CRYP_Handle.Init.Algorithm = CRYP_AES_CBC;
          //Decrypt payload data
-         error = crypProcessData(context, iv, c, p, length, FALSE);
-
-         //Release exclusive access to the CRYP module
-         osReleaseMutex(&stm32mp1xxCryptoMutex);
+         aesProcessData(context, iv, c, p, length, CRYP_CR_ALGOMODE_AES_CBC |
+            CRYP_CR_ALGODIR);
       }
       else
       {
@@ -1082,6 +1158,8 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
    return error;
 }
 
+#endif
+#if (CTR_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
 
 /**
  * @brief CTR encryption
@@ -1103,7 +1181,6 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    //Initialize status code
    error = NO_ERROR;
 
-#if (AES_SUPPORT == ENABLED)
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
    {
@@ -1111,27 +1188,14 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
       if(m == (AES_BLOCK_SIZE * 8))
       {
          //Check the length of the payload
-         if(length == 0)
+         if(length > 0)
          {
-            //No data to process
-         }
-         else if((length % AES_BLOCK_SIZE) == 0)
-         {
-            //Acquire exclusive access to the CRYP module
-            osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-            //Set operation mode
-            CRYP_Handle.Init.Algorithm = CRYP_AES_CTR;
             //Encrypt payload data
-            error = crypProcessData(context, t, p, c, length, TRUE);
-
-            //Release exclusive access to the CRYP module
-            osReleaseMutex(&stm32mp1xxCryptoMutex);
+            aesProcessData(context, t, p, c, length, CRYP_CR_ALGOMODE_AES_CTR);
          }
          else
          {
-            //The length of the payload must be a multiple of the block size
-            error = ERROR_INVALID_LENGTH;
+            //No data to process
          }
       }
       else
@@ -1141,8 +1205,6 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
       }
    }
    else
-#endif
-   //Unknown cipher algorithm?
    {
       //Check the value of the parameter
       if((m % 8) == 0 && m <= (cipher->blockSize * 8))
@@ -1197,9 +1259,11 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    return error;
 }
 
+#endif
+#if (GCM_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
 
 /**
- * @brief Perform AEAD encryption or decryption
+ * @brief Perform AES-GCM encryption or decryption
  * @param[in] context AES algorithm context
  * @param[in] iv Initialization vector
  * @param[in] a Additional authenticated data
@@ -1208,103 +1272,229 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
  * @param[out] output Data resulting from the encryption/decryption process
  * @param[in] length Total number of data bytes to be processed
  * @param[out] t Authentication tag
- * @param[in] mode Operation mode (TRUE for encryption, FALSE for decryption)
- * @return Error code
+ * @param[in] mode Operation mode
  **/
 
-error_t crypProcessAeadData(AesContext *context, const uint8_t *iv,
+void gcmProcessData(AesContext *context, const uint8_t *iv,
    const uint8_t *a, size_t aLen, const uint8_t *input, uint8_t *output,
-   size_t length, uint8_t *t, bool_t mode)
+   size_t length, uint8_t *t, uint32_t mode)
 {
-   HAL_StatusTypeDef status;
-   uint32_t header[8];
-   uint32_t initVect[4];
+   size_t n;
+   uint64_t m;
+   uint32_t temp;
+   uint32_t buffer[4];
 
-   //Initialize status code
-   status = HAL_OK;
+   //Acquire exclusive access to the AES module
+   osAcquireMutex(&stm32mp1xxCryptoMutex);
 
-   //When the length of the IV is 96 bits, the padding string is appended to
-   //the IV to form the pre-counter block
-   initVect[0] = LOAD32BE(iv);
-   initVect[1] = LOAD32BE(iv + 4);
-   initVect[2] = LOAD32BE(iv + 8);
-   initVect[3] = 2;
+   //Configure the data type
+   CRYP2->CR = CRYP_CR_DATATYPE_8B;
 
-   //Pad additional data if necessary (workaround)
-   osMemset(header, 0x00, sizeof(header));
-   osMemcpy(header, a, aLen);
+   //Select the GCM chaining mode by programming ALGOMODE bits to '01000'
+   temp = CRYP2->CR & ~CRYP_CR_ALGOMODE;
+   CRYP2->CR = temp | CRYP_CR_ALGOMODE_AES_GCM;
 
-   //Set CRYP parameters
-   CRYP_Handle.Instance = CRYP2;
-   CRYP_Handle.Init.DataType = CRYP_DATATYPE_8B;
-   CRYP_Handle.Init.Algorithm = CRYP_AES_GCM;
-   CRYP_Handle.Init.DataWidthUnit = CRYP_DATAWIDTHUNIT_BYTE;
-   CRYP_Handle.Init.HeaderWidthUnit = CRYP_DATAWIDTHUNIT_WORD;
-   CRYP_Handle.Init.KeyIVConfigSkip = CRYP_KEYIVCONFIG_ALWAYS;
-   CRYP_Handle.Init.pKey = context->ek;
-   CRYP_Handle.Init.pInitVect = initVect;
-   CRYP_Handle.Init.Header = header;
-   CRYP_Handle.Init.HeaderSize = (aLen + 3) / 4;
+   //Configure GCM_CCMPH bits to '00' to start the GCM Init phase
+   temp = CRYP2->CR & ~CRYP_CR_GCM_CCMPH;
+   CRYP2->CR = temp | CRYP_CR_GCM_CCMPH_INIT;
 
-   //Check the length of the key
-   if(context->nr == 10)
+   //Set encryption key
+   aesLoadKey(context);
+
+   //Set initialization vector
+   CRYP2->IV0LR = LOAD32BE(iv);
+   CRYP2->IV0RR = LOAD32BE(iv + 4);
+   CRYP2->IV1LR = LOAD32BE(iv + 8);
+   CRYP2->IV1RR = 2;
+
+   //Set CRYPEN bit to 1 to start the calculation of the HASH key
+   CRYP2->CR |= CRYP_CR_CRYPEN;
+
+   //Wait for the CRYPEN bit to be cleared to 0 before moving on to the
+   //next phase
+   while((CRYP2->CR & CRYP_CR_CRYPEN) != 0)
    {
-      //128-bit key
-      CRYP_Handle.Init.KeySize = CRYP_KEYSIZE_128B;
-   }
-   else if(context->nr == 12)
-   {
-      //192-bit key
-      CRYP_Handle.Init.KeySize = CRYP_KEYSIZE_192B;
-   }
-   else if(context->nr == 14)
-   {
-      //256-bit key
-      CRYP_Handle.Init.KeySize = CRYP_KEYSIZE_256B;
-   }
-   else
-   {
-      //Report an error
-      status = HAL_ERROR;
    }
 
-   //Check status code
-   if(status == HAL_OK)
-   {
-      //Initialize CRYP module
-      status = HAL_CRYP_Init(&CRYP_Handle);
-   }
+   //Set the GCM_CCMPH bits to '01' in CRYP_CR to indicate that the header
+   //phase has started
+   temp = CRYP2->CR & ~CRYP_CR_GCM_CCMPH;
+   CRYP2->CR = temp | CRYP_CR_GCM_CCMPH_HEADER;
 
-   //Check status code
-   if(status == HAL_OK)
+   //Flush the input and output FIFOs
+   CRYP2->CR |= CRYP_CR_FFLUSH;
+   //Set the CRYPEN bit to 1 to start accepting data
+   CRYP2->CR |= CRYP_CR_CRYPEN;
+
+   //Process additional authenticated data
+   for(n = aLen; n >= AES_BLOCK_SIZE; n -= AES_BLOCK_SIZE)
    {
-      //Process payload data
-      if(mode)
+      //Wait for the input FIFO to be ready to accept data
+      while((CRYP2->SR & CRYP_SR_IFNF) == 0)
       {
-         status = HAL_CRYP_Encrypt(&CRYP_Handle, (uint32_t *) input,
-            length, (uint32_t *) output, HAL_MAX_DELAY);
       }
-      else
-      {
-         status = HAL_CRYP_Decrypt(&CRYP_Handle, (uint32_t *) input,
-            length, (uint32_t *) output, HAL_MAX_DELAY);
-      }
+
+      //Write the input FIFO
+      CRYP2->DIN = LOAD32LE(a);
+      CRYP2->DIN = LOAD32LE(a + 4);
+      CRYP2->DIN = LOAD32LE(a + 8);
+      CRYP2->DIN = LOAD32LE(a + 12);
+
+      //Next block
+      a += AES_BLOCK_SIZE;
    }
 
-   //Check status code
-   if(status == HAL_OK)
+   //Process final block of additional authenticated data
+   if(n > 0)
    {
-      //Specify the length of the additional data, in bytes
-      CRYP_Handle.Init.HeaderWidthUnit = CRYP_DATAWIDTHUNIT_BYTE;
-      CRYP_Handle.Init.HeaderSize = aLen;
+      //Copy partial block
+      osMemset(buffer, 0, AES_BLOCK_SIZE);
+      osMemcpy(buffer, a, n);
 
-      //Generate the authentication tag
-      status = HAL_CRYPEx_AESGCM_GenerateAuthTAG(&CRYP_Handle, (uint32_t *) t,
-         HAL_MAX_DELAY);
+      //Wait for the input FIFO to be ready to accept data
+      while((CRYP2->SR & CRYP_SR_IFNF) == 0)
+      {
+      }
+
+      //Write the input FIFO
+      CRYP2->DIN = buffer[0];
+      CRYP2->DIN = buffer[1];
+      CRYP2->DIN = buffer[2];
+      CRYP2->DIN = buffer[3];
    }
 
-   //Return status code
-   return (status == HAL_OK) ? NO_ERROR : ERROR_FAILURE;
+   //Once all header data have been supplied, wait until the BUSY bit is
+   //cleared
+   while((CRYP2->SR & CRYP_SR_BUSY) != 0)
+   {
+   }
+
+   //Set the CRYPEN bit to 0
+   CRYP2->CR &= ~CRYP_CR_CRYPEN;
+
+   //Configure the GCM_CCMPH bits to '10' in CRYP_CR
+   temp = CRYP2->CR & ~CRYP_CR_GCM_CCMPH;
+   CRYP2->CR = temp | CRYP_CR_GCM_CCMPH_PAYLOAD;
+
+   //Select the algorithm direction by using the ALGODIR bit
+   temp = CRYP2->CR & ~CRYP_CR_ALGODIR;
+   CRYP2->CR |= mode;
+
+   //Set the CRYPEN bit to 1 to start accepting data
+   CRYP2->CR |= CRYP_CR_CRYPEN;
+
+   //Process data
+   for(n = length; n >= AES_BLOCK_SIZE; n -= AES_BLOCK_SIZE)
+   {
+      //Wait for the input FIFO to be ready to accept data
+      while((CRYP2->SR & CRYP_SR_IFNF) == 0)
+      {
+      }
+
+      //Write the input FIFO
+      CRYP2->DIN = LOAD32LE(input);
+      CRYP2->DIN = LOAD32LE(input + 4);
+      CRYP2->DIN = LOAD32LE(input + 8);
+      CRYP2->DIN = LOAD32LE(input + 12);
+
+      //Wait for the output to be ready
+      while((CRYP2->SR & CRYP_SR_OFNE) == 0)
+      {
+      }
+
+      //Read the output FIFO
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output);
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output + 4);
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output + 8);
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output + 12);
+
+      //Next block
+      input += AES_BLOCK_SIZE;
+      output += AES_BLOCK_SIZE;
+   }
+
+   //Process final block of data
+   if(n > 0)
+   {
+      //Copy partial block
+      osMemset(buffer, 0, AES_BLOCK_SIZE);
+      osMemcpy(buffer, input, n);
+
+      //Specify the number of padding bytes in the last block
+      temp = CRYP2->CR & ~CRYP_CR_NPBLB;
+      CRYP2->CR = temp | ((AES_BLOCK_SIZE - n) << CRYP_CR_NPBLB_Pos);
+
+      //Wait for the input FIFO to be ready to accept data
+      while((CRYP2->SR & CRYP_SR_IFNF) == 0)
+      {
+      }
+
+      //Write the input FIFO
+      CRYP2->DIN = buffer[0];
+      CRYP2->DIN = buffer[1];
+      CRYP2->DIN = buffer[2];
+      CRYP2->DIN = buffer[3];
+
+      //Wait for the output to be ready
+      while((CRYP2->SR & CRYP_SR_OFNE) == 0)
+      {
+      }
+
+      //Read the output FIFO
+      buffer[0] = CRYP2->DOUT;
+      buffer[1] = CRYP2->DOUT;
+      buffer[2] = CRYP2->DOUT;
+      buffer[3] = CRYP2->DOUT;
+
+      //Copy partial block
+      osMemcpy(output, buffer, n);
+   }
+
+   //Once all payload data have been supplied, wait until the BUSY flag is
+   //cleared
+   while((CRYP2->SR & CRYP_SR_BUSY) != 0)
+   {
+   }
+
+   //Configure the GCM_CCMPH bits to '11' in CRYP_CR
+   temp = CRYP2->CR & ~CRYP_CR_GCM_CCMPH;
+   CRYP2->CR = temp | CRYP_CR_GCM_CCMPH_FINAL;
+
+   //Write the input into the CRYP_DIN register 4 times. The input must
+   //contain the number of bits in the header (64 bits) concatenated with
+   //the number of bits in the payload (64 bits)
+   m = aLen * 8;
+   CRYP2->DIN = htole32(m >> 32);
+   CRYP2->DIN = htole32(m);
+   m = length * 8;
+   CRYP2->DIN = htole32(m >> 32);
+   CRYP2->DIN = htole32(m);
+
+   //Wait until the OFNE flag is set to 1 in the CRYP_SR register
+   while((CRYP2->SR & CRYP_SR_OFNE) == 0)
+   {
+   }
+
+   //Read the CRYP_DOUT register 4 times. The output corresponds to the
+   //authentication tag
+   temp = CRYP2->DOUT;
+   STORE32LE(temp, t);
+   temp = CRYP2->DOUT;
+   STORE32LE(temp, t + 4);
+   temp = CRYP2->DOUT;
+   STORE32LE(temp, t + 8);
+   temp = CRYP2->DOUT;
+   STORE32LE(temp, t + 12);
+
+   //Disable the cryptographic processor by clearing the CRYPEN bit
+   CRYP2->CR = 0;
+
+   //Release exclusive access to the AES module
+   osReleaseMutex(&stm32mp1xxCryptoMutex);
 }
 
 
@@ -1351,7 +1541,6 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
    size_t ivLen, const uint8_t *a, size_t aLen, const uint8_t *p,
    uint8_t *c, size_t length, uint8_t *t, size_t tLen)
 {
-   error_t error;
    uint8_t authTag[16];
 
    //Make sure the GCM context is valid
@@ -1362,36 +1551,19 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
    if(ivLen != 12)
       return ERROR_INVALID_LENGTH;
 
-   //Check the length of the additional data
-   if(aLen > 32)
-      return ERROR_INVALID_LENGTH;
-
    //Check the length of the authentication tag
    if(tLen < 4 || tLen > 16)
       return ERROR_INVALID_LENGTH;
 
-   //Pad input data if necessary (workaround)
-   osMemset(t, 0, tLen);
+   //Perform AES-GCM encryption
+   gcmProcessData(context->cipherContext, iv, a, aLen, p, c, length,
+      authTag, 0);
 
-   //Acquire exclusive access to the CRYP module
-   osAcquireMutex(&stm32mp1xxCryptoMutex);
+   //Copy the resulting authentication tag
+   osMemcpy(t, authTag, tLen);
 
-   //Perform AEAD encryption
-   error = crypProcessAeadData(context->cipherContext, iv, a, aLen, p, c,
-      length, authTag, TRUE);
-
-   //Release exclusive access to the CRYP module
-   osReleaseMutex(&stm32mp1xxCryptoMutex);
-
-   //Check status code
-   if(error == NO_ERROR)
-   {
-      //Copy the resulting authentication tag
-      osMemcpy(t, authTag, tLen);
-   }
-
-   //Return status code
-   return error;
+   //Successful processing
+   return NO_ERROR;
 }
 
 
@@ -1414,10 +1586,8 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    size_t ivLen, const uint8_t *a, size_t aLen, const uint8_t *c,
    uint8_t *p, size_t length, const uint8_t *t, size_t tLen)
 {
-   error_t error;
    size_t i;
    uint8_t mask;
-   uint8_t temp[16];
    uint8_t authTag[16];
 
    //Make sure the GCM context is valid
@@ -1428,49 +1598,503 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    if(ivLen != 12)
       return ERROR_INVALID_LENGTH;
 
-   //Check the length of the additional data
-   if(aLen > 32)
-      return ERROR_INVALID_LENGTH;
-
    //Check the length of the authentication tag
    if(tLen < 4 || tLen > 16)
       return ERROR_INVALID_LENGTH;
 
-   //Pad input data if necessary (workaround)
-   osMemcpy(temp, t, tLen);
-   osMemset((uint8_t *) t, 0, tLen);
+   //Perform AES-GCM decryption
+   gcmProcessData(context->cipherContext, iv, a, aLen, c, p, length,
+      authTag, CRYP_CR_ALGODIR);
 
-   //Acquire exclusive access to the CRYP module
-   osAcquireMutex(&stm32mp1xxCryptoMutex);
-
-   //Perform AEAD decryption
-   error = crypProcessAeadData(context->cipherContext, iv, a, aLen, c, p,
-      length, authTag, FALSE);
-
-   //Release exclusive access to the CRYP module
-   osReleaseMutex(&stm32mp1xxCryptoMutex);
-
-   //Restore authentication tag (workaround)
-   osMemcpy((uint8_t *) t, temp, tLen);
-
-   //Check status code
-   if(error == NO_ERROR)
+   //The calculated tag is bitwise compared to the received tag
+   for(mask = 0, i = 0; i < tLen; i++)
    {
-      //The calculated tag is bitwise compared to the received tag
-      for(mask = 0, i = 0; i < tLen; i++)
-      {
-         mask |= authTag[i] ^ t[i];
-      }
-
-      //The message is authenticated if and only if the tags match
-      if(mask != 0)
-      {
-         error = ERROR_FAILURE;
-      }
+      mask |= authTag[i] ^ t[i];
    }
 
-   //Return status code
-   return error;
+   //The message is authenticated if and only if the tags match
+   return (mask == 0) ? NO_ERROR : ERROR_FAILURE;
 }
 
+#endif
+#if (CCM_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
+
+/**
+ * @brief Perform AES-CCM encryption or decryption
+ * @param[in] context AES algorithm context
+ * @param[in] b0 Pointer to the B0 block
+ * @param[in] a Additional authenticated data
+ * @param[in] aLen Length of the additional data
+ * @param[in] input Data to be encrypted/decrypted
+ * @param[out] output Data resulting from the encryption/decryption process
+ * @param[in] length Total number of data bytes to be processed
+ * @param[out] t Authentication tag
+ * @param[in] mode Operation mode
+ **/
+
+void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
+   size_t aLen, const uint8_t *input, uint8_t *output, size_t length,
+   uint8_t *t, uint32_t mode)
+{
+   size_t n;
+   size_t qLen;
+   uint32_t temp;
+   uint8_t buffer[16];
+
+   //Acquire exclusive access to the AES module
+   osAcquireMutex(&stm32mp1xxCryptoMutex);
+
+   //Configure the data type
+   CRYP2->CR = CRYP_CR_DATATYPE_8B;
+
+   //Select the CCM chaining mode by programming ALGOMODE bits to '01001'
+   temp = CRYP2->CR & ~CRYP_CR_ALGOMODE;
+   CRYP2->CR = temp | CRYP_CR_ALGOMODE_AES_CCM;
+
+   //Configure GCM_CCMPH bits to '00' to start the GCM Init phase
+   temp = CRYP2->CR & ~CRYP_CR_GCM_CCMPH;
+   CRYP2->CR = temp | CRYP_CR_GCM_CCMPH_INIT;
+
+   //Set encryption key
+   aesLoadKey(context);
+
+   //Retrieve the octet length of Q
+   qLen = (b0[0] & 0x07) + 1;
+
+   //Format CTR(1)
+   osMemcpy(buffer, b0, 16 - qLen);
+   osMemset(buffer + 16 - qLen, 0, qLen);
+
+   //Set the leading octet
+   buffer[0] = (uint8_t) (qLen - 1);
+   //Set counter value
+   buffer[15] = 1;
+
+   //Initialize CRYP_IVRx registers with CTR(1)
+   CRYP2->IV0LR = LOAD32BE(buffer);
+   CRYP2->IV0RR = LOAD32BE(buffer + 4);
+   CRYP2->IV1LR = LOAD32BE(buffer + 8);
+   CRYP2->IV1RR = LOAD32BE(buffer + 12);
+
+   //Set the CRYPEN bit to 1 in CRYP_CR to start accepting data
+   CRYP2->CR |= CRYP_CR_CRYPEN;
+
+   //Write the B0 packet into CRYP_DIN register
+   CRYP2->DIN = LOAD32BE(b0);
+   CRYP2->DIN = LOAD32BE(b0 + 4);
+   CRYP2->DIN = LOAD32BE(b0 + 8);
+   CRYP2->DIN = LOAD32BE(b0 + 12);
+
+   //Wait for the CRYPEN bit to be cleared to 0 by the cryptographic processor
+   //before moving on to the next phase
+   while((CRYP2->CR & CRYP_CR_CRYPEN) != 0)
+   {
+   }
+
+   //Configure GCM_CCMPH bits to '01' in CRYP_CR to indicate that the header
+   //phase has started
+   temp = CRYP2->CR & ~CRYP_CR_GCM_CCMPH;
+   CRYP2->CR = temp | CRYP_CR_GCM_CCMPH_HEADER;
+
+   //Flush the input and output FIFOs
+   CRYP2->CR |= CRYP_CR_FFLUSH;
+   //Set the CRYPEN bit to 1 to start accepting data
+   CRYP2->CR |= CRYP_CR_CRYPEN;
+
+   //The header phase can be skipped if there is no associated data
+   if(aLen > 0)
+   {
+      //The first block of the associated data (B1) must be formatted by
+      //software, with the associated data length
+      osMemset(buffer, 0, 16);
+
+      //Check the length of the associated data string
+      if(aLen < 0xFF00)
+      {
+         //The length is encoded as 2 octets
+         STORE16BE(aLen, buffer);
+
+         //Number of bytes to copy
+         n = MIN(aLen, 16 - 2);
+         //Concatenate the associated data A
+         osMemcpy(buffer + 2, a, n);
+      }
+      else
+      {
+         //The length is encoded as 6 octets
+         buffer[0] = 0xFF;
+         buffer[1] = 0xFE;
+
+         //MSB is stored first
+         STORE32BE(aLen, buffer + 2);
+
+         //Number of bytes to copy
+         n = MIN(aLen, 16 - 6);
+         //Concatenate the associated data A
+         osMemcpy(buffer + 6, a, n);
+      }
+
+      //Wait for the input FIFO to be ready to accept data
+      while((CRYP2->SR & CRYP_SR_IFNF) == 0)
+      {
+      }
+
+      //Write the input FIFO
+      CRYP2->DIN = LOAD32LE(buffer);
+      CRYP2->DIN = LOAD32LE(buffer + 4);
+      CRYP2->DIN = LOAD32LE(buffer + 8);
+      CRYP2->DIN = LOAD32LE(buffer + 12);
+
+      //Number of remaining data bytes
+      aLen -= n;
+      a += n;
+   }
+
+   //Process additional authenticated data
+   while(aLen >= AES_BLOCK_SIZE)
+   {
+      //Wait for the input FIFO to be ready to accept data
+      while((CRYP2->SR & CRYP_SR_IFNF) == 0)
+      {
+      }
+
+      //Write the input FIFO
+      CRYP2->DIN = LOAD32LE(a);
+      CRYP2->DIN = LOAD32LE(a + 4);
+      CRYP2->DIN = LOAD32LE(a + 8);
+      CRYP2->DIN = LOAD32LE(a + 12);
+
+      //Next block
+      a += AES_BLOCK_SIZE;
+      aLen -= AES_BLOCK_SIZE;
+   }
+
+   //Process final block of additional authenticated data
+   if(aLen > 0)
+   {
+      //If the AAD size in the last block is inferior to 128 bits, pad the
+      //remainder of the block with zeros
+      osMemset(buffer, 0, AES_BLOCK_SIZE);
+      osMemcpy(buffer, a, aLen);
+
+      //Wait for the input FIFO to be ready to accept data
+      while((CRYP2->SR & CRYP_SR_IFNF) == 0)
+      {
+      }
+
+      //Write the input FIFO
+      CRYP2->DIN = LOAD32LE(buffer);
+      CRYP2->DIN = LOAD32LE(buffer + 4);
+      CRYP2->DIN = LOAD32LE(buffer + 8);
+      CRYP2->DIN = LOAD32LE(buffer + 12);
+   }
+
+   //Once all header data have been supplied, wait until the BUSY bit is
+   //cleared
+   while((CRYP2->SR & CRYP_SR_BUSY) != 0)
+   {
+   }
+
+   //Set the CRYPEN bit to 0
+   CRYP2->CR &= ~CRYP_CR_CRYPEN;
+
+   //Configure GCM_CCMPH bits to '10' in CRYP_CR to indicate that the payload
+   //phase is ongoing
+   temp = CRYP2->CR & ~CRYP_CR_GCM_CCMPH;
+   CRYP2->CR = temp | CRYP_CR_GCM_CCMPH_PAYLOAD;
+
+   //Select the algorithm direction by using the ALGODIR bit
+   temp = CRYP2->CR & ~CRYP_CR_ALGODIR;
+   CRYP2->CR |= mode;
+
+   //Set the CRYPEN bit to 1 to start accepting data
+   CRYP2->CR |= CRYP_CR_CRYPEN;
+
+   //Process data
+   while(length >= AES_BLOCK_SIZE)
+   {
+      //Wait for the input FIFO to be ready to accept data
+      while((CRYP2->SR & CRYP_SR_IFNF) == 0)
+      {
+      }
+
+      //Write the input FIFO
+      CRYP2->DIN = LOAD32LE(input);
+      CRYP2->DIN = LOAD32LE(input + 4);
+      CRYP2->DIN = LOAD32LE(input + 8);
+      CRYP2->DIN = LOAD32LE(input + 12);
+
+      //Wait for the output to be ready
+      while((CRYP2->SR & CRYP_SR_OFNE) == 0)
+      {
+      }
+
+      //Read the output FIFO
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output);
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output + 4);
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output + 8);
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, output + 12);
+
+      //Next block
+      input += AES_BLOCK_SIZE;
+      output += AES_BLOCK_SIZE;
+      length -= AES_BLOCK_SIZE;
+   }
+
+   //Process final block of data
+   if(length > 0)
+   {
+      //If it is the last block and the plaintext (encryption) or ciphertext
+      //(decryption) size in the block is inferior to 128 bits, pad the
+      //remainder of the block with zeros
+      osMemset(buffer, 0, AES_BLOCK_SIZE);
+      osMemcpy(buffer, input, length);
+
+      //Specify the number of padding bytes in the last block
+      temp = CRYP2->CR & ~CRYP_CR_NPBLB;
+      CRYP2->CR = temp | ((AES_BLOCK_SIZE - length) << CRYP_CR_NPBLB_Pos);
+
+      //Wait for the input FIFO to be ready to accept data
+      while((CRYP2->SR & CRYP_SR_IFNF) == 0)
+      {
+      }
+
+      //Write the input FIFO
+      CRYP2->DIN = LOAD32LE(buffer);
+      CRYP2->DIN = LOAD32LE(buffer + 4);
+      CRYP2->DIN = LOAD32LE(buffer + 8);
+      CRYP2->DIN = LOAD32LE(buffer + 12);
+
+      //Wait for the output to be ready
+      while((CRYP2->SR & CRYP_SR_OFNE) == 0)
+      {
+      }
+
+      //Read the output FIFO
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, buffer);
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, buffer + 4);
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, buffer + 8);
+      temp = CRYP2->DOUT;
+      STORE32LE(temp, buffer + 12);
+
+      //Discard the bits that are not part of the payload when the last block
+      //size is less than 16 bytes
+      osMemcpy(output, buffer, length);
+   }
+
+   //Once all payload data have been supplied, wait until the BUSY flag is
+   //cleared
+   while((CRYP2->SR & CRYP_SR_BUSY) != 0)
+   {
+   }
+
+   //Configure GCM_CCMPH bits to '11' in CRYP_CR to indicate that the final
+   //phase is ongoing and set the ALGODIR bit to 0 in the same register
+   temp = CRYP2->CR & ~(CRYP_CR_GCM_CCMPH | CRYP_CR_ALGODIR);
+   CRYP2->CR = temp | CRYP_CR_GCM_CCMPH_FINAL;
+
+   //Format CTR(0)
+   osMemcpy(buffer, b0, 16 - qLen);
+   osMemset(buffer + 16 - qLen, 0, qLen);
+
+   //Set the leading octet
+   buffer[0] = (uint8_t) (qLen - 1);
+
+   //Load in CRYP_DIN the CTR(0) information
+   CRYP2->DIN = LOAD32BE(buffer);
+   CRYP2->DIN = LOAD32BE(buffer + 4);
+   CRYP2->DIN = LOAD32BE(buffer + 8);
+   CRYP2->DIN = LOAD32BE(buffer + 12);
+
+   //Wait until the OFNE flag is set to 1 in the CRYP_SR register
+   while((CRYP2->SR & CRYP_SR_OFNE) == 0)
+   {
+   }
+
+   //Read the CRYP_DOUT register 4 times. The output corresponds to the
+   //authentication tag
+   temp = CRYP2->DOUT;
+   STORE32LE(temp, t);
+   temp = CRYP2->DOUT;
+   STORE32LE(temp, t + 4);
+   temp = CRYP2->DOUT;
+   STORE32LE(temp, t + 8);
+   temp = CRYP2->DOUT;
+   STORE32LE(temp, t + 12);
+
+   //Disable the cryptographic processor by clearing the CRYPEN bit
+   CRYP2->CR = 0;
+
+   //Release exclusive access to the AES module
+   osReleaseMutex(&stm32mp1xxCryptoMutex);
+}
+
+
+/**
+ * @brief Authenticated encryption using CCM
+ * @param[in] cipher Cipher algorithm
+ * @param[in] context Cipher algorithm context
+ * @param[in] n Nonce
+ * @param[in] nLen Length of the nonce
+ * @param[in] a Additional authenticated data
+ * @param[in] aLen Length of the additional data
+ * @param[in] p Plaintext to be encrypted
+ * @param[out] c Ciphertext resulting from the encryption
+ * @param[in] length Total number of data bytes to be encrypted
+ * @param[out] t MAC resulting from the encryption process
+ * @param[in] tLen Length of the MAC
+ * @return Error code
+ **/
+
+error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
+   size_t nLen, const uint8_t *a, size_t aLen, const uint8_t *p, uint8_t *c,
+   size_t length, uint8_t *t, size_t tLen)
+{
+   size_t i;
+   size_t q;
+   size_t qLen;
+   uint8_t b0[16];
+   uint8_t authTag[16];
+
+   //Check parameters
+   if(cipher == NULL || context == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //The CRYP module only supports AES cipher algorithm
+   if(cipher != AES_CIPHER_ALGO)
+      return ERROR_INVALID_PARAMETER;
+
+   //Check the length of the nonce
+   if(nLen < 7 || nLen > 13)
+      return ERROR_INVALID_LENGTH;
+
+   //Check the length of the MAC
+   if(tLen < 4 || tLen > 16 || (tLen % 2) != 0)
+      return ERROR_INVALID_LENGTH;
+
+   //Q is the bit string representation of the octet length of P
+   q = length;
+   //Compute the octet length of Q
+   qLen = 15 - nLen;
+
+   //Format the leading octet of the first block (B0)
+   b0[0] = (aLen > 0) ? 0x40 : 0x00;
+   //Encode the octet length of T
+   b0[0] |= ((tLen - 2) / 2) << 3;
+   //Encode the octet length of Q
+   b0[0] |= qLen - 1;
+
+   //Copy the nonce
+   osMemcpy(b0 + 1, n, nLen);
+
+   //Encode the length field Q
+   for(i = 0; i < qLen; i++, q >>= 8)
+   {
+      b0[15 - i] = q & 0xFF;
+   }
+
+   //Invalid length?
+   if(q != 0)
+      return ERROR_INVALID_LENGTH;
+
+   //Perform AES-CCM encryption
+   ccmProcessData(context, b0, a, aLen, p, c, length, authTag, 0);
+
+   //Copy the resulting authentication tag
+   osMemcpy(t, authTag, tLen);
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Authenticated decryption using CCM
+ * @param[in] cipher Cipher algorithm
+ * @param[in] context Cipher algorithm context
+ * @param[in] n Nonce
+ * @param[in] nLen Length of the nonce
+ * @param[in] a Additional authenticated data
+ * @param[in] aLen Length of the additional data
+ * @param[in] c Ciphertext to be decrypted
+ * @param[out] p Plaintext resulting from the decryption
+ * @param[in] length Total number of data bytes to be decrypted
+ * @param[in] t MAC to be verified
+ * @param[in] tLen Length of the MAC
+ * @return Error code
+ **/
+
+error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
+   size_t nLen, const uint8_t *a, size_t aLen, const uint8_t *c, uint8_t *p,
+   size_t length, const uint8_t *t, size_t tLen)
+{
+   size_t i;
+   size_t q;
+   size_t qLen;
+   uint8_t mask;
+   uint8_t b0[16];
+   uint8_t authTag[16];
+
+   //Check parameters
+   if(cipher == NULL || context == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //The CRYP module only supports AES cipher algorithm
+   if(cipher != AES_CIPHER_ALGO)
+      return ERROR_INVALID_PARAMETER;
+
+   //Check the length of the nonce
+   if(nLen < 7 || nLen > 13)
+      return ERROR_INVALID_LENGTH;
+
+   //Check the length of the MAC
+   if(tLen < 4 || tLen > 16 || (tLen % 2) != 0)
+      return ERROR_INVALID_LENGTH;
+
+   //Q is the bit string representation of the octet length of C
+   q = length;
+   //Compute the octet length of Q
+   qLen = 15 - nLen;
+
+   //Format the leading octet of the first block (B0)
+   b0[0] = (aLen > 0) ? 0x40 : 0x00;
+   //Encode the octet length of T
+   b0[0] |= ((tLen - 2) / 2) << 3;
+   //Encode the octet length of Q
+   b0[0] |= qLen - 1;
+
+   //Copy the nonce
+   osMemcpy(b0 + 1, n, nLen);
+
+   //Encode the length field Q
+   for(i = 0; i < qLen; i++, q >>= 8)
+   {
+      b0[15 - i] = q & 0xFF;
+   }
+
+   //Invalid length?
+   if(q != 0)
+      return ERROR_INVALID_LENGTH;
+
+   //Perform AES-CCM decryption
+   ccmProcessData(context, b0, a, aLen, c, p, length, authTag, CRYP_CR_ALGODIR);
+
+   //The calculated tag is bitwise compared to the received tag
+   for(mask = 0, i = 0; i < tLen; i++)
+   {
+      mask |= authTag[i] ^ t[i];
+   }
+
+   //The message is authenticated if and only if the tags match
+   return (mask == 0) ? NO_ERROR : ERROR_FAILURE;
+}
+
+#endif
 #endif

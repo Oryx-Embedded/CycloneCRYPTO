@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -78,7 +78,7 @@ error_t esp32s2CryptoInit(void)
       esp32s2ShaInit();
 #endif
 
-#if (ESP32_S2_CRYPTO_CIPHER_SUPPORT == ENABLED)
+#if (ESP32_S2_CRYPTO_CIPHER_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
       //Initialize AES module
       esp32s2AesInit();
 #endif

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -50,7 +50,6 @@
 
 /**
  * @brief RSA module initialization
- * @return Error code
  **/
 
 void esp32s2RsaInit(void)
@@ -397,8 +396,6 @@ error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
 void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
 {
    uint_t i;
-   uint64_t temp;
-   uint32_t u[16];
 
    //Acquire exclusive access to the RSA module
    esp_crypto_mpi_lock_acquire();
@@ -406,7 +403,7 @@ void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
    //Clear the interrupt flag
    DPORT_REG_WRITE(RSA_CLEAR_INTERRUPT_REG, 1);
    //Set mode register
-   DPORT_REG_WRITE(RSA_LENGTH_REG, 15);
+   DPORT_REG_WRITE(RSA_LENGTH_REG, 7);
 
    //Copy the first operand to RSA_X_MEM
    for(i = 0; i < 8; i++)
@@ -414,22 +411,36 @@ void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
       DPORT_REG_WRITE(RSA_MEM_X_BLOCK_BASE + i * 4, a[i]);
    }
 
-   //The second operand will not be written to the base address of the
-   //RSA_Z_MEM memory. This area must be filled with zeroes
+   //Copy the second operand to RSA_Y_MEM
    for(i = 0; i < 8; i++)
    {
-      DPORT_REG_WRITE(RSA_MEM_Z_BLOCK_BASE + i * 4, 0);
+      DPORT_REG_WRITE(RSA_MEM_Y_BLOCK_BASE + i * 4, b[i]);
    }
 
-   //The second operand must be written to the base address of the
-   //RSA_Z_MEM memory plus the address offset 32
-   for(i = 0; i < 8; i++)
-   {
-      DPORT_REG_WRITE(RSA_MEM_Z_BLOCK_BASE + 32 + i * 4, b[i]);
-   }
+   //Copy the modulus to RSA_M_MEM
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE, 0xFFFFFFED);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 4, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 8, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 12, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 16, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 20, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 24, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 28, 0x7FFFFFFF);
 
-   //Start large-number multiplication
-   DPORT_REG_WRITE(RSA_MULT_START_REG, 1);
+   //Copy the pre-calculated value of R^2 mod M to RSA_Z_MEM
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE, 0x000005A4);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 4, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 8, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 12, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 16, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 20, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 24, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 28, 0x00000000);
+
+   //Write the value of M' to RSA_M_PRIME_REG
+   DPORT_REG_WRITE(RSA_M_DASH_REG, 0x286BCA1B);
+   //Start large-number modular multiplication
+   DPORT_REG_WRITE(RSA_MOD_MULT_START_REG, 1);
 
    //Wait for the operation to complete
    while(DPORT_REG_READ(RSA_QUERY_INTERRUPT_REG) == 0)
@@ -440,9 +451,9 @@ void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
    DPORT_INTERRUPT_DISABLE();
 
    //Read the result from RSA_Z_MEM
-   for(i = 0; i < 16; i++)
+   for(i = 0; i < 8; i++)
    {
-      u[i] = DPORT_SEQUENCE_REG_READ(RSA_MEM_Z_BLOCK_BASE + i * 4);
+      r[i] = DPORT_SEQUENCE_REG_READ(RSA_MEM_Z_BLOCK_BASE + i * 4);
    }
 
    //Restore the previous interrupt level
@@ -452,38 +463,6 @@ void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
 
    //Release exclusive access to the RSA module
    esp_crypto_mpi_lock_release();
-
-   //Reduce bit 255 (2^255 = 19 mod p)
-   temp = (u[7] >> 31) * 19;
-   //Mask the most significant bit
-   u[7] &= 0x7FFFFFFF;
-
-   //Perform fast modular reduction (first pass)
-   for(i = 0; i < 8; i++)
-   {
-      temp += u[i];
-      temp += (uint64_t) u[i + 8] * 38;
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
-   }
-
-   //Reduce bit 256 (2^256 = 38 mod p)
-   temp *= 38;
-   //Reduce bit 255 (2^255 = 19 mod p)
-   temp += (u[7] >> 31) * 19;
-   //Mask the most significant bit
-   u[7] &= 0x7FFFFFFF;
-
-   //Perform fast modular reduction (second pass)
-   for(i = 0; i < 8; i++)
-   {
-      temp += u[i];
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
-   }
-
-   //Reduce non-canonical values
-   curve25519Red(r, u);
 }
 
 #endif
@@ -499,9 +478,6 @@ void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
 void curve448Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
 {
    uint_t i;
-   uint64_t c;
-   uint64_t temp;
-   uint32_t u[28];
 
    //Acquire exclusive access to the RSA module
    esp_crypto_mpi_lock_acquire();
@@ -509,7 +485,7 @@ void curve448Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
    //Clear the interrupt flag
    DPORT_REG_WRITE(RSA_CLEAR_INTERRUPT_REG, 1);
    //Set mode register
-   DPORT_REG_WRITE(RSA_LENGTH_REG, 27);
+   DPORT_REG_WRITE(RSA_LENGTH_REG, 13);
 
    //Copy the first operand to RSA_X_MEM
    for(i = 0; i < 14; i++)
@@ -517,22 +493,48 @@ void curve448Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
       DPORT_REG_WRITE(RSA_MEM_X_BLOCK_BASE + i * 4, a[i]);
    }
 
-   //The second operand will not be written to the base address of the
-   //RSA_Z_MEM memory. This area must be filled with zeroes
+   //Copy the second operand to RSA_Y_MEM
    for(i = 0; i < 14; i++)
    {
-      DPORT_REG_WRITE(RSA_MEM_Z_BLOCK_BASE + i * 4, 0);
+      DPORT_REG_WRITE(RSA_MEM_Y_BLOCK_BASE + i * 4, b[i]);
    }
 
-   //The second operand must be written to the base address of the
-   //RSA_Z_MEM memory plus the address offset 56
-   for(i = 0; i < 14; i++)
-   {
-      DPORT_REG_WRITE(RSA_MEM_Z_BLOCK_BASE + 56 + i * 4, b[i]);
-   }
+   //Copy the modulus to RSA_M_MEM
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 4, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 8, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 12, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 16, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 20, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 24, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 28, 0xFFFFFFFE);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 32, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 36, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 40, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 44, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 48, 0xFFFFFFFF);
+   DPORT_REG_WRITE(RSA_MEM_M_BLOCK_BASE + 52, 0xFFFFFFFF);
 
-   //Start large-number multiplication
-   DPORT_REG_WRITE(RSA_MULT_START_REG, 1);
+   //Copy the pre-calculated value of R^2 mod M to RSA_Z_MEM
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE, 0x00000002);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 4, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 8, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 12, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 16, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 20, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 24, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 28, 0x00000003);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 32, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 36, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 40, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 44, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 48, 0x00000000);
+   DPORT_REG_WRITE(RSA_MEM_RB_BLOCK_BASE + 52, 0x00000000);
+
+   //Write the value of M' to RSA_M_PRIME_REG
+   DPORT_REG_WRITE(RSA_M_DASH_REG, 0x00000001);
+   //Start large-number modular multiplication
+   DPORT_REG_WRITE(RSA_MOD_MULT_START_REG, 1);
 
    //Wait for the operation to complete
    while(DPORT_REG_READ(RSA_QUERY_INTERRUPT_REG) == 0)
@@ -543,9 +545,9 @@ void curve448Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
    DPORT_INTERRUPT_DISABLE();
 
    //Read the result from RSA_Z_MEM
-   for(i = 0; i < 28; i++)
+   for(i = 0; i < 14; i++)
    {
-      u[i] = DPORT_SEQUENCE_REG_READ(RSA_MEM_Z_BLOCK_BASE + i * 4);
+      r[i] = DPORT_SEQUENCE_REG_READ(RSA_MEM_Z_BLOCK_BASE + i * 4);
    }
 
    //Restore the previous interrupt level
@@ -555,44 +557,6 @@ void curve448Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
 
    //Release exclusive access to the RSA module
    esp_crypto_mpi_lock_release();
-
-   //Perform fast modular reduction (first pass)
-   for(temp = 0, i = 0; i < 7; i++)
-   {
-      temp += u[i];
-      temp += u[i + 14];
-      temp += u[i + 21];
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
-   }
-
-   for(i = 7; i < 14; i++)
-   {
-      temp += u[i];
-      temp += u[i + 7];
-      temp += u[i + 14];
-      temp += u[i + 14];
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
-   }
-
-   //Perform fast modular reduction (second pass)
-   for(c = temp, i = 0; i < 7; i++)
-   {
-      temp += u[i];
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
-   }
-
-   for(temp += c, i = 7; i < 14; i++)
-   {
-      temp += u[i];
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
-   }
-
-   //Reduce non-canonical values
-   curve448Red(r, u, (uint32_t) temp);
 }
 
 #endif

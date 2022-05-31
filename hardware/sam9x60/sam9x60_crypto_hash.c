@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -36,13 +36,7 @@
 #include "core/crypto.h"
 #include "hardware/sam9x60/sam9x60_crypto.h"
 #include "hardware/sam9x60/sam9x60_crypto_hash.h"
-#include "hash/sha1.h"
-#include "hash/sha224.h"
-#include "hash/sha256.h"
-#include "hash/sha384.h"
-#include "hash/sha512.h"
-#include "hash/sha512_224.h"
-#include "hash/sha512_256.h"
+#include "hash/hash_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -210,6 +204,8 @@ void hashProcessData(uint32_t algo, const uint8_t *data, size_t length,
 }
 
 
+#if (SHA1_SUPPORT == ENABLED)
+
 /**
  * @brief Initialize SHA-1 message digest context
  * @param[in] context Pointer to the SHA-1 context to initialize
@@ -346,6 +342,8 @@ void sha1FinalRaw(Sha1Context *context, uint8_t *digest)
    osMemcpy(digest, context->digest, SHA1_DIGEST_SIZE);
 }
 
+#endif
+#if (SHA224_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize SHA-224 message digest context
@@ -370,6 +368,8 @@ void sha224Init(Sha224Context *context)
    context->totalSize = 0;
 }
 
+#endif
+#if (SHA256_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize SHA-256 message digest context
@@ -510,6 +510,8 @@ void sha256FinalRaw(Sha256Context *context, uint8_t *digest)
    osMemcpy(digest, context->digest, SHA256_DIGEST_SIZE);
 }
 
+#endif
+#if (SHA384_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize SHA-384 message digest context
@@ -534,6 +536,21 @@ void sha384Init(Sha384Context *context)
    context->totalSize = 0;
 }
 
+
+/**
+ * @brief Finish the SHA-384 message digest (no padding added)
+ * @param[in] context Pointer to the SHA-384 context
+ * @param[out] digest Calculated digest
+ **/
+
+void sha384FinalRaw(Sha384Context *context, uint8_t *digest)
+{
+   //Copy the resulting digest
+   osMemcpy(digest, context->digest, SHA384_DIGEST_SIZE);
+}
+
+#endif
+#if (SHA512_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize SHA-512 message digest context
@@ -662,6 +679,8 @@ void sha512Final(Sha512Context *context, uint8_t *digest)
    }
 }
 
+#endif
+#if (SHA512_224_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize SHA-512/224 message digest context
@@ -686,6 +705,8 @@ void sha512_224Init(Sha512_224Context *context)
    context->totalSize = 0;
 }
 
+#endif
+#if (SHA512_256_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize SHA-512/256 message digest context
@@ -710,4 +731,5 @@ void sha512_256Init(Sha512_256Context *context)
    context->totalSize = 0;
 }
 
+#endif
 #endif

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -51,6 +51,7 @@ const uint8_t EC_PUBLIC_KEY_OID[7] = {0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x02, 0x01};
 void ecInitDomainParameters(EcDomainParameters *params)
 {
    //Initialize structure
+   params->name = NULL;
    params->type = EC_CURVE_TYPE_NONE;
    params->mod = NULL;
 

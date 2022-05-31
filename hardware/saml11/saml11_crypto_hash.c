@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -36,11 +36,11 @@
 #include "core/crypto.h"
 #include "hardware/saml11/saml11_crypto.h"
 #include "hardware/saml11/saml11_crypto_hash.h"
-#include "hash/sha256.h"
+#include "hash/hash_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
-#if (SAML11_CRYPTO_HASH_SUPPORT == ENABLED)
+#if (SAML11_CRYPTO_HASH_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
 
 
 /**

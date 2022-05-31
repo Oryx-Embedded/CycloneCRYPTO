@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -882,7 +882,7 @@ error_t x509FormatExtensions(const X509Extensions *extensions,
    p += n;
    length += n;
 
-   //Format x509ParseSubjectKeyId extension
+   //Format SubjectKeyId extension
    error = x509FormatSubjectKeyId(subjectKeyId, p, &n);
    //Any error to report?
    if(error)
@@ -1171,6 +1171,9 @@ error_t x509FormatBasicConstraints(const X509BasicConstraints *basicConstraints,
 
             //Encode pathLenConstraint value
             error = asn1WriteInt32(value, FALSE, p + length, &n);
+            //Any error to report?
+            if(error)
+               return error;
 
             //Update the length of the extension value
             length += n;

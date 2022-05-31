@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -41,22 +41,8 @@
 //Global variables
 OsMutex mimxrt1170CryptoMutex;
 
-//IAR EWARM compiler?
-#if defined(__ICCARM__)
-
 //CAAM job ring interfaces
-#pragma data_alignment = 16
-#pragma location = MIMXRT1170_CAAM_RAM_SECTION
 static caam_job_ring_interface_t caamJobRingInterface[4];
-
-//ARM or GCC compiler?
-#else
-
-//CAAM job ring interfaces
-static caam_job_ring_interface_t caamJobRingInterface[4]
-   __attribute__((aligned(16), __section__(MIMXRT1170_CAAM_RAM_SECTION)));
-
-#endif
 
 
 /**

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -712,7 +712,7 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
    Asn1Tag tag;
 
    //ASN.1 universal types
-   static const char_t *label[32] =
+   static const char_t *const label[32] =
    {
       "[0]",
       "BOOLEAN",
@@ -749,7 +749,7 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
    };
 
    //Prefix used to format the structure
-   static const char_t *prefix[10] =
+   static const char_t *const prefix[10] =
    {
       "",
       "  ",
@@ -813,7 +813,7 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
          //OID?
          case ASN1_TYPE_OBJECT_IDENTIFIER:
             //Append prefix
-            TRACE_DEBUG(prefix[level + 1]);
+            TRACE_DEBUG("%s", prefix[level + 1]);
             //Print OID
             TRACE_DEBUG("%s", oidToString(tag.value, tag.length, NULL, 0));
             //Add a line feed

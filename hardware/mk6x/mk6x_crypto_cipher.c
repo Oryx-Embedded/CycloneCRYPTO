@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -37,14 +37,12 @@
 #include "core/crypto.h"
 #include "hardware/mk6x/mk6x_crypto.h"
 #include "hardware/mk6x/mk6x_crypto_cipher.h"
-#include "cipher/des.h"
-#include "cipher/des3.h"
-#include "cipher/aes.h"
+#include "cipher/cipher_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
 #if (MK6X_CRYPTO_CIPHER_SUPPORT == ENABLED)
-
+#if (DES_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize a DES context using the supplied key
@@ -117,6 +115,8 @@ void desDecryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
    osMemcpy(output, temp, DES_BLOCK_SIZE);
 }
 
+#endif
+#if (DES3_SUPPORT == ENABLED)
 
 /**
  * @brief Encrypt a 8-byte block using Triple DES algorithm
@@ -175,6 +175,8 @@ void des3DecryptBlock(Des3Context *context, const uint8_t *input, uint8_t *outpu
    osMemcpy(output, temp, DES_BLOCK_SIZE);
 }
 
+#endif
+#if (AES_SUPPORT == ENABLED)
 
 /**
  * @brief Key expansion
@@ -277,4 +279,5 @@ void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
    osMemcpy(output, temp, AES_BLOCK_SIZE);
 }
 
+#endif
 #endif

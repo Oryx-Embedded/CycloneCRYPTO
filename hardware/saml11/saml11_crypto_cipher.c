@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -36,12 +36,12 @@
 #include "core/crypto.h"
 #include "hardware/saml11/saml11_crypto.h"
 #include "hardware/saml11/saml11_crypto_cipher.h"
-#include "cipher/aes.h"
-#include "aead/gcm.h"
+#include "cipher/cipher_algorithms.h"
+#include "aead/aead_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
-#if (SAML11_CRYPTO_CIPHER_SUPPORT == ENABLED)
+#if (SAML11_CRYPTO_CIPHER_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
 
 
 /**
@@ -130,6 +130,8 @@ void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 }
 
 
+#if (GCM_SUPPORT == ENABLED)
+
 /**
  * @brief Initialize GCM context
  * @param[in] context Pointer to the GCM context
@@ -196,4 +198,5 @@ void gcmMul(GcmContext *context, uint8_t *x)
    osMemcpy(x, r, sizeof(r));
 }
 
+#endif
 #endif

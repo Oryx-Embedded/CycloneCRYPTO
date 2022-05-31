@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -38,16 +38,13 @@
 #include "core/crypto.h"
 #include "hardware/s5d9/s5d9_crypto.h"
 #include "hardware/s5d9/s5d9_crypto_cipher.h"
-#include "cipher/des3.h"
-#include "cipher/aes.h"
-#include "cipher_mode/ecb.h"
-#include "cipher_mode/cbc.h"
-#include "cipher_mode/ctr.h"
-#include "aead/gcm.h"
+#include "cipher/cipher_algorithms.h"
+#include "cipher_mode/cipher_modes.h"
 #include "debug.h"
 
 //Check crypto library configuration
 #if (S5D9_CRYPTO_CIPHER_SUPPORT == ENABLED)
+#if (DES3_SUPPORT == ENABLED)
 
 
 /**
@@ -167,6 +164,8 @@ void des3DecryptBlock(Des3Context *context, const uint8_t *input, uint8_t *outpu
    osReleaseMutex(&s5d9CryptoMutex);
 }
 
+#endif
+#if (AES_SUPPORT == ENABLED)
 
 /**
  * @brief Key expansion
@@ -319,6 +318,8 @@ void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
    osReleaseMutex(&s5d9CryptoMutex);
 }
 
+#endif
+#if (ECB_SUPPORT == ENABLED)
 
 /**
  * @brief ECB encryption
@@ -585,6 +586,8 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    return (status == SSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
 }
 
+#endif
+#if (CBC_SUPPORT == ENABLED)
 
 /**
  * @brief CBC encryption
@@ -888,6 +891,8 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
    return (status == SSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
 }
 
+#endif
+#if (CTR_SUPPORT == ENABLED)
 
 /**
  * @brief CTR encryption
@@ -1075,4 +1080,5 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    return (status == SSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
 }
 
+#endif
 #endif

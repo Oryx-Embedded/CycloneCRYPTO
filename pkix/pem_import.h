@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 #ifndef _PEM_IMPORT_H
@@ -45,7 +45,7 @@
 extern "C" {
 #endif
 
-//PEM format decoding functions
+//PEM related functions
 error_t pemImportCertificate(const char_t *input, size_t inputLen,
    uint8_t *output, size_t *outputLen, size_t *consumed);
 

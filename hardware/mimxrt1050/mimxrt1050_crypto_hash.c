@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -37,8 +37,7 @@
 #include "core/crypto.h"
 #include "hardware/mimxrt1050/mimxrt1050_crypto.h"
 #include "hardware/mimxrt1050/mimxrt1050_crypto_hash.h"
-#include "hash/sha1.h"
-#include "hash/sha256.h"
+#include "hash/hash_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -70,6 +69,7 @@ static dcp_hash_ctx_t dcpHashContext
 
 #endif
 
+#if (SHA1_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-1
@@ -233,6 +233,8 @@ void sha1Final(Sha1Context *context, uint8_t *digest)
    }
 }
 
+#endif
+#if (SHA256_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-256
@@ -396,4 +398,5 @@ void sha256Final(Sha256Context *context, uint8_t *digest)
    }
 }
 
+#endif
 #endif

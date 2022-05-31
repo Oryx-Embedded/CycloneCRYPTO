@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 #ifndef _STM32G0XX_CRYPTO_CIPHER_H
@@ -40,6 +40,34 @@
 #elif (STM32G0XX_CRYPTO_CIPHER_SUPPORT != ENABLED && STM32G0XX_CRYPTO_CIPHER_SUPPORT != DISABLED)
    #error STM32G0XX_CRYPTO_CIPHER_SUPPORT parameter is not valid
 #endif
+
+//KEYSIZE bitfield
+#define AES_CR_KEYSIZE_128B        0
+#define AES_CR_KEYSIZE_256B        AES_CR_KEYSIZE
+
+//GCMPH bitfield
+#define AES_CR_GCMPH_INIT          0
+#define AES_CR_GCMPH_HEADER        AES_CR_GCMPH_0
+#define AES_CR_GCMPH_PAYLOAD       AES_CR_GCMPH_1
+#define AES_CR_GCMPH_FINAL         (AES_CR_GCMPH_1 | AES_CR_GCMPH_0)
+
+//CHMOD bitfield
+#define AES_CR_CHMOD_ECB           0
+#define AES_CR_CHMOD_CBC           AES_CR_CHMOD_0
+#define AES_CR_CHMOD_CTR           AES_CR_CHMOD_1
+#define AES_CR_CHMOD_GCM_GMAC      (AES_CR_CHMOD_0 | AES_CR_CHMOD_1)
+#define AES_CR_CHMOD_CCM           AES_CR_CHMOD_2
+
+//MODE bitfield
+#define AES_CR_MODE_ENCRYPTION     0
+#define AES_CR_MODE_KEY_DERIVATION AES_CR_MODE_0
+#define AES_CR_MODE_DECRYPTION     AES_CR_MODE_1
+
+//DATATYPE bitfield
+#define AES_CR_DATATYPE_32B        0
+#define AES_CR_DATATYPE_16B        AES_CR_DATATYPE_0
+#define AES_CR_DATATYPE_8B         AES_CR_DATATYPE_1
+#define AES_CR_DATATYPE_1B         (AES_CR_DATATYPE_1 | AES_CR_DATATYPE_0)
 
 //C++ guard
 #ifdef __cplusplus

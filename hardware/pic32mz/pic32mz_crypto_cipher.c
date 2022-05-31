@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -37,14 +37,9 @@
 #include "core/crypto.h"
 #include "hardware/pic32mz/pic32mz_crypto.h"
 #include "hardware/pic32mz/pic32mz_crypto_cipher.h"
-#include "cipher/des.h"
-#include "cipher/des3.h"
-#include "cipher/aes.h"
-#include "cipher_mode/ecb.h"
-#include "cipher_mode/cbc.h"
-#include "cipher_mode/cfb.h"
-#include "cipher_mode/ofb.h"
-#include "aead/gcm.h"
+#include "cipher/cipher_algorithms.h"
+#include "cipher_mode/cipher_modes.h"
+#include "aead/aead_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -69,6 +64,8 @@ uint8_t cipherOutput[PIC32MZ_CRYPTO_BUFFER_SIZE]
 //GCM authentication tag
 uint8_t gcmAuthTag[16] __attribute__((coherent, aligned(4)));
 
+
+#if (DES_SUPPORT == ENABLED)
 
 /**
  * @brief Perform DES encryption or decryption
@@ -237,6 +234,8 @@ void desDecryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
       SA_CTRL_CRYPTOALGO_ECB);
 }
 
+#endif
+#if (DES3_SUPPORT == ENABLED)
 
 /**
  * @brief Perform Triple DES encryption or decryption
@@ -434,6 +433,8 @@ void des3DecryptBlock(Des3Context *context, const uint8_t *input, uint8_t *outpu
       SA_CTRL_CRYPTOALGO_TECB);
 }
 
+#endif
+#if (AES_SUPPORT == ENABLED)
 
 /**
  * @brief Load AES key
@@ -676,6 +677,8 @@ void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
       SA_CTRL_CRYPTOALGO_RECB);
 }
 
+#endif
+#if (ECB_SUPPORT == ENABLED)
 
 /**
  * @brief ECB encryption
@@ -899,6 +902,8 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    return error;
 }
 
+#endif
+#if (CBC_SUPPORT == ENABLED)
 
 /**
  * @brief CBC encryption
@@ -1184,6 +1189,8 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
    return error;
 }
 
+#endif
+#if (CFB_SUPPORT == ENABLED)
 
 /**
  * @brief CFB encryption
@@ -1481,6 +1488,8 @@ error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
    return error;
 }
 
+#endif
+#if (OFB_SUPPORT == ENABLED)
 
 /**
  * @brief OFB encryption
@@ -1631,6 +1640,8 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
    return error;
 }
 
+#endif
+#if (GCM_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
 
 /**
  * @brief Perform AES-GCM encryption or decryption
@@ -1954,4 +1965,5 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    return (mask == 0) ? NO_ERROR : ERROR_FAILURE;
 }
 
+#endif
 #endif

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -34,21 +34,14 @@
 //Dependencies
 #include "stm32f2xx.h"
 #include "stm32f2xx_hal.h"
-#include "stm32f2xx_hal_hash.h"
 #include "core/crypto.h"
 #include "hardware/stm32f2xx/stm32f2xx_crypto.h"
 #include "hardware/stm32f2xx/stm32f2xx_crypto_hash.h"
-#include "hash/md5.h"
-#include "hash/sha1.h"
-#include "hash/sha224.h"
-#include "hash/sha256.h"
+#include "hash/hash_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
 #if (STM32F2XX_CRYPTO_HASH_SUPPORT == ENABLED)
-
-//Global variable
-static HASH_HandleTypeDef HASH_Handle;
 
 
 /**
@@ -58,113 +51,97 @@ static HASH_HandleTypeDef HASH_Handle;
 
 error_t hashInit(void)
 {
-   HAL_StatusTypeDef status;
-
    //Enable HASH peripheral clock
    __HAL_RCC_HASH_CLK_ENABLE();
 
-   //Reset HASH module
-   status = HAL_HASH_DeInit(&HASH_Handle);
+   //Successful processing
+   return NO_ERROR;
+}
 
-   //Check status code
-   if(status == HAL_OK)
+
+/**
+ * @brief Update hash value
+ * @param[in] algo Hash algorithm
+ * @param[in] data Pointer to the input buffer
+ * @param[in] length Length of the input buffer
+ * @param[in,out] h Intermediate hash value
+ * @param[in] hLen Length of the intermediate hash value, in words
+ **/
+
+void hashProcessData(uint32_t algo, const uint8_t *data, size_t length,
+   uint32_t *h, size_t hLen)
+{
+   uint_t i;
+
+   //Acquire exclusive access to the HASH module
+   osAcquireMutex(&stm32f2xxCryptoMutex);
+
+   //Select the relevant hash algorithm
+   HASH->CR = HASH_CR_DATATYPE_8B | algo;
+   //Initialize the hash processor by setting the INIT bit
+   HASH->CR |= HASH_CR_INIT;
+
+   //Restore initial hash value
+   for(i = 0; i < hLen; i++)
    {
-      //Set parameters
-      HASH_Handle.Init.DataType = HASH_DATATYPE_8B;
-
-      //Initialize HASH module
-      status = HAL_HASH_Init(&HASH_Handle);
+      HASH->CSR[6 + i] = h[i];
+      HASH->CSR[14 + i] = h[i];
    }
 
-   //Return status code
-   return (status == HAL_OK) ? NO_ERROR : ERROR_FAILURE;
-}
+   //Input data are processed in a block-by-block fashion
+   while(length >= 64)
+   {
+      //Write the first byte of the block
+      HASH->DIN = __UNALIGNED_UINT32_READ(data);
 
+      //Wait for the BUSY bit to be cleared
+      while((HASH->SR & HASH_SR_BUSY) != 0)
+      {
+      }
 
-/**
- * @brief Save hash context
- * @param[out] buffer Buffer where to store the hardware context
- **/
+      //Write the rest of the block
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 4);
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 8);
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 12);
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 16);
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 20);
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 24);
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 28);
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 32);
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 36);
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 40);
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 44);
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 48);
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 52);
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 56);
+      HASH->DIN = __UNALIGNED_UINT32_READ(data + 60);
 
-void hashSaveContext(uint32_t *buffer)
-{
-   //Save peripheral state
-   buffer[0] = HASH_Handle.Phase;
+      //Advance data pointer
+      data += 64;
+      length -= 64;
+   }
 
-   //Save hardware context
-   HAL_HASH_ContextSaving(&HASH_Handle, (uint8_t *) &buffer[1]);
-}
+   //Partial digest computation are triggered each time the application
+   //writes the first word of the next block
+   HASH->DIN = 0;
 
+   //Wait for the BUSY bit to be cleared
+   while((HASH->SR & HASH_SR_BUSY) != 0)
+   {
+   }
 
-/**
- * @brief Restore hash context
- * @param[in] buffer Buffer containing the hardware context
- **/
-
-void hashRestoreContext(uint32_t *buffer)
-{
-   //Restore hardware context
-   HAL_HASH_Init(&HASH_Handle);
-   HAL_HASH_ContextRestoring(&HASH_Handle, (uint8_t *) &buffer[1]);
-
-   //Restore peripheral state
-   HASH_Handle.Phase = (HAL_HASH_PhaseTypeDef) buffer[0];
-}
-
-
-/**
- * @brief Digest a message using MD5
- * @param[in] data Pointer to the message being hashed
- * @param[in] length Length of the message
- * @param[out] digest Pointer to the calculated digest
- * @return Error code
- **/
-
-error_t md5Compute(const void *data, size_t length, uint8_t *digest)
-{
-   HAL_StatusTypeDef status;
-
-   //Acquire exclusive access to the HASH module
-   osAcquireMutex(&stm32f2xxCryptoMutex);
-
-   //Initialize hash computation
-   HAL_HASH_Init(&HASH_Handle);
-
-   //Digest the message
-   status = HAL_HASH_MD5_Start(&HASH_Handle, (uint8_t *) data, length,
-      digest, HAL_MAX_DELAY);
+   //Save intermediate hash value
+   for(i = 0; i < 8; i++)
+   {
+      h[i] = HASH->CSR[14 + i];
+   }
 
    //Release exclusive access to the HASH module
    osReleaseMutex(&stm32f2xxCryptoMutex);
-
-   //Return status code
-   return (status == HAL_OK) ? NO_ERROR : ERROR_FAILURE;
 }
 
 
-/**
- * @brief Initialize MD5 message digest context
- * @param[in] context Pointer to the MD5 context to initialize
- **/
-
-void md5Init(Md5Context *context)
-{
-   //Acquire exclusive access to the HASH module
-   osAcquireMutex(&stm32f2xxCryptoMutex);
-
-   //Initialize hash computation
-   HAL_HASH_Init(&HASH_Handle);
-
-   //Save hash context
-   hashSaveContext(context->hwContext);
-
-   //Release exclusive access to the HASH module
-   osReleaseMutex(&stm32f2xxCryptoMutex);
-
-   //Number of bytes in the buffer
-   context->size = 0;
-}
-
+#if (MD5_SUPPORT == ENABLED)
 
 /**
  * @brief Update the MD5 context with a portion of the message being hashed
@@ -177,24 +154,21 @@ void md5Update(Md5Context *context, const void *data, size_t length)
 {
    size_t n;
 
-   //Acquire exclusive access to the HASH module
-   osAcquireMutex(&stm32f2xxCryptoMutex);
-
-   //Restore hash context
-   hashRestoreContext(context->hwContext);
-
    //Process the incoming data
    while(length > 0)
    {
       //Check whether some data is pending in the buffer
-      if(context->size == 0 && length >= 4)
+      if(context->size == 0 && length >= 64)
       {
-         //The length must be a multiple of 4 bytes
-         n = length - (length % 4);
+         //The length must be a multiple of 64 bytes
+         n = length - (length % 64);
 
          //Update hash value
-         HAL_HASH_MD5_Accmlt(&HASH_Handle, (uint8_t *) data, n);
+         hashProcessData(HASH_CR_ALGO_MD5, data, n, context->h,
+            MD5_DIGEST_SIZE / 4);
 
+         //Update the MD5 context
+         context->totalSize += n;
          //Advance the data pointer
          data = (uint8_t *) data + n;
          //Remaining bytes to process
@@ -202,159 +176,49 @@ void md5Update(Md5Context *context, const void *data, size_t length)
       }
       else
       {
-         //The buffer can hold at most 4 bytes
-         n = MIN(length, 4 - context->size);
+         //The buffer can hold at most 64 bytes
+         n = MIN(length, 64 - context->size);
 
          //Copy the data to the buffer
          osMemcpy(context->buffer + context->size, data, n);
 
          //Update the MD5 context
          context->size += n;
+         context->totalSize += n;
          //Advance the data pointer
          data = (uint8_t *) data + n;
          //Remaining bytes to process
          length -= n;
 
          //Check whether the buffer is full
-         if(context->size == 4)
+         if(context->size == 64)
          {
             //Update hash value
-            HAL_HASH_MD5_Accmlt(&HASH_Handle, context->buffer, 4);
+            hashProcessData(HASH_CR_ALGO_MD5, context->buffer, context->size,
+               context->h, MD5_DIGEST_SIZE / 4);
+
             //Empty the buffer
             context->size = 0;
          }
       }
    }
-
-   //Save hash context
-   hashSaveContext(context->hwContext);
-
-   //Release exclusive access to the HASH module
-   osReleaseMutex(&stm32f2xxCryptoMutex);
 }
 
 
 /**
- * @brief Finish the MD5 message digest
+ * @brief Process message in 16-word blocks
  * @param[in] context Pointer to the MD5 context
- * @param[out] digest Calculated digest (optional parameter)
  **/
 
-void md5Final(Md5Context *context, uint8_t *digest)
+void md5ProcessBlock(Md5Context *context)
 {
-   //Acquire exclusive access to the HASH module
-   osAcquireMutex(&stm32f2xxCryptoMutex);
-
-   //Restore hash context
-   hashRestoreContext(context->hwContext);
-
-   //Finalize hash computation
-   HAL_HASH_MD5_Accmlt_End(&HASH_Handle, context->buffer, context->size,
-      context->digest, HAL_MAX_DELAY);
-
-   //Release exclusive access to the HASH module
-   osReleaseMutex(&stm32f2xxCryptoMutex);
-
-   //Copy the resulting digest
-   if(digest != NULL)
-   {
-      osMemcpy(digest, context->digest, MD5_DIGEST_SIZE);
-   }
+   //Update hash value
+   hashProcessData(HASH_CR_ALGO_MD5, context->buffer, 64, context->h,
+      MD5_DIGEST_SIZE / 4);
 }
 
-
-/**
- * @brief Finish the MD5 message digest (no padding added)
- * @param[in] context Pointer to the MD5 context
- * @param[out] digest Calculated digest
- **/
-
-void md5FinalRaw(Md5Context *context, uint8_t *digest)
-{
-   uint_t i;
-   uint32_t temp;
-   uint8_t buffer[4];
-
-   //Acquire exclusive access to the HASH module
-   osAcquireMutex(&stm32f2xxCryptoMutex);
-
-   //Restore hash context
-   hashRestoreContext(context->hwContext);
-
-   //Force the current block to be processed by the hardware
-   osMemset(buffer, 0, 4);
-   HAL_HASH_MD5_Accmlt(&HASH_Handle, buffer, 4);
-
-   //Wait for the processing to complete
-   while((HASH->SR & HASH_SR_BUSY) != 0)
-   {
-   }
-
-   //Get the intermediate hash value
-   for(i = 0; i < MD5_DIGEST_SIZE / 4; i++)
-   {
-      temp = HASH->CSR[6 + i];
-      STORE32BE(temp, digest + i * 4);
-   }
-
-   //Release exclusive access to the HASH module
-   osReleaseMutex(&stm32f2xxCryptoMutex);
-}
-
-
-/**
- * @brief Digest a message using SHA-1
- * @param[in] data Pointer to the message being hashed
- * @param[in] length Length of the message
- * @param[out] digest Pointer to the calculated digest
- * @return Error code
- **/
-
-error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
-{
-   HAL_StatusTypeDef status;
-
-   //Acquire exclusive access to the HASH module
-   osAcquireMutex(&stm32f2xxCryptoMutex);
-
-   //Initialize hash computation
-   HAL_HASH_Init(&HASH_Handle);
-
-   //Digest the message
-   status = HAL_HASH_SHA1_Start(&HASH_Handle, (uint8_t *) data, length,
-      digest, HAL_MAX_DELAY);
-
-   //Release exclusive access to the HASH module
-   osReleaseMutex(&stm32f2xxCryptoMutex);
-
-   //Return status code
-   return (status == HAL_OK) ? NO_ERROR : ERROR_FAILURE;
-}
-
-
-/**
- * @brief Initialize SHA-1 message digest context
- * @param[in] context Pointer to the SHA-1 context to initialize
- **/
-
-void sha1Init(Sha1Context *context)
-{
-   //Acquire exclusive access to the HASH module
-   osAcquireMutex(&stm32f2xxCryptoMutex);
-
-   //Initialize hash computation
-   HAL_HASH_Init(&HASH_Handle);
-
-   //Save hash context
-   hashSaveContext(context->hwContext);
-
-   //Release exclusive access to the HASH module
-   osReleaseMutex(&stm32f2xxCryptoMutex);
-
-   //Number of bytes in the buffer
-   context->size = 0;
-}
-
+#endif
+#if (SHA1_SUPPORT == ENABLED)
 
 /**
  * @brief Update the SHA-1 context with a portion of the message being hashed
@@ -367,24 +231,21 @@ void sha1Update(Sha1Context *context, const void *data, size_t length)
 {
    size_t n;
 
-   //Acquire exclusive access to the HASH module
-   osAcquireMutex(&stm32f2xxCryptoMutex);
-
-   //Restore hash context
-   hashRestoreContext(context->hwContext);
-
    //Process the incoming data
    while(length > 0)
    {
       //Check whether some data is pending in the buffer
-      if(context->size == 0 && length >= 4)
+      if(context->size == 0 && length >= 64)
       {
-         //The length must be a multiple of 4 bytes
-         n = length - (length % 4);
+         //The length must be a multiple of 64 bytes
+         n = length - (length % 64);
 
          //Update hash value
-         HAL_HASH_SHA1_Accmlt(&HASH_Handle, (uint8_t *) data, n);
+         hashProcessData(HASH_CR_ALGO_SHA1, data, n, context->h,
+            SHA1_DIGEST_SIZE / 4);
 
+         //Update the SHA-1 context
+         context->totalSize += n;
          //Advance the data pointer
          data = (uint8_t *) data + n;
          //Remaining bytes to process
@@ -392,103 +253,46 @@ void sha1Update(Sha1Context *context, const void *data, size_t length)
       }
       else
       {
-         //The buffer can hold at most 4 bytes
-         n = MIN(length, 4 - context->size);
+         //The buffer can hold at most 64 bytes
+         n = MIN(length, 64 - context->size);
 
          //Copy the data to the buffer
          osMemcpy(context->buffer + context->size, data, n);
 
          //Update the SHA-1 context
          context->size += n;
+         context->totalSize += n;
          //Advance the data pointer
          data = (uint8_t *) data + n;
          //Remaining bytes to process
          length -= n;
 
          //Check whether the buffer is full
-         if(context->size == 4)
+         if(context->size == 64)
          {
             //Update hash value
-            HAL_HASH_SHA1_Accmlt(&HASH_Handle, context->buffer, 4);
+            hashProcessData(HASH_CR_ALGO_SHA1, context->buffer, context->size,
+               context->h, SHA1_DIGEST_SIZE / 4);
+
             //Empty the buffer
             context->size = 0;
          }
       }
    }
-
-   //Save hash context
-   hashSaveContext(context->hwContext);
-
-   //Release exclusive access to the HASH module
-   osReleaseMutex(&stm32f2xxCryptoMutex);
 }
 
 
 /**
- * @brief Finish the SHA-1 message digest
+ * @brief Process message in 16-word blocks
  * @param[in] context Pointer to the SHA-1 context
- * @param[out] digest Calculated digest (optional parameter)
  **/
 
-void sha1Final(Sha1Context *context, uint8_t *digest)
+void sha1ProcessBlock(Sha1Context *context)
 {
-   //Acquire exclusive access to the HASH module
-   osAcquireMutex(&stm32f2xxCryptoMutex);
-
-   //Restore hash context
-   hashRestoreContext(context->hwContext);
-
-   //Finalize hash computation
-   HAL_HASH_SHA1_Accmlt_End(&HASH_Handle, context->buffer, context->size,
-      context->digest, HAL_MAX_DELAY);
-
-   //Release exclusive access to the HASH module
-   osReleaseMutex(&stm32f2xxCryptoMutex);
-
-   //Copy the resulting digest
-   if(digest != NULL)
-   {
-      osMemcpy(digest, context->digest, SHA1_DIGEST_SIZE);
-   }
+   //Update hash value
+   hashProcessData(HASH_CR_ALGO_SHA1, context->buffer, 64, context->h,
+      SHA1_DIGEST_SIZE / 4);
 }
 
-
-/**
- * @brief Finish the SHA-1 message digest (no padding added)
- * @param[in] context Pointer to the SHA-1 context
- * @param[out] digest Calculated digest
- **/
-
-void sha1FinalRaw(Sha1Context *context, uint8_t *digest)
-{
-   uint_t i;
-   uint32_t temp;
-   uint8_t buffer[4];
-
-   //Acquire exclusive access to the HASH module
-   osAcquireMutex(&stm32f2xxCryptoMutex);
-
-   //Restore hash context
-   hashRestoreContext(context->hwContext);
-
-   //Force the current block to be processed by the hardware
-   osMemset(buffer, 0, 4);
-   HAL_HASH_SHA1_Accmlt(&HASH_Handle, buffer, 4);
-
-   //Wait for the processing to complete
-   while((HASH->SR & HASH_SR_BUSY) != 0)
-   {
-   }
-
-   //Get the intermediate hash value
-   for(i = 0; i < SHA1_DIGEST_SIZE / 4; i++)
-   {
-      temp = HASH->CSR[6 + i];
-      STORE32BE(temp, digest + i * 4);
-   }
-
-   //Release exclusive access to the HASH module
-   osReleaseMutex(&stm32f2xxCryptoMutex);
-}
-
+#endif
 #endif

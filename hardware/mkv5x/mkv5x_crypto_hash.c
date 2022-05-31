@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -37,14 +37,12 @@
 #include "core/crypto.h"
 #include "hardware/mkv5x/mkv5x_crypto.h"
 #include "hardware/mkv5x/mkv5x_crypto_hash.h"
-#include "hash/md5.h"
-#include "hash/sha1.h"
-#include "hash/sha256.h"
+#include "hash/hash_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
 #if (MKV5X_CRYPTO_HASH_SUPPORT == ENABLED)
-
+#if (MD5_SUPPORT == ENABLED)
 
 /**
  * @brief Update the MD5 context with a portion of the message being hashed
@@ -123,6 +121,8 @@ void md5ProcessBlock(Md5Context *context)
    osReleaseMutex(&mkv5xCryptoMutex);
 }
 
+#endif
+#if (SHA1_SUPPORT == ENABLED)
 
 /**
  * @brief Update the SHA-1 context with a portion of the message being hashed
@@ -201,6 +201,8 @@ void sha1ProcessBlock(Sha1Context *context)
    osReleaseMutex(&mkv5xCryptoMutex);
 }
 
+#endif
+#if (SHA256_SUPPORT == ENABLED)
 
 /**
  * @brief Update the SHA-256 context with a portion of the message being hashed
@@ -279,4 +281,5 @@ void sha256ProcessBlock(Sha256Context *context)
    osReleaseMutex(&mkv5xCryptoMutex);
 }
 
+#endif
 #endif

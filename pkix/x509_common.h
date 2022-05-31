@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 #ifndef _X509_COMMON_H
@@ -432,7 +432,9 @@ typedef enum
    X509_EXT_KEY_USAGE_EMAIL_PROTECTION = 0x08,
    X509_EXT_KEY_USAGE_TIME_STAMPING    = 0x10,
    X509_EXT_KEY_USAGE_OCSP_SIGNING     = 0x20,
-   X509_EXT_KEY_USAGE_ANY              = 0x3F
+   X509_EXT_KEY_USAGE_SSH_CLIENT       = 0x40,
+   X509_EXT_KEY_USAGE_SSH_SERVER       = 0x80,
+   X509_EXT_KEY_USAGE_ANY              = 0xFF
 } X509ExtKeyUsageBitmap;
 
 
@@ -1208,6 +1210,8 @@ extern const uint8_t X509_KP_CODE_SIGNING_OID[8];
 extern const uint8_t X509_KP_EMAIL_PROTECTION_OID[8];
 extern const uint8_t X509_KP_TIME_STAMPING_OID[8];
 extern const uint8_t X509_KP_OCSP_SIGNING_OID[8];
+extern const uint8_t X509_KP_SSH_CLIENT_OID[8];
+extern const uint8_t X509_KP_SSH_SERVER_OID[8];
 
 extern const uint8_t X509_CHALLENGE_PASSWORD_OID[9];
 extern const uint8_t X509_EXTENSION_REQUEST_OID[9];

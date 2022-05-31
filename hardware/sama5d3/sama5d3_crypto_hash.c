@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -36,9 +36,7 @@
 #include "core/crypto.h"
 #include "hardware/sama5d3/sama5d3_crypto.h"
 #include "hardware/sama5d3/sama5d3_crypto_hash.h"
-#include "hash/sha1.h"
-#include "hash/sha224.h"
-#include "hash/sha256.h"
+#include "hash/hash_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -104,6 +102,8 @@ void hashProcessDataBlock(const uint8_t *data, size_t length)
    }
 }
 
+
+#if (SHA1_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-1
@@ -173,6 +173,8 @@ error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
    return NO_ERROR;
 }
 
+#endif
+#if (SHA224_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-256
@@ -244,6 +246,8 @@ error_t sha224Compute(const void *data, size_t length, uint8_t *digest)
    return NO_ERROR;
 }
 
+#endif
+#if (SHA256_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-256
@@ -316,6 +320,8 @@ error_t sha256Compute(const void *data, size_t length, uint8_t *digest)
    return NO_ERROR;
 }
 
+#endif
+#if (SHA384_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-384
@@ -392,6 +398,8 @@ error_t sha384Compute(const void *data, size_t length, uint8_t *digest)
    return NO_ERROR;
 }
 
+#endif
+#if (SHA512_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-512
@@ -472,4 +480,5 @@ error_t sha512Compute(const void *data, size_t length, uint8_t *digest)
    return NO_ERROR;
 }
 
+#endif
 #endif

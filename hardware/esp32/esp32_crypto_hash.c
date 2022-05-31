@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -39,10 +39,7 @@
 #include "core/crypto.h"
 #include "hardware/esp32/esp32_crypto.h"
 #include "hardware/esp32/esp32_crypto_hash.h"
-#include "hash/sha1.h"
-#include "hash/sha256.h"
-#include "hash/sha384.h"
-#include "hash/sha512.h"
+#include "hash/hash_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -51,7 +48,6 @@
 
 /**
  * @brief SHA module initialization
- * @return Error code
  **/
 
 void esp32ShaInit(void)
@@ -219,6 +215,8 @@ void hashProcessDataBlock(uint32_t algo, const uint8_t *data, bool_t *first)
 }
 
 
+#if (SHA1_SUPPORT == ENABLED)
+
 /**
  * @brief Digest a message using SHA-1
  * @param[in] data Pointer to the message being hashed
@@ -298,6 +296,8 @@ error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
    return NO_ERROR;
 }
 
+#endif
+#if (SHA256_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-256
@@ -384,6 +384,8 @@ error_t sha256Compute(const void *data, size_t length, uint8_t *digest)
    return NO_ERROR;
 }
 
+#endif
+#if (SHA384_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-384
@@ -478,6 +480,8 @@ error_t sha384Compute(const void *data, size_t length, uint8_t *digest)
    return NO_ERROR;
 }
 
+#endif
+#if (SHA512_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-512
@@ -580,4 +584,5 @@ error_t sha512Compute(const void *data, size_t length, uint8_t *digest)
    return NO_ERROR;
 }
 
+#endif
 #endif

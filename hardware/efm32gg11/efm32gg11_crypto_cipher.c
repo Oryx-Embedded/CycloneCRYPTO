@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -37,17 +37,13 @@
 #include "core/crypto.h"
 #include "hardware/efm32gg11/efm32gg11_crypto.h"
 #include "hardware/efm32gg11/efm32gg11_crypto_cipher.h"
-#include "cipher/aes.h"
-#include "cipher_mode/ecb.h"
-#include "cipher_mode/cbc.h"
-#include "cipher_mode/cfb.h"
-#include "cipher_mode/ofb.h"
-#include "cipher_mode/ctr.h"
-#include "aead/gcm.h"
+#include "cipher/cipher_algorithms.h"
+#include "cipher_mode/cipher_modes.h"
+#include "aead/aead_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
-#if (EFM32GG11_CRYPTO_CIPHER_SUPPORT == ENABLED)
+#if (EFM32GG11_CRYPTO_CIPHER_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
 
 
 /**
@@ -169,6 +165,8 @@ void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
    osReleaseMutex(&efm32gg11CryptoMutex);
 }
 
+
+#if (ECB_SUPPORT == ENABLED)
 
 /**
  * @brief ECB encryption
@@ -349,6 +347,8 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    return error;
 }
 
+#endif
+#if (CBC_SUPPORT == ENABLED)
 
 /**
  * @brief CBC encryption
@@ -576,6 +576,8 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
    return error;
 }
 
+#endif
+#if (CFB_SUPPORT == ENABLED)
 
 /**
  * @brief CFB encryption
@@ -866,6 +868,8 @@ error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
    return error;
 }
 
+#endif
+#if (OFB_SUPPORT == ENABLED)
 
 /**
  * @brief OFB encryption
@@ -1011,6 +1015,8 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
    return error;
 }
 
+#endif
+#if (CTR_SUPPORT == ENABLED)
 
 /**
  * @brief Increment counter block (CTR mode)
@@ -1163,6 +1169,8 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    return error;
 }
 
+#endif
+#if (GCM_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize GCM context
@@ -1259,4 +1267,5 @@ void gcmMul(GcmContext *context, uint8_t *x)
    osReleaseMutex(&efm32gg11CryptoMutex);
 }
 
+#endif
 #endif

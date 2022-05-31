@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -82,7 +82,7 @@ error_t stm32u5xxCryptoInit(void)
    }
 #endif
 
-#if (STM32U5XX_CRYPTO_CIPHER_SUPPORT == ENABLED)
+#if (STM32U5XX_CRYPTO_CIPHER_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
    //Check status code
    if(!error)
    {

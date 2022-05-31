@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -36,10 +36,7 @@
 #include "core/crypto.h"
 #include "hardware/s5d9/s5d9_crypto.h"
 #include "hardware/s5d9/s5d9_crypto_hash.h"
-#include "hash/md5.h"
-#include "hash/sha1.h"
-#include "hash/sha224.h"
-#include "hash/sha256.h"
+#include "hash/hash_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -54,6 +51,8 @@ static const uint8_t padding[64] =
    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
+
+#if (MD5_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize MD5 message digest context
@@ -234,6 +233,8 @@ void md5ProcessBlock(Md5Context *context)
    osReleaseMutex(&s5d9CryptoMutex);
 }
 
+#endif
+#if (SHA1_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize SHA-1 message digest context
@@ -392,6 +393,8 @@ void sha1ProcessBlock(Sha1Context *context)
    osReleaseMutex(&s5d9CryptoMutex);
 }
 
+#endif
+#if (SHA224_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize SHA-224 message digest context
@@ -416,6 +419,8 @@ void sha224Init(Sha224Context *context)
    context->totalSize = 0;
 }
 
+#endif
+#if (SHA256_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize SHA-256 message digest context
@@ -577,4 +582,5 @@ void sha256ProcessBlock(Sha256Context *context)
    osReleaseMutex(&s5d9CryptoMutex);
 }
 
+#endif
 #endif

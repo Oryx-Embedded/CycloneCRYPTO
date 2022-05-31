@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -37,13 +37,12 @@
 #include "core/crypto.h"
 #include "hardware/mimxrt1060/mimxrt1060_crypto.h"
 #include "hardware/mimxrt1060/mimxrt1060_crypto_cipher.h"
-#include "cipher/aes.h"
-#include "cipher_mode/ecb.h"
-#include "cipher_mode/cbc.h"
+#include "cipher/cipher_algorithms.h"
+#include "cipher_mode/cipher_modes.h"
 #include "debug.h"
 
 //Check crypto library configuration
-#if (MIMXRT1060_CRYPTO_CIPHER_SUPPORT == ENABLED)
+#if (MIMXRT1060_CRYPTO_CIPHER_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
 
 //IAR EWARM compiler?
 #if defined(__ICCARM__)
@@ -71,6 +70,7 @@ static uint8_t dcpBufferOut[MIMXRT1060_DCP_BUFFER_SIZE]
 
 #endif
 
+#if (ECB_SUPPORT == ENABLED)
 
 /**
  * @brief ECB encryption
@@ -295,6 +295,8 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    return (status == kStatus_Success) ? NO_ERROR : ERROR_FAILURE;
 }
 
+#endif
+#if (CBC_SUPPORT == ENABLED)
 
 /**
  * @brief CBC encryption
@@ -555,4 +557,5 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
    return (status == kStatus_Success) ? NO_ERROR : ERROR_FAILURE;
 }
 
+#endif
 #endif

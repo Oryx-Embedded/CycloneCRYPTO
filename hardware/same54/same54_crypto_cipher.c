@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -36,16 +36,13 @@
 #include "core/crypto.h"
 #include "hardware/same54/same54_crypto.h"
 #include "hardware/same54/same54_crypto_cipher.h"
-#include "cipher/aes.h"
-#include "cipher_mode/ecb.h"
-#include "cipher_mode/cbc.h"
-#include "cipher_mode/cfb.h"
-#include "cipher_mode/ofb.h"
-#include "aead/gcm.h"
+#include "cipher/cipher_algorithms.h"
+#include "cipher_mode/cipher_modes.h"
+#include "aead/aead_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
-#if (SAME54_CRYPTO_CIPHER_SUPPORT == ENABLED)
+#if (SAME54_CRYPTO_CIPHER_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
 
 
 /**
@@ -289,6 +286,8 @@ void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 }
 
 
+#if (ECB_SUPPORT == ENABLED)
+
 /**
  * @brief ECB encryption
  * @param[in] cipher Cipher algorithm
@@ -416,6 +415,8 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    return error;
 }
 
+#endif
+#if (CBC_SUPPORT == ENABLED)
 
 /**
  * @brief CBC encryption
@@ -584,6 +585,8 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
    return error;
 }
 
+#endif
+#if (CFB_SUPPORT == ENABLED)
 
 /**
  * @brief CFB encryption
@@ -770,6 +773,8 @@ error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
    return error;
 }
 
+#endif
+#if (OFB_SUPPORT == ENABLED)
 
 /**
  * @brief OFB encryption
@@ -863,6 +868,8 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
    return error;
 }
 
+#endif
+#if (GCM_SUPPORT == ENABLED)
 
 /**
  * @brief Generate hash subkey
@@ -1390,4 +1397,5 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    return (mask == 0) ? NO_ERROR : ERROR_FAILURE;
 }
 
+#endif
 #endif

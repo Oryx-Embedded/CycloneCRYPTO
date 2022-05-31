@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -37,11 +37,9 @@
 #include "core/crypto.h"
 #include "hardware/ra6/ra6_crypto.h"
 #include "hardware/ra6/ra6_crypto_cipher.h"
-#include "cipher/aes.h"
-#include "cipher_mode/ecb.h"
-#include "cipher_mode/cbc.h"
-#include "cipher_mode/ctr.h"
-#include "aead/gcm.h"
+#include "cipher/cipher_algorithms.h"
+#include "cipher_mode/cipher_modes.h"
+#include "aead/aead_algorithms.h"
 #include "debug.h"
 
 //SCE9 specific dependencies
@@ -50,7 +48,7 @@
 #endif
 
 //Check crypto library configuration
-#if (RA6_CRYPTO_CIPHER_SUPPORT == ENABLED)
+#if (RA6_CRYPTO_CIPHER_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
 
 
 /**
@@ -237,6 +235,8 @@ void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
    osReleaseMutex(&ra6CryptoMutex);
 }
 
+
+#if (ECB_SUPPORT == ENABLED)
 
 /**
  * @brief ECB encryption
@@ -433,6 +433,8 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    return (status == FSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
 }
 
+#endif
+#if (CBC_SUPPORT == ENABLED)
 
 /**
  * @brief CBC encryption
@@ -664,6 +666,8 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
    return (status == FSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
 }
 
+#endif
+#if (CTR_SUPPORT == ENABLED)
 
 /**
  * @brief CTR encryption
@@ -806,8 +810,8 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    return (status == FSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
 }
 
-
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
+#endif
+#if (GCM_SUPPORT == ENABLED && BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
 
 /**
  * @brief Initialize GCM context

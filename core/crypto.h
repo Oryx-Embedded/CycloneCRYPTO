@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.1.4"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.1.6"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 1
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 4
+#define CYCLONE_CRYPTO_REV_NUMBER 6
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -508,7 +508,7 @@
    #error SALSA20_SUPPORT parameter is not valid
 #endif
 
-//Chacha support
+//ChaCha support
 #ifndef CHACHA_SUPPORT
    #define CHACHA_SUPPORT DISABLED
 #elif (CHACHA_SUPPORT != ENABLED && CHACHA_SUPPORT != DISABLED)
@@ -522,7 +522,7 @@
    #error POLY1305_SUPPORT parameter is not valid
 #endif
 
-//Chacha20Poly1305 support
+//ChaCha20Poly1305 support
 #ifndef CHACHA20_POLY1305_SUPPORT
    #define CHACHA20_POLY1305_SUPPORT DISABLED
 #elif (CHACHA20_POLY1305_SUPPORT != ENABLED && CHACHA20_POLY1305_SUPPORT != DISABLED)

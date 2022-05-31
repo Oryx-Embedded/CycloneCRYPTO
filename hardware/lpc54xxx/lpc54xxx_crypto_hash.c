@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.4
+ * @version 2.1.6
  **/
 
 //Switch to the appropriate trace level
@@ -37,14 +37,12 @@
 #include "core/crypto.h"
 #include "hardware/lpc54xxx/lpc54xxx_crypto.h"
 #include "hardware/lpc54xxx/lpc54xxx_crypto_hash.h"
-#include "hash/sha1.h"
-#include "hash/sha224.h"
-#include "hash/sha256.h"
+#include "hash/hash_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
 #if (LPC54XXX_CRYPTO_HASH_SUPPORT == ENABLED)
-
+#if (SHA1_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-1
@@ -90,6 +88,8 @@ error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
    return (status == kStatus_Success) ? NO_ERROR : ERROR_FAILURE;
 }
 
+#endif
+#if (SHA256_SUPPORT == ENABLED)
 
 /**
  * @brief Digest a message using SHA-256
@@ -135,4 +135,5 @@ error_t sha256Compute(const void *data, size_t length, uint8_t *digest)
    return (status == kStatus_Success) ? NO_ERROR : ERROR_FAILURE;
 }
 
+#endif
 #endif
