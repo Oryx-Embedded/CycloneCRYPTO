@@ -228,7 +228,7 @@ void ripemd160Final(Ripemd160Context *context, uint8_t *digest)
    ripemd160ProcessBlock(context);
 
    //Convert from host byte order to little-endian byte order
-   for(i = 0; i < 4; i++)
+   for(i = 0; i < 5; i++)
    {
       context->h[i] = htole32(context->h[i]);
    }
