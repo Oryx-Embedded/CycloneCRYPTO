@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -48,7 +48,8 @@ const PrngAlgo yarrowPrngAlgo =
    (PrngAlgoRelease) yarrowRelease,
    (PrngAlgoSeed) yarrowSeed,
    (PrngAlgoAddEntropy) yarrowAddEntropy,
-   (PrngAlgoRead) yarrowRead
+   (PrngAlgoRead) yarrowRead,
+   (PrngAlgoDeinit) yarrowDeinit
 };
 
 
@@ -154,7 +155,9 @@ error_t yarrowAddEntropy(YarrowContext *context, uint_t source,
 
       //Reseed when any source estimate reaches 100 bits
       if(context->fastPoolEntropy[source] >= YARROW_FAST_THRESHOLD)
+      {
          yarrowFastReseed(context);
+      }
 
       //The samples from each source alternate between the two pools
       context->currentPool[source] = YARROW_SLOW_POOL_ID;
@@ -168,7 +171,9 @@ error_t yarrowAddEntropy(YarrowContext *context, uint_t source,
 
       //Prevent overflows while adding up the entropy estimate
       if(context->slowPoolEntropy[source] >= YARROW_SLOW_THRESHOLD)
+      {
          context->slowPoolEntropy[source] = YARROW_SLOW_THRESHOLD;
+      }
 
       //At least two different sources must be over 160 bits in the slow
       //pool before the slow pool reseeds
@@ -176,12 +181,16 @@ error_t yarrowAddEntropy(YarrowContext *context, uint_t source,
       {
          //Check whether the current source has hit the threshold
          if(context->slowPoolEntropy[i] >= YARROW_SLOW_THRESHOLD)
+         {
             k++;
+         }
       }
 
       //Reseed from the slow pool?
       if(k >= YARROW_K)
+      {
          yarrowSlowReseed(context);
+      }
 
       //The samples from each source alternate between the two pools
       context->currentPool[source] = YARROW_FAST_POOL_ID;
@@ -237,6 +246,9 @@ error_t yarrowRead(YarrowContext *context, uint8_t *output, size_t length)
    //Apply generator gate?
    if(context->blockCount >= YARROW_PG)
    {
+      //Erase AES context
+      aesDeinit(&context->cipherContext);
+
       //Generate some random bytes
       yarrowGenerateBlock(context, context->key);
       //Use them as the new key
@@ -272,7 +284,9 @@ void yarrowGenerateBlock(YarrowContext *context, uint8_t *output)
    {
       //Increment the current byte and propagate the carry if necessary
       if(++(context->counter[i]) != 0)
+      {
          break;
+      }
    }
 }
 
@@ -285,6 +299,12 @@ void yarrowGenerateBlock(YarrowContext *context, uint8_t *output)
 void yarrowFastReseed(YarrowContext *context)
 {
    size_t i;
+
+   //Erase AES context
+   if(context->ready)
+   {
+      aesDeinit(&context->cipherContext);
+   }
 
    //Reseeding from the fast pool use the current key and the hash of all
    //inputs to the fast pool since the last reseed, to generate a new key
@@ -321,6 +341,12 @@ void yarrowSlowReseed(YarrowContext *context)
 {
    size_t i;
 
+   //Erase AES context
+   if(context->ready)
+   {
+      aesDeinit(&context->cipherContext);
+   }
+
    //Compute the hash of all inputs to the fast pool
    sha256Final(&context->fastPool, NULL);
 
@@ -350,6 +376,27 @@ void yarrowSlowReseed(YarrowContext *context)
 
    //The PRNG is ready to generate random data
    context->ready = TRUE;
+}
+
+
+/**
+ * @brief Release PRNG context
+ * @param[in] context Pointer to the PRNG context
+ **/
+
+void yarrowDeinit(YarrowContext *context)
+{
+   //Erase AES context
+   if(context->ready)
+   {
+      aesDeinit(&context->cipherContext);
+   }
+
+   //Free previously allocated resources
+   osDeleteMutex(&context->mutex);
+
+   //Clear PRNG state
+   osMemset(context, 0, sizeof(YarrowContext));
 }
 
 #endif

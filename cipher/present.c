@@ -29,7 +29,7 @@
  * PRESENT is an ultra-lightweight block cipher
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -186,7 +186,8 @@ const CipherAlgo presentCipherAlgo =
    NULL,
    NULL,
    (CipherAlgoEncryptBlock) presentEncryptBlock,
-   (CipherAlgoDecryptBlock) presentDecryptBlock
+   (CipherAlgoDecryptBlock) presentDecryptBlock,
+   (CipherAlgoDeinit) presentDeinit
 };
 
 
@@ -198,7 +199,8 @@ const CipherAlgo presentCipherAlgo =
  * @return Error code
  **/
 
-error_t presentInit(PresentContext *context, const uint8_t *key, size_t keyLen)
+error_t presentInit(PresentContext *context, const uint8_t *key,
+   size_t keyLen)
 {
    uint_t i;
    uint64_t t;
@@ -286,7 +288,8 @@ error_t presentInit(PresentContext *context, const uint8_t *key, size_t keyLen)
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-void presentEncryptBlock(PresentContext *context, const uint8_t *input, uint8_t *output)
+void presentEncryptBlock(PresentContext *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint_t i;
    uint64_t s;
@@ -335,7 +338,8 @@ void presentEncryptBlock(PresentContext *context, const uint8_t *input, uint8_t 
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-void presentDecryptBlock(PresentContext *context, const uint8_t *input, uint8_t *output)
+void presentDecryptBlock(PresentContext *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint_t i;
    uint64_t s;
@@ -391,6 +395,18 @@ void presentDecryptBlock(PresentContext *context, const uint8_t *input, uint8_t 
 
    //The final state is then copied to the output
    STORE64BE(state, output);
+}
+
+
+/**
+ * @brief Release PRESENT context
+ * @param[in] context Pointer to the PRESENT context
+ **/
+
+void presentDeinit(PresentContext *context)
+{
+   //Clear PRESENT context
+   osMemset(context, 0, sizeof(PresentContext));
 }
 
 #endif

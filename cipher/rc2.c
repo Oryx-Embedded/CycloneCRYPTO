@@ -32,7 +32,7 @@
  * for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -78,7 +78,8 @@ const CipherAlgo rc2CipherAlgo =
    NULL,
    NULL,
    (CipherAlgoEncryptBlock) rc2EncryptBlock,
-   (CipherAlgoDecryptBlock) rc2DecryptBlock
+   (CipherAlgoDecryptBlock) rc2DecryptBlock,
+   (CipherAlgoDeinit) rc2Deinit
 };
 
 
@@ -164,13 +165,14 @@ error_t rc2InitEx(Rc2Context *context, const uint8_t *key, size_t keyLen,
 
 
 /**
- * @brief Encrypt a 16-byte block using RC2 algorithm
+ * @brief Encrypt a 8-byte block using RC2 algorithm
  * @param[in] context Pointer to the RC2 context
  * @param[in] input Plaintext block to encrypt
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-void rc2EncryptBlock(Rc2Context *context, const uint8_t *input, uint8_t *output)
+void rc2EncryptBlock(Rc2Context *context, const uint8_t *input,
+   uint8_t *output)
 {
    int_t i;
    uint16_t r0;
@@ -217,13 +219,14 @@ void rc2EncryptBlock(Rc2Context *context, const uint8_t *input, uint8_t *output)
 
 
 /**
- * @brief Decrypt a 16-byte block using RC2 algorithm
+ * @brief Decrypt a 8-byte block using RC2 algorithm
  * @param[in] context Pointer to the RC2 context
  * @param[in] input Ciphertext block to decrypt
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-void rc2DecryptBlock(Rc2Context *context, const uint8_t *input, uint8_t *output)
+void rc2DecryptBlock(Rc2Context *context, const uint8_t *input,
+   uint8_t *output)
 {
    int_t i;
    uint16_t r0;
@@ -266,6 +269,18 @@ void rc2DecryptBlock(Rc2Context *context, const uint8_t *input, uint8_t *output)
    STORE16LE(r1, output + 2);
    STORE16LE(r2, output + 4);
    STORE16LE(r3, output + 6);
+}
+
+
+/**
+ * @brief Release RC2 context
+ * @param[in] context Pointer to the RC2 context
+ **/
+
+void rc2Deinit(Rc2Context *context)
+{
+   //Clear RC2 context
+   osMemset(context, 0, sizeof(Rc2Context));
 }
 
 #endif

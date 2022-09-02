@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
-#include "samv71.h"
+#include "sam.h"
 #include "core/crypto.h"
 #include "hardware/samv71/samv71_crypto.h"
 #include "hardware/samv71/samv71_crypto_cipher.h"
@@ -55,47 +55,47 @@ void aesLoadKey(AesContext *context)
    uint32_t temp;
 
    //Read mode register
-   temp = AES->AES_MR & ~AES_MR_KEYSIZE_Msk;
+   temp = AES_REGS->AES_MR & ~AES_MR_KEYSIZE_Msk;
 
    //Check the length of the key
    if(context->nr == 10)
    {
       //10 rounds are required for 128-bit key
-      AES->AES_MR = temp | AES_MR_KEYSIZE_AES128;
+      AES_REGS->AES_MR = temp | AES_MR_KEYSIZE_AES128;
 
       //Set the 128-bit encryption key
-      AES->AES_KEYWR[0] = context->ek[0];
-      AES->AES_KEYWR[1] = context->ek[1];
-      AES->AES_KEYWR[2] = context->ek[2];
-      AES->AES_KEYWR[3] = context->ek[3];
+      AES_REGS->AES_KEYWR[0] = context->ek[0];
+      AES_REGS->AES_KEYWR[1] = context->ek[1];
+      AES_REGS->AES_KEYWR[2] = context->ek[2];
+      AES_REGS->AES_KEYWR[3] = context->ek[3];
    }
    else if(context->nr == 12)
    {
       //12 rounds are required for 192-bit key
-      AES->AES_MR = temp | AES_MR_KEYSIZE_AES192;
+      AES_REGS->AES_MR = temp | AES_MR_KEYSIZE_AES192;
 
       //Set the 192-bit encryption key
-      AES->AES_KEYWR[0] = context->ek[0];
-      AES->AES_KEYWR[1] = context->ek[1];
-      AES->AES_KEYWR[2] = context->ek[2];
-      AES->AES_KEYWR[3] = context->ek[3];
-      AES->AES_KEYWR[4] = context->ek[4];
-      AES->AES_KEYWR[5] = context->ek[5];
+      AES_REGS->AES_KEYWR[0] = context->ek[0];
+      AES_REGS->AES_KEYWR[1] = context->ek[1];
+      AES_REGS->AES_KEYWR[2] = context->ek[2];
+      AES_REGS->AES_KEYWR[3] = context->ek[3];
+      AES_REGS->AES_KEYWR[4] = context->ek[4];
+      AES_REGS->AES_KEYWR[5] = context->ek[5];
    }
    else
    {
       //14 rounds are required for 256-bit key
-      AES->AES_MR = temp | AES_MR_KEYSIZE_AES256;
+      AES_REGS->AES_MR = temp | AES_MR_KEYSIZE_AES256;
 
       //Set the 256-bit encryption key
-      AES->AES_KEYWR[0] = context->ek[0];
-      AES->AES_KEYWR[1] = context->ek[1];
-      AES->AES_KEYWR[2] = context->ek[2];
-      AES->AES_KEYWR[3] = context->ek[3];
-      AES->AES_KEYWR[4] = context->ek[4];
-      AES->AES_KEYWR[5] = context->ek[5];
-      AES->AES_KEYWR[6] = context->ek[6];
-      AES->AES_KEYWR[7] = context->ek[7];
+      AES_REGS->AES_KEYWR[0] = context->ek[0];
+      AES_REGS->AES_KEYWR[1] = context->ek[1];
+      AES_REGS->AES_KEYWR[2] = context->ek[2];
+      AES_REGS->AES_KEYWR[3] = context->ek[3];
+      AES_REGS->AES_KEYWR[4] = context->ek[4];
+      AES_REGS->AES_KEYWR[5] = context->ek[5];
+      AES_REGS->AES_KEYWR[6] = context->ek[6];
+      AES_REGS->AES_KEYWR[7] = context->ek[7];
    }
 }
 
@@ -112,25 +112,25 @@ void aesProcessDataBlock(const uint8_t *input, uint8_t *output)
 
    //Write input block
    p = (uint32_t *) input;
-   AES->AES_IDATAR[0] = p[0];
-   AES->AES_IDATAR[1] = p[1];
-   AES->AES_IDATAR[2] = p[2];
-   AES->AES_IDATAR[3] = p[3];
+   AES_REGS->AES_IDATAR[0] = p[0];
+   AES_REGS->AES_IDATAR[1] = p[1];
+   AES_REGS->AES_IDATAR[2] = p[2];
+   AES_REGS->AES_IDATAR[3] = p[3];
 
    //Start encryption/decryption
-   AES->AES_CR = AES_CR_START;
+   AES_REGS->AES_CR = AES_CR_START_Msk;
 
    //When processing completes, the DATRDY flag is raised
-   while((AES->AES_ISR & AES_ISR_DATRDY) == 0)
+   while((AES_REGS->AES_ISR & AES_ISR_DATRDY_Msk) == 0)
    {
    }
 
    //Read output block
    p = (uint32_t *) output;
-   p[0] = AES->AES_ODATAR[0];
-   p[1] = AES->AES_ODATAR[1];
-   p[2] = AES->AES_ODATAR[2];
-   p[3] = AES->AES_ODATAR[3];
+   p[0] = AES_REGS->AES_ODATAR[0];
+   p[1] = AES_REGS->AES_ODATAR[1];
+   p[2] = AES_REGS->AES_ODATAR[2];
+   p[3] = AES_REGS->AES_ODATAR[3];
 }
 
 
@@ -153,10 +153,10 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
    osAcquireMutex(&samv71CryptoMutex);
 
    //Perform software reset
-   AES->AES_CR = AES_CR_SWRST;
+   AES_REGS->AES_CR = AES_CR_SWRST_Msk;
 
    //Set operation mode
-   AES->AES_MR = AES_MR_SMOD_MANUAL_START | mode;
+   AES_REGS->AES_MR = AES_MR_SMOD_MANUAL_START | mode;
    //Set encryption key
    aesLoadKey(context);
 
@@ -165,10 +165,10 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
    {
       //Set initialization vector
       p = (uint32_t *) iv;
-      AES->AES_IVR[0] = p[0];
-      AES->AES_IVR[1] = p[1];
-      AES->AES_IVR[2] = p[2];
-      AES->AES_IVR[3] = p[3];
+      AES_REGS->AES_IVR[0] = p[0];
+      AES_REGS->AES_IVR[1] = p[1];
+      AES_REGS->AES_IVR[2] = p[2];
+      AES_REGS->AES_IVR[3] = p[3];
    }
 
    //Process data
@@ -258,7 +258,7 @@ error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
 void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 {
    //Perform AES encryption
-   aesProcessData(context, NULL, input, output, AES_BLOCK_SIZE, AES_MR_CIPHER |
+   aesProcessData(context, NULL, input, output, AES_BLOCK_SIZE, AES_MR_CIPHER_Msk |
       AES_MR_OPMOD_ECB);
 }
 
@@ -439,7 +439,7 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
       else if((length % AES_BLOCK_SIZE) == 0)
       {
          //Encrypt payload data
-         aesProcessData(context, iv, p, c, length, AES_MR_CIPHER |
+         aesProcessData(context, iv, p, c, length, AES_MR_CIPHER_Msk |
             AES_MR_OPMOD_CBC);
 
          //Update the value of the initialization vector
@@ -872,17 +872,17 @@ void gcmUpdateGhash(const uint8_t *data)
 
    //Write data block
    p = (uint32_t *) data;
-   AES->AES_IDATAR[0] = p[0];
-   AES->AES_IDATAR[1] = p[1];
-   AES->AES_IDATAR[2] = p[2];
-   AES->AES_IDATAR[3] = p[3];
+   AES_REGS->AES_IDATAR[0] = p[0];
+   AES_REGS->AES_IDATAR[1] = p[1];
+   AES_REGS->AES_IDATAR[2] = p[2];
+   AES_REGS->AES_IDATAR[3] = p[3];
 
    //Process data
-   AES->AES_CR = AES_CR_START;
+   AES_REGS->AES_CR = AES_CR_START_Msk;
 
    //The DATRDY bit indicates when the data have been processed. However, no
    //output data are generated when processing AAD
-   while((AES->AES_ISR & AES_ISR_DATRDY) == 0)
+   while((AES_REGS->AES_ISR & AES_ISR_DATRDY_Msk) == 0)
    {
    }
 }
@@ -912,14 +912,14 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
    osAcquireMutex(&samv71CryptoMutex);
 
    //Perform software reset
-   AES->AES_CR = AES_CR_SWRST;
+   AES_REGS->AES_CR = AES_CR_SWRST_Msk;
 
    //Check parameters
    if(aLen > 0 || length > 0)
    {
       //Select GCM operation mode
-      AES->AES_MR |= AES_MR_SMOD_MANUAL_START | AES_MR_OPMOD_GCM |
-         AES_MR_GTAGEN | mode;
+      AES_REGS->AES_MR |= AES_MR_SMOD_MANUAL_START | AES_MR_OPMOD_GCM |
+         AES_MR_GTAGEN_Msk | mode;
 
       //Whenever a new key is written to the hardware, the hash subkey is
       //automatically generated. The hash subkey generation must be complete
@@ -928,20 +928,20 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
 
       //The DATRDY bit of the AES_ISR indicates when the subkey generation is
       //complete
-      while((AES->AES_ISR & AES_ISR_DATRDY) == 0)
+      while((AES_REGS->AES_ISR & AES_ISR_DATRDY_Msk) == 0)
       {
       }
 
       //When the length of the IV is 96 bits, the padding string is appended to
       //the IV to form the pre-counter block
-      AES->AES_IVR[0] = LOAD32LE(iv);
-      AES->AES_IVR[1] = LOAD32LE(iv + 4);
-      AES->AES_IVR[2] = LOAD32LE(iv + 8);
-      AES->AES_IVR[3] = BETOH32(2);
+      AES_REGS->AES_IVR[0] = LOAD32LE(iv);
+      AES_REGS->AES_IVR[1] = LOAD32LE(iv + 4);
+      AES_REGS->AES_IVR[2] = LOAD32LE(iv + 8);
+      AES_REGS->AES_IVR[3] = BETOH32(2);
 
       //Set AADLEN field in AES_AADLENR and CLEN field in AES_CLENR
-      AES->AES_AADLENR = aLen;
-      AES->AES_CLENR = length;
+      AES_REGS->AES_AADLENR = aLen;
+      AES_REGS->AES_CLENR = length;
 
       //Process additional authenticated data
       while(aLen > 16)
@@ -992,36 +992,36 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
       }
 
       //Wait for TAGRDY to be set
-      while((AES->AES_ISR & AES_ISR_TAGRDY) == 0)
+      while((AES_REGS->AES_ISR & AES_ISR_TAGRDY_Msk) == 0)
       {
       }
 
       //Read the value from AES_TAGR registers to obtain the authentication tag
       //of the message
-      temp = AES->AES_TAGR[0];
+      temp = AES_REGS->AES_TAGR[0];
       STORE32LE(temp, t);
-      temp = AES->AES_TAGR[1];
+      temp = AES_REGS->AES_TAGR[1];
       STORE32LE(temp, t + 4);
-      temp = AES->AES_TAGR[2];
+      temp = AES_REGS->AES_TAGR[2];
       STORE32LE(temp, t + 8);
-      temp = AES->AES_TAGR[3];
+      temp = AES_REGS->AES_TAGR[3];
       STORE32LE(temp, t + 12);
    }
    else
    {
       //Select CTR operation mode
-      AES->AES_MR |= AES_MR_SMOD_MANUAL_START | AES_MR_OPMOD_CTR |
-         AES_MR_CIPHER;
+      AES_REGS->AES_MR |= AES_MR_SMOD_MANUAL_START | AES_MR_OPMOD_CTR |
+         AES_MR_CIPHER_Msk;
 
       //Set encryption key
       aesLoadKey(context);
 
       //When the length of the IV is 96 bits, the padding string is appended to
       //the IV to form the pre-counter block
-      AES->AES_IVR[0] = LOAD32LE(iv);
-      AES->AES_IVR[1] = LOAD32LE(iv + 4);
-      AES->AES_IVR[2] = LOAD32LE(iv + 8);
-      AES->AES_IVR[3] = BETOH32(1);
+      AES_REGS->AES_IVR[0] = LOAD32LE(iv);
+      AES_REGS->AES_IVR[1] = LOAD32LE(iv + 4);
+      AES_REGS->AES_IVR[2] = LOAD32LE(iv + 8);
+      AES_REGS->AES_IVR[3] = BETOH32(1);
 
       //Clear data block
       osMemset(buffer, 0, AES_BLOCK_SIZE);
@@ -1094,7 +1094,7 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
 
    //Perform AES-GCM encryption
    gcmProcessData(context->cipherContext, iv, a, aLen, p, c, length,
-      authTag, AES_MR_CIPHER);
+      authTag, AES_MR_CIPHER_Msk);
 
    //Copy the resulting authentication tag
    osMemcpy(t, authTag, tLen);

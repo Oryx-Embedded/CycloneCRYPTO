@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -1231,12 +1231,13 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
          }
          else
          {
-            //No data to process
+            //The length of the payload must be a multiple of the block size
+            status = kStatus_InvalidArgument;
          }
       }
       else
       {
-         //The length of the payload must be a multiple of the block size
+         //The value of the parameter is not valid
          status = kStatus_InvalidArgument;
       }
    }

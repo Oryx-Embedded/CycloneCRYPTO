@@ -30,7 +30,7 @@
  * 64 bits under control of a 64-bit key. Refer to FIPS 46-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -46,99 +46,120 @@
 //Rotate left operation
 #define ROL28(a, n) ((((a) << (n)) | ((a) >> (28 - (n)))) & 0x0FFFFFFF)
 
+//Permutation of bit fields between words (Eric Young's technique)
+#define SWAPMOVE(a, b, n, m) \
+{ \
+   t = ((a >> n) ^ b) & m; \
+   b ^= t; \
+   a ^= t << n; \
+}
+
 //Initial permutation
-#define DES_IP(left, right) \
+#define IP(l, r) \
 { \
-   temp = ((left >> 4) ^ right) & 0x0F0F0F0F; \
-   right ^= temp; \
-   left ^= temp << 4; \
-   temp = ((left >> 16) ^ right) & 0x0000FFFF; \
-   right ^= temp; \
-   left ^= temp << 16; \
-   temp = ((right >> 2) ^ left) & 0x33333333; \
-   left ^= temp; \
-   right ^= temp << 2; \
-   temp = ((right >> 8) ^ left) & 0x00FF00FF; \
-   left ^= temp; \
-   right ^= temp << 8; \
-   temp = ((left >> 1) ^ right) & 0x55555555; \
-   right ^= temp; \
-   left ^= temp << 1; \
-   left = ROL32(left, 1); \
-   right = ROL32(right, 1); \
+   SWAPMOVE(l, r, 4, 0x0F0F0F0F); \
+   SWAPMOVE(l, r, 16, 0x0000FFFF); \
+   SWAPMOVE(r, l, 2, 0x33333333); \
+   SWAPMOVE(r, l, 8, 0x00FF00FF); \
+   SWAPMOVE(l, r, 1, 0x55555555); \
+   l = ROL32(l, 1); \
+   r = ROL32(r, 1); \
 }
 
-//Final permutation
-#define DES_FP(left, right) \
+//Inverse of initial permutation
+#define IP_INV(l, r) \
 { \
-   left = ROR32(left, 1); \
-   right = ROR32(right, 1); \
-   temp = ((left >> 1) ^ right) & 0x55555555; \
-   right ^= temp; \
-   left ^= temp << 1; \
-   temp = ((right >> 8) ^ left) & 0x00FF00FF; \
-   left ^= temp; \
-   right ^= temp << 8; \
-   temp = ((right >> 2) ^ left) & 0x33333333; \
-   left ^= temp; \
-   right ^= temp << 2; \
-   temp = ((left >> 16) ^ right) & 0x0000FFFF; \
-   right ^= temp; \
-   left ^= temp << 16; \
-   temp = ((left >> 4) ^ right) & 0x0F0F0F0F; \
-   right ^= temp; \
-   left ^= temp << 4; \
-}
-
-//DES round
-#define DES_ROUND(left, right, ks) \
-{ \
-   temp = right ^ *(ks); \
-   left ^= sp2[(temp >> 24) & 0x3F]; \
-   left ^= sp4[(temp >> 16) & 0x3F]; \
-   left ^= sp6[(temp >> 8) & 0x3F]; \
-   left ^= sp8[temp & 0x3F]; \
-   temp = ROR32(right, 4) ^ *(ks + 1); \
-   left ^= sp1[(temp >> 24) & 0x3F]; \
-   left ^= sp3[(temp >> 16) & 0x3F]; \
-   left ^= sp5[(temp >> 8) & 0x3F]; \
-   left ^= sp7[temp & 0x3F]; \
-   temp = right; \
-   right = left; \
-   left = temp; \
+   l = ROR32(l, 1); \
+   r = ROR32(r, 1); \
+   SWAPMOVE(l, r, 1, 0x55555555); \
+   SWAPMOVE(r, l, 8, 0x00FF00FF); \
+   SWAPMOVE(r, l, 2, 0x33333333); \
+   SWAPMOVE(l, r, 16, 0x0000FFFF); \
+   SWAPMOVE(l, r, 4, 0x0F0F0F0F); \
 }
 
 //Permuted choice 1
-#define DES_PC1(left, right) \
+#define PC1(c, d) \
 { \
-   uint32_t temp; \
-   temp = ((left >> 4) ^ right) & 0x0F0F0F0F; \
-   right ^= temp; \
-   left ^= (temp << 4); \
-   temp = ((right >> 16) ^ left) & 0x0000FFFF; \
-   left ^= temp; \
-   right ^= (temp << 16); \
-   temp = ((left >> 2) ^ right) & 0x33333333; \
-   right ^= temp; \
-   left ^= (temp << 2); \
-   temp = ((right >> 16) ^ left) & 0x0000FFFF; \
-   left ^= temp; \
-   right ^= (temp << 16); \
-   temp = ((left >> 1) ^ right) & 0x55555555; \
-   right ^= temp; \
-   left ^= (temp << 1); \
-   temp = ((right >> 8) ^ left) & 0x00FF00FF; \
-   left ^= temp; \
-   right ^= (temp << 8); \
-   temp = ((left >> 1) ^ right) & 0x55555555; \
-   right ^= temp; \
-   left ^= (temp << 1); \
-   temp = (left << 8) | ((right >> 20) & 0x000000F0); \
-   left = ((right << 20) & 0x0FF00000); \
-   left |= ((right << 4) & 0x000FF000); \
-   left |= ((right >> 12) & 0x00000FF0); \
-   left |= ((right >> 28) & 0x0000000F); \
-   right = temp >> 4; \
+   SWAPMOVE(c, d, 4, 0x0F0F0F0F); \
+   SWAPMOVE(c, d, 16, 0x0000FFFF); \
+   SWAPMOVE(d, c, 2, 0x33333333); \
+   SWAPMOVE(d, c, 8, 0x00FF00FF); \
+   SWAPMOVE(c, d, 1, 0x55555555); \
+   SWAPMOVE(d, c, 8, 0x00FF00FF); \
+   SWAPMOVE(c, d, 16, 0x0000FFFF); \
+   t = (c << 4) & 0x0FFFFFF0; \
+   t |= (d >> 24) & 0x0000000F; \
+   c = (d << 20) & 0x0FF00000; \
+   c |= (d << 4) & 0x000FF000; \
+   c |= (d >> 12) & 0x00000FF0; \
+   c |= (d >> 28) & 0x0000000F; \
+   d = t; \
+}
+
+//Permuted choice 2 (first half)
+#define PC2_L(c, d) \
+   (((c << 4) & 0x24000000) | \
+   ((c << 28) & 0x10000000) | \
+   ((c << 14) & 0x08000000) | \
+   ((c << 18) & 0x02080000) | \
+   ((c << 6) & 0x01000000) | \
+   ((c << 9) & 0x00200000) | \
+   ((c >> 1) & 0x00100000) | \
+   ((c << 10) & 0x00040000) | \
+   ((c << 2) & 0x00020000) | \
+   ((c >> 10) & 0x00010000) | \
+   ((d >> 13) & 0x00002000) | \
+   ((d >> 4) & 0x00001000) | \
+   ((d << 6) & 0x00000800) | \
+   ((d >> 1) & 0x00000400) | \
+   ((d >> 14) & 0x00000200) | \
+   ((d >> 0) & 0x00000100) | \
+   ((d >> 5) & 0x00000020) | \
+   ((d >> 10) & 0x00000010) | \
+   ((d >> 3) & 0x00000008) | \
+   ((d >> 18) & 0x00000004) | \
+   ((d >> 26) & 0x00000002) | \
+   ((d >> 24) & 0x00000001))
+
+//Permuted choice 2 (second half)
+#define PC2_R(c, d) \
+   (((c << 15) & 0x20000000) | \
+   ((c << 17) & 0x10000000) | \
+   ((c << 10) & 0x08000000) | \
+   ((c << 22) & 0x04000000) | \
+   ((c >> 2) & 0x02000000) | \
+   ((c << 1) & 0x01000000) | \
+   ((c << 16) & 0x00200000) | \
+   ((c << 11) & 0x00100000) | \
+   ((c << 3) & 0x00080000) | \
+   ((c >> 6) & 0x00040000) | \
+   ((c << 15) & 0x00020000) | \
+   ((c >> 4) & 0x00010000) | \
+   ((d >> 2) & 0x00002000) | \
+   ((d << 8) & 0x00001000) | \
+   ((d >> 14) & 0x00000808) | \
+   ((d >> 9) & 0x00000400) | \
+   ((d >> 0) & 0x00000200) | \
+   ((d << 7) & 0x00000100) | \
+   ((d >> 7) & 0x00000020) | \
+   ((d >> 3) & 0x00000011) | \
+   ((d << 2) & 0x00000004) | \
+   ((d >> 21) & 0x00000002))
+
+//Round function
+#define ROUND(l, r, k1, k2) \
+{ \
+   t = r ^ k1; \
+   l ^= sp2[(t >> 24) & 0x3F]; \
+   l ^= sp4[(t >> 16) & 0x3F]; \
+   l ^= sp6[(t >> 8) & 0x3F]; \
+   l ^= sp8[t & 0x3F]; \
+   t = ROR32(r, 4) ^ k2; \
+   l ^= sp1[(t >> 24) & 0x3F]; \
+   l ^= sp3[(t >> 16) & 0x3F]; \
+   l ^= sp5[(t >> 8) & 0x3F]; \
+   l ^= sp7[t & 0x3F]; \
 }
 
 //Selection function 1
@@ -256,7 +277,8 @@ const CipherAlgo desCipherAlgo =
    NULL,
    NULL,
    (CipherAlgoEncryptBlock) desEncryptBlock,
-   (CipherAlgoDecryptBlock) desDecryptBlock
+   (CipherAlgoDecryptBlock) desDecryptBlock,
+   (CipherAlgoDeinit) desDeinit
 };
 
 
@@ -268,11 +290,13 @@ const CipherAlgo desCipherAlgo =
  * @return Error code
  **/
 
-__weak_func error_t desInit(DesContext *context, const uint8_t *key, size_t keyLen)
+__weak_func error_t desInit(DesContext *context, const uint8_t *key,
+   size_t keyLen)
 {
    uint_t i;
    uint32_t c;
    uint32_t d;
+   uint32_t t;
 
    //Check parameters
    if(context == NULL || key == NULL)
@@ -287,7 +311,7 @@ __weak_func error_t desInit(DesContext *context, const uint8_t *key, size_t keyL
    d = LOAD32BE(key + 4);
 
    //Permuted choice 1
-   DES_PC1(c, d);
+   PC1(c, d);
 
    //Generate the key schedule
    for(i = 0; i < 16; i++)
@@ -305,31 +329,8 @@ __weak_func error_t desInit(DesContext *context, const uint8_t *key, size_t keyL
       }
 
       //Permuted choice 2
-      context->ks[2 * i] =
-         ((c << 4)  & 0x24000000) | ((c << 28) & 0x10000000) |
-         ((c << 14) & 0x08000000) | ((c << 18) & 0x02080000) |
-         ((c << 6)  & 0x01000000) | ((c << 9)  & 0x00200000) |
-         ((c >> 1)  & 0x00100000) | ((c << 10) & 0x00040000) |
-         ((c << 2)  & 0x00020000) | ((c >> 10) & 0x00010000) |
-         ((d >> 13) & 0x00002000) | ((d >> 4)  & 0x00001000) |
-         ((d << 6)  & 0x00000800) | ((d >> 1)  & 0x00000400) |
-         ((d >> 14) & 0x00000200) | ((d)       & 0x00000100) |
-         ((d >> 5)  & 0x00000020) | ((d >> 10) & 0x00000010) |
-         ((d >> 3)  & 0x00000008) | ((d >> 18) & 0x00000004) |
-         ((d >> 26) & 0x00000002) | ((d >> 24) & 0x00000001);
-
-      context->ks[2 * i + 1] =
-         ((c << 15) & 0x20000000) | ((c << 17) & 0x10000000) |
-         ((c << 10) & 0x08000000) | ((c << 22) & 0x04000000) |
-         ((c >> 2)  & 0x02000000) | ((c << 1)  & 0x01000000) |
-         ((c << 16) & 0x00200000) | ((c << 11) & 0x00100000) |
-         ((c << 3)  & 0x00080000) | ((c >> 6)  & 0x00040000) |
-         ((c << 15) & 0x00020000) | ((c >> 4)  & 0x00010000) |
-         ((d >> 2)  & 0x00002000) | ((d << 8)  & 0x00001000) |
-         ((d >> 14) & 0x00000808) | ((d >> 9)  & 0x00000400) |
-         ((d)       & 0x00000200) | ((d << 7)  & 0x00000100) |
-         ((d >> 7)  & 0x00000020) | ((d >> 3)  & 0x00000011) |
-         ((d << 2)  & 0x00000004) | ((d >> 21) & 0x00000002);
+      context->ks[2 * i] = PC2_L(c, d);
+      context->ks[2 * i + 1] = PC2_R(c, d);
    }
 
    //No error to report
@@ -344,35 +345,36 @@ __weak_func error_t desInit(DesContext *context, const uint8_t *key, size_t keyL
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-__weak_func void desEncryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
+__weak_func void desEncryptBlock(DesContext *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint_t i;
-   uint32_t left;
-   uint32_t right;
-   uint32_t temp;
-
-   //Key schedule
-   uint32_t *ks = context->ks;
+   uint32_t l;
+   uint32_t r;
+   uint32_t t;
 
    //Copy the plaintext from the input buffer
-   left = LOAD32BE(input + 0);
-   right = LOAD32BE(input + 4);
+   l = LOAD32BE(input + 0);
+   r = LOAD32BE(input + 4);
 
    //Initial permutation
-   DES_IP(left, right);
+   IP(l, r);
 
    //16 rounds of computation are needed
-   for(i = 0; i < 16; i++, ks += 2)
+   for(i = 0; i < 32; i += 4)
    {
-      DES_ROUND(left, right, ks);
+      //Apply odd round function
+      ROUND(l, r, context->ks[i], context->ks[i + 1]);
+      //Apply even round function
+      ROUND(r, l, context->ks[i + 2], context->ks[i + 3]);
    }
 
-   //Inverse IP permutation
-   DES_FP(right, left);
+   //Inverse of initial permutation
+   IP_INV(r, l);
 
    //Copy the resulting ciphertext
-   STORE32BE(right, output + 0);
-   STORE32BE(left, output + 4);
+   STORE32BE(r, output + 0);
+   STORE32BE(l, output + 4);
 }
 
 
@@ -383,35 +385,48 @@ __weak_func void desEncryptBlock(DesContext *context, const uint8_t *input, uint
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-__weak_func void desDecryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
+__weak_func void desDecryptBlock(DesContext *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint_t i;
-   uint32_t left;
-   uint32_t right;
-   uint32_t temp;
-
-   //Keys in the key schedule must be applied in reverse order
-   uint32_t *ks = context->ks + 30;
+   uint32_t l;
+   uint32_t r;
+   uint32_t t;
 
    //Copy the ciphertext from the input buffer
-   left = LOAD32BE(input + 0);
-   right = LOAD32BE(input + 4);
+   r = LOAD32BE(input + 0);
+   l = LOAD32BE(input + 4);
 
    //Initial permutation
-   DES_IP(left, right);
+   IP(r, l);
 
-   //16 rounds of computation are needed
-   for(i = 0; i < 16; i++, ks -= 2)
+   //For decryption, keys in the key schedule must be applied in reverse order
+   for(i = 32; i > 0; i -= 4)
    {
-      DES_ROUND(left, right, ks);
+      //Apply even round function
+      ROUND(r, l, context->ks[i - 2], context->ks[i - 1]);
+      //Apply odd round function
+      ROUND(l, r, context->ks[i - 4], context->ks[i - 3]);
    }
 
-   //Inverse IP permutation
-   DES_FP(right, left);
+   //Inverse of initial permutation
+   IP_INV(l, r);
 
    //Copy the resulting plaintext
-   STORE32BE(right, output + 0);
-   STORE32BE(left, output + 4);
+   STORE32BE(l, output + 0);
+   STORE32BE(r, output + 4);
+}
+
+
+/**
+ * @brief Release DES context
+ * @param[in] context Pointer to the DES context
+ **/
+
+__weak_func void desDeinit(DesContext *context)
+{
+   //Clear DES context
+   osMemset(context, 0, sizeof(DesContext));
 }
 
 #endif

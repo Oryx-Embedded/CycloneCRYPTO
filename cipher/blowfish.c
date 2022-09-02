@@ -30,7 +30,7 @@
  * blocks of 128 bits under control of a 128/192/256-bit secret key
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -211,7 +211,8 @@ const CipherAlgo blowfishCipherAlgo =
    NULL,
    NULL,
    (CipherAlgoEncryptBlock) blowfishEncryptBlock,
-   (CipherAlgoDecryptBlock) blowfishDecryptBlock
+   (CipherAlgoDecryptBlock) blowfishDecryptBlock,
+   (CipherAlgoDeinit) blowfishDeinit
 };
 
 
@@ -401,7 +402,7 @@ error_t blowfishExpandKey(BlowfishContext *context, const uint8_t *salt,
 
 
 /**
- * @brief Encrypt a 16-byte block using Blowfish algorithm
+ * @brief Encrypt a 8-byte block using Blowfish algorithm
  * @param[in] context Pointer to the Blowfish context
  * @param[in] input Plaintext block to encrypt
  * @param[out] output Ciphertext block resulting from encryption
@@ -411,47 +412,47 @@ void blowfishEncryptBlock(BlowfishContext *context, const uint8_t *input,
    uint8_t *output)
 {
    uint_t i;
-   uint32_t left;
-   uint32_t right;
-   uint32_t temp;
+   uint32_t l;
+   uint32_t r;
+   uint32_t t;
 
    //Divide the plaintext into two 32-bit halves (L and R)
-   left = LOAD32BE(input + 0);
-   right = LOAD32BE(input + 4);
+   l = LOAD32BE(input + 0);
+   r = LOAD32BE(input + 4);
 
    //16 rounds of computation are needed
    for(i = 0; i < 16; i += 2)
    {
       //Apply odd round function
-      left ^= context->p[i];
-      temp = context->s1[(left >> 24) & 0xFF];
-      temp += context->s2[(left >> 16) & 0xFF];
-      temp ^= context->s3[(left >> 8) & 0xFF];
-      temp += context->s4[left & 0xFF];
-      right ^= temp;
+      l ^= context->p[i];
+      t = context->s1[(l >> 24) & 0xFF];
+      t += context->s2[(l >> 16) & 0xFF];
+      t ^= context->s3[(l >> 8) & 0xFF];
+      t += context->s4[l & 0xFF];
+      r ^= t;
 
       //Apply even round function
-      right ^= context->p[i + 1];
-      temp = context->s1[(right >> 24) & 0xFF];
-      temp += context->s2[(right >> 16) & 0xFF];
-      temp ^= context->s3[(right >> 8) & 0xFF];
-      temp += context->s4[right & 0xFF];
-      left ^= temp;
+      r ^= context->p[i + 1];
+      t = context->s1[(r >> 24) & 0xFF];
+      t += context->s2[(r >> 16) & 0xFF];
+      t ^= context->s3[(r >> 8) & 0xFF];
+      t += context->s4[r & 0xFF];
+      l ^= t;
    }
 
    //The rounds are followed by two final XOR's with the last elements of
    //the P-array
-   left ^= context->p[16];
-   right ^= context->p[17];
+   l ^= context->p[16];
+   r ^= context->p[17];
 
    //Recombine L and R
-   STORE32BE(right, output + 0);
-   STORE32BE(left, output + 4);
+   STORE32BE(r, output + 0);
+   STORE32BE(l, output + 4);
 }
 
 
 /**
- * @brief Decrypt a 16-byte block using Blowfish algorithm
+ * @brief Decrypt a 8-byte block using Blowfish algorithm
  * @param[in] context Pointer to the Blowfish context
  * @param[in] input Ciphertext block to decrypt
  * @param[out] output Plaintext block resulting from decryption
@@ -461,42 +462,42 @@ void blowfishDecryptBlock(BlowfishContext *context, const uint8_t *input,
    uint8_t *output)
 {
    uint_t i;
-   uint32_t left;
-   uint32_t right;
-   uint32_t temp;
+   uint32_t l;
+   uint32_t r;
+   uint32_t t;
 
    //Divide the ciphertext into two 32-bit halves (L and R)
-   right = LOAD32BE(input + 0);
-   left = LOAD32BE(input + 4);
+   r = LOAD32BE(input + 0);
+   l = LOAD32BE(input + 4);
 
    //16 rounds of computation are needed
    for(i = 16; i > 0; i -= 2)
    {
       //Apply even round function
-      right ^= context->p[i + 1];
-      temp = context->s1[(right >> 24) & 0xFF];
-      temp += context->s2[(right >> 16) & 0xFF];
-      temp ^= context->s3[(right >> 8) & 0xFF];
-      temp += context->s4[right & 0xFF];
-      left ^= temp;
+      r ^= context->p[i + 1];
+      t = context->s1[(r >> 24) & 0xFF];
+      t += context->s2[(r >> 16) & 0xFF];
+      t ^= context->s3[(r >> 8) & 0xFF];
+      t += context->s4[r & 0xFF];
+      l ^= t;
 
       //Apply odd round function
-      left ^= context->p[i];
-      temp = context->s1[(left >> 24) & 0xFF];
-      temp += context->s2[(left >> 16) & 0xFF];
-      temp ^= context->s3[(left >> 8) & 0xFF];
-      temp += context->s4[left & 0xFF];
-      right ^= temp;
+      l ^= context->p[i];
+      t = context->s1[(l >> 24) & 0xFF];
+      t += context->s2[(l >> 16) & 0xFF];
+      t ^= context->s3[(l >> 8) & 0xFF];
+      t += context->s4[l & 0xFF];
+      r ^= t;
    }
 
    //The rounds are followed by two final XOR's with the first elements of
    //the P-array
-   right ^= context->p[1];
-   left ^= context->p[0];
+   r ^= context->p[1];
+   l ^= context->p[0];
 
    //Recombine L and R
-   STORE32BE(left, output + 0);
-   STORE32BE(right, output + 4);
+   STORE32BE(l, output + 0);
+   STORE32BE(r, output + 4);
 }
 
 
@@ -536,6 +537,18 @@ void blowfishXorBlock(uint8_t *data, const uint8_t *salt, size_t saltLen,
       //Save current salt index
       *saltIndex = n;
    }
+}
+
+
+/**
+ * @brief Release Blowfish context
+ * @param[in] context Pointer to the Blowfish context
+ **/
+
+void blowfishDeinit(BlowfishContext *context)
+{
+   //Clear Blowfish context
+   osMemset(context, 0, sizeof(BlowfishContext));
 }
 
 #endif

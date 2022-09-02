@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
-#include "same54.h"
+#include "sam.h"
 #include "core/crypto.h"
 #include "hardware/same54/same54_crypto.h"
 #include "hardware/same54/same54_crypto_hash.h"
@@ -50,7 +50,7 @@
 static Same54IcmDesc icmDesc;
 //ICM hash area
 #pragma data_alignment = 128
-static uint8_t icmHash[32];
+static uint32_t icmHash[8];
 
 //Keil MDK-ARM or GCC compiler?
 #else
@@ -87,11 +87,11 @@ void hashProcessData(uint32_t algo, const uint8_t *data, size_t length,
    osAcquireMutex(&same54CryptoMutex);
 
    //Perform software reset
-   ICM->CTRL.reg = ICM_CTRL_SWRST;
+   ICM_REGS->ICM_CTRL = ICM_CTRL_SWRST_Msk;
 
    //Set ICM region descriptor
    icmDesc.raddr = (uint32_t) data;
-   icmDesc.rcfg = ICM_RCFG_ALGO(algo) | ICM_RCFG_EOM;
+   icmDesc.rcfg = ICM_RCFG_ALGO(algo) | ICM_RCFG_EOM_Msk;
    icmDesc.rctrl = (length / 64) - 1;
    icmDesc.rnext = 0;
 
@@ -99,39 +99,39 @@ void hashProcessData(uint32_t algo, const uint8_t *data, size_t length,
    __DMB();
 
    //Set configuration register
-   ICM->CFG.reg = ICM_CFG_UALGO(algo) | ICM_CFG_UIHASH | ICM_CFG_SLBDIS;
+   ICM_REGS->ICM_CFG = ICM_CFG_UALGO(algo) | ICM_CFG_UIHASH_Msk | ICM_CFG_SLBDIS_Msk;
    //The start address is a multiple of 64 bytes
-   ICM->DSCR.reg = (uint32_t) &icmDesc;
+   ICM_REGS->ICM_DSCR = (uint32_t) &icmDesc;
    //The hash memory location must be a multiple of 128 bytes
-   ICM->HASH.reg = (uint32_t) &icmHash;
+   ICM_REGS->ICM_HASH = (uint32_t) &icmHash;
 
    //Set initial hash value
-   ICM->UIHVAL[0].reg = h[0];
-   ICM->UIHVAL[1].reg = h[1];
-   ICM->UIHVAL[2].reg = h[2];
-   ICM->UIHVAL[3].reg = h[3];
-   ICM->UIHVAL[4].reg = h[4];
+   ICM_REGS->ICM_UIHVAL[0] = h[0];
+   ICM_REGS->ICM_UIHVAL[1] = h[1];
+   ICM_REGS->ICM_UIHVAL[2] = h[2];
+   ICM_REGS->ICM_UIHVAL[3] = h[3];
+   ICM_REGS->ICM_UIHVAL[4] = h[4];
 
    //SHA-224 or SHA-256 algorithm?
    if(algo == ICM_CFG_UALGO_SHA224_Val || algo == ICM_CFG_UALGO_SHA256_Val)
    {
-      ICM->UIHVAL[5].reg = h[5];
-      ICM->UIHVAL[6].reg = h[6];
-      ICM->UIHVAL[7].reg = h[7];
+      ICM_REGS->ICM_UIHVAL[5] = h[5];
+      ICM_REGS->ICM_UIHVAL[6] = h[6];
+      ICM_REGS->ICM_UIHVAL[7] = h[7];
    }
 
    //Enable RHC interrupt (Region Hash Completed)
-   ICM->IER.reg = ICM_IER_RHC(1);
+   ICM_REGS->ICM_IER = ICM_IER_RHC(1);
    //Enable ICM module
-   ICM->CTRL.reg = ICM_CTRL_ENABLE;
+   ICM_REGS->ICM_CTRL = ICM_CTRL_ENABLE_Msk;
 
    //The RHC status flag is set when the ICM has completed the region
-   while((ICM->ISR.reg & ICM_ISR_RHC_Msk) == 0)
+   while((ICM_REGS->ICM_ISR & ICM_ISR_RHC_Msk) == 0)
    {
    }
 
    //Disable ICM module
-   ICM->CTRL.reg = ICM_CTRL_DISABLE;
+   ICM_REGS->ICM_CTRL = ICM_CTRL_DISABLE_Msk;
 
    //Data memory barrier
    __DMB();

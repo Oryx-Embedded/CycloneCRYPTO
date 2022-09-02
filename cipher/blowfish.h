@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 #ifndef _BLOWFISH_H
@@ -79,6 +79,8 @@ void blowfishDecryptBlock(BlowfishContext *context, const uint8_t *input,
 
 void blowfishXorBlock(uint8_t *data, const uint8_t *salt, size_t saltLen,
    size_t *saltIndex);
+
+void blowfishDeinit(BlowfishContext *context);
 
 //C++ guard
 #ifdef __cplusplus

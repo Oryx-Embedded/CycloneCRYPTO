@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -303,6 +303,18 @@ void chachaProcessBlock(ChachaContext *context)
    {
       w[i] = htole32(w[i]);
    }
+}
+
+
+/**
+ * @brief Release ChaCha context
+ * @param[in] context Pointer to the ChaCha context
+ **/
+
+void chachaDeinit(ChachaContext *context)
+{
+   //Clear ChaCha context
+   osMemset(context, 0, sizeof(ChachaContext));
 }
 
 #endif

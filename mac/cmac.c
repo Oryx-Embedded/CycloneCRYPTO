@@ -29,7 +29,7 @@
  * CMAC is a block cipher-based MAC algorithm specified in NIST SP 800-38B
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level

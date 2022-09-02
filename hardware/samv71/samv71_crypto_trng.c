@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
-#include "samv71.h"
+#include "sam.h"
 #include "core/crypto.h"
 #include "hardware/samv71/samv71_crypto.h"
 #include "hardware/samv71/samv71_crypto_trng.h"
@@ -50,9 +50,9 @@
 error_t trngInit(void)
 {
    //Enable TRNG peripheral clock
-   PMC->PMC_PCER1 = (1 << (ID_TRNG - 32));
+   PMC_REGS->PMC_PCER1 = (1 << (ID_TRNG - 32));
    //Enable TRNG
-   TRNG->TRNG_CR = TRNG_CR_KEY_PASSWD | TRNG_CR_ENABLE;
+   TRNG_REGS->TRNG_CR = TRNG_CR_KEY_PASSWD | TRNG_CR_ENABLE_Msk;
 
    //Successful initialization
    return NO_ERROR;
@@ -80,12 +80,12 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
       if((i % 4) == 0)
       {
          //Wait for the TRNG to contain a valid data
-         while((TRNG->TRNG_ISR & TRNG_ISR_DATRDY) == 0)
+         while((TRNG_REGS->TRNG_ISR & TRNG_ISR_DATRDY_Msk) == 0)
          {
          }
 
          //Get the 32-bit random value
-         value = TRNG->TRNG_ODATA;
+         value = TRNG_REGS->TRNG_ODATA;
       }
 
       //Copy random byte

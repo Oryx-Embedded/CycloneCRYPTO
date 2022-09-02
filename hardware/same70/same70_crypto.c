@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
-#include "same70.h"
+#include "sam.h"
 #include "core/crypto.h"
 #include "hardware/same70/same70_crypto.h"
 #include "hardware/same70/same70_crypto_trng.h"
@@ -78,7 +78,7 @@ error_t same70CryptoInit(void)
    if(!error)
    {
       //Enable ICM peripheral clock
-      PMC->PMC_PCER1 = (1 << (ID_ICM - 32));
+      PMC_REGS->PMC_PCER1 = (1 << (ID_ICM - 32));
    }
 #endif
 
@@ -87,7 +87,7 @@ error_t same70CryptoInit(void)
    if(!error)
    {
       //Enable AES peripheral clock
-      PMC->PMC_PCER1 = (1 << (ID_AES - 32));
+      PMC_REGS->PMC_PCER1 = (1 << (ID_AES - 32));
    }
 #endif
 

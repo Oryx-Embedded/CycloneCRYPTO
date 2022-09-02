@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -49,7 +49,8 @@ const CipherAlgo rc4CipherAlgo =
    (CipherAlgoEncryptStream) rc4Cipher,
    (CipherAlgoDecryptStream) rc4Cipher,
    NULL,
-   NULL
+   NULL,
+   (CipherAlgoDeinit) rc4Deinit
 };
 
 
@@ -106,7 +107,8 @@ error_t rc4Init(Rc4Context *context, const uint8_t *key, size_t length)
  * @param[in] length Length of the input data
  **/
 
-void rc4Cipher(Rc4Context *context, const uint8_t *input, uint8_t *output, size_t length)
+void rc4Cipher(Rc4Context *context, const uint8_t *input, uint8_t *output,
+   size_t length)
 {
    uint8_t temp;
 
@@ -145,6 +147,18 @@ void rc4Cipher(Rc4Context *context, const uint8_t *input, uint8_t *output, size_
    //Save context
    context->i = i;
    context->j = j;
+}
+
+
+/**
+ * @brief Release RC4 context
+ * @param[in] context Pointer to the RC4 context
+ **/
+
+void rc4Deinit(Rc4Context *context)
+{
+   //Clear RC4 context
+   osMemset(context, 0, sizeof(Rc4Context));
 }
 
 #endif

@@ -31,7 +31,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -46,24 +46,45 @@
 #if (GCM_SUPPORT == ENABLED)
 
 //Reduction table
-static const uint32_t red[16] =
+static const uint32_t r[GCM_TABLE_N] =
 {
-   0x00000000,
-   0x1C200000,
-   0x38400000,
-   0x24600000,
-   0x70800000,
-   0x6CA00000,
-   0x48C00000,
-   0x54E00000,
-   0xE1000000,
-   0xFD200000,
-   0xD9400000,
-   0xC5600000,
-   0x91800000,
-   0x8DA00000,
-   0xA9C00000,
-   0xB5E00000
+#if (GCM_TABLE_W == 4)
+   0x00000000, 0x1C200000, 0x38400000, 0x24600000, 0x70800000, 0x6CA00000, 0x48C00000, 0x54E00000,
+   0xE1000000, 0xFD200000, 0xD9400000, 0xC5600000, 0x91800000, 0x8DA00000, 0xA9C00000, 0xB5E00000
+#else
+   0x00000000, 0x01C20000, 0x03840000, 0x02460000, 0x07080000, 0x06CA0000, 0x048C0000, 0x054E0000,
+   0x0E100000, 0x0FD20000, 0x0D940000, 0x0C560000, 0x09180000, 0x08DA0000, 0x0A9C0000, 0x0B5E0000,
+   0x1C200000, 0x1DE20000, 0x1FA40000, 0x1E660000, 0x1B280000, 0x1AEA0000, 0x18AC0000, 0x196E0000,
+   0x12300000, 0x13F20000, 0x11B40000, 0x10760000, 0x15380000, 0x14FA0000, 0x16BC0000, 0x177E0000,
+   0x38400000, 0x39820000, 0x3BC40000, 0x3A060000, 0x3F480000, 0x3E8A0000, 0x3CCC0000, 0x3D0E0000,
+   0x36500000, 0x37920000, 0x35D40000, 0x34160000, 0x31580000, 0x309A0000, 0x32DC0000, 0x331E0000,
+   0x24600000, 0x25A20000, 0x27E40000, 0x26260000, 0x23680000, 0x22AA0000, 0x20EC0000, 0x212E0000,
+   0x2A700000, 0x2BB20000, 0x29F40000, 0x28360000, 0x2D780000, 0x2CBA0000, 0x2EFC0000, 0x2F3E0000,
+   0x70800000, 0x71420000, 0x73040000, 0x72C60000, 0x77880000, 0x764A0000, 0x740C0000, 0x75CE0000,
+   0x7E900000, 0x7F520000, 0x7D140000, 0x7CD60000, 0x79980000, 0x785A0000, 0x7A1C0000, 0x7BDE0000,
+   0x6CA00000, 0x6D620000, 0x6F240000, 0x6EE60000, 0x6BA80000, 0x6A6A0000, 0x682C0000, 0x69EE0000,
+   0x62B00000, 0x63720000, 0x61340000, 0x60F60000, 0x65B80000, 0x647A0000, 0x663C0000, 0x67FE0000,
+   0x48C00000, 0x49020000, 0x4B440000, 0x4A860000, 0x4FC80000, 0x4E0A0000, 0x4C4C0000, 0x4D8E0000,
+   0x46D00000, 0x47120000, 0x45540000, 0x44960000, 0x41D80000, 0x401A0000, 0x425C0000, 0x439E0000,
+   0x54E00000, 0x55220000, 0x57640000, 0x56A60000, 0x53E80000, 0x522A0000, 0x506C0000, 0x51AE0000,
+   0x5AF00000, 0x5B320000, 0x59740000, 0x58B60000, 0x5DF80000, 0x5C3A0000, 0x5E7C0000, 0x5FBE0000,
+   0xE1000000, 0xE0C20000, 0xE2840000, 0xE3460000, 0xE6080000, 0xE7CA0000, 0xE58C0000, 0xE44E0000,
+   0xEF100000, 0xEED20000, 0xEC940000, 0xED560000, 0xE8180000, 0xE9DA0000, 0xEB9C0000, 0xEA5E0000,
+   0xFD200000, 0xFCE20000, 0xFEA40000, 0xFF660000, 0xFA280000, 0xFBEA0000, 0xF9AC0000, 0xF86E0000,
+   0xF3300000, 0xF2F20000, 0xF0B40000, 0xF1760000, 0xF4380000, 0xF5FA0000, 0xF7BC0000, 0xF67E0000,
+   0xD9400000, 0xD8820000, 0xDAC40000, 0xDB060000, 0xDE480000, 0xDF8A0000, 0xDDCC0000, 0xDC0E0000,
+   0xD7500000, 0xD6920000, 0xD4D40000, 0xD5160000, 0xD0580000, 0xD19A0000, 0xD3DC0000, 0xD21E0000,
+   0xC5600000, 0xC4A20000, 0xC6E40000, 0xC7260000, 0xC2680000, 0xC3AA0000, 0xC1EC0000, 0xC02E0000,
+   0xCB700000, 0xCAB20000, 0xC8F40000, 0xC9360000, 0xCC780000, 0xCDBA0000, 0xCFFC0000, 0xCE3E0000,
+   0x91800000, 0x90420000, 0x92040000, 0x93C60000, 0x96880000, 0x974A0000, 0x950C0000, 0x94CE0000,
+   0x9F900000, 0x9E520000, 0x9C140000, 0x9DD60000, 0x98980000, 0x995A0000, 0x9B1C0000, 0x9ADE0000,
+   0x8DA00000, 0x8C620000, 0x8E240000, 0x8FE60000, 0x8AA80000, 0x8B6A0000, 0x892C0000, 0x88EE0000,
+   0x83B00000, 0x82720000, 0x80340000, 0x81F60000, 0x84B80000, 0x857A0000, 0x873C0000, 0x86FE0000,
+   0xA9C00000, 0xA8020000, 0xAA440000, 0xAB860000, 0xAEC80000, 0xAF0A0000, 0xAD4C0000, 0xAC8E0000,
+   0xA7D00000, 0xA6120000, 0xA4540000, 0xA5960000, 0xA0D80000, 0xA11A0000, 0xA35C0000, 0xA29E0000,
+   0xB5E00000, 0xB4220000, 0xB6640000, 0xB7A60000, 0xB2E80000, 0xB32A0000, 0xB16C0000, 0xB0AE0000,
+   0xBBF00000, 0xBA320000, 0xB8740000, 0xB9B60000, 0xBCF80000, 0xBD3A0000, 0xBF7C0000, 0xBEBE0000
+#endif
 };
 
 
@@ -102,27 +123,27 @@ __weak_func error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
       (uint8_t *) h);
 
    //Pre-compute M(0) = H * 0
-   j = reverseInt4(0);
+   j = GCM_REVERSE_BITS(0);
    context->m[j][0] = 0;
    context->m[j][1] = 0;
    context->m[j][2] = 0;
    context->m[j][3] = 0;
 
    //Pre-compute M(1) = H * 1
-   j = reverseInt4(1);
+   j = GCM_REVERSE_BITS(1);
    context->m[j][0] = betoh32(h[3]);
    context->m[j][1] = betoh32(h[2]);
    context->m[j][2] = betoh32(h[1]);
    context->m[j][3] = betoh32(h[0]);
 
-   //Pre-compute all 4-bit multiples of H
-   for(i = 2; i < 16; i++)
+   //Pre-compute all multiples of H (Shoup's method)
+   for(i = 2; i < GCM_TABLE_N; i++)
    {
       //Odd value?
-      if(i & 1)
+      if((i & 1) != 0)
       {
          //Compute M(i) = M(i - 1) + H
-         j = reverseInt4(i - 1);
+         j = GCM_REVERSE_BITS(i - 1);
          h[0] = context->m[j][0];
          h[1] = context->m[j][1];
          h[2] = context->m[j][2];
@@ -130,17 +151,16 @@ __weak_func error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
 
          //An addition in GF(2^128) is identical to a bitwise exclusive-OR
          //operation
-         j = reverseInt4(1);
+         j = GCM_REVERSE_BITS(1);
          h[0] ^= context->m[j][0];
          h[1] ^= context->m[j][1];
          h[2] ^= context->m[j][2];
          h[3] ^= context->m[j][3];
       }
-      //Even value?
       else
       {
          //Compute M(i) = M(i / 2) * x
-         j = reverseInt4(i / 2);
+         j = GCM_REVERSE_BITS(i / 2);
          h[0] = context->m[j][0];
          h[1] = context->m[j][1];
          h[2] = context->m[j][2];
@@ -156,11 +176,11 @@ __weak_func error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
 
          //If the highest term of the result is equal to one, then perform
          //reduction
-         h[3] ^= red[reverseInt4(1)] & ~(c - 1);
+         h[3] ^= r[GCM_REVERSE_BITS(1)] & ~(c - 1);
       }
 
       //Save M(i)
-      j = reverseInt4(i);
+      j = GCM_REVERSE_BITS(i);
       context->m[j][0] = h[0];
       context->m[j][1] = h[1];
       context->m[j][2] = h[2];
@@ -494,9 +514,10 @@ __weak_func void gcmMul(GcmContext *context, uint8_t *x)
    z[2] = 0;
    z[3] = 0;
 
-   //Fast table-driven implementation
+   //Fast table-driven implementation (Shoup's method)
    for(i = 15; i >= 0; i--)
    {
+#if (GCM_TABLE_W == 4)
       //Get the lower nibble
       b = x[i] & 0x0F;
 
@@ -513,7 +534,7 @@ __weak_func void gcmMul(GcmContext *context, uint8_t *x)
       z[3] ^= context->m[b][3];
 
       //Perform reduction
-      z[3] ^= red[c];
+      z[3] ^= r[c];
 
       //Get the upper nibble
       b = (x[i] >> 4) & 0x0F;
@@ -531,7 +552,26 @@ __weak_func void gcmMul(GcmContext *context, uint8_t *x)
       z[3] ^= context->m[b][3];
 
       //Perform reduction
-      z[3] ^= red[c];
+      z[3] ^= r[c];
+#else
+      //Get current byte
+      b = x[i];
+
+      //Multiply 8 bits at a time
+      c = z[0] & 0xFF;
+      z[0] = (z[0] >> 8) | (z[1] << 24);
+      z[1] = (z[1] >> 8) | (z[2] << 24);
+      z[2] = (z[2] >> 8) | (z[3] << 24);
+      z[3] >>= 8;
+
+      z[0] ^= context->m[b][0];
+      z[1] ^= context->m[b][1];
+      z[2] ^= context->m[b][2];
+      z[3] ^= context->m[b][3];
+
+      //Perform reduction
+      z[3] ^= r[c];
+#endif
    }
 
    //Save the result

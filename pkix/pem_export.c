@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -1015,8 +1015,10 @@ error_t pemEncodeFile(const void *input, size_t inputLen, const char_t *label,
    //Calculate the length of the label
    labelLen = osStrlen(label);
 
-   //Encode the ASN.1 data using Base64
-   base64Encode(input, inputLen, output, &n);
+   //Generators must wrap the Base64-encoded lines so that each line consists
+   //of exactly 64 characters except for the final line, which will encode the
+   //remainder of the data (refer to RFC 7468, section 2)
+   base64EncodeMultiline(input, inputLen, output, &n, 64);
 
    //If the output parameter is NULL, then the function calculates the length
    //of the resulting PEM file without copying any data

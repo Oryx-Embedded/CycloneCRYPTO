@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
-#include "same53.h"
+#include "sam.h"
 #include "core/crypto.h"
 #include "hardware/same53/same53_crypto.h"
 #include "hardware/same53/same53_crypto_trng.h"
@@ -79,8 +79,8 @@ error_t same53CryptoInit(void)
    if(!error)
    {
       //Enable ICM bus clocks (CLK_ICM_APB and CLK_ICM_AHB)
-      MCLK->APBCMASK.bit.ICM_ = 1;
-      MCLK->AHBMASK.bit.ICM_ = 1;
+      MCLK_REGS->MCLK_APBCMASK |= MCLK_APBCMASK_ICM_Msk;
+      MCLK_REGS->MCLK_AHBMASK |= MCLK_AHBMASK_ICM_Msk;
    }
 #endif
 
@@ -89,7 +89,7 @@ error_t same53CryptoInit(void)
    if(!error)
    {
       //Enable AES bus clock (CLK_AES_APB)
-      MCLK->APBCMASK.bit.AES_ = 1;
+      MCLK_REGS->MCLK_APBCMASK |= MCLK_APBCMASK_AES_Msk;
    }
 #endif
 

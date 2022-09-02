@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 #ifndef _DES3_H
@@ -63,8 +63,14 @@ extern const CipherAlgo des3CipherAlgo;
 
 //Triple DES related functions
 error_t des3Init(Des3Context *context, const uint8_t *key, size_t keyLen);
-void des3EncryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output);
-void des3DecryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output);
+
+void des3EncryptBlock(Des3Context *context, const uint8_t *input,
+   uint8_t *output);
+
+void des3DecryptBlock(Des3Context *context, const uint8_t *input,
+   uint8_t *output);
+
+void des3Deinit(Des3Context *context);
 
 //C++ guard
 #ifdef __cplusplus

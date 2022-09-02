@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -933,12 +933,9 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
          {
             HW_SCE_Aes192GcmEncryptUpdateAADSub((uint32_t *) a, n / 4);
          }
-         else if(aesContext->nr == 14)
-         {
-            HW_SCE_Aes256GcmEncryptUpdateAADSub((uint32_t *) a, n / 4);
-         }
          else
          {
+            HW_SCE_Aes256GcmEncryptUpdateAADSub((uint32_t *) a, n / 4);
          }
 
          //Advance data pointer
@@ -961,12 +958,9 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
          {
             HW_SCE_Aes192GcmEncryptUpdateAADSub(block, 1);
          }
-         else if(aesContext->nr == 14)
-         {
-            HW_SCE_Aes256GcmEncryptUpdateAADSub(block, 1);
-         }
          else
          {
+            HW_SCE_Aes256GcmEncryptUpdateAADSub(block, 1);
          }
       }
 
@@ -979,12 +973,9 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
       {
          HW_SCE_Aes192GcmEncryptUpdateTransitionSub();
       }
-      else if(aesContext->nr == 14)
-      {
-         HW_SCE_Aes256GcmEncryptUpdateTransitionSub();
-      }
       else
       {
+         HW_SCE_Aes256GcmEncryptUpdateTransitionSub();
       }
 
       //Point to the beginning of the payload data
@@ -1007,13 +998,10 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
             HW_SCE_Aes192GcmEncryptUpdateSub((uint32_t *) p, (uint32_t *) c,
                n / 4);
          }
-         else if(aesContext->nr == 14)
+         else
          {
             HW_SCE_Aes256GcmEncryptUpdateSub((uint32_t *) p, (uint32_t *) c,
                n / 4);
-         }
-         else
-         {
          }
 
          //Advance data pointer
@@ -1172,12 +1160,9 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
          {
             HW_SCE_Aes192GcmDecryptUpdateAADSub((uint32_t *) a, n / 4);
          }
-         else if(aesContext->nr == 14)
-         {
-            HW_SCE_Aes256GcmDecryptUpdateAADSub((uint32_t *) a, n / 4);
-         }
          else
          {
+            HW_SCE_Aes256GcmDecryptUpdateAADSub((uint32_t *) a, n / 4);
          }
 
          //Advance data pointer
@@ -1200,12 +1185,9 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
          {
             HW_SCE_Aes192GcmDecryptUpdateAADSub(block, 1);
          }
-         else if(aesContext->nr == 14)
-         {
-            HW_SCE_Aes256GcmDecryptUpdateAADSub(block, 1);
-         }
          else
          {
+            HW_SCE_Aes256GcmDecryptUpdateAADSub(block, 1);
          }
       }
 
@@ -1218,12 +1200,9 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
       {
          HW_SCE_Aes192GcmDecryptUpdateTransitionSub();
       }
-      else if(aesContext->nr == 14)
-      {
-         HW_SCE_Aes256GcmDecryptUpdateTransitionSub();
-      }
       else
       {
+         HW_SCE_Aes256GcmDecryptUpdateTransitionSub();
       }
 
       //Point to the beginning of the payload data
@@ -1246,13 +1225,10 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
             HW_SCE_Aes192GcmDecryptUpdateSub((uint32_t *) c, (uint32_t *) p,
                n / 4);
          }
-         else if(aesContext->nr == 14)
+         else
          {
             HW_SCE_Aes256GcmDecryptUpdateSub((uint32_t *) c, (uint32_t *) p,
                n / 4);
-         }
-         else
-         {
          }
 
          //Advance data pointer

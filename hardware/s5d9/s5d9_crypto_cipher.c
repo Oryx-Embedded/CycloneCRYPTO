@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -40,6 +40,7 @@
 #include "hardware/s5d9/s5d9_crypto_cipher.h"
 #include "cipher/cipher_algorithms.h"
 #include "cipher_mode/cipher_modes.h"
+#include "aead/aead_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -1078,6 +1079,567 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
 
    //Return status code
    return (status == SSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
+}
+
+#endif
+#if (GCM_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
+
+/**
+ * @brief Initialize GCM context
+ * @param[in] context Pointer to the GCM context
+ * @param[in] cipherAlgo Cipher algorithm
+ * @param[in] cipherContext Pointer to the cipher algorithm context
+ * @return Error code
+ **/
+
+error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
+   void *cipherContext)
+{
+   uint32_t h[4];
+
+   //The SCE7 module only supports AES cipher algorithm
+   if(cipherAlgo != AES_CIPHER_ALGO)
+      return ERROR_INVALID_PARAMETER;
+
+   //Save cipher algorithm context
+   context->cipherAlgo = cipherAlgo;
+   context->cipherContext = cipherContext;
+
+   //Let H = 0
+   h[0] = 0;
+   h[1] = 0;
+   h[2] = 0;
+   h[3] = 0;
+
+   //Generate the hash subkey H
+   aesEncryptBlock(context->cipherContext, (uint8_t *) h, (uint8_t *) h);
+
+   //Save the resulting value
+   context->m[0][0] = h[0];
+   context->m[0][1] = h[1];
+   context->m[0][2] = h[2];
+   context->m[0][3] = h[3];
+
+   //Successful initialization
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Authenticated encryption using GCM
+ * @param[in] context Pointer to the GCM context
+ * @param[in] iv Initialization vector
+ * @param[in] ivLen Length of the initialization vector
+ * @param[in] a Additional authenticated data
+ * @param[in] aLen Length of the additional data
+ * @param[in] p Plaintext to be encrypted
+ * @param[out] c Ciphertext resulting from the encryption
+ * @param[in] length Total number of data bytes to be encrypted
+ * @param[out] t Authentication tag
+ * @param[in] tLen Length of the authentication tag
+ * @return Error code
+ **/
+
+error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
+   size_t ivLen, const uint8_t *a, size_t aLen, const uint8_t *p,
+   uint8_t *c, size_t length, uint8_t *t, size_t tLen)
+{
+   size_t k;
+   size_t n;
+   uint64_t m;
+   uint32_t b[4];
+   uint32_t j[4];
+   uint32_t s[4];
+   AesContext *aesContext;
+
+   //Make sure the GCM context is valid
+   if(context == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //The length of the IV shall meet SP 800-38D requirements
+   if(ivLen < 1)
+      return ERROR_INVALID_LENGTH;
+
+   //Check the length of the authentication tag
+   if(tLen < 4 || tLen > 16)
+      return ERROR_INVALID_LENGTH;
+
+   //Point to the AES context
+   aesContext = (AesContext *) context->cipherContext;
+
+   //Check the length of the key
+   if(aesContext->nr != 10 && aesContext->nr != 12 && aesContext->nr != 14)
+      return ERROR_INVALID_PARAMETER;
+
+   //Acquire exclusive access to the SCE7 module
+   osAcquireMutex(&s5d9CryptoMutex);
+
+   //Check whether the length of the IV is 96 bits
+   if(ivLen == 12)
+   {
+      //When the length of the IV is 96 bits, the padding string is appended
+      //to the IV to form the pre-counter block
+      j[0] = LOAD32LE(iv);
+      j[1] = LOAD32LE(iv + 4);
+      j[2] = LOAD32LE(iv + 8);
+      j[3] = BETOH32(1);
+   }
+   else
+   {
+      //Initialize GHASH calculation
+      j[0] = 0;
+      j[1] = 0;
+      j[2] = 0;
+      j[3] = 0;
+
+      //Length of the IV
+      n = ivLen;
+
+      //Process the initialization vector
+      if(n >= 16)
+      {
+         //Ensure the size of the incoming data to be processed is a multiple
+         //of 16 bytes
+         k = n & ~15UL;
+
+         //Apply GHASH function
+         HW_SCE_AES_Ghash(context->m[0], j, k / 4, (const uint32_t *) iv, j);
+
+         //Advance data pointer
+         iv += k;
+         n -= k;
+      }
+
+      //Process the final block of the initialization vector
+      if(n > 0)
+      {
+         //Copy partial block
+         osMemset(b, 0, 16);
+         osMemcpy(b, iv, n);
+
+         //Apply GHASH function
+         HW_SCE_AES_Ghash(context->m[0], j, 4, b, j);
+      }
+
+      //The string is appended with 64 additional 0 bits, followed by the
+      //64-bit representation of the length of the IV
+      b[0] = 0;
+      b[1] = 0;
+      m = ivLen * 8;
+      b[2] = htobe32(m >> 32);
+      b[3] = htobe32(m);
+
+      //The GHASH function is applied to the resulting string to form the
+      //pre-counter block
+      HW_SCE_AES_Ghash(context->m[0], j, 4, b, j);
+   }
+
+   //Compute CIPH(J(0))
+   if(aesContext->nr == 10)
+   {
+      HW_SCE_AES_128EcbEncrypt(aesContext->ek, 4, j, b);
+   }
+   else if(aesContext->nr == 12)
+   {
+      HW_SCE_AES_192EcbEncrypt(aesContext->ek, 4, j, b);
+   }
+   else
+   {
+      HW_SCE_AES_256EcbEncrypt(aesContext->ek, 4, j, b);
+   }
+
+   //Save MSB(CIPH(J(0)))
+   osMemcpy(t, (const uint8_t *) b, tLen);
+
+   //Increment the right-most 32 bits of the counter block. The remaining
+   //left-most 96 bits remain unchanged
+   j[3] =  htobe32(betoh32(j[3]) + 1);
+
+   //Initialize GHASH calculation
+   s[0] = 0;
+   s[1] = 0;
+   s[2] = 0;
+   s[3] = 0;
+
+   //Length of the AAD
+   n = aLen;
+
+   //Process AAD
+   if(n >= 16)
+   {
+      //Ensure the size of the incoming data to be processed is a multiple
+      //of 16 bytes
+      k = n & ~15UL;
+
+      //Apply GHASH function
+      HW_SCE_AES_Ghash(context->m[0], s, k / 4, (const uint32_t *) a, s);
+
+      //Advance data pointer
+      a += k;
+      n -= k;
+   }
+
+   //Process the final block of AAD
+   if(n > 0)
+   {
+      //Copy partial block
+      osMemset(b, 0, 16);
+      osMemcpy(b, a, n);
+
+      //Apply GHASH function
+      HW_SCE_AES_Ghash(context->m[0], s, 4, b, s);
+   }
+
+   //Length of the plaintext
+   n = length;
+
+   //Process plaintext
+   if(n >= 16)
+   {
+      //Ensure the size of the incoming data to be processed is a multiple
+      //of 16 bytes
+      k = n & ~15UL;
+
+      //Encrypt plaintext
+      if(aesContext->nr == 10)
+      {
+         HW_SCE_AES_128GctrEncrypt(aesContext->ek, j, k / 4,
+            (const uint32_t *) p, (uint32_t *) c, j);
+      }
+      else if(aesContext->nr == 12)
+      {
+         HW_SCE_AES_192GctrEncrypt(aesContext->ek, j, k / 4,
+            (const uint32_t *) p, (uint32_t *) c, j);
+      }
+      else
+      {
+         HW_SCE_AES_256GctrEncrypt(aesContext->ek, j, k / 4,
+            (const uint32_t *) p, (uint32_t *) c, j);
+      }
+
+      //Apply GHASH function
+      HW_SCE_AES_Ghash(context->m[0], s, k / 4, (const uint32_t *) c, s);
+
+      //Advance data pointer
+      p += k;
+      c += k;
+      n -= k;
+   }
+
+   //Process the final block of plaintext
+   if(n > 0)
+   {
+      //Copy partial block
+      osMemset(b, 0, 16);
+      osMemcpy(b, p, n);
+
+      //Encrypt plaintext
+      if(aesContext->nr == 10)
+      {
+         HW_SCE_AES_128GctrEncrypt(aesContext->ek, j, 4, b, b, j);
+      }
+      else if(aesContext->nr == 12)
+      {
+         HW_SCE_AES_192GctrEncrypt(aesContext->ek, j, 4, b, b, j);
+      }
+      else
+      {
+         HW_SCE_AES_256GctrEncrypt(aesContext->ek, j, 4, b, b, j);
+      }
+
+      //Pad the final ciphertext block with zeroes
+      osMemset((uint8_t *) b + n, 0, 16 - n);
+
+      //Apply GHASH function
+      HW_SCE_AES_Ghash(context->m[0], s, 4, b, s);
+
+      //Copy partial block
+      osMemcpy(c, b, n);
+   }
+
+   //Append the 64-bit representation of the length of the AAD and the
+   //ciphertext
+   m = aLen * 8;
+   b[0] = htobe32(m >> 32);
+   b[1] = htobe32(m);
+   m = length * 8;
+   b[2] = htobe32(m >> 32);
+   b[3] = htobe32(m);
+
+   //The GHASH function is applied to the result to produce a single output
+   //block S
+   HW_SCE_AES_Ghash(context->m[0], s, 4, b, s);
+
+   //Let T = MSB(GCTR(J(0), S)
+   gcmXorBlock(t, t, (const uint8_t *) s, tLen);
+
+   //Release exclusive access to the SCE7 module
+   osReleaseMutex(&s5d9CryptoMutex);
+
+   //Successful encryption
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Authenticated decryption using GCM
+ * @param[in] context Pointer to the GCM context
+ * @param[in] iv Initialization vector
+ * @param[in] ivLen Length of the initialization vector
+ * @param[in] a Additional authenticated data
+ * @param[in] aLen Length of the additional data
+ * @param[in] c Ciphertext to be decrypted
+ * @param[out] p Plaintext resulting from the decryption
+ * @param[in] length Total number of data bytes to be decrypted
+ * @param[in] t Authentication tag
+ * @param[in] tLen Length of the authentication tag
+ * @return Error code
+ **/
+
+error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
+   size_t ivLen, const uint8_t *a, size_t aLen, const uint8_t *c,
+   uint8_t *p, size_t length, const uint8_t *t, size_t tLen)
+{
+   uint8_t mask;
+   size_t k;
+   size_t n;
+   uint64_t m;
+   uint8_t r[16];
+   uint32_t b[4];
+   uint32_t j[4];
+   uint32_t s[4];
+   AesContext *aesContext;
+
+   ///Make sure the GCM context is valid
+   if(context == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //The length of the IV shall meet SP 800-38D requirements
+   if(ivLen < 1)
+      return ERROR_INVALID_LENGTH;
+
+   //Check the length of the authentication tag
+   if(tLen < 4 || tLen > 16)
+      return ERROR_INVALID_LENGTH;
+
+   //Point to the AES context
+   aesContext = (AesContext *) context->cipherContext;
+
+   //Check the length of the key
+   if(aesContext->nr != 10 && aesContext->nr != 12 && aesContext->nr != 14)
+      return ERROR_INVALID_PARAMETER;
+
+   //Acquire exclusive access to the SCE7 module
+   osAcquireMutex(&s5d9CryptoMutex);
+
+   //Check whether the length of the IV is 96 bits
+   if(ivLen == 12)
+   {
+      //When the length of the IV is 96 bits, the padding string is appended
+      //to the IV to form the pre-counter block
+      j[0] = LOAD32LE(iv);
+      j[1] = LOAD32LE(iv + 4);
+      j[2] = LOAD32LE(iv + 8);
+      j[3] = BETOH32(1);
+   }
+   else
+   {
+      //Initialize GHASH calculation
+      j[0] = 0;
+      j[1] = 0;
+      j[2] = 0;
+      j[3] = 0;
+
+      //Length of the IV
+      n = ivLen;
+
+      //Process the initialization vector
+      if(n >= 16)
+      {
+         //Ensure the size of the incoming data to be processed is a multiple
+         //of 16 bytes
+         k = n & ~15UL;
+
+         //Apply GHASH function
+         HW_SCE_AES_Ghash(context->m[0], j, k / 4, (const uint32_t *) iv, j);
+
+         //Advance data pointer
+         iv += k;
+         n -= k;
+      }
+
+      //Process the final block of the initialization vector
+      if(n > 0)
+      {
+         //Copy partial block
+         osMemset(b, 0, 16);
+         osMemcpy(b, iv, n);
+
+         //Apply GHASH function
+         HW_SCE_AES_Ghash(context->m[0], j, 4, b, j);
+      }
+
+      //The string is appended with 64 additional 0 bits, followed by the
+      //64-bit representation of the length of the IV
+      b[0] = 0;
+      b[1] = 0;
+      m = ivLen * 8;
+      b[2] = htobe32(m >> 32);
+      b[3] = htobe32(m);
+
+      //The GHASH function is applied to the resulting string to form the
+      //pre-counter block
+      HW_SCE_AES_Ghash(context->m[0], j, 4, b, j);
+   }
+
+   //Compute CIPH(J(0))
+   if(aesContext->nr == 10)
+   {
+      HW_SCE_AES_128EcbEncrypt(aesContext->ek, 4, j, b);
+   }
+   else if(aesContext->nr == 12)
+   {
+      HW_SCE_AES_192EcbEncrypt(aesContext->ek, 4, j, b);
+   }
+   else
+   {
+      HW_SCE_AES_256EcbEncrypt(aesContext->ek, 4, j, b);
+   }
+
+   //Save MSB(CIPH(J(0)))
+   osMemcpy(r, (const uint8_t *) b, tLen);
+
+   //Increment the right-most 32 bits of the counter block. The remaining
+   //left-most 96 bits remain unchanged
+   j[3] =  htobe32(betoh32(j[3]) + 1);
+
+   //Initialize GHASH calculation
+   s[0] = 0;
+   s[1] = 0;
+   s[2] = 0;
+   s[3] = 0;
+
+   //Length of the AAD
+   n = aLen;
+
+   //Process AAD
+   if(n >= 16)
+   {
+      //Ensure the size of the incoming data to be processed is a multiple
+      //of 16 bytes
+      k = n & ~15UL;
+
+      //Apply GHASH function
+      HW_SCE_AES_Ghash(context->m[0], s, k / 4, (const uint32_t *) a, s);
+
+      //Advance data pointer
+      a += k;
+      n -= k;
+   }
+
+   //Process the final block of AAD
+   if(n > 0)
+   {
+      //Copy partial block
+      osMemset(b, 0, 16);
+      osMemcpy(b, a, n);
+
+      //Apply GHASH function
+      HW_SCE_AES_Ghash(context->m[0], s, 4, b, s);
+   }
+
+   //Length of the ciphertext
+   n = length;
+
+   //Process ciphertext
+   if(n >= 16)
+   {
+      //Ensure the size of the incoming data to be processed is a multiple
+      //of 16 bytes
+      k = n & ~15UL;
+
+      //Apply GHASH function
+      HW_SCE_AES_Ghash(context->m[0], s, k / 4, (const uint32_t *) c, s);
+
+      //Decrypt ciphertext
+      if(aesContext->nr == 10)
+      {
+         HW_SCE_AES_128GctrEncrypt(aesContext->ek, j, k / 4,
+            (const uint32_t *) c, (uint32_t *) p, j);
+      }
+      else if(aesContext->nr == 12)
+      {
+         HW_SCE_AES_192GctrEncrypt(aesContext->ek, j, k / 4,
+            (const uint32_t *) c, (uint32_t *) p, j);
+      }
+      else
+      {
+         HW_SCE_AES_256GctrEncrypt(aesContext->ek, j, k / 4,
+            (const uint32_t *) c, (uint32_t *) p, j);
+      }
+
+      //Advance data pointer
+      c += k;
+      p += k;
+      n -= k;
+   }
+
+   //Process the final block of ciphertext
+   if(n > 0)
+   {
+      //Copy partial block
+      osMemset(b, 0, 16);
+      osMemcpy(b, c, n);
+
+      //Apply GHASH function
+      HW_SCE_AES_Ghash(context->m[0], s, 4, b, s);
+
+      //Decrypt ciphertext
+      if(aesContext->nr == 10)
+      {
+         HW_SCE_AES_128GctrEncrypt(aesContext->ek, j, 4, b, b, j);
+      }
+      else if(aesContext->nr == 12)
+      {
+         HW_SCE_AES_192GctrEncrypt(aesContext->ek, j, 4, b, b, j);
+      }
+      else
+      {
+         HW_SCE_AES_256GctrEncrypt(aesContext->ek, j, 4, b, b, j);
+      }
+
+      //Copy partial block
+      osMemcpy(p, b, n);
+   }
+
+   //Append the 64-bit representation of the length of the AAD and the
+   //ciphertext
+   m = aLen * 8;
+   b[0] = htobe32(m >> 32);
+   b[1] = htobe32(m);
+   m = length * 8;
+   b[2] = htobe32(m >> 32);
+   b[3] = htobe32(m);
+
+   //The GHASH function is applied to the result to produce a single output
+   //block S
+   HW_SCE_AES_Ghash(context->m[0], s, 4, b, s);
+
+   //Let R = MSB(GCTR(J(0), S))
+   gcmXorBlock(r, r, (const uint8_t *) s, tLen);
+
+   //The calculated tag is bitwise compared to the received tag. The message
+   //is authenticated if and only if the tags match
+   for(mask = 0, n = 0; n < tLen; n++)
+   {
+      mask |= r[n] ^ t[n];
+   }
+
+   //Release exclusive access to the SCE7 module
+   osReleaseMutex(&s5d9CryptoMutex);
+
+   //Return status code
+   return (mask == 0) ? NO_ERROR : ERROR_FAILURE;
 }
 
 #endif

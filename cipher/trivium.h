@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 #ifndef _TRIVIUM_H
@@ -59,6 +59,8 @@ void triviumCipher(TriviumContext *context, const uint8_t *input,
 
 uint8_t triviumGenerateBit(TriviumContext *context);
 uint8_t triviumGenerateByte(TriviumContext *context);
+
+void triviumDeinit(TriviumContext *context);
 
 //C++ guard
 #ifdef __cplusplus

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 #ifndef _IDEA_H
@@ -61,8 +61,14 @@ extern const CipherAlgo ideaCipherAlgo;
 
 //IDEA related functions
 error_t ideaInit(IdeaContext *context, const uint8_t *key, size_t keyLen);
-void ideaEncryptBlock(IdeaContext *context, const uint8_t *input, uint8_t *output);
-void ideaDecryptBlock(IdeaContext *context, const uint8_t *input, uint8_t *output);
+
+void ideaEncryptBlock(IdeaContext *context, const uint8_t *input,
+   uint8_t *output);
+
+void ideaDecryptBlock(IdeaContext *context, const uint8_t *input,
+   uint8_t *output);
+
+void ideaDeinit(IdeaContext *context);
 
 //C++ guard
 #ifdef __cplusplus

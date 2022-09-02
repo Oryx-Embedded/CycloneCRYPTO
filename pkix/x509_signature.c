@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -829,7 +829,7 @@ error_t x509VerifyDsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
    if(!error)
    {
       //Get the length of the prime modulus, in bits
-      k = mpiGetBitLength(&publicKey.p);
+      k = mpiGetBitLength(&publicKey.params.p);
 
       //Make sure the prime modulus is acceptable
       if(k < X509_MIN_DSA_MODULUS_SIZE || k > X509_MAX_DSA_MODULUS_SIZE)

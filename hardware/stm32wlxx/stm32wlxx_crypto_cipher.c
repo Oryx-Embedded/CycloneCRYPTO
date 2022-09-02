@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -54,7 +54,7 @@
 error_t crypInit(void)
 {
    //Enable AES peripheral clock
-   __HAL_RCC_AES1_CLK_ENABLE();
+   __HAL_RCC_AES_CLK_ENABLE();
 
    //Successful processing
    return NO_ERROR;
@@ -71,34 +71,34 @@ void aesLoadKey(AesContext *context)
    uint32_t temp;
 
    //Read control register
-   temp = AES1->CR & ~AES_CR_KEYSIZE;
+   temp = AES->CR & ~AES_CR_KEYSIZE;
 
    //Check the length of the key
    if(context->nr == 10)
    {
       //10 rounds are required for 128-bit key
-      AES1->CR = temp | AES_CR_KEYSIZE_128B;
+      AES->CR = temp | AES_CR_KEYSIZE_128B;
 
       //Set the 128-bit encryption key
-      AES1->KEYR3 = context->ek[0];
-      AES1->KEYR2 = context->ek[1];
-      AES1->KEYR1 = context->ek[2];
-      AES1->KEYR0 = context->ek[3];
+      AES->KEYR3 = context->ek[0];
+      AES->KEYR2 = context->ek[1];
+      AES->KEYR1 = context->ek[2];
+      AES->KEYR0 = context->ek[3];
    }
    else
    {
       //14 rounds are required for 256-bit key
-      AES1->CR = temp | AES_CR_KEYSIZE_256B;
+      AES->CR = temp | AES_CR_KEYSIZE_256B;
 
       //Set the 256-bit encryption key
-      AES1->KEYR7 = context->ek[0];
-      AES1->KEYR6 = context->ek[1];
-      AES1->KEYR5 = context->ek[2];
-      AES1->KEYR4 = context->ek[3];
-      AES1->KEYR3 = context->ek[4];
-      AES1->KEYR2 = context->ek[5];
-      AES1->KEYR1 = context->ek[6];
-      AES1->KEYR0 = context->ek[7];
+      AES->KEYR7 = context->ek[0];
+      AES->KEYR6 = context->ek[1];
+      AES->KEYR5 = context->ek[2];
+      AES->KEYR4 = context->ek[3];
+      AES->KEYR3 = context->ek[4];
+      AES->KEYR2 = context->ek[5];
+      AES->KEYR1 = context->ek[6];
+      AES->KEYR0 = context->ek[7];
    }
 }
 
@@ -122,7 +122,7 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
    osAcquireMutex(&stm32wlxxCryptoMutex);
 
    //Disable the AES peripheral and clear the CCF flag
-   AES1->CR = AES_CR_CCFC;
+   AES->CR = AES_CR_CCFC;
 
    //Set encryption key
    aesLoadKey(context);
@@ -131,68 +131,68 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
    if((mode & AES_CR_MODE) == AES_CR_MODE_DECRYPTION)
    {
       //Select mode 2 by setting to '01' the MODE bitfield of the AES_CR
-      temp = AES1->CR & ~AES_CR_CHMOD;
-      AES1->CR = temp | AES_CR_MODE_KEY_DERIVATION;
+      temp = AES->CR & ~AES_CR_CHMOD;
+      AES->CR = temp | AES_CR_MODE_KEY_DERIVATION;
 
       //Enable the AES peripheral, by setting the EN bit of the AES_CR register
-      AES1->CR |= AES_CR_EN;
+      AES->CR |= AES_CR_EN;
 
       //Wait until the CCF flag is set in the AES_SR register
-      while((AES1->SR & AES_SR_CCF) == 0)
+      while((AES->SR & AES_SR_CCF) == 0)
       {
       }
 
       //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-      AES1->CR |= AES_CR_CCFC;
+      AES->CR |= AES_CR_CCFC;
    }
 
    //Select the chaining mode
-   temp = AES1->CR & ~(AES_CR_CHMOD | AES_CR_MODE);
-   AES1->CR = temp | mode;
+   temp = AES->CR & ~(AES_CR_CHMOD | AES_CR_MODE);
+   AES->CR = temp | mode;
 
    //Configure the data type
-   temp = AES1->CR & ~AES_CR_DATATYPE;
-   AES1->CR = temp | AES_CR_DATATYPE_8B;
+   temp = AES->CR & ~AES_CR_DATATYPE;
+   AES->CR = temp | AES_CR_DATATYPE_8B;
 
    //Valid initialization vector?
    if(iv != NULL)
    {
       //Set initialization vector
-      AES1->IVR3 = LOAD32BE(iv);
-      AES1->IVR2 = LOAD32BE(iv + 4);
-      AES1->IVR1 = LOAD32BE(iv + 8);
-      AES1->IVR0 = LOAD32BE(iv + 12);
+      AES->IVR3 = LOAD32BE(iv);
+      AES->IVR2 = LOAD32BE(iv + 4);
+      AES->IVR1 = LOAD32BE(iv + 8);
+      AES->IVR0 = LOAD32BE(iv + 12);
    }
 
    //Enable the AES by setting the EN bit in the AES_CR register
-   AES1->CR |= AES_CR_EN;
+   AES->CR |= AES_CR_EN;
 
    //Process data
    while(length >= AES_BLOCK_SIZE)
    {
       //Write four input data words into the AES_DINR register
-      AES1->DINR = __UNALIGNED_UINT32_READ(input);
-      AES1->DINR = __UNALIGNED_UINT32_READ(input + 4);
-      AES1->DINR = __UNALIGNED_UINT32_READ(input + 8);
-      AES1->DINR = __UNALIGNED_UINT32_READ(input + 12);
+      AES->DINR = __UNALIGNED_UINT32_READ(input);
+      AES->DINR = __UNALIGNED_UINT32_READ(input + 4);
+      AES->DINR = __UNALIGNED_UINT32_READ(input + 8);
+      AES->DINR = __UNALIGNED_UINT32_READ(input + 12);
 
       //Wait until the CCF flag is set in the AES_SR register
-      while((AES1->SR & AES_SR_CCF) == 0)
+      while((AES->SR & AES_SR_CCF) == 0)
       {
       }
 
       //Read four data words from the AES_DOUTR register
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(output, temp);
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(output + 4, temp);
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(output + 8, temp);
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(output + 12, temp);
 
       //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-      AES1->CR |= AES_CR_CCFC;
+      AES->CR |= AES_CR_CCFC;
 
       //Next block
       input += AES_BLOCK_SIZE;
@@ -210,24 +210,24 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
       osMemcpy(buffer, input, length);
 
       //Write four input data words into the AES_DINR register
-      AES1->DINR = buffer[0];
-      AES1->DINR = buffer[1];
-      AES1->DINR = buffer[2];
-      AES1->DINR = buffer[3];
+      AES->DINR = buffer[0];
+      AES->DINR = buffer[1];
+      AES->DINR = buffer[2];
+      AES->DINR = buffer[3];
 
       //Wait until the CCF flag is set in the AES_SR register
-      while((AES1->SR & AES_SR_CCF) == 0)
+      while((AES->SR & AES_SR_CCF) == 0)
       {
       }
 
       //Read four data words from the AES_DOUTR register
-      buffer[0] = AES1->DOUTR;
-      buffer[1] = AES1->DOUTR;
-      buffer[2] = AES1->DOUTR;
-      buffer[3] = AES1->DOUTR;
+      buffer[0] = AES->DOUTR;
+      buffer[1] = AES->DOUTR;
+      buffer[2] = AES->DOUTR;
+      buffer[3] = AES->DOUTR;
 
       //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-      AES1->CR |= AES_CR_CCFC;
+      AES->CR |= AES_CR_CCFC;
 
       //Discard the data that is not part of the payload
       osMemcpy(output, buffer, length);
@@ -237,18 +237,18 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
    if(iv != NULL)
    {
       //Update the value of the initialization vector
-      temp = AES1->IVR3;
+      temp = AES->IVR3;
       STORE32BE(temp, iv);
-      temp = AES1->IVR2;
+      temp = AES->IVR2;
       STORE32BE(temp, iv + 4);
-      temp = AES1->IVR1;
+      temp = AES->IVR1;
       STORE32BE(temp, iv + 8);
-      temp = AES1->IVR0;
+      temp = AES->IVR0;
       STORE32BE(temp, iv + 12);
    }
 
    //Disable the AES peripheral by clearing the EN bit of the AES_CR register
-   AES1->CR = 0;
+   AES->CR = 0;
 
    //Release exclusive access to the CRYP module
    osReleaseMutex(&stm32wlxxCryptoMutex);
@@ -751,77 +751,77 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
    osAcquireMutex(&stm32wlxxCryptoMutex);
 
    //Disable the AES peripheral and clear the CCF flag
-   AES1->CR = AES_CR_CCFC;
+   AES->CR = AES_CR_CCFC;
 
    //Select GCM chaining mode, by setting to '011' the CHMOD bitfield of the
    //AES_CR register
-   temp = AES1->CR & ~AES_CR_CHMOD;
-   AES1->CR = temp | AES_CR_CHMOD_GCM_GMAC;
+   temp = AES->CR & ~AES_CR_CHMOD;
+   AES->CR = temp | AES_CR_CHMOD_GCM_GMAC;
 
    //Set to '00' (no data swapping) the DATATYPE bitfield
-   temp = AES1->CR & ~AES_CR_DATATYPE;
-   AES1->CR = temp | AES_CR_DATATYPE_32B;
+   temp = AES->CR & ~AES_CR_DATATYPE;
+   AES->CR = temp | AES_CR_DATATYPE_32B;
 
    //Indicate the Init phase, by setting to '00' the GCMPH bitfield of the
    //AES_CR register
-   temp = AES1->CR & ~AES_CR_GCMPH;
-   AES1->CR = temp | AES_CR_GCMPH_INIT;
+   temp = AES->CR & ~AES_CR_GCMPH;
+   AES->CR = temp | AES_CR_GCMPH_INIT;
 
    //Set the MODE bitfield of the AES_CR register to '00' or '10'
-   temp = AES1->CR & ~AES_CR_MODE;
-   AES1->CR = temp | mode;
+   temp = AES->CR & ~AES_CR_MODE;
+   AES->CR = temp | mode;
 
    //Set encryption key
    aesLoadKey(context);
 
    //Set initialization vector
-   AES1->IVR3 = LOAD32BE(iv);
-   AES1->IVR2 = LOAD32BE(iv + 4);
-   AES1->IVR1 = LOAD32BE(iv + 8);
-   AES1->IVR0 = 2;
+   AES->IVR3 = LOAD32BE(iv);
+   AES->IVR2 = LOAD32BE(iv + 4);
+   AES->IVR1 = LOAD32BE(iv + 8);
+   AES->IVR0 = 2;
 
    //Start the calculation of the hash key, by setting to 1 the EN bit of the
    //AES_CR register
-   AES1->CR |= AES_CR_EN;
+   AES->CR |= AES_CR_EN;
 
    //Wait until the end of computation, indicated by the CCF flag of the AES_SR
    //transiting to 1
-   while((AES1->SR & AES_SR_CCF) == 0)
+   while((AES->SR & AES_SR_CCF) == 0)
    {
    }
 
    //Clear the CCF flag of the AES_SR register, by setting to 1 the CCFC bit
    //of the AES_CR register
-   AES1->CR |= AES_CR_CCFC;
+   AES->CR |= AES_CR_CCFC;
 
    //Configure the data type
-   temp = AES1->CR & ~AES_CR_DATATYPE;
-   AES1->CR = temp | AES_CR_DATATYPE_8B;
+   temp = AES->CR & ~AES_CR_DATATYPE;
+   AES->CR = temp | AES_CR_DATATYPE_8B;
 
    //Indicate the Header phase, by setting to '01' the GCMPH bitfield of the
    //AES_CR register
-   temp = AES1->CR & ~AES_CR_GCMPH;
-   AES1->CR = temp | AES_CR_GCMPH_HEADER;
+   temp = AES->CR & ~AES_CR_GCMPH;
+   AES->CR = temp | AES_CR_GCMPH_HEADER;
 
    //Enable the AES peripheral by setting the EN bit of the AES_CR register
-   AES1->CR |= AES_CR_EN;
+   AES->CR |= AES_CR_EN;
 
    //Process additional authenticated data
    for(n = aLen; n >= AES_BLOCK_SIZE; n -= AES_BLOCK_SIZE)
    {
       //Write four input data words into the AES_DINR register
-      AES1->DINR = __UNALIGNED_UINT32_READ(a);
-      AES1->DINR = __UNALIGNED_UINT32_READ(a + 4);
-      AES1->DINR = __UNALIGNED_UINT32_READ(a + 8);
-      AES1->DINR = __UNALIGNED_UINT32_READ(a + 12);
+      AES->DINR = __UNALIGNED_UINT32_READ(a);
+      AES->DINR = __UNALIGNED_UINT32_READ(a + 4);
+      AES->DINR = __UNALIGNED_UINT32_READ(a + 8);
+      AES->DINR = __UNALIGNED_UINT32_READ(a + 12);
 
       //Wait until the CCF flag is set in the AES_SR register
-      while((AES1->SR & AES_SR_CCF) == 0)
+      while((AES->SR & AES_SR_CCF) == 0)
       {
       }
 
       //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-      AES1->CR |= AES_CR_CCFC;
+      AES->CR |= AES_CR_CCFC;
 
       //Next block
       a += AES_BLOCK_SIZE;
@@ -836,51 +836,51 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
       osMemcpy(buffer, a, n);
 
       //Write four input data words into the AES_DINR register
-      AES1->DINR = buffer[0];
-      AES1->DINR = buffer[1];
-      AES1->DINR = buffer[2];
-      AES1->DINR = buffer[3];
+      AES->DINR = buffer[0];
+      AES->DINR = buffer[1];
+      AES->DINR = buffer[2];
+      AES->DINR = buffer[3];
 
       //Wait until the CCF flag is set in the AES_SR register
-      while((AES1->SR & AES_SR_CCF) == 0)
+      while((AES->SR & AES_SR_CCF) == 0)
       {
       }
 
       //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-      AES1->CR |= AES_CR_CCFC;
+      AES->CR |= AES_CR_CCFC;
    }
 
    //Indicate the Payload phase, by setting to '10' the GCMPH bitfield of the
    //AES_CR register
-   temp = AES1->CR & ~AES_CR_GCMPH;
-   AES1->CR = temp | AES_CR_GCMPH_PAYLOAD;
+   temp = AES->CR & ~AES_CR_GCMPH;
+   AES->CR = temp | AES_CR_GCMPH_PAYLOAD;
 
    //Process data
    for(n = length; n >= AES_BLOCK_SIZE; n -= AES_BLOCK_SIZE)
    {
       //Write four input data words into the AES_DINR register
-      AES1->DINR = __UNALIGNED_UINT32_READ(input);
-      AES1->DINR = __UNALIGNED_UINT32_READ(input + 4);
-      AES1->DINR = __UNALIGNED_UINT32_READ(input + 8);
-      AES1->DINR = __UNALIGNED_UINT32_READ(input + 12);
+      AES->DINR = __UNALIGNED_UINT32_READ(input);
+      AES->DINR = __UNALIGNED_UINT32_READ(input + 4);
+      AES->DINR = __UNALIGNED_UINT32_READ(input + 8);
+      AES->DINR = __UNALIGNED_UINT32_READ(input + 12);
 
       //Wait until the CCF flag is set in the AES_SR register
-      while((AES1->SR & AES_SR_CCF) == 0)
+      while((AES->SR & AES_SR_CCF) == 0)
       {
       }
 
       //Read four data words from the AES_DOUTR register
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(output, temp);
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(output + 4, temp);
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(output + 8, temp);
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(output + 12, temp);
 
       //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-      AES1->CR |= AES_CR_CCFC;
+      AES->CR |= AES_CR_CCFC;
 
       //Next block
       input += AES_BLOCK_SIZE;
@@ -897,28 +897,28 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
       osMemcpy(buffer, input, n);
 
       //Specify the number of padding bytes in the last block
-      temp = AES1->CR & ~AES_CR_NPBLB;
-      AES1->CR = temp | ((AES_BLOCK_SIZE - n) << AES_CR_NPBLB_Pos);
+      temp = AES->CR & ~AES_CR_NPBLB;
+      AES->CR = temp | ((AES_BLOCK_SIZE - n) << AES_CR_NPBLB_Pos);
 
       //Write four input data words into the AES_DINR register
-      AES1->DINR = buffer[0];
-      AES1->DINR = buffer[1];
-      AES1->DINR = buffer[2];
-      AES1->DINR = buffer[3];
+      AES->DINR = buffer[0];
+      AES->DINR = buffer[1];
+      AES->DINR = buffer[2];
+      AES->DINR = buffer[3];
 
       //Wait until the CCF flag is set in the AES_SR register
-      while((AES1->SR & AES_SR_CCF) == 0)
+      while((AES->SR & AES_SR_CCF) == 0)
       {
       }
 
       //Read four data words from the AES_DOUTR register
-      buffer[0] = AES1->DOUTR;
-      buffer[1] = AES1->DOUTR;
-      buffer[2] = AES1->DOUTR;
-      buffer[3] = AES1->DOUTR;
+      buffer[0] = AES->DOUTR;
+      buffer[1] = AES->DOUTR;
+      buffer[2] = AES->DOUTR;
+      buffer[3] = AES->DOUTR;
 
       //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-      AES1->CR |= AES_CR_CCFC;
+      AES->CR |= AES_CR_CCFC;
 
       //Discard the bits that are not part of the payload when the last block
       //size is less than 16 bytes
@@ -927,45 +927,45 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
 
    //Indicate the Final phase, by setting to '11' the GCMPH bitfield of the
    //AES_CR register
-   temp = AES1->CR & ~AES_CR_GCMPH;
-   AES1->CR = temp | AES_CR_GCMPH_FINAL;
+   temp = AES->CR & ~AES_CR_GCMPH;
+   AES->CR = temp | AES_CR_GCMPH_FINAL;
 
    //Select encrypt mode by setting to '00' the MODE bitfield of the AES_CR
    //register
-   temp = AES1->CR & ~AES_CR_MODE;
-   AES1->CR = temp | AES_CR_MODE_ENCRYPTION;
+   temp = AES->CR & ~AES_CR_MODE;
+   AES->CR = temp | AES_CR_MODE_ENCRYPTION;
 
    //Compose the data of the block, by concatenating the AAD bit length and
    //the payload bit length. Write the block into the AES_DINR register
    m = aLen * 8;
-   AES1->DINR = htole32(m >> 32);
-   AES1->DINR = htole32(m);
+   AES->DINR = htole32(m >> 32);
+   AES->DINR = htole32(m);
    m = length * 8;
-   AES1->DINR = htole32(m >> 32);
-   AES1->DINR = htole32(m);
+   AES->DINR = htole32(m >> 32);
+   AES->DINR = htole32(m);
 
    //Wait until the end of computation, indicated by the CCF flag of the AES_SR
    //transiting to 1
-   while((AES1->SR & AES_SR_CCF) == 0)
+   while((AES->SR & AES_SR_CCF) == 0)
    {
    }
 
    //Get the GCM authentication tag, by reading the AES_DOUTR register four
    //times
-   temp = AES1->DOUTR;
+   temp = AES->DOUTR;
    __UNALIGNED_UINT32_WRITE(t, temp);
-   temp = AES1->DOUTR;
+   temp = AES->DOUTR;
    __UNALIGNED_UINT32_WRITE(t + 4, temp);
-   temp = AES1->DOUTR;
+   temp = AES->DOUTR;
    __UNALIGNED_UINT32_WRITE(t + 8, temp);
-   temp = AES1->DOUTR;
+   temp = AES->DOUTR;
    __UNALIGNED_UINT32_WRITE(t + 12, temp);
 
    //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-   AES1->CR |= AES_CR_CCFC;
+   AES->CR |= AES_CR_CCFC;
 
    //Disable the AES peripheral by clearing the EN bit of the AES_CR register
-   AES1->CR = 0;
+   AES->CR = 0;
 
    //Release exclusive access to the AES module
    osReleaseMutex(&stm32wlxxCryptoMutex);
@@ -1118,57 +1118,57 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
    osAcquireMutex(&stm32wlxxCryptoMutex);
 
    //Disable the AES peripheral and clear the CCF flag
-   AES1->CR = AES_CR_CCFC;
+   AES->CR = AES_CR_CCFC;
 
    //Select CCM chaining mode, by setting to '100' the CHMOD bitfield of the
    //AES_CR register
-   temp = AES1->CR & ~AES_CR_CHMOD;
-   AES1->CR = temp | AES_CR_CHMOD_CCM;
+   temp = AES->CR & ~AES_CR_CHMOD;
+   AES->CR = temp | AES_CR_CHMOD_CCM;
 
    //Configure the data type
-   temp = AES1->CR & ~AES_CR_DATATYPE;
-   AES1->CR = temp | AES_CR_DATATYPE_8B;
+   temp = AES->CR & ~AES_CR_DATATYPE;
+   AES->CR = temp | AES_CR_DATATYPE_8B;
 
    //Indicate the Init phase, by setting to '00' the GCMPH bitfield of the
    //AES_CR register
-   temp = AES1->CR & ~AES_CR_GCMPH;
-   AES1->CR = temp | AES_CR_GCMPH_INIT;
+   temp = AES->CR & ~AES_CR_GCMPH;
+   AES->CR = temp | AES_CR_GCMPH_INIT;
 
    //Set the MODE bitfield of the AES_CR register to '00' or '10'. Although
    //the bitfield is only used in payload phase, it is recommended to set it
    //in the Init phase and keep it unchanged in all subsequent phases
-   temp = AES1->CR & ~AES_CR_MODE;
-   AES1->CR = temp | mode;
+   temp = AES->CR & ~AES_CR_MODE;
+   AES->CR = temp | mode;
 
    //Set encryption key
    aesLoadKey(context);
 
    //Initialize AES_IVRx registers with B0 data
-   AES1->IVR3 = LOAD32BE(b0);
-   AES1->IVR2 = LOAD32BE(b0 + 4);
-   AES1->IVR1 = LOAD32BE(b0 + 8);
-   AES1->IVR0 = LOAD32BE(b0 + 12);
+   AES->IVR3 = LOAD32BE(b0);
+   AES->IVR2 = LOAD32BE(b0 + 4);
+   AES->IVR1 = LOAD32BE(b0 + 8);
+   AES->IVR0 = LOAD32BE(b0 + 12);
 
    //Start the calculation of the counter, by setting to 1 the EN bit of the
    //AES_CR register
-   AES1->CR |= AES_CR_EN;
+   AES->CR |= AES_CR_EN;
 
    //Wait until the end of computation, indicated by the CCF flag of the AES_SR
    //transiting to 1
-   while((AES1->SR & AES_SR_CCF) == 0)
+   while((AES->SR & AES_SR_CCF) == 0)
    {
    }
 
    //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-   AES1->CR |= AES_CR_CCFC;
+   AES->CR |= AES_CR_CCFC;
 
    //Indicate the Header phase, by setting to '01' the GCMPH bitfield of
    //the AES_CR register
-   temp = AES1->CR & ~AES_CR_GCMPH;
-   AES1->CR = temp | AES_CR_GCMPH_HEADER;
+   temp = AES->CR & ~AES_CR_GCMPH;
+   AES->CR = temp | AES_CR_GCMPH_HEADER;
 
    //Enable the AES peripheral by setting the EN bit of the AES_CR register
-   AES1->CR |= AES_CR_EN;
+   AES->CR |= AES_CR_EN;
 
    //The header phase can be skipped if there is no associated data
    if(aLen > 0)
@@ -1204,18 +1204,18 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
       }
 
       //Write four input data words into the AES_DINR register
-      AES1->DINR = LOAD32LE(buffer);
-      AES1->DINR = LOAD32LE(buffer + 4);
-      AES1->DINR = LOAD32LE(buffer + 8);
-      AES1->DINR = LOAD32LE(buffer + 12);
+      AES->DINR = LOAD32LE(buffer);
+      AES->DINR = LOAD32LE(buffer + 4);
+      AES->DINR = LOAD32LE(buffer + 8);
+      AES->DINR = LOAD32LE(buffer + 12);
 
       //Wait until the CCF flag is set in the AES_SR register
-      while((AES1->SR & AES_SR_CCF) == 0)
+      while((AES->SR & AES_SR_CCF) == 0)
       {
       }
 
       //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-      AES1->CR |= AES_CR_CCFC;
+      AES->CR |= AES_CR_CCFC;
 
       //Number of remaining data bytes
       aLen -= n;
@@ -1226,18 +1226,18 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
    while(aLen >= AES_BLOCK_SIZE)
    {
       //Write four input data words into the AES_DINR register
-      AES1->DINR = __UNALIGNED_UINT32_READ(a);
-      AES1->DINR = __UNALIGNED_UINT32_READ(a + 4);
-      AES1->DINR = __UNALIGNED_UINT32_READ(a + 8);
-      AES1->DINR = __UNALIGNED_UINT32_READ(a + 12);
+      AES->DINR = __UNALIGNED_UINT32_READ(a);
+      AES->DINR = __UNALIGNED_UINT32_READ(a + 4);
+      AES->DINR = __UNALIGNED_UINT32_READ(a + 8);
+      AES->DINR = __UNALIGNED_UINT32_READ(a + 12);
 
       //Wait until the CCF flag is set in the AES_SR register
-      while((AES1->SR & AES_SR_CCF) == 0)
+      while((AES->SR & AES_SR_CCF) == 0)
       {
       }
 
       //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-      AES1->CR |= AES_CR_CCFC;
+      AES->CR |= AES_CR_CCFC;
 
       //Next block
       a += AES_BLOCK_SIZE;
@@ -1253,51 +1253,51 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
       osMemcpy(buffer, a, aLen);
 
       //Write four input data words into the AES_DINR register
-      AES1->DINR = __UNALIGNED_UINT32_READ(buffer);
-      AES1->DINR = __UNALIGNED_UINT32_READ(buffer + 4);
-      AES1->DINR = __UNALIGNED_UINT32_READ(buffer + 8);
-      AES1->DINR = __UNALIGNED_UINT32_READ(buffer + 12);
+      AES->DINR = __UNALIGNED_UINT32_READ(buffer);
+      AES->DINR = __UNALIGNED_UINT32_READ(buffer + 4);
+      AES->DINR = __UNALIGNED_UINT32_READ(buffer + 8);
+      AES->DINR = __UNALIGNED_UINT32_READ(buffer + 12);
 
       //Wait until the CCF flag is set in the AES_SR register
-      while((AES1->SR & AES_SR_CCF) == 0)
+      while((AES->SR & AES_SR_CCF) == 0)
       {
       }
 
       //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-      AES1->CR |= AES_CR_CCFC;
+      AES->CR |= AES_CR_CCFC;
    }
 
    //Indicate the Payload phase, by setting to '10' the GCMPH bitfield of the
    //AES_CR register
-   temp = AES1->CR & ~AES_CR_GCMPH;
-   AES1->CR = temp | AES_CR_GCMPH_PAYLOAD;
+   temp = AES->CR & ~AES_CR_GCMPH;
+   AES->CR = temp | AES_CR_GCMPH_PAYLOAD;
 
    //Process data
    while(length >= AES_BLOCK_SIZE)
    {
       //Write four input data words into the AES_DINR register
-      AES1->DINR = __UNALIGNED_UINT32_READ(input);
-      AES1->DINR = __UNALIGNED_UINT32_READ(input + 4);
-      AES1->DINR = __UNALIGNED_UINT32_READ(input + 8);
-      AES1->DINR = __UNALIGNED_UINT32_READ(input + 12);
+      AES->DINR = __UNALIGNED_UINT32_READ(input);
+      AES->DINR = __UNALIGNED_UINT32_READ(input + 4);
+      AES->DINR = __UNALIGNED_UINT32_READ(input + 8);
+      AES->DINR = __UNALIGNED_UINT32_READ(input + 12);
 
       //Wait until the CCF flag is set in the AES_SR register
-      while((AES1->SR & AES_SR_CCF) == 0)
+      while((AES->SR & AES_SR_CCF) == 0)
       {
       }
 
       //Read four data words from the AES_DOUTR register
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(output, temp);
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(output + 4, temp);
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(output + 8, temp);
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(output + 12, temp);
 
       //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-      AES1->CR |= AES_CR_CCFC;
+      AES->CR |= AES_CR_CCFC;
 
       //Next block
       input += AES_BLOCK_SIZE;
@@ -1318,33 +1318,33 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
       if((mode & AES_CR_MODE) == AES_CR_MODE_DECRYPTION)
       {
          //Specify the number of padding bytes in the last block
-         temp = AES1->CR & ~AES_CR_NPBLB;
-         AES1->CR = temp | ((AES_BLOCK_SIZE - length) << AES_CR_NPBLB_Pos);
+         temp = AES->CR & ~AES_CR_NPBLB;
+         AES->CR = temp | ((AES_BLOCK_SIZE - length) << AES_CR_NPBLB_Pos);
       }
 
       //Write four input data words into the AES_DINR register
-      AES1->DINR = __UNALIGNED_UINT32_READ(buffer);
-      AES1->DINR = __UNALIGNED_UINT32_READ(buffer + 4);
-      AES1->DINR = __UNALIGNED_UINT32_READ(buffer + 8);
-      AES1->DINR = __UNALIGNED_UINT32_READ(buffer + 12);
+      AES->DINR = __UNALIGNED_UINT32_READ(buffer);
+      AES->DINR = __UNALIGNED_UINT32_READ(buffer + 4);
+      AES->DINR = __UNALIGNED_UINT32_READ(buffer + 8);
+      AES->DINR = __UNALIGNED_UINT32_READ(buffer + 12);
 
       //Wait until the CCF flag is set in the AES_SR register
-      while((AES1->SR & AES_SR_CCF) == 0)
+      while((AES->SR & AES_SR_CCF) == 0)
       {
       }
 
       //Read four data words from the AES_DOUTR register
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(buffer, temp);
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(buffer + 4, temp);
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(buffer + 8, temp);
-      temp = AES1->DOUTR;
+      temp = AES->DOUTR;
       __UNALIGNED_UINT32_WRITE(buffer + 12, temp);
 
       //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-      AES1->CR |= AES_CR_CCFC;
+      AES->CR |= AES_CR_CCFC;
 
       //Discard the bits that are not part of the payload when the last block
       //size is less than 16 bytes
@@ -1353,31 +1353,31 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
 
    //Indicate the Final phase, by setting to '11' the GCMPH bitfield of the
    //AES_CR register
-   temp = AES1->CR & ~AES_CR_GCMPH;
-   AES1->CR = temp | AES_CR_GCMPH_FINAL;
+   temp = AES->CR & ~AES_CR_GCMPH;
+   AES->CR = temp | AES_CR_GCMPH_FINAL;
 
    //Wait until the end of computation, indicated by the CCF flag of the AES_SR
    //transiting to 1
-   while((AES1->SR & AES_SR_CCF) == 0)
+   while((AES->SR & AES_SR_CCF) == 0)
    {
    }
 
    //Get the CCM authentication tag, by reading the AES_DOUTR register four
    //times
-   temp = AES1->DOUTR;
+   temp = AES->DOUTR;
    __UNALIGNED_UINT32_WRITE(t, temp);
-   temp = AES1->DOUTR;
+   temp = AES->DOUTR;
    __UNALIGNED_UINT32_WRITE(t + 4, temp);
-   temp = AES1->DOUTR;
+   temp = AES->DOUTR;
    __UNALIGNED_UINT32_WRITE(t + 8, temp);
-   temp = AES1->DOUTR;
+   temp = AES->DOUTR;
    __UNALIGNED_UINT32_WRITE(t + 12, temp);
 
    //Clear the CCF flag, by setting the CCFC bit of the AES_CR register
-   AES1->CR |= AES_CR_CCFC;
+   AES->CR |= AES_CR_CCFC;
 
    //Disable the AES peripheral by clearing the EN bit of the AES_CR register
-   AES1->CR = 0;
+   AES->CR = 0;
 
    //Release exclusive access to the AES module
    osReleaseMutex(&stm32wlxxCryptoMutex);

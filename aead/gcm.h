@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 #ifndef _GCM_H
@@ -33,6 +33,22 @@
 
 //Dependencies
 #include "core/crypto.h"
+
+//Precalculated table width, in bits
+#ifndef GCM_TABLE_W
+   #define GCM_TABLE_W 4
+#elif (GCM_TABLE_W != 4 && GCM_TABLE_W != 8)
+   #error GCM_TABLE_W parameter is not valid
+#endif
+
+//4-bit or 8-bit precalculated table?
+#if (GCM_TABLE_W == 4)
+   #define GCM_TABLE_N 16
+   #define GCM_REVERSE_BITS(n) reverseInt4(n)
+#else
+   #define GCM_TABLE_N 256
+   #define GCM_REVERSE_BITS(n) reverseInt8(n)
+#endif
 
 //C++ guard
 #ifdef __cplusplus
@@ -48,7 +64,7 @@ typedef struct
 {
    const CipherAlgo *cipherAlgo; ///<Cipher algorithm
    void *cipherContext;          ///<Cipher algorithm context
-   uint32_t m[16][4];            ///<Precalculated table
+   uint32_t m[GCM_TABLE_N][4];   ///<Precalculated table
 } GcmContext;
 
 

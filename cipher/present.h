@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 #ifndef _PRESENT_H
@@ -59,9 +59,16 @@ typedef struct
 extern const CipherAlgo presentCipherAlgo;
 
 //PRESENT related functions
-error_t presentInit(PresentContext *context, const uint8_t *key, size_t keyLen);
-void presentEncryptBlock(PresentContext *context, const uint8_t *input, uint8_t *output);
-void presentDecryptBlock(PresentContext *context, const uint8_t *input, uint8_t *output);
+error_t presentInit(PresentContext *context, const uint8_t *key,
+   size_t keyLen);
+
+void presentEncryptBlock(PresentContext *context, const uint8_t *input,
+   uint8_t *output);
+
+void presentDecryptBlock(PresentContext *context, const uint8_t *input,
+   uint8_t *output);
+
+void presentDeinit(PresentContext *context);
 
 //C++ guard
 #ifdef __cplusplus

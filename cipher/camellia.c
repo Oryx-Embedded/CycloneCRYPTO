@@ -30,7 +30,7 @@
  * blocks of 128 bits under control of a 128/192/256-bit secret key
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -44,32 +44,17 @@
 //Check crypto library configuration
 #if (CAMELLIA_SUPPORT == ENABLED)
 
-//Camellia round function
-#define CAMELLIA_ROUND(left1, left2, right1, right2, k1, k2) \
-{ \
-   temp1 = left1 ^ k1; \
-   temp2 = left2 ^ k2; \
-   CAMELLIA_S(temp1, temp2); \
-   CAMELLIA_P(temp1, temp2); \
-   temp1 ^= right2; \
-   temp2 ^= right1; \
-   right1 = left1; \
-   right2 = left2; \
-   left1 = temp2; \
-   left2 = temp1; \
-}
-
 //F-function
-#define CAMELLIA_F(xl, xr, kl, kr) \
+#define F(xl, xr, kl, kr) \
 { \
    xl = xl ^ kl; \
    xl = xr ^ kr; \
-   CAMELLIA_S(xl, xr); \
-   CAMELLIA_P(xl, xr); \
+   S(xl, xr); \
+   P(xl, xr); \
 }
 
 //FL-function
-#define CAMELLIA_FL(xl, xr, kl, kr) \
+#define FL(xl, xr, kl, kr) \
 { \
    temp1 = (xl & kl); \
    xr ^= ROL32(temp1, 1); \
@@ -77,7 +62,7 @@
 }
 
 //Inverse FL-function
-#define CAMELLIA_INV_FL(yl, yr, kl, kr) \
+#define FL_INV(yl, yr, kl, kr) \
 { \
    yl ^= (yr | kr); \
    temp1 = (yl & kl); \
@@ -85,7 +70,7 @@
 }
 
 //S-function
-#define CAMELLIA_S(zl, zr) \
+#define S(zl, zr) \
 { \
    zl = (sbox1[(zl >> 24) & 0xFF] << 24) | (sbox2[(zl >> 16) & 0xFF] << 16) | \
       (sbox3[(zl >> 8) & 0xFF] << 8) | sbox4[zl & 0xFF]; \
@@ -94,12 +79,27 @@
 }
 
 //P-function
-#define CAMELLIA_P(zl, zr) \
+#define P(zl, zr) \
 { \
    zl ^= ROL32(zr, 8); \
    zr ^= ROL32(zl, 16); \
    zl ^= ROR32(zr, 8); \
    zr ^= ROR32(zl, 8); \
+}
+
+//Round function
+#define ROUND(left1, left2, right1, right2, k1, k2) \
+{ \
+   temp1 = left1 ^ k1; \
+   temp2 = left2 ^ k2; \
+   S(temp1, temp2); \
+   P(temp1, temp2); \
+   temp1 ^= right2; \
+   temp2 ^= right1; \
+   right1 = left1; \
+   right2 = left2; \
+   left1 = temp2; \
+   left2 = temp1; \
 }
 
 //Key schedule related constants
@@ -286,7 +286,8 @@ const CipherAlgo camelliaCipherAlgo =
    NULL,
    NULL,
    (CipherAlgoEncryptBlock) camelliaEncryptBlock,
-   (CipherAlgoDecryptBlock) camelliaDecryptBlock
+   (CipherAlgoDecryptBlock) camelliaDecryptBlock,
+   (CipherAlgoDeinit) camelliaDeinit
 };
 
 
@@ -298,7 +299,8 @@ const CipherAlgo camelliaCipherAlgo =
  * @return Error code
  **/
 
-error_t camelliaInit(CamelliaContext *context, const uint8_t *key, size_t keyLen)
+error_t camelliaInit(CamelliaContext *context, const uint8_t *key,
+   size_t keyLen)
 {
    uint_t i;
    uint32_t temp1;
@@ -354,7 +356,7 @@ error_t camelliaInit(CamelliaContext *context, const uint8_t *key, size_t keyLen
    for(i = 0; i < 6; i++)
    {
       //Apply round function
-      CAMELLIA_ROUND(k[KB + 0], k[KB + 1], k[KB + 2], k[KB + 3], sigma[2 * i], sigma[2 * i + 1]);
+      ROUND(k[KB + 0], k[KB + 1], k[KB + 2], k[KB + 3], sigma[2 * i], sigma[2 * i + 1]);
 
       //The 2nd round requires special processing
       if(i == 1)
@@ -370,6 +372,7 @@ error_t camelliaInit(CamelliaContext *context, const uint8_t *key, size_t keyLen
       {
          //Save KA after the 4th round
          osMemcpy(k + KA, k + KB, 16);
+
          //The result is XORed with KR
          k[KB + 0] ^= k[KR + 0];
          k[KB + 1] ^= k[KR + 1];
@@ -398,6 +401,7 @@ error_t camelliaInit(CamelliaContext *context, const uint8_t *key, size_t keyLen
       //Calculate the shift count
       uint_t n = (p->shift + p->position) / 32;
       uint_t m = (p->shift + p->position) % 32;
+
       //Point to KL, KR, KA or KB
       k = context->k + p->key;
 
@@ -430,7 +434,8 @@ error_t camelliaInit(CamelliaContext *context, const uint8_t *key, size_t keyLen
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-void camelliaEncryptBlock(CamelliaContext *context, const uint8_t *input, uint8_t *output)
+void camelliaEncryptBlock(CamelliaContext *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint_t i;
    uint32_t temp1;
@@ -451,6 +456,7 @@ void camelliaEncryptBlock(CamelliaContext *context, const uint8_t *input, uint8_
    left2 ^= ks[1];
    right1 ^= ks[2];
    right2 ^= ks[3];
+
    //Advance current location in key schedule
    ks += 4;
 
@@ -458,7 +464,8 @@ void camelliaEncryptBlock(CamelliaContext *context, const uint8_t *input, uint8_
    for(i = context->nr; i > 0; i--)
    {
       //Apply round function
-      CAMELLIA_ROUND(left1, left2, right1, right2, ks[0], ks[1]);
+      ROUND(left1, left2, right1, right2, ks[0], ks[1]);
+
       //Advance current location in key schedule
       ks += 2;
 
@@ -466,9 +473,9 @@ void camelliaEncryptBlock(CamelliaContext *context, const uint8_t *input, uint8_
       if(i == 7 || i == 13 || i == 19)
       {
          //Apply FL-function
-         CAMELLIA_FL(left1, left2, ks[0], ks[1])
+         FL(left1, left2, ks[0], ks[1])
          //Apply inverse FL-function
-         CAMELLIA_INV_FL(right1, right2, ks[2], ks[3])
+         FL_INV(right1, right2, ks[2], ks[3])
          //Advance current location in key schedule
          ks += 4;
       }
@@ -495,7 +502,8 @@ void camelliaEncryptBlock(CamelliaContext *context, const uint8_t *input, uint8_
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-void camelliaDecryptBlock(CamelliaContext *context, const uint8_t *input, uint8_t *output)
+void camelliaDecryptBlock(CamelliaContext *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint_t i;
    uint32_t temp1;
@@ -522,8 +530,9 @@ void camelliaDecryptBlock(CamelliaContext *context, const uint8_t *input, uint8_
    {
       //Update current location in key schedule
       ks -= 2;
+
       //Apply round function
-      CAMELLIA_ROUND(right1, right2, left1, left2, ks[0], ks[1]);
+      ROUND(right1, right2, left1, left2, ks[0], ks[1]);
 
       //6th, 12th and 18th rounds require special processing
       if(i == 7 || i == 13 || i == 19)
@@ -531,14 +540,15 @@ void camelliaDecryptBlock(CamelliaContext *context, const uint8_t *input, uint8_
          //Update current location in key schedule
          ks -= 4;
          //Apply FL-function
-         CAMELLIA_FL(right1, right2, ks[2], ks[3])
+         FL(right1, right2, ks[2], ks[3])
          //Apply inverse FL-function
-         CAMELLIA_INV_FL(left1, left2, ks[0], ks[1])
+         FL_INV(left1, left2, ks[0], ks[1])
       }
    }
 
    //Update current location in key schedule
    ks -= 4;
+
    //XOR operation with kw1 and kw2
    left1 ^= ks[0];
    left2 ^= ks[1];
@@ -550,6 +560,18 @@ void camelliaDecryptBlock(CamelliaContext *context, const uint8_t *input, uint8_
    STORE32BE(left2, output + 4);
    STORE32BE(right1, output + 8);
    STORE32BE(right2, output + 12);
+}
+
+
+/**
+ * @brief Release Camellia context
+ * @param[in] context Pointer to the Camellia context
+ **/
+
+void camelliaDeinit(CamelliaContext *context)
+{
+   //Clear Camellia context
+   osMemset(context, 0, sizeof(CamelliaContext));
 }
 
 #endif

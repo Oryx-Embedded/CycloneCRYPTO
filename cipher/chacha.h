@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 #ifndef _CHACHA_H
@@ -61,6 +61,8 @@ void chachaCipher(ChachaContext *context, const uint8_t *input,
    uint8_t *output, size_t length);
 
 void chachaProcessBlock(ChachaContext *context);
+
+void chachaDeinit(ChachaContext *context);
 
 //C++ guard
 #ifdef __cplusplus

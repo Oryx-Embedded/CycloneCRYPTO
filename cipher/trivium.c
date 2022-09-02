@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -228,6 +228,18 @@ uint8_t triviumGenerateByte(TriviumContext *context)
 
    //Return one byte of key stream
    return ks;
+}
+
+
+/**
+ * @brief Release Trivium context
+ * @param[in] context Pointer to the Trivium context
+ **/
+
+void triviumDeinit(TriviumContext *context)
+{
+   //Clear Trivium context
+   osMemset(context, 0, sizeof(TriviumContext));
 }
 
 #endif

@@ -31,7 +31,7 @@
  * Refer to RFC 5794 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -244,7 +244,8 @@ const CipherAlgo ariaCipherAlgo =
    NULL,
    NULL,
    (CipherAlgoEncryptBlock) ariaEncryptBlock,
-   (CipherAlgoDecryptBlock) ariaDecryptBlock
+   (CipherAlgoDecryptBlock) ariaDecryptBlock,
+   (CipherAlgoDeinit) ariaDeinit
 };
 
 
@@ -315,6 +316,7 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
       ck1 = c + 0;
       ck2 = c + 4;
       ck3 = c + 8;
+
       //The number of rounds depends on the size of the master key
       context->nr = 12;
    }
@@ -324,6 +326,7 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
       ck1 = c + 4;
       ck2 = c + 8;
       ck3 = c + 0;
+
       //The number of rounds depends on the size of the master key
       context->nr = 14;
    }
@@ -333,6 +336,7 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
       ck1 = c + 8;
       ck2 = c + 0;
       ck3 = c + 4;
+
       //The number of rounds depends on the size of the master key
       context->nr = 16;
    }
@@ -439,7 +443,8 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-void ariaEncryptBlock(AriaContext *context, const uint8_t *input, uint8_t *output)
+void ariaEncryptBlock(AriaContext *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint32_t *ek;
    uint32_t p[4];
@@ -504,7 +509,8 @@ void ariaEncryptBlock(AriaContext *context, const uint8_t *input, uint8_t *outpu
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-void ariaDecryptBlock(AriaContext *context, const uint8_t *input, uint8_t *output)
+void ariaDecryptBlock(AriaContext *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint32_t *dk;
    uint32_t p[4];
@@ -559,6 +565,18 @@ void ariaDecryptBlock(AriaContext *context, const uint8_t *input, uint8_t *outpu
 
    //The resulting value is the plaintext
    osMemcpy(output, q, ARIA_BLOCK_SIZE);
+}
+
+
+/**
+ * @brief Release ARIA context
+ * @param[in] context Pointer to the ARIA context
+ **/
+
+void ariaDeinit(AriaContext *context)
+{
+   //Clear ARIA context
+   osMemset(context, 0, sizeof(AriaContext));
 }
 
 #endif

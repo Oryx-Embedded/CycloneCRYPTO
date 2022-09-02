@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 #ifndef _RC2_H
@@ -68,8 +68,13 @@ error_t rc2Init(Rc2Context *context, const uint8_t *key, size_t keyLen);
 error_t rc2InitEx(Rc2Context *context, const uint8_t *key, size_t keyLen,
    uint_t effectiveKeyLen);
 
-void rc2EncryptBlock(Rc2Context *context, const uint8_t *input, uint8_t *output);
-void rc2DecryptBlock(Rc2Context *context, const uint8_t *input, uint8_t *output);
+void rc2EncryptBlock(Rc2Context *context, const uint8_t *input,
+   uint8_t *output);
+
+void rc2DecryptBlock(Rc2Context *context, const uint8_t *input,
+   uint8_t *output);
+
+void rc2Deinit(Rc2Context *context);
 
 //C++ guard
 #ifdef __cplusplus

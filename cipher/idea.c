@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -50,7 +50,8 @@ const CipherAlgo ideaCipherAlgo =
    NULL,
    NULL,
    (CipherAlgoEncryptBlock) ideaEncryptBlock,
-   (CipherAlgoDecryptBlock) ideaDecryptBlock
+   (CipherAlgoDecryptBlock) ideaDecryptBlock,
+   (CipherAlgoDeinit) ideaDeinit
 };
 
 
@@ -205,13 +206,14 @@ error_t ideaInit(IdeaContext *context, const uint8_t *key, size_t keyLen)
 
 
 /**
- * @brief Encrypt a 16-byte block using IDEA algorithm
+ * @brief Encrypt a 8-byte block using IDEA algorithm
  * @param[in] context Pointer to the IDEA context
  * @param[in] input Plaintext block to encrypt
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-void ideaEncryptBlock(IdeaContext *context, const uint8_t *input, uint8_t *output)
+void ideaEncryptBlock(IdeaContext *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint_t i;
    uint16_t e;
@@ -272,13 +274,14 @@ void ideaEncryptBlock(IdeaContext *context, const uint8_t *input, uint8_t *outpu
 
 
 /**
- * @brief Decrypt a 16-byte block using IDEA algorithm
+ * @brief Decrypt a 8-byte block using IDEA algorithm
  * @param[in] context Pointer to the IDEA context
  * @param[in] input Ciphertext block to decrypt
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-void ideaDecryptBlock(IdeaContext *context, const uint8_t *input, uint8_t *output)
+void ideaDecryptBlock(IdeaContext *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint_t i;
    uint16_t e;
@@ -336,6 +339,18 @@ void ideaDecryptBlock(IdeaContext *context, const uint8_t *input, uint8_t *outpu
    STORE16BE(c, output + 2);
    STORE16BE(b, output + 4);
    STORE16BE(d, output + 6);
+}
+
+
+/**
+ * @brief Release IDEA context
+ * @param[in] context Pointer to the IDEA context
+ **/
+
+void ideaDeinit(IdeaContext *context)
+{
+   //Clear IDEA context
+   osMemset(context, 0, sizeof(IdeaContext));
 }
 
 #endif

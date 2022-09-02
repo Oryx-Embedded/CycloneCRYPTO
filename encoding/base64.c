@@ -31,7 +31,7 @@
  * for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -65,6 +65,70 @@ static const uint8_t base64DecTable[128] =
    0xFF, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28,
    0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
 };
+
+
+/**
+ * @brief Base64 multiline encoding
+ * @param[in] input Input data to encode
+ * @param[in] inputLen Length of the data to encode
+ * @param[out] output NULL-terminated string encoded with Base64 algorithm
+ * @param[out] outputLen Length of the encoded string (optional parameter)
+ * @param[in] lineWidth Number of characters per line
+ **/
+
+void base64EncodeMultiline(const void *input, size_t inputLen, char_t *output,
+   size_t *outputLen, size_t lineWidth)
+{
+   size_t i;
+   size_t j;
+   size_t n;
+   size_t length;
+
+   //Encode the input data using Base64
+   base64Encode(input, inputLen, output, &length);
+
+   //Calculate the number of CRLF sequences to insert
+   if(length > 0 && lineWidth > 0)
+   {
+      n = (length - 1) / lineWidth;
+   }
+   else
+   {
+      n = 0;
+   }
+
+   //If the output parameter is NULL, then the function calculates the length
+   //of the multiline string without copying any data
+   if(n != 0 && input != NULL && output != NULL)
+   {
+      //Initialize indexes
+      i = length;
+      j = length + 2 * n;
+
+      //Properly terminate the string with a NULL character
+      output[j] = '\0';
+
+      //Split the Base64 string into multiple lines
+      while(i > 0 && j > 0)
+      {
+         //Copy current character
+         output[--j] = output[--i];
+
+         //Insert a CRLF sequence when necessary to limit the length of the line
+         if(j >= 2 && (i % lineWidth) == 0)
+         {
+            output[--j] = '\n';
+            output[--j] = '\r';
+         }
+      }
+   }
+
+   //Length of the encoded string (excluding the terminating NULL)
+   if(outputLen != NULL)
+   {
+      *outputLen = length + 2 * n;
+   }
+}
 
 
 /**
@@ -158,8 +222,8 @@ void base64Encode(const void *input, size_t inputLen, char_t *output,
       }
    }
 
-   //If the output parameter is NULL, then the function calculates the
-   //length of the resulting Base64 string without copying any data
+   //If the output parameter is NULL, then the function calculates the length
+   //of the resulting Base64 string without copying any data
    if(input != NULL && output != NULL)
    {
       //The input data is processed block by block

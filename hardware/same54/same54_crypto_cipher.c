@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
-#include "same54.h"
+#include "sam.h"
 #include "core/crypto.h"
 #include "hardware/same54/same54_crypto.h"
 #include "hardware/same54/same54_crypto_cipher.h"
@@ -55,47 +55,47 @@ void aesLoadKey(AesContext *context)
    uint32_t temp;
 
    //Read CTRLA register
-   temp = AES->CTRLA.reg & ~AES_CTRLA_KEYSIZE_Msk;
+   temp = AES_REGS->AES_CTRLA & ~AES_CTRLA_KEYSIZE_Msk;
 
    //Check the length of the key
    if(context->nr == 10)
    {
       //10 rounds are required for 128-bit key
-      AES->CTRLA.reg = temp | AES_CTRLA_KEYSIZE_128BIT;
+      AES_REGS->AES_CTRLA = temp | AES_CTRLA_KEYSIZE_128BIT;
 
       //Set the 128-bit encryption key
-      AES->KEYWORD[0].reg = context->ek[0];
-      AES->KEYWORD[1].reg = context->ek[1];
-      AES->KEYWORD[2].reg = context->ek[2];
-      AES->KEYWORD[3].reg = context->ek[3];
+      AES_REGS->AES_KEYWORD[0] = context->ek[0];
+      AES_REGS->AES_KEYWORD[1] = context->ek[1];
+      AES_REGS->AES_KEYWORD[2] = context->ek[2];
+      AES_REGS->AES_KEYWORD[3] = context->ek[3];
    }
    else if(context->nr == 12)
    {
       //12 rounds are required for 192-bit key
-      AES->CTRLA.reg = temp | AES_CTRLA_KEYSIZE_192BIT;
+      AES_REGS->AES_CTRLA = temp | AES_CTRLA_KEYSIZE_192BIT;
 
       //Set the 192-bit encryption key
-      AES->KEYWORD[0].reg = context->ek[0];
-      AES->KEYWORD[1].reg = context->ek[1];
-      AES->KEYWORD[2].reg = context->ek[2];
-      AES->KEYWORD[3].reg = context->ek[3];
-      AES->KEYWORD[4].reg = context->ek[4];
-      AES->KEYWORD[5].reg = context->ek[5];
+      AES_REGS->AES_KEYWORD[0] = context->ek[0];
+      AES_REGS->AES_KEYWORD[1] = context->ek[1];
+      AES_REGS->AES_KEYWORD[2] = context->ek[2];
+      AES_REGS->AES_KEYWORD[3] = context->ek[3];
+      AES_REGS->AES_KEYWORD[4] = context->ek[4];
+      AES_REGS->AES_KEYWORD[5] = context->ek[5];
    }
    else
    {
       //14 rounds are required for 256-bit key
-      AES->CTRLA.reg = temp | AES_CTRLA_KEYSIZE_256BIT;
+      AES_REGS->AES_CTRLA = temp | AES_CTRLA_KEYSIZE_256BIT;
 
       //Set the 256-bit encryption key
-      AES->KEYWORD[0].reg = context->ek[0];
-      AES->KEYWORD[1].reg = context->ek[1];
-      AES->KEYWORD[2].reg = context->ek[2];
-      AES->KEYWORD[3].reg = context->ek[3];
-      AES->KEYWORD[4].reg = context->ek[4];
-      AES->KEYWORD[5].reg = context->ek[5];
-      AES->KEYWORD[6].reg = context->ek[6];
-      AES->KEYWORD[7].reg = context->ek[7];
+      AES_REGS->AES_KEYWORD[0] = context->ek[0];
+      AES_REGS->AES_KEYWORD[1] = context->ek[1];
+      AES_REGS->AES_KEYWORD[2] = context->ek[2];
+      AES_REGS->AES_KEYWORD[3] = context->ek[3];
+      AES_REGS->AES_KEYWORD[4] = context->ek[4];
+      AES_REGS->AES_KEYWORD[5] = context->ek[5];
+      AES_REGS->AES_KEYWORD[6] = context->ek[6];
+      AES_REGS->AES_KEYWORD[7] = context->ek[7];
    }
 }
 
@@ -112,25 +112,25 @@ void aesProcessDataBlock(const uint8_t *input, uint8_t *output)
 
    //Write input block
    p = (uint32_t *) input;
-   AES->INDATA.reg = p[0];
-   AES->INDATA.reg = p[1];
-   AES->INDATA.reg = p[2];
-   AES->INDATA.reg = p[3];
+   AES_REGS->AES_INDATA = p[0];
+   AES_REGS->AES_INDATA = p[1];
+   AES_REGS->AES_INDATA = p[2];
+   AES_REGS->AES_INDATA = p[3];
 
    //Start encryption/decryption
-   AES->CTRLB.reg |= AES_CTRLB_START;
+   AES_REGS->AES_CTRLB |= AES_CTRLB_START_Msk;
 
    //The ENCCMP status flag is set when encryption/decryption is complete
-   while((AES->INTFLAG.reg & AES_INTFLAG_ENCCMP) == 0)
+   while((AES_REGS->AES_INTFLAG & AES_INTFLAG_ENCCMP_Msk) == 0)
    {
    }
 
    //Read output block
    p = (uint32_t *) output;
-   p[0] = AES->INDATA.reg;
-   p[1] = AES->INDATA.reg;
-   p[2] = AES->INDATA.reg;
-   p[3] = AES->INDATA.reg;
+   p[0] = AES_REGS->AES_INDATA;
+   p[1] = AES_REGS->AES_INDATA;
+   p[2] = AES_REGS->AES_INDATA;
+   p[3] = AES_REGS->AES_INDATA;
 }
 
 
@@ -153,30 +153,30 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
    osAcquireMutex(&same54CryptoMutex);
 
    //Perform software reset
-   AES->CTRLA.reg = AES_CTRLA_SWRST;
-   AES->CTRLA.reg = 0;
-   AES->CTRLB.reg = 0;
+   AES_REGS->AES_CTRLA = AES_CTRLA_SWRST_Msk;
+   AES_REGS->AES_CTRLA = 0;
+   AES_REGS->AES_CTRLB = 0;
 
    //Set operation mode
-   AES->CTRLA.reg = AES_CTRLA_STARTMODE_MANUAL | mode;
+   AES_REGS->AES_CTRLA = AES_CTRLA_STARTMODE_MANUAL | mode;
    //Set encryption key
    aesLoadKey(context);
    //Enable AES module
-   AES->CTRLA.reg |= AES_CTRLA_ENABLE;
+   AES_REGS->AES_CTRLA |= AES_CTRLA_ENABLE_Msk;
 
    //Valid initialization vector?
    if(iv != NULL)
    {
       //Set initialization vector
       p = (uint32_t *) iv;
-      AES->INTVECTV[0].reg = p[0];
-      AES->INTVECTV[1].reg = p[1];
-      AES->INTVECTV[2].reg = p[2];
-      AES->INTVECTV[3].reg = p[3];
+      AES_REGS->AES_INTVECTV[0] = p[0];
+      AES_REGS->AES_INTVECTV[1] = p[1];
+      AES_REGS->AES_INTVECTV[2] = p[2];
+      AES_REGS->AES_INTVECTV[3] = p[3];
 
       //Indicate the hardware to use initialization vector for encrypting
       //the first block of message
-      AES->CTRLB.reg |= AES_CTRLB_NEWMSG;
+      AES_REGS->AES_CTRLB |= AES_CTRLB_NEWMSG_Msk;
    }
 
    //Process data
@@ -879,37 +879,37 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
 void gcmGenerateHashSubKey(AesContext *context)
 {
    //Perform software reset
-   AES->CTRLA.reg = AES_CTRLA_SWRST;
-   AES->CTRLA.reg = 0;
-   AES->CTRLB.reg = 0;
+   AES_REGS->AES_CTRLA = AES_CTRLA_SWRST_Msk;
+   AES_REGS->AES_CTRLA = 0;
+   AES_REGS->AES_CTRLB = 0;
 
    //Set operation mode
-   AES->CTRLA.reg = AES_CTRLA_STARTMODE_MANUAL | AES_CTRLA_CIPHER_ENC |
+   AES_REGS->AES_CTRLA = AES_CTRLA_STARTMODE_MANUAL | AES_CTRLA_CIPHER_ENC |
       AES_CTRLA_AESMODE_ECB | AES_CTRLA_CTYPE(15);
 
    //Set encryption key
    aesLoadKey(context);
    //Write zero to CIPLEN register
-   AES->CIPLEN.reg = 0;
+   AES_REGS->AES_CIPLEN = 0;
    //Enable AES module
-   AES->CTRLA.reg |= AES_CTRLA_ENABLE;
+   AES_REGS->AES_CTRLA |= AES_CTRLA_ENABLE_Msk;
 
    //Write the zeros to DATA register
-   AES->INDATA.reg = 0;
-   AES->INDATA.reg = 0;
-   AES->INDATA.reg = 0;
-   AES->INDATA.reg = 0;
+   AES_REGS->AES_INDATA = 0;
+   AES_REGS->AES_INDATA = 0;
+   AES_REGS->AES_INDATA = 0;
+   AES_REGS->AES_INDATA = 0;
 
    //Generate the hash subkey
-   AES->CTRLB.reg |= AES_CTRLB_START;
+   AES_REGS->AES_CTRLB |= AES_CTRLB_START_Msk;
 
    //The ENCCMP status flag is set when the hash subkey generation is complete
-   while((AES->INTFLAG.reg & AES_INTFLAG_ENCCMP) == 0)
+   while((AES_REGS->AES_INTFLAG & AES_INTFLAG_ENCCMP_Msk) == 0)
    {
    }
 
    //Disable AES module
-   AES->CTRLA.reg &= ~AES_CTRLA_ENABLE;
+   AES_REGS->AES_CTRLA &= ~AES_CTRLA_ENABLE_Msk;
 }
 
 
@@ -922,14 +922,14 @@ void gcmGenerateHashSubKey(AesContext *context)
 void gcmSetMode(AesContext *context, uint32_t mode)
 {
    //Set operation mode
-   AES->CTRLA.reg = AES_CTRLA_STARTMODE_MANUAL | mode |
+   AES_REGS->AES_CTRLA = AES_CTRLA_STARTMODE_MANUAL | mode |
       AES_CTRLA_AESMODE_GCM | AES_CTRLA_CTYPE(15);
 
    //Set encryption key
    aesLoadKey(context);
 
    //Enable AES module
-   AES->CTRLA.reg |= AES_CTRLA_ENABLE;
+   AES_REGS->AES_CTRLA |= AES_CTRLA_ENABLE_Msk;
 }
 
 
@@ -944,16 +944,16 @@ void gcmUpdateGhash(const uint8_t *data)
 
    //Write data block
    p = (uint32_t *) data;
-   AES->INDATA.reg = p[0];
-   AES->INDATA.reg = p[1];
-   AES->INDATA.reg = p[2];
-   AES->INDATA.reg = p[3];
+   AES_REGS->AES_INDATA = p[0];
+   AES_REGS->AES_INDATA = p[1];
+   AES_REGS->AES_INDATA = p[2];
+   AES_REGS->AES_INDATA = p[3];
 
    //Start GF multiplication
-   AES->CTRLB.reg |= AES_CTRLB_START;
+   AES_REGS->AES_CTRLB |= AES_CTRLB_START_Msk;
 
    //The ENCCMP status flag is set when the GF multiplication is complete
-   while((AES->INTFLAG.reg & AES_INTFLAG_GFMCMP) == 0)
+   while((AES_REGS->AES_INTFLAG & AES_INTFLAG_GFMCMP_Msk) == 0)
    {
    }
 }
@@ -985,7 +985,7 @@ void gcmGeneratePreCounterBlock(const uint8_t *iv, size_t ivLen, uint32_t *j)
    else
    {
       //Set GFMUL bit
-      AES->CTRLB.reg |= AES_CTRLB_GFMUL;
+      AES_REGS->AES_CTRLB |= AES_CTRLB_GFMUL_Msk;
 
       //Initialize GHASH calculation
       osMemset(buffer, 0, 16);
@@ -1021,16 +1021,16 @@ void gcmGeneratePreCounterBlock(const uint8_t *iv, size_t ivLen, uint32_t *j)
       gcmUpdateGhash(buffer);
 
       //Retrieve the resulting value
-      j[0] = AES->GHASH[0].reg;
-      j[1] = AES->GHASH[1].reg;
-      j[2] = AES->GHASH[2].reg;
-      j[3] = AES->GHASH[3].reg;
+      j[0] = AES_REGS->AES_GHASH[0];
+      j[1] = AES_REGS->AES_GHASH[1];
+      j[2] = AES_REGS->AES_GHASH[2];
+      j[3] = AES_REGS->AES_GHASH[3];
 
       //Reset GHASH calculation
-      AES->GHASH[0].reg = 0;
-      AES->GHASH[1].reg = 0;
-      AES->GHASH[2].reg = 0;
-      AES->GHASH[3].reg = 0;
+      AES_REGS->AES_GHASH[0] = 0;
+      AES_REGS->AES_GHASH[1] = 0;
+      AES_REGS->AES_GHASH[2] = 0;
+      AES_REGS->AES_GHASH[3] = 0;
    }
 }
 
@@ -1044,7 +1044,7 @@ void gcmGeneratePreCounterBlock(const uint8_t *iv, size_t ivLen, uint32_t *j)
 void gcmProcessAuthData(const uint8_t *aad, size_t aadLen)
 {
    //Set GFMUL bit
-   AES->CTRLB.reg |= AES_CTRLB_GFMUL;
+   AES_REGS->AES_CTRLB |= AES_CTRLB_GFMUL_Msk;
 
    //Process additional authenticated data
    while(aadLen > 16)
@@ -1086,7 +1086,7 @@ void gcmProcessData(const uint32_t *j, const uint8_t *input, uint8_t *output,
    uint32_t buffer[4];
 
    //Clear GFMUL bit
-   AES->CTRLB.reg &= ~AES_CTRLB_GFMUL;
+   AES_REGS->AES_CTRLB &= ~AES_CTRLB_GFMUL_Msk;
 
    //Copy the left-most 96-bits of the counter block
    buffer[0] = j[0];
@@ -1098,17 +1098,17 @@ void gcmProcessData(const uint32_t *j, const uint8_t *input, uint8_t *output,
    buffer[3] = htobe32(buffer[3]);
 
    //Load the resulting value in INTVECT registers
-   AES->INTVECTV[0].reg = buffer[0];
-   AES->INTVECTV[1].reg = buffer[1];
-   AES->INTVECTV[2].reg = buffer[2];
-   AES->INTVECTV[3].reg = buffer[3];
+   AES_REGS->AES_INTVECTV[0] = buffer[0];
+   AES_REGS->AES_INTVECTV[1] = buffer[1];
+   AES_REGS->AES_INTVECTV[2] = buffer[2];
+   AES_REGS->AES_INTVECTV[3] = buffer[3];
 
    //Set NEWMSG bit for the new set of plain text processing
-   AES->CTRLB.reg |= AES_CTRLB_NEWMSG;
+   AES_REGS->AES_CTRLB |= AES_CTRLB_NEWMSG_Msk;
    //Load CIPLEN register
-   AES->CIPLEN.reg = length;
+   AES_REGS->AES_CIPLEN = length;
    //Clear ENCCMP status flag
-   AES->INTFLAG.reg = AES_INTFLAG_ENCCMP;
+   AES_REGS->AES_INTFLAG = AES_INTFLAG_ENCCMP_Msk;
 
    //Process data
    while(length > AES_BLOCK_SIZE)
@@ -1126,7 +1126,7 @@ void gcmProcessData(const uint32_t *j, const uint8_t *input, uint8_t *output,
    if(length == AES_BLOCK_SIZE)
    {
       //Set EOM bit for the last block of data
-      AES->CTRLB.reg |= AES_CTRLB_EOM;
+      AES_REGS->AES_CTRLB |= AES_CTRLB_EOM_Msk;
 
       //Encrypt the final block of data
       aesProcessDataBlock(input, output);
@@ -1137,13 +1137,13 @@ void gcmProcessData(const uint32_t *j, const uint8_t *input, uint8_t *output,
       uint8_t outputBlock[AES_BLOCK_SIZE];
 
       //Save current GHASH value
-      buffer[0] = AES->GHASH[0].reg;
-      buffer[1] = AES->GHASH[1].reg;
-      buffer[2] = AES->GHASH[2].reg;
-      buffer[3] = AES->GHASH[3].reg;
+      buffer[0] = AES_REGS->AES_GHASH[0];
+      buffer[1] = AES_REGS->AES_GHASH[1];
+      buffer[2] = AES_REGS->AES_GHASH[2];
+      buffer[3] = AES_REGS->AES_GHASH[3];
 
       //Set EOM bit for the last block of data
-      AES->CTRLB.reg |= AES_CTRLB_EOM;
+      AES_REGS->AES_CTRLB |= AES_CTRLB_EOM_Msk;
 
       //Copy input data
       osMemset(inputBlock, 0, AES_BLOCK_SIZE);
@@ -1156,16 +1156,16 @@ void gcmProcessData(const uint32_t *j, const uint8_t *input, uint8_t *output,
       osMemcpy(output, outputBlock, length);
 
       //Restore previous GHASH value (workaround)
-      AES->GHASH[0].reg = buffer[0];
-      AES->GHASH[1].reg = buffer[1];
-      AES->GHASH[2].reg = buffer[2];
-      AES->GHASH[3].reg = buffer[3];
+      AES_REGS->AES_GHASH[0] = buffer[0];
+      AES_REGS->AES_GHASH[1] = buffer[1];
+      AES_REGS->AES_GHASH[2] = buffer[2];
+      AES_REGS->AES_GHASH[3] = buffer[3];
 
       //Set GFMUL bit
-      AES->CTRLB.reg |= AES_CTRLB_GFMUL;
+      AES_REGS->AES_CTRLB |= AES_CTRLB_GFMUL_Msk;
 
       //Check operation mode
-      if((AES->CTRLA.reg & AES_CTRLA_CIPHER_ENC) != 0)
+      if((AES_REGS->AES_CTRLA & AES_CTRLA_CIPHER_ENC) != 0)
       {
          osMemset(inputBlock, 0, AES_BLOCK_SIZE);
          osMemcpy(inputBlock, output, length);
@@ -1175,7 +1175,7 @@ void gcmProcessData(const uint32_t *j, const uint8_t *input, uint8_t *output,
       gcmUpdateGhash(inputBlock);
 
       //Clear GFMUL bit
-      AES->CTRLB.reg &= ~AES_CTRLB_GFMUL;
+      AES_REGS->AES_CTRLB &= ~AES_CTRLB_GFMUL_Msk;
    }
    else
    {
@@ -1209,38 +1209,38 @@ void gcmGenerateTag(AesContext *context, const uint32_t *j, size_t aadLen,
    buffer[3] = htobe32(n);
 
    //Set GFMUL bit
-   AES->CTRLB.reg |= AES_CTRLB_GFMUL;
+   AES_REGS->AES_CTRLB |= AES_CTRLB_GFMUL_Msk;
 
    //Apply GHASH function
    gcmUpdateGhash((uint8_t *) buffer);
 
    //The hardware generates the final GHASH value in GHASH registers
-   buffer[0] = AES->GHASH[0].reg;
-   buffer[1] = AES->GHASH[1].reg;
-   buffer[2] = AES->GHASH[2].reg;
-   buffer[3] = AES->GHASH[3].reg;
+   buffer[0] = AES_REGS->AES_GHASH[0];
+   buffer[1] = AES_REGS->AES_GHASH[1];
+   buffer[2] = AES_REGS->AES_GHASH[2];
+   buffer[3] = AES_REGS->AES_GHASH[3];
 
    //Disable AES module
-   AES->CTRLA.reg = 0;
-   AES->CTRLB.reg = 0;
+   AES_REGS->AES_CTRLA = 0;
+   AES_REGS->AES_CTRLB = 0;
 
    //Set operation mode
-   AES->CTRLA.reg = AES_CTRLA_STARTMODE_MANUAL | AES_CTRLA_CIPHER_ENC |
+   AES_REGS->AES_CTRLA = AES_CTRLA_STARTMODE_MANUAL | AES_CTRLA_CIPHER_ENC |
       AES_CTRLA_AESMODE_COUNTER | AES_CTRLA_CTYPE(15);
 
    //Set encryption key
    aesLoadKey(context);
    //Enable AES module
-   AES->CTRLA.reg |= AES_CTRLA_ENABLE;
+   AES_REGS->AES_CTRLA |= AES_CTRLA_ENABLE_Msk;
 
    //Load J0 value to INITVECTV registers
-   AES->INTVECTV[0].reg = j[0];
-   AES->INTVECTV[1].reg = j[1];
-   AES->INTVECTV[2].reg = j[2];
-   AES->INTVECTV[3].reg = j[3];
+   AES_REGS->AES_INTVECTV[0] = j[0];
+   AES_REGS->AES_INTVECTV[1] = j[1];
+   AES_REGS->AES_INTVECTV[2] = j[2];
+   AES_REGS->AES_INTVECTV[3] = j[3];
 
    //Set NEWMSG bit
-   AES->CTRLB.reg |= AES_CTRLB_NEWMSG;
+   AES_REGS->AES_CTRLB |= AES_CTRLB_NEWMSG_Msk;
 
    //Generate the authentication tag
    aesProcessDataBlock((uint8_t *) buffer, (uint8_t *) buffer);
@@ -1249,11 +1249,11 @@ void gcmGenerateTag(AesContext *context, const uint32_t *j, size_t aadLen,
    memcpy(tag, buffer, 16);
 
    //Perform software reset
-   AES->CTRLA.reg = AES_CTRLA_SWRST;
+   AES_REGS->AES_CTRLA = AES_CTRLA_SWRST_Msk;
 
    //Disable AES module
-   AES->CTRLA.reg = 0;
-   AES->CTRLB.reg = 0;
+   AES_REGS->AES_CTRLA = 0;
+   AES_REGS->AES_CTRLB = 0;
 }
 
 

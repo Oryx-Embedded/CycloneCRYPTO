@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -1497,8 +1497,8 @@ error_t pemDecodeFile(const char_t *input, size_t inputLen, const char_t *label,
    if(*outputLen == 0)
       return ERROR_INVALID_SYNTAX;
 
-   //If the output parameter is NULL, then the function calculates the
-   //length of the resulting ASN.1 data without copying any data
+   //If the output parameter is NULL, then the function calculates the length
+   //of the resulting ASN.1 data without copying any data
    if(output != NULL)
    {
       //Display ASN.1 structure

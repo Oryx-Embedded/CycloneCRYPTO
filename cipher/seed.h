@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 #ifndef _SEED_H
@@ -60,8 +60,14 @@ extern const CipherAlgo seedCipherAlgo;
 
 //SEED related functions
 error_t seedInit(SeedContext *context, const uint8_t *key, size_t keyLen);
-void seedEncryptBlock(SeedContext *context, const uint8_t *input, uint8_t *output);
-void seedDecryptBlock(SeedContext *context, const uint8_t *input, uint8_t *output);
+
+void seedEncryptBlock(SeedContext *context, const uint8_t *input,
+   uint8_t *output);
+
+void seedDecryptBlock(SeedContext *context, const uint8_t *input,
+   uint8_t *output);
+
+void seedDeinit(SeedContext *context);
 
 //C++ guard
 #ifdef __cplusplus

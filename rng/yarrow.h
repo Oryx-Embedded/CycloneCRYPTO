@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 #ifndef _YARROW_H
@@ -93,6 +93,8 @@ error_t yarrowRead(YarrowContext *context, uint8_t *output, size_t length);
 void yarrowGenerateBlock(YarrowContext *context, uint8_t *output);
 void yarrowFastReseed(YarrowContext *context);
 void yarrowSlowReseed(YarrowContext *context);
+
+void yarrowDeinit(YarrowContext *context);
 
 //C++ guard
 #ifdef __cplusplus

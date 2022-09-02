@@ -29,7 +29,7 @@
  * RC6 is a symmetric key block cipher derived from RC5
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -57,7 +57,8 @@ const CipherAlgo rc6CipherAlgo =
    NULL,
    NULL,
    (CipherAlgoEncryptBlock) rc6EncryptBlock,
-   (CipherAlgoDecryptBlock) rc6DecryptBlock
+   (CipherAlgoDecryptBlock) rc6DecryptBlock,
+   (CipherAlgoDeinit) rc6Deinit
 };
 
 
@@ -146,7 +147,8 @@ error_t rc6Init(Rc6Context *context, const uint8_t *key, size_t keyLen)
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-void rc6EncryptBlock(Rc6Context *context, const uint8_t *input, uint8_t *output)
+void rc6EncryptBlock(Rc6Context *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint_t i;
    uint32_t t;
@@ -203,7 +205,8 @@ void rc6EncryptBlock(Rc6Context *context, const uint8_t *input, uint8_t *output)
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-void rc6DecryptBlock(Rc6Context *context, const uint8_t *input, uint8_t *output)
+void rc6DecryptBlock(Rc6Context *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint_t i;
    uint32_t t;
@@ -250,6 +253,18 @@ void rc6DecryptBlock(Rc6Context *context, const uint8_t *input, uint8_t *output)
    STORE32LE(b, output + 4);
    STORE32LE(c, output + 8);
    STORE32LE(d, output + 12);
+}
+
+
+/**
+ * @brief Release RC6 context
+ * @param[in] context Pointer to the RC6 context
+ **/
+
+void rc6Deinit(Rc6Context *context)
+{
+   //Clear RC6 context
+   osMemset(context, 0, sizeof(Rc6Context));
 }
 
 #endif

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 #ifndef _AES_H
@@ -62,8 +62,14 @@ extern const CipherAlgo aesCipherAlgo;
 
 //AES related functions
 error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen);
-void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output);
-void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output);
+
+void aesEncryptBlock(AesContext *context, const uint8_t *input,
+   uint8_t *output);
+
+void aesDecryptBlock(AesContext *context, const uint8_t *input,
+   uint8_t *output);
+
+void aesDeinit(AesContext *context);
 
 //C++ guard
 #ifdef __cplusplus

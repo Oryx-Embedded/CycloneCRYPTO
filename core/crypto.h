@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.1.6"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.1.8"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 1
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 6
+#define CYCLONE_CRYPTO_REV_NUMBER 8
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -375,6 +375,20 @@
    #error RC6_SUPPORT parameter is not valid
 #endif
 
+//CAST-128 encryption support
+#ifndef CAST128_SUPPORT
+   #define CAST128_SUPPORT DISABLED
+#elif (CAST128_SUPPORT != ENABLED && CAST128_SUPPORT != DISABLED)
+   #error CAST128_SUPPORT parameter is not valid
+#endif
+
+//CAST-256 encryption support
+#ifndef CAST256_SUPPORT
+   #define CAST256_SUPPORT DISABLED
+#elif (CAST256_SUPPORT != ENABLED && CAST256_SUPPORT != DISABLED)
+   #error CAST256_SUPPORT parameter is not valid
+#endif
+
 //IDEA encryption support
 #ifndef IDEA_SUPPORT
    #define IDEA_SUPPORT DISABLED
@@ -408,6 +422,20 @@
    #define BLOWFISH_SUPPORT DISABLED
 #elif (BLOWFISH_SUPPORT != ENABLED && BLOWFISH_SUPPORT != DISABLED)
    #error BLOWFISH_SUPPORT parameter is not valid
+#endif
+
+//Twofish encryption support
+#ifndef TWOFISH_SUPPORT
+   #define TWOFISH_SUPPORT DISABLED
+#elif (TWOFISH_SUPPORT != ENABLED && TWOFISH_SUPPORT != DISABLED)
+   #error TWOFISH_SUPPORT parameter is not valid
+#endif
+
+//Serpent encryption support
+#ifndef SERPENT_SUPPORT
+   #define SERPENT_SUPPORT DISABLED
+#elif (SERPENT_SUPPORT != ENABLED && SERPENT_SUPPORT != DISABLED)
+   #error SERPENT_SUPPORT parameter is not valid
 #endif
 
 //Camellia encryption support
@@ -835,6 +863,7 @@ typedef void (*CipherAlgoEncryptStream)(void *context, const uint8_t *input, uin
 typedef void (*CipherAlgoDecryptStream)(void *context, const uint8_t *input, uint8_t *output, size_t length);
 typedef void (*CipherAlgoEncryptBlock)(void *context, const uint8_t *input, uint8_t *output);
 typedef void (*CipherAlgoDecryptBlock)(void *context, const uint8_t *input, uint8_t *output);
+typedef void (*CipherAlgoDeinit)(void *context);
 
 //Common API for pseudo-random number generators
 typedef error_t (*PrngAlgoInit)(void *context);
@@ -842,6 +871,7 @@ typedef void (*PrngAlgoRelease)(void *context);
 typedef error_t (*PrngAlgoSeed)(void *context, const uint8_t *input, size_t length);
 typedef error_t (*PrngAlgoAddEntropy)(void *context, uint_t source, const uint8_t *input, size_t length, size_t entropy);
 typedef error_t (*PrngAlgoRead)(void *context, uint8_t *output, size_t length);
+typedef void (*PrngAlgoDeinit)(void *context);
 
 
 /**
@@ -881,6 +911,7 @@ typedef struct
    CipherAlgoDecryptStream decryptStream;
    CipherAlgoEncryptBlock encryptBlock;
    CipherAlgoDecryptBlock decryptBlock;
+   CipherAlgoDeinit deinit;
 } CipherAlgo;
 
 
@@ -897,6 +928,7 @@ typedef struct
    PrngAlgoSeed seed;
    PrngAlgoAddEntropy addEntropy;
    PrngAlgoRead read;
+   PrngAlgoDeinit deinit;
 } PrngAlgo;
 
 

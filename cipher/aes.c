@@ -31,7 +31,7 @@
  * lengths of 128, 192, and 256 bits. Refer to FIPS 197 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -187,7 +187,8 @@ const CipherAlgo aesCipherAlgo =
    NULL,
    NULL,
    (CipherAlgoEncryptBlock) aesEncryptBlock,
-   (CipherAlgoDecryptBlock) aesDecryptBlock
+   (CipherAlgoDecryptBlock) aesDecryptBlock,
+   (CipherAlgoDeinit) aesDeinit
 };
 
 
@@ -199,7 +200,8 @@ const CipherAlgo aesCipherAlgo =
  * @return Error code
  **/
 
-__weak_func error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
+__weak_func error_t aesInit(AesContext *context, const uint8_t *key,
+   size_t keyLen)
 {
    uint_t i;
    uint32_t temp;
@@ -307,7 +309,8 @@ __weak_func error_t aesInit(AesContext *context, const uint8_t *key, size_t keyL
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-__weak_func void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
+__weak_func void aesEncryptBlock(AesContext *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint_t i;
    uint32_t s0;
@@ -417,7 +420,8 @@ __weak_func void aesEncryptBlock(AesContext *context, const uint8_t *input, uint
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-__weak_func void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
+__weak_func void aesDecryptBlock(AesContext *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint_t i;
    uint32_t s0;
@@ -517,6 +521,18 @@ __weak_func void aesDecryptBlock(AesContext *context, const uint8_t *input, uint
    STORE32LE(s1, output + 4);
    STORE32LE(s2, output + 8);
    STORE32LE(s3, output + 12);
+}
+
+
+/**
+ * @brief Release AES context
+ * @param[in] context Pointer to the AES context
+ **/
+
+__weak_func void aesDeinit(AesContext *context)
+{
+   //Clear AES context
+   osMemset(context, 0, sizeof(AesContext));
 }
 
 #endif

@@ -29,7 +29,7 @@
  * SEED is a 128-bit symmetric key block cipher. Refer to RFC 4269
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.6
+ * @version 2.1.8
  **/
 
 //Switch to the appropriate trace level
@@ -226,7 +226,8 @@ const CipherAlgo seedCipherAlgo =
    NULL,
    NULL,
    (CipherAlgoEncryptBlock) seedEncryptBlock,
-   (CipherAlgoDecryptBlock) seedDecryptBlock
+   (CipherAlgoDecryptBlock) seedDecryptBlock,
+   (CipherAlgoDeinit) seedDeinit
 };
 
 
@@ -269,14 +270,13 @@ error_t seedInit(SeedContext *context, const uint8_t *key, size_t keyLen)
       t = key1 - key3 + kc[i];
       context->ks[2 * i + 1] = G(t);
 
-      //Odd round?
+      //Odd or even round?
       if((i % 2) != 0)
       {
          t = (key3 << 8) | (key2 >> 24);
          key2 = (key2 << 8) | (key3 >> 24);
          key3 = t;
       }
-      //Even round?
       else
       {
          t = (key1 >> 8) | (key0 << 24);
@@ -297,18 +297,19 @@ error_t seedInit(SeedContext *context, const uint8_t *key, size_t keyLen)
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-void seedEncryptBlock(SeedContext *context, const uint8_t *input, uint8_t *output)
+void seedEncryptBlock(SeedContext *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint_t i;
-   uint32_t temp0;
-   uint32_t temp1;
+   uint32_t t0;
+   uint32_t t1;
    uint32_t *ks;
 
    //The 128-bit input is divided into two 64-bit blocks (L and R)
-   uint32_t left0 = LOAD32BE(input + 0);
-   uint32_t left1 = LOAD32BE(input + 4);
-   uint32_t right0 = LOAD32BE(input + 8);
-   uint32_t right1 = LOAD32BE(input + 12);
+   uint32_t l0 = LOAD32BE(input + 0);
+   uint32_t l1 = LOAD32BE(input + 4);
+   uint32_t r0 = LOAD32BE(input + 8);
+   uint32_t r1 = LOAD32BE(input + 12);
 
    //The key schedule must be applied in ascending order
    ks = context->ks;
@@ -317,24 +318,24 @@ void seedEncryptBlock(SeedContext *context, const uint8_t *input, uint8_t *outpu
    for(i = 0; i < 16; i++)
    {
       //Apply function F
-      F(ks[0], ks[1], right0, right1, temp0, temp1);
+      F(ks[0], ks[1], r0, r1, t0, t1);
 
-      temp0 ^= left0;
-      temp1 ^= left1;
-      left0 = right0;
-      left1 = right1;
-      right0 = temp0;
-      right1 = temp1;
+      t0 ^= l0;
+      t1 ^= l1;
+      l0 = r0;
+      l1 = r1;
+      r0 = t0;
+      r1 = t1;
 
       //Advance current location in key schedule
       ks += 2;
    }
 
    //The resulting value is the ciphertext
-   STORE32BE(right0, output + 0);
-   STORE32BE(right1, output + 4);
-   STORE32BE(left0, output + 8);
-   STORE32BE(left1, output + 12);
+   STORE32BE(r0, output + 0);
+   STORE32BE(r1, output + 4);
+   STORE32BE(l0, output + 8);
+   STORE32BE(l1, output + 12);
 }
 
 
@@ -345,18 +346,19 @@ void seedEncryptBlock(SeedContext *context, const uint8_t *input, uint8_t *outpu
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-void seedDecryptBlock(SeedContext *context, const uint8_t *input, uint8_t *output)
+void seedDecryptBlock(SeedContext *context, const uint8_t *input,
+   uint8_t *output)
 {
    uint_t i;
-   uint32_t temp0;
-   uint32_t temp1;
+   uint32_t t0;
+   uint32_t t1;
    uint32_t *ks;
 
    //The 128-bit input is divided into two 64-bit blocks (L and R)
-   uint32_t left0 = LOAD32BE(input + 0);
-   uint32_t left1 = LOAD32BE(input + 4);
-   uint32_t right0 = LOAD32BE(input + 8);
-   uint32_t right1 = LOAD32BE(input + 12);
+   uint32_t l0 = LOAD32BE(input + 0);
+   uint32_t l1 = LOAD32BE(input + 4);
+   uint32_t r0 = LOAD32BE(input + 8);
+   uint32_t r1 = LOAD32BE(input + 12);
 
    //The key schedule must be applied in reverse order
    ks = context->ks + 30;
@@ -365,24 +367,36 @@ void seedDecryptBlock(SeedContext *context, const uint8_t *input, uint8_t *outpu
    for(i = 0; i < 16; i++)
    {
       //Apply function F
-      F(ks[0], ks[1], right0, right1, temp0, temp1);
+      F(ks[0], ks[1], r0, r1, t0, t1);
 
-      temp0 ^= left0;
-      temp1 ^= left1;
-      left0 = right0;
-      left1 = right1;
-      right0 = temp0;
-      right1 = temp1;
+      t0 ^= l0;
+      t1 ^= l1;
+      l0 = r0;
+      l1 = r1;
+      r0 = t0;
+      r1 = t1;
 
       //Advance current location in key schedule
       ks -= 2;
    }
 
    //The resulting value is the plaintext
-   STORE32BE(right0, output + 0);
-   STORE32BE(right1, output + 4);
-   STORE32BE(left0, output + 8);
-   STORE32BE(left1, output + 12);
+   STORE32BE(r0, output + 0);
+   STORE32BE(r1, output + 4);
+   STORE32BE(l0, output + 8);
+   STORE32BE(l1, output + 12);
+}
+
+
+/**
+ * @brief Release SEED context
+ * @param[in] context Pointer to the SEED context
+ **/
+
+void seedDeinit(SeedContext *context)
+{
+   //Clear SEED context
+   osMemset(context, 0, sizeof(SeedContext));
 }
 
 #endif
