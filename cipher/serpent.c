@@ -1,6 +1,6 @@
 /**
  * @file serpent.c
- * @brief Serpent
+ * @brief Serpent encryption algorithm
  *
  * @section License
  *
@@ -31,7 +31,7 @@
  * paper "Speeding up Serpent"
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level

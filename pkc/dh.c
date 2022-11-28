@@ -31,7 +31,7 @@
  * PKCS #3 (Diffie-Hellman Key-Agreement Standard)
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level
@@ -54,8 +54,8 @@
 void dhInit(DhContext *context)
 {
    //Initialize Diffie-Hellman parameters
-   mpiInit(&context->params.p);
-   mpiInit(&context->params.g);
+   dhInitParameters(&context->params);
+
    //Initialize private and public values
    mpiInit(&context->xa);
    mpiInit(&context->ya);
@@ -71,12 +71,40 @@ void dhInit(DhContext *context)
 void dhFree(DhContext *context)
 {
    //Release Diffie-Hellman parameters
-   mpiFree(&context->params.p);
-   mpiFree(&context->params.g);
+   dhFreeParameters(&context->params);
+
    //Release private and public values
    mpiFree(&context->xa);
    mpiFree(&context->ya);
    mpiFree(&context->yb);
+}
+
+
+/**
+ * @brief Initialize Diffie-Hellman parameters
+ * @param[in] params Pointer to the Diffie-Hellman parameters
+ **/
+
+void dhInitParameters(DhParameters *params)
+{
+   //Initialize prime modulus
+   mpiInit(&params->p);
+   //Initialize generator
+   mpiInit(&params->g);
+}
+
+
+/**
+ * @brief Release Diffie-Hellman parameters
+ * @param[in] params Pointer to the Diffie-Hellman parameters
+ **/
+
+void dhFreeParameters(DhParameters *params)
+{
+   //Release prime modulus
+   mpiFree(&params->p);
+   //Release generator
+   mpiFree(&params->g);
 }
 
 
@@ -88,8 +116,8 @@ void dhFree(DhContext *context)
  * @return Error code
  **/
 
-error_t dhGenerateKeyPair(DhContext *context,
-   const PrngAlgo *prngAlgo, void *prngContext)
+error_t dhGenerateKeyPair(DhContext *context, const PrngAlgo *prngAlgo,
+   void *prngContext)
 {
    error_t error;
    uint_t k;
@@ -192,8 +220,8 @@ error_t dhCheckPublicKey(DhParameters *params, const Mpi *publicKey)
  * @return Error code
  **/
 
-error_t dhComputeSharedSecret(DhContext *context,
-   uint8_t *output, size_t outputSize, size_t *outputLen)
+error_t dhComputeSharedSecret(DhContext *context, uint8_t *output,
+   size_t outputSize, size_t *outputLen)
 {
    error_t error;
    size_t k;

@@ -1,6 +1,6 @@
 /**
- * @file ofb.c
- * @brief Output Feedback (OFB) mode
+ * @file ctr.c
+ * @brief Counter(CTR) mode
  *
  * @section License
  *
@@ -26,15 +26,13 @@
  *
  * @section Description
  *
- * The Output Feedback (OFB) mode is a confidentiality mode that features the
- * iteration of the forward cipher on an IV to generate a sequence of output
- * blocks that are exclusive-ORed with the plaintext to produce the ciphertext,
- * and vice versa. The OFB mode requires that the IV is a nonce, i.e., the IV
- * must be unique for each execution of the mode under the given key.
- * Refer to SP 800-38A for more details
+ * The Counter (CTR) mode is a confidentiality mode that features the application
+ * of the forward cipher to a set of input blocks, called counters, to produce
+ * a sequence of output blocks that are exclusive-ORed with the plaintext to
+ * produce the ciphertext, and vice versa. Refer to SP 800-38A for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level
@@ -42,61 +40,68 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "cipher_mode/ofb.h"
+#include "cipher_modes/ctr.h"
 #include "debug.h"
 
 //Check crypto library configuration
-#if (OFB_SUPPORT == ENABLED)
+#if (CTR_SUPPORT == ENABLED)
 
 
 /**
- * @brief OFB encryption
+ * @brief CTR encryption
  * @param[in] cipher Cipher algorithm
  * @param[in] context Cipher algorithm context
- * @param[in] s Size of the plaintext and ciphertext segments
- * @param[in,out] iv Initialization vector
+ * @param[in] m Size in bits of the specific part of the block to be incremented
+ * @param[in,out] t Initial counter block
  * @param[in] p Plaintext to be encrypted
  * @param[out] c Ciphertext resulting from the encryption
  * @param[in] length Total number of data bytes to be encrypted
  * @return Error code
  **/
 
-__weak_func error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
-   uint8_t *iv, const uint8_t *p, uint8_t *c, size_t length)
+__weak_func error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
+   uint8_t *t, const uint8_t *p, uint8_t *c, size_t length)
 {
    size_t i;
    size_t n;
+   uint16_t temp;
    uint8_t o[16];
 
    //The parameter must be a multiple of 8
-   if((s % 8) != 0)
+   if((m % 8) != 0)
       return ERROR_INVALID_PARAMETER;
 
-   //Determine the size, in bytes, of the plaintext and ciphertext segments
-   s = s / 8;
+   //Determine the size, in bytes, of the specific part of the block
+   //to be incremented
+   m = m / 8;
 
    //Check the resulting value
-   if(s < 1 || s > cipher->blockSize)
+   if(m > cipher->blockSize)
       return ERROR_INVALID_PARAMETER;
 
-   //Process each plaintext segment
+   //Process plaintext
    while(length > 0)
    {
-      //Compute the number of bytes to process at a time
-      n = MIN(length, s);
+      //CTR mode operates in a block-by-block fashion
+      n = MIN(length, cipher->blockSize);
 
-      //Compute O(j) = CIPH(I(j))
-      cipher->encryptBlock(context, iv, o);
+      //Compute O(j) = CIPH(T(j))
+      cipher->encryptBlock(context, t, o);
 
-      //Compute C(j) = P(j) XOR MSB(O(j))
+      //Compute C(j) = P(j) XOR T(j)
       for(i = 0; i < n; i++)
       {
          c[i] = p[i] ^ o[i];
       }
 
-      //Compute I(j+1) = LSB(I(j)) | O(j)
-      osMemmove(iv, iv + s, cipher->blockSize - s);
-      osMemcpy(iv + cipher->blockSize - s, o, s);
+      //Standard incrementing function
+      for(temp = 1, i = 1; i <= m; i++)
+      {
+         //Increment the current byte and propagate the carry
+         temp += t[cipher->blockSize - i];
+         t[cipher->blockSize - i] = temp & 0xFF;
+         temp >>= 8;
+      }
 
       //Next block
       p += n;
@@ -110,22 +115,22 @@ __weak_func error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s
 
 
 /**
- * @brief OFB decryption
+ * @brief CTR decryption
  * @param[in] cipher Cipher algorithm
  * @param[in] context Cipher algorithm context
- * @param[in] s Size of the plaintext and ciphertext segments
- * @param[in,out] iv Initialization vector
+ * @param[in] m Size in bits of the specific part of the block to be incremented
+ * @param[in,out] t Initial counter block
  * @param[in] c Ciphertext to be decrypted
  * @param[out] p Plaintext resulting from the decryption
  * @param[in] length Total number of data bytes to be decrypted
  * @return Error code
  **/
 
-error_t ofbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
-   uint8_t *iv, const uint8_t *c, uint8_t *p, size_t length)
+error_t ctrDecrypt(const CipherAlgo *cipher, void *context, uint_t m,
+   uint8_t *t, const uint8_t *c, uint8_t *p, size_t length)
 {
    //Decryption is the same the as encryption with P and C interchanged
-   return ofbEncrypt(cipher, context, s, iv, c, p, length);
+   return ctrEncrypt(cipher, context, m, t, c, p, length);
 }
 
 #endif

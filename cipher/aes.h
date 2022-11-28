@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 #ifndef _AES_H
@@ -33,6 +33,11 @@
 
 //Dependencies
 #include "core/crypto.h"
+
+//Application specific context
+#ifndef AES_PRIVATE_CONTEXT
+   #define AES_PRIVATE_CONTEXT
+#endif
 
 //AES block size
 #define AES_BLOCK_SIZE 16
@@ -54,6 +59,7 @@ typedef struct
    uint_t nr;
    uint32_t ek[60];
    uint32_t dk[60];
+   AES_PRIVATE_CONTEXT
 } AesContext;
 
 

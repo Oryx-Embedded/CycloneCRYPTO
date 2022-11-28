@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level
@@ -45,7 +45,6 @@ const PrngAlgo yarrowPrngAlgo =
    "Yarrow",
    sizeof(YarrowContext),
    (PrngAlgoInit) yarrowInit,
-   (PrngAlgoRelease) yarrowRelease,
    (PrngAlgoSeed) yarrowSeed,
    (PrngAlgoAddEntropy) yarrowAddEntropy,
    (PrngAlgoRead) yarrowRead,
@@ -80,21 +79,6 @@ error_t yarrowInit(YarrowContext *context)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief Release PRNG context
- * @param[in] context Pointer to the PRNG context
- **/
-
-void yarrowRelease(YarrowContext *context)
-{
-   //Release previously allocated resources
-   osDeleteMutex(&context->mutex);
-
-   //Clear PRNG state
-   osMemset(context, 0, sizeof(YarrowContext));
 }
 
 

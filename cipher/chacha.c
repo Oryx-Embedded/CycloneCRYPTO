@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level
@@ -39,7 +39,7 @@
 #if (CHACHA_SUPPORT == ENABLED)
 
 //ChaCha quarter-round function
-#define CHACHA_QUARTER_ROUND(a, b, c, d) \
+#define QUARTER_ROUND(a, b, c, d) \
 { \
    a += b; \
    d ^= a; \
@@ -277,18 +277,18 @@ void chachaProcessBlock(ChachaContext *context)
    {
       //The column rounds apply the quarter-round function to the four
       //columns, from left to right
-      CHACHA_QUARTER_ROUND(w[0], w[4], w[8], w[12]);
-      CHACHA_QUARTER_ROUND(w[1], w[5], w[9], w[13]);
-      CHACHA_QUARTER_ROUND(w[2], w[6], w[10], w[14]);
-      CHACHA_QUARTER_ROUND(w[3], w[7], w[11], w[15]);
+      QUARTER_ROUND(w[0], w[4], w[8], w[12]);
+      QUARTER_ROUND(w[1], w[5], w[9], w[13]);
+      QUARTER_ROUND(w[2], w[6], w[10], w[14]);
+      QUARTER_ROUND(w[3], w[7], w[11], w[15]);
 
       //The diagonal rounds apply the quarter-round function to the top-left,
       //bottom-right diagonal, followed by the pattern shifted one place to
       //the right, for three more quarter-rounds
-      CHACHA_QUARTER_ROUND(w[0], w[5], w[10], w[15]);
-      CHACHA_QUARTER_ROUND(w[1], w[6], w[11], w[12]);
-      CHACHA_QUARTER_ROUND(w[2], w[7], w[8], w[13]);
-      CHACHA_QUARTER_ROUND(w[3], w[4], w[9], w[14]);
+      QUARTER_ROUND(w[0], w[5], w[10], w[15]);
+      QUARTER_ROUND(w[1], w[6], w[11], w[12]);
+      QUARTER_ROUND(w[2], w[7], w[8], w[13]);
+      QUARTER_ROUND(w[3], w[4], w[9], w[14]);
    }
 
    //Add the original input words to the output words

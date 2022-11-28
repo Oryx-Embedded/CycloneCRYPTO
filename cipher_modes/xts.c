@@ -30,7 +30,7 @@
  * storage. Refer to IEEE Std 1619 and SP 800-38E for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level
@@ -38,7 +38,7 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "cipher_mode/xts.h"
+#include "cipher_modes/xts.h"
 #include "debug.h"
 
 //Check crypto library configuration

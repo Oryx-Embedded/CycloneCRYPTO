@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.1.8"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.2.0"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
-#define CYCLONE_CRYPTO_MINOR_VERSION 1
+#define CYCLONE_CRYPTO_MINOR_VERSION 2
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 8
+#define CYCLONE_CRYPTO_REV_NUMBER 0
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -431,6 +431,13 @@
    #error TWOFISH_SUPPORT parameter is not valid
 #endif
 
+//MARS encryption support
+#ifndef MARS_SUPPORT
+   #define MARS_SUPPORT DISABLED
+#elif (MARS_SUPPORT != ENABLED && MARS_SUPPORT != DISABLED)
+   #error MARS_SUPPORT parameter is not valid
+#endif
+
 //Serpent encryption support
 #ifndef SERPENT_SUPPORT
    #define SERPENT_SUPPORT DISABLED
@@ -597,6 +604,13 @@
    #define ECDSA_SUPPORT ENABLED
 #elif (ECDSA_SUPPORT != ENABLED && ECDSA_SUPPORT != DISABLED)
    #error ECDSA_SUPPORT parameter is not valid
+#endif
+
+//Streamlined NTRU Prime support
+#ifndef SNTRUP761_SUPPORT
+   #define SNTRUP761_SUPPORT DISABLED
+#elif (SNTRUP761_SUPPORT != ENABLED && SNTRUP761_SUPPORT != DISABLED)
+   #error SNTRUP761_SUPPORT parameter is not valid
 #endif
 
 //HKDF support
@@ -814,6 +828,10 @@
 #define CRYPTO_SELECT_64(a, b, c) \
    _U64((_U64(a) & (_U64(c) - 1U)) | (_U64(b) & ~(_U64(c) - 1U)))
 
+//Forward declaration of PrngAlgo structure
+struct _PrngAlgo;
+#define PrngAlgo struct _PrngAlgo
+
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
@@ -851,26 +869,56 @@ typedef enum
 
 
 //Common API for hash algorithms
-typedef error_t (*HashAlgoCompute)(const void *data, size_t length, uint8_t *digest);
+typedef error_t (*HashAlgoCompute)(const void *data, size_t length,
+   uint8_t *digest);
+
 typedef void (*HashAlgoInit)(void *context);
+
 typedef void (*HashAlgoUpdate)(void *context, const void *data, size_t length);
+
 typedef void (*HashAlgoFinal)(void *context, uint8_t *digest);
+
 typedef void (*HashAlgoFinalRaw)(void *context, uint8_t *digest);
 
 //Common API for encryption algorithms
-typedef error_t (*CipherAlgoInit)(void *context, const uint8_t *key, size_t keyLen);
-typedef void (*CipherAlgoEncryptStream)(void *context, const uint8_t *input, uint8_t *output, size_t length);
-typedef void (*CipherAlgoDecryptStream)(void *context, const uint8_t *input, uint8_t *output, size_t length);
-typedef void (*CipherAlgoEncryptBlock)(void *context, const uint8_t *input, uint8_t *output);
-typedef void (*CipherAlgoDecryptBlock)(void *context, const uint8_t *input, uint8_t *output);
+typedef error_t (*CipherAlgoInit)(void *context, const uint8_t *key,
+   size_t keyLen);
+
+typedef void (*CipherAlgoEncryptStream)(void *context, const uint8_t *input,
+   uint8_t *output, size_t length);
+
+typedef void (*CipherAlgoDecryptStream)(void *context, const uint8_t *input,
+   uint8_t *output, size_t length);
+
+typedef void (*CipherAlgoEncryptBlock)(void *context, const uint8_t *input,
+   uint8_t *output);
+
+typedef void (*CipherAlgoDecryptBlock)(void *context, const uint8_t *input,
+   uint8_t *output);
+
 typedef void (*CipherAlgoDeinit)(void *context);
 
-//Common API for pseudo-random number generators
+//Common interface for key encapsulation mechanisms (KEM)
+typedef error_t (*KemAlgoGenerateKeyPair)(const PrngAlgo *prngAlgo,
+   void *prngContext, uint8_t *pk, uint8_t *sk);
+
+typedef error_t (*KemAlgoEncapsulate)(const PrngAlgo *prngAlgo,
+   void *prngContext, uint8_t *ct, uint8_t *ss, const uint8_t *pk);
+
+typedef error_t (*KemAlgoDecapsulate)(uint8_t *ss, const uint8_t *ct,
+   const uint8_t *sk);
+
+//Common API for pseudo-random number generators (PRNG)
 typedef error_t (*PrngAlgoInit)(void *context);
-typedef void (*PrngAlgoRelease)(void *context);
-typedef error_t (*PrngAlgoSeed)(void *context, const uint8_t *input, size_t length);
-typedef error_t (*PrngAlgoAddEntropy)(void *context, uint_t source, const uint8_t *input, size_t length, size_t entropy);
+
+typedef error_t (*PrngAlgoSeed)(void *context, const uint8_t *input,
+   size_t length);
+
+typedef error_t (*PrngAlgoAddEntropy)(void *context, uint_t source,
+   const uint8_t *input, size_t length, size_t entropy);
+
 typedef error_t (*PrngAlgoRead)(void *context, uint8_t *output, size_t length);
+
 typedef void (*PrngAlgoDeinit)(void *context);
 
 
@@ -916,20 +964,36 @@ typedef struct
 
 
 /**
- * @brief Common interface for pseudo-random number generators
+ * @brief Common interface for key encapsulation mechanisms (KEM)
  **/
 
 typedef struct
 {
    const char_t *name;
+   size_t publicKeySize;
+   size_t secretKeySize;
+   size_t ciphertextSize;
+   size_t sharedSecretSize;
+   KemAlgoGenerateKeyPair generateKeyPair;
+   KemAlgoEncapsulate encapsulate;
+   KemAlgoDecapsulate decapsulate;
+} KemAlgo;
+
+
+/**
+ * @brief Common interface for pseudo-random number generators (PRNG)
+ **/
+
+struct _PrngAlgo
+{
+   const char_t *name;
    size_t contextSize;
    PrngAlgoInit init;
-   PrngAlgoRelease release;
    PrngAlgoSeed seed;
    PrngAlgoAddEntropy addEntropy;
    PrngAlgoRead read;
    PrngAlgoDeinit deinit;
-} PrngAlgo;
+};
 
 
 //C++ guard

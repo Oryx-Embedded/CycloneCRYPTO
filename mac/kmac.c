@@ -31,7 +31,7 @@
  * built from cSHAKE128 and cSHAKE256, respectively
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level

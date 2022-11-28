@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 #ifndef _HMAC_H
@@ -34,6 +34,11 @@
 //Dependencies
 #include "core/crypto.h"
 #include "hash/hash_algorithms.h"
+
+//Application specific context
+#ifndef HMAC_PRIVATE_CONTEXT
+   #define HMAC_PRIVATE_CONTEXT
+#endif
 
 //Inner padding (ipad)
 #define HMAC_IPAD 0x36
@@ -56,6 +61,7 @@ typedef struct
    HashContext hashContext;
    uint8_t key[MAX_HASH_BLOCK_SIZE];
    uint8_t digest[MAX_HASH_DIGEST_SIZE];
+   HMAC_PRIVATE_CONTEXT
 } HmacContext;
 
 

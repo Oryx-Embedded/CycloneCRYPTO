@@ -1,6 +1,6 @@
 /**
- * @file cbc.h
- * @brief Cipher Block Chaining (CBC) mode
+ * @file mimxrt1060_crypto_conifg.h
+ * @brief DCP-specific configuration file
  *
  * @section License
  *
@@ -25,30 +25,23 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
-#ifndef _CBC_H
-#define _CBC_H
+#ifndef _MIMXRT1060_CRYPTO_CONFIG_H
+#define _MIMXRT1060_CRYPTO_CONFIG_H
 
 //Dependencies
-#include "core/crypto.h"
+#include "fsl_dcp.h"
 
-//C++ guard
-#ifdef __cplusplus
-extern "C" {
-#endif
+//DCP-specific context (SHA-1)
+#define SHA1_PRIVATE_CONTEXT \
+   dcp_handle_t dcpHandle; \
+   dcp_hash_ctx_t dcpContext;
 
-//CBC encryption and decryption routines
-error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
-   uint8_t *iv, const uint8_t *p, uint8_t *c, size_t length);
-
-error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
-   uint8_t *iv, const uint8_t *c, uint8_t *p, size_t length);
-
-//C++ guard
-#ifdef __cplusplus
-}
-#endif
+//DCP-specific context (SHA-256)
+#define SHA256_PRIVATE_CONTEXT \
+   dcp_handle_t dcpHandle; \
+   dcp_hash_ctx_t dcpContext;
 
 #endif

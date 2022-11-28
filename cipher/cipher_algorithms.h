@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 #ifndef _CIPHER_ALGORITHMS_H
@@ -89,6 +89,11 @@
    #include "cipher/twofish.h"
 #endif
 
+//MARS cipher support?
+#if (MARS_SUPPORT == ENABLED)
+   #include "cipher/mars.h"
+#endif
+
 //Serpent cipher support?
 #if (SERPENT_SUPPORT == ENABLED)
    #include "cipher/serpent.h"
@@ -138,6 +143,8 @@
    #define MAX_CIPHER_BLOCK_SIZE AES_BLOCK_SIZE
 #elif (TWOFISH_SUPPORT == ENABLED)
    #define MAX_CIPHER_BLOCK_SIZE TWOFISH_BLOCK_SIZE
+#elif (MARS_SUPPORT == ENABLED)
+   #define MAX_CIPHER_BLOCK_SIZE MARS_BLOCK_SIZE
 #elif (SERPENT_SUPPORT == ENABLED)
    #define MAX_CIPHER_BLOCK_SIZE SERPENT_BLOCK_SIZE
 #elif (CAMELLIA_SUPPORT == ENABLED)
@@ -206,6 +213,9 @@ typedef union
 #endif
 #if (TWOFISH_SUPPORT == ENABLED)
    TwofishContext twofishContext;
+#endif
+#if (MARS_SUPPORT == ENABLED)
+   MarsContext marsContext;
 #endif
 #if (SERPENT_SUPPORT == ENABLED)
    SerpentContext serpentContext;

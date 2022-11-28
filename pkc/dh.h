@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 #ifndef _DH_H
@@ -69,13 +69,16 @@ typedef struct
 void dhInit(DhContext *context);
 void dhFree(DhContext *context);
 
-error_t dhGenerateKeyPair(DhContext *context,
-   const PrngAlgo *prngAlgo, void *prngContext);
+void dhInitParameters(DhParameters *params);
+void dhFreeParameters(DhParameters *params);
+
+error_t dhGenerateKeyPair(DhContext *context, const PrngAlgo *prngAlgo,
+   void *prngContext);
 
 error_t dhCheckPublicKey(DhParameters *params, const Mpi *publicKey);
 
-error_t dhComputeSharedSecret(DhContext *context,
-   uint8_t *output, size_t outputSize, size_t *outputLen);
+error_t dhComputeSharedSecret(DhContext *context, uint8_t *output,
+   size_t outputSize, size_t *outputLen);
 
 //C++ guard
 #ifdef __cplusplus

@@ -1,6 +1,6 @@
 /**
- * @file xts.h
- * @brief XEX-based tweaked-codebook mode with ciphertext stealing (XTS)
+ * @file rx65n_crypto.h
+ * @brief RX65N hardware cryptographic accelerator (TSIP)
  *
  * @section License
  *
@@ -25,46 +25,25 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
-#ifndef _XTS_H
-#define _XTS_H
+#ifndef _RX65N_CRYPTO_H
+#define _RX65N_CRYPTO_H
 
 //Dependencies
 #include "core/crypto.h"
-#include "cipher/cipher_algorithms.h"
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+//Global variables
+extern OsMutex rx65nCryptoMutex;
 
-/**
- * @brief XTS context
- **/
-
-typedef struct
-{
-   const CipherAlgo *cipherAlgo;
-   CipherContext cipherContext1;
-   CipherContext cipherContext2;
-} XtsContext;
-
-
-//XTS related functions
-error_t xtsInit(XtsContext *context, const CipherAlgo *cipherAlgo,
-   const void *key, size_t keyLen);
-
-error_t xtsEncrypt(XtsContext *context, const uint8_t *i, const uint8_t *p,
-   uint8_t *c, size_t length);
-
-error_t xtsDecrypt(XtsContext *context, const uint8_t *i, const uint8_t *c,
-   uint8_t *p, size_t length);
-
-void xtsMul(uint8_t *x, const uint8_t *a);
-void xtsXorBlock(uint8_t *x, const uint8_t *a, const uint8_t *b);
+//RX65N hardware cryptographic accelerator related functions
+error_t rx65nCryptoInit(void);
 
 //C++ guard
 #ifdef __cplusplus

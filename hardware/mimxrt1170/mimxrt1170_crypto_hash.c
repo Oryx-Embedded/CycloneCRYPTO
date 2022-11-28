@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level
@@ -107,7 +107,7 @@ void sha1Init(Sha1Context *context)
    caam_handle_t *caamHandle;
 
    //Point to the CAAM handle
-   caamHandle = (caam_handle_t *) context->caamHandle;
+   caamHandle = &context->caamHandle;
    //Set CAAM job ring
    caamHandle->jobRing = kCAAM_JobRing0;
 
@@ -240,7 +240,7 @@ void sha224Init(Sha224Context *context)
    caam_handle_t *caamHandle;
 
    //Point to the CAAM handle
-   caamHandle = (caam_handle_t *) context->caamHandle;
+   caamHandle = &context->caamHandle;
    //Set CAAM job ring
    caamHandle->jobRing = kCAAM_JobRing0;
 
@@ -373,7 +373,7 @@ void sha256Init(Sha256Context *context)
    caam_handle_t *caamHandle;
 
    //Point to the CAAM handle
-   caamHandle = (caam_handle_t *) context->caamHandle;
+   caamHandle = &context->caamHandle;
    //Set CAAM job ring
    caamHandle->jobRing = kCAAM_JobRing0;
 
@@ -404,14 +404,8 @@ void sha256Update(Sha256Context *context, const void *data, size_t length)
 
    //Restore hash context
    osMemcpy(&caamHashContext, context->caamContext, sizeof(caam_hash_ctx_t));
-
-   //Restore hash context
-   osMemcpy(&caamHashContext, context->caamContext, sizeof(caam_hash_ctx_t));
    //Digest the message
    CAAM_HASH_Update(&caamHashContext, data, length);
-   //Save hash context
-   osMemcpy(context->caamContext, &caamHashContext, sizeof(caam_hash_ctx_t));
-
    //Save hash context
    osMemcpy(context->caamContext, &caamHashContext, sizeof(caam_hash_ctx_t));
 
@@ -512,7 +506,7 @@ void sha384Init(Sha384Context *context)
    caam_handle_t *caamHandle;
 
    //Point to the CAAM handle
-   caamHandle = (caam_handle_t *) context->caamHandle;
+   caamHandle = &context->caamHandle;
    //Set CAAM job ring
    caamHandle->jobRing = kCAAM_JobRing0;
 
@@ -645,7 +639,7 @@ void sha512Init(Sha512Context *context)
    caam_handle_t *caamHandle;
 
    //Point to the CAAM handle
-   caamHandle = (caam_handle_t *) context->caamHandle;
+   caamHandle = &context->caamHandle;
    //Set CAAM job ring
    caamHandle->jobRing = kCAAM_JobRing0;
 

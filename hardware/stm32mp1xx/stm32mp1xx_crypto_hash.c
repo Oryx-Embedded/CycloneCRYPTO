@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level
@@ -131,7 +131,7 @@ void hashProcessData(uint32_t algo, const uint8_t *data, size_t length,
    }
 
    //Save intermediate hash value
-   for(i = 0; i < 8; i++)
+   for(i = 0; i < hLen; i++)
    {
       h[i] = HASH2->CSR[14 + i];
    }

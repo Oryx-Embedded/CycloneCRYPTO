@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level
@@ -140,7 +140,7 @@ void sha1Init(Sha1Context *context)
    dcp_handle_t *dcpHandle;
 
    //Point to the DCP handle
-   dcpHandle = (dcp_handle_t *) context->dcpHandle;
+   dcpHandle = &context->dcpHandle;
 
    //Set DCP parameters
    dcpHandle->channel = kDCP_Channel0;
@@ -153,7 +153,7 @@ void sha1Init(Sha1Context *context)
    //Initialize hash computation
    DCP_HASH_Init(DCP, dcpHandle, &dcpHashContext, kDCP_Sha1);
    //Save hash context
-   osMemcpy(context->dcpContext, &dcpHashContext, sizeof(dcp_hash_ctx_t));
+   context->dcpContext = dcpHashContext;
 
    //Release exclusive access to the DCP module
    osReleaseMutex(&mimxrt1060CryptoMutex);
@@ -175,7 +175,7 @@ void sha1Update(Sha1Context *context, const void *data, size_t length)
    osAcquireMutex(&mimxrt1060CryptoMutex);
 
    //Restore hash context
-   osMemcpy(&dcpHashContext, context->dcpContext, sizeof(dcp_hash_ctx_t));
+   dcpHashContext = context->dcpContext;
 
    //Digest the message
    while(length > 0)
@@ -195,7 +195,7 @@ void sha1Update(Sha1Context *context, const void *data, size_t length)
    }
 
    //Save hash context
-   osMemcpy(context->dcpContext, &dcpHashContext, sizeof(dcp_hash_ctx_t));
+   context->dcpContext = dcpHashContext;
 
    //Release exclusive access to the DCP module
    osReleaseMutex(&mimxrt1060CryptoMutex);
@@ -219,7 +219,7 @@ void sha1Final(Sha1Context *context, uint8_t *digest)
    osAcquireMutex(&mimxrt1060CryptoMutex);
 
    //Restore hash context
-   osMemcpy(&dcpHashContext, context->dcpContext, sizeof(dcp_hash_ctx_t));
+   dcpHashContext = context->dcpContext;
    //Finalize hash computation
    DCP_HASH_Finish(DCP, &dcpHashContext, context->digest, &n);
 
@@ -305,7 +305,7 @@ void sha256Init(Sha256Context *context)
    dcp_handle_t *dcpHandle;
 
    //Point to the DCP handle
-   dcpHandle = (dcp_handle_t *) context->dcpHandle;
+   dcpHandle = &context->dcpHandle;
 
    //Set DCP parameters
    dcpHandle->channel = kDCP_Channel0;
@@ -318,7 +318,7 @@ void sha256Init(Sha256Context *context)
    //Initialize hash computation
    DCP_HASH_Init(DCP, dcpHandle, &dcpHashContext, kDCP_Sha256);
    //Save hash context
-   osMemcpy(context->dcpContext, &dcpHashContext, sizeof(dcp_hash_ctx_t));
+   context->dcpContext = dcpHashContext;
 
    //Release exclusive access to the DCP module
    osReleaseMutex(&mimxrt1060CryptoMutex);
@@ -340,7 +340,7 @@ void sha256Update(Sha256Context *context, const void *data, size_t length)
    osAcquireMutex(&mimxrt1060CryptoMutex);
 
    //Restore hash context
-   osMemcpy(&dcpHashContext, context->dcpContext, sizeof(dcp_hash_ctx_t));
+   dcpHashContext = context->dcpContext;
 
    //Digest the message
    while(length > 0)
@@ -360,7 +360,7 @@ void sha256Update(Sha256Context *context, const void *data, size_t length)
    }
 
    //Save hash context
-   osMemcpy(context->dcpContext, &dcpHashContext, sizeof(dcp_hash_ctx_t));
+   context->dcpContext = dcpHashContext;
 
    //Release exclusive access to the DCP module
    osReleaseMutex(&mimxrt1060CryptoMutex);
@@ -384,7 +384,7 @@ void sha256Final(Sha256Context *context, uint8_t *digest)
    osAcquireMutex(&mimxrt1060CryptoMutex);
 
    //Restore hash context
-   osMemcpy(&dcpHashContext, context->dcpContext, sizeof(dcp_hash_ctx_t));
+   dcpHashContext = context->dcpContext;
    //Finalize hash computation
    DCP_HASH_Finish(DCP, &dcpHashContext, context->digest, &n);
 

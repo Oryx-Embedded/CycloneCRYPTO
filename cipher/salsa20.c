@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level
@@ -39,7 +39,7 @@
 #if (SALSA20_SUPPORT == ENABLED)
 
 //Salsa20 quarter-round function
-#define SALSA20_QUARTER_ROUND(a, b, c, d) \
+#define QUARTER_ROUND(a, b, c, d) \
 { \
    b ^= ROL32(a + d, 7); \
    c ^= ROL32(b + a, 9); \
@@ -71,17 +71,17 @@ void salsa20ProcessBlock(const uint8_t *input, uint8_t *output, uint_t nr)
    {
       //The column round function modifies the columns of the matrix in parallel
       //by feeding a permutation of each column through the quarter round function
-      SALSA20_QUARTER_ROUND(x[0], x[4], x[8], x[12]);
-      SALSA20_QUARTER_ROUND(x[5], x[9], x[13], x[1]);
-      SALSA20_QUARTER_ROUND(x[10], x[14], x[2], x[6]);
-      SALSA20_QUARTER_ROUND(x[15], x[3], x[7], x[11]);
+      QUARTER_ROUND(x[0], x[4], x[8], x[12]);
+      QUARTER_ROUND(x[5], x[9], x[13], x[1]);
+      QUARTER_ROUND(x[10], x[14], x[2], x[6]);
+      QUARTER_ROUND(x[15], x[3], x[7], x[11]);
 
       //The row round function modifies the rows of the matrix in parallel by
       //feeding a permutation of each row through the quarter round function
-      SALSA20_QUARTER_ROUND(x[0], x[1], x[2], x[3]);
-      SALSA20_QUARTER_ROUND(x[5], x[6], x[7], x[4]);
-      SALSA20_QUARTER_ROUND(x[10], x[11], x[8], x[9]);
-      SALSA20_QUARTER_ROUND(x[15], x[12], x[13], x[14]);
+      QUARTER_ROUND(x[0], x[1], x[2], x[3]);
+      QUARTER_ROUND(x[5], x[6], x[7], x[4]);
+      QUARTER_ROUND(x[10], x[11], x[8], x[9]);
+      QUARTER_ROUND(x[15], x[12], x[13], x[14]);
    }
 
    //Add the original input words to the output words

@@ -1,6 +1,6 @@
 /**
- * @file cfb.h
- * @brief Cipher Feedback (CFB) mode
+ * @file mimxrt1160_crypto_pkc.h
+ * @brief i.MX RT1160 public-key hardware accelerator
  *
  * @section License
  *
@@ -25,26 +25,58 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
-#ifndef _CFB_H
-#define _CFB_H
+#ifndef _MIMXRT1160_CRYPTO_PKC_H
+#define _MIMXRT1160_CRYPTO_PKC_H
 
 //Dependencies
 #include "core/crypto.h"
+
+//Public-key hardware accelerator
+#ifndef MIMXRT1160_CRYPTO_PKC_SUPPORT
+   #define MIMXRT1160_CRYPTO_PKC_SUPPORT DISABLED
+#elif (MIMXRT1160_CRYPTO_PKC_SUPPORT != ENABLED && MIMXRT1160_CRYPTO_PKC_SUPPORT != DISABLED)
+   #error MIMXRT1160_CRYPTO_PKC_SUPPORT parameter is not valid
+#endif
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//CFB encryption and decryption routines
-error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
-   uint8_t *iv, const uint8_t *p, uint8_t *c, size_t length);
 
-error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
-   uint8_t *iv, const uint8_t *c, uint8_t *p, size_t length);
+/**
+ * @brief PKHA primitive arguments
+ **/
+
+typedef struct
+{
+   uint8_t a[512];
+   uint8_t b[512];
+   uint8_t e[512];
+   uint8_t p[512];
+   uint8_t r[512];
+} PkhaArgs;
+
+
+/**
+ * @brief PKHA ECC primitive arguments
+ **/
+
+typedef struct
+{
+   uint8_t p[66];
+   uint8_t a[66];
+   uint8_t b[66];
+   uint8_t d[66];
+   uint8_t gx[66];
+   uint8_t gy[66];
+   uint8_t qx[66];
+   uint8_t qy[66];
+} PkhaEccArgs;
+
 
 //C++ guard
 #ifdef __cplusplus

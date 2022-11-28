@@ -32,7 +32,7 @@
  * key. Refer to RFC 2104 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level
@@ -82,7 +82,7 @@ const uint8_t HMAC_WITH_SHA3_512_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0
  * @return Error code
  **/
 
-error_t hmacCompute(const HashAlgo *hash, const void *key, size_t keyLen,
+__weak_func error_t hmacCompute(const HashAlgo *hash, const void *key, size_t keyLen,
    const void *data, size_t dataLen, uint8_t *digest)
 {
    error_t error;
@@ -129,7 +129,7 @@ error_t hmacCompute(const HashAlgo *hash, const void *key, size_t keyLen,
  * @return Error code
  **/
 
-error_t hmacInit(HmacContext *context, const HashAlgo *hash,
+__weak_func error_t hmacInit(HmacContext *context, const HashAlgo *hash,
    const void *key, size_t keyLen)
 {
    uint_t i;
@@ -190,7 +190,7 @@ error_t hmacInit(HmacContext *context, const HashAlgo *hash,
  * @param[in] length Length of the buffer
  **/
 
-void hmacUpdate(HmacContext *context, const void *data, size_t length)
+__weak_func void hmacUpdate(HmacContext *context, const void *data, size_t length)
 {
    const HashAlgo *hash;
 
@@ -207,7 +207,7 @@ void hmacUpdate(HmacContext *context, const void *data, size_t length)
  * @param[out] digest Calculated HMAC value (optional parameter)
  **/
 
-void hmacFinal(HmacContext *context, uint8_t *digest)
+__weak_func void hmacFinal(HmacContext *context, uint8_t *digest)
 {
    uint_t i;
    const HashAlgo *hash;

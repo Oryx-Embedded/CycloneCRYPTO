@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level
@@ -405,7 +405,7 @@ error_t ecImport(const EcDomainParameters *params, EcPoint *r,
          return ERROR_ILLEGAL_PARAMETER;
 
       //Compressed point representation is not supported
-      if(data[0] != 0x04)
+      if(data[0] != EC_POINT_FORMAT_UNCOMPRESSED)
          return ERROR_ILLEGAL_PARAMETER;
 
       //Convert the x-coordinate to a multiple precision integer
@@ -461,7 +461,7 @@ error_t ecExport(const EcDomainParameters *params, const EcPoint *a,
    else
    {
       //Point compression is not used
-      data[0] = 0x04;
+      data[0] = EC_POINT_FORMAT_UNCOMPRESSED;
 
       //Convert the x-coordinate to an octet string
       error = mpiExport(&a->x, data + 1, k, MPI_FORMAT_BIG_ENDIAN);

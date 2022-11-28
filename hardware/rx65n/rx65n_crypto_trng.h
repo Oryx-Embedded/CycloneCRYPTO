@@ -1,6 +1,6 @@
 /**
- * @file ctr.h
- * @brief Counter(CTR) mode
+ * @file rx65n_crypto_trng.h
+ * @brief RX65N true random number generator
  *
  * @section License
  *
@@ -25,26 +25,29 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
-#ifndef _CTR_H
-#define _CTR_H
+#ifndef _RX65N_CRYPTO_TRNG_H
+#define _RX65N_CRYPTO_TRNG_H
 
 //Dependencies
 #include "core/crypto.h"
+
+//True random number generator
+#ifndef RX65N_CRYPTO_TRNG_SUPPORT
+   #define RX65N_CRYPTO_TRNG_SUPPORT ENABLED
+#elif (RX65N_CRYPTO_TRNG_SUPPORT != ENABLED && RX65N_CRYPTO_TRNG_SUPPORT != DISABLED)
+   #error RX65N_CRYPTO_TRNG_SUPPORT parameter is not valid
+#endif
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//CTR encryption and decryption routines
-error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
-   uint8_t *t, const uint8_t *p, uint8_t *c, size_t length);
-
-error_t ctrDecrypt(const CipherAlgo *cipher, void *context, uint_t m,
-   uint8_t *t, const uint8_t *c, uint8_t *p, size_t length);
+//TRNG related functions
+error_t trngGetRandomData(uint8_t *data, size_t length);
 
 //C++ guard
 #ifdef __cplusplus

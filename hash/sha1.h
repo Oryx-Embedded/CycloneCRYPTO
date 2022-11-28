@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 #ifndef _SHA1_H
@@ -33,6 +33,11 @@
 
 //Dependencies
 #include "core/crypto.h"
+
+//Application specific context
+#ifndef SHA1_PRIVATE_CONTEXT
+   #define SHA1_PRIVATE_CONTEXT
+#endif
 
 //SHA-1 block size
 #define SHA1_BLOCK_SIZE 64
@@ -69,15 +74,7 @@ typedef struct
    };
    size_t size;
    uint64_t totalSize;
-#if ((defined(MIMXRT1050_CRYPTO_HASH_SUPPORT) && MIMXRT1050_CRYPTO_HASH_SUPPORT == ENABLED) || \
-   (defined(MIMXRT1060_CRYPTO_HASH_SUPPORT) && MIMXRT1060_CRYPTO_HASH_SUPPORT == ENABLED))
-   uint32_t dcpHandle[11];
-   uint32_t dcpContext[64];
-#elif ((defined(MIMXRT1160_CRYPTO_HASH_SUPPORT) && MIMXRT1160_CRYPTO_HASH_SUPPORT == ENABLED) || \
-   (defined(MIMXRT1170_CRYPTO_HASH_SUPPORT) && MIMXRT1170_CRYPTO_HASH_SUPPORT == ENABLED))
-   uint32_t caamHandle[3];
-   uint32_t caamContext[58];
-#endif
+   SHA1_PRIVATE_CONTEXT
 } Sha1Context;
 
 

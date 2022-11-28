@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level
@@ -38,7 +38,7 @@
 #include "hardware/stm32wlxx/stm32wlxx_crypto.h"
 #include "hardware/stm32wlxx/stm32wlxx_crypto_cipher.h"
 #include "cipher/cipher_algorithms.h"
-#include "cipher_mode/cipher_modes.h"
+#include "cipher_modes/cipher_modes.h"
 #include "aead/aead_algorithms.h"
 #include "debug.h"
 

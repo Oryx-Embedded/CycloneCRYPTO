@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 #ifndef _YARROW_H
@@ -81,7 +81,6 @@ extern const PrngAlgo yarrowPrngAlgo;
 
 //Yarrow related functions
 error_t yarrowInit(YarrowContext *context);
-void yarrowRelease(YarrowContext *context);
 
 error_t yarrowSeed(YarrowContext *context, const uint8_t *input, size_t length);
 

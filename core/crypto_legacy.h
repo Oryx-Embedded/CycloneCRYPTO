@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 #ifndef _CRYPTO_LEGACY_H
@@ -57,5 +57,7 @@
 #ifdef SAME54_CRYPTO_PUKCC_SUPPORT
    #define SAME54_CRYPTO_PKC_SUPPORT SAME54_CRYPTO_PUKCC_SUPPORT
 #endif
+
+#define yarrowRelease yarrowDeinit
 
 #endif

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 #ifndef _DES3_H
@@ -34,6 +34,11 @@
 //Dependencies
 #include "core/crypto.h"
 #include "cipher/des.h"
+
+//Application specific context
+#ifndef DES3_PRIVATE_CONTEXT
+   #define DES3_PRIVATE_CONTEXT
+#endif
 
 //Triple DES block size
 #define DES3_BLOCK_SIZE 8
@@ -55,6 +60,7 @@ typedef struct
    DesContext k1;
    DesContext k2;
    DesContext k3;
+   DES3_PRIVATE_CONTEXT
 } Des3Context;
 
 

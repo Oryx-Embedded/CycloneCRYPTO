@@ -1,6 +1,6 @@
 /**
- * @file cipher_modes.h
- * @brief Block cipher modes of operation
+ * @file mimxrt1160_crypto.h
+ * @brief i.MX RT1160 hardware cryptographic accelerator (CAAM)
  *
  * @section License
  *
@@ -25,43 +25,36 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
-#ifndef _CIPHER_MODES_H
-#define _CIPHER_MODES_H
+#ifndef _MIMXRT1160_CRYPTO_H
+#define _MIMXRT1160_CRYPTO_H
 
 //Dependencies
 #include "core/crypto.h"
 
-//ECB mode support?
-#if (ECB_SUPPORT == ENABLED)
-   #include "cipher_mode/ecb.h"
+//CAAM buffer size
+#ifndef MIMXRT1160_CAAM_BUFFER_SIZE
+   #define MIMXRT1160_CAAM_BUFFER_SIZE 1024
+#elif (MIMXRT1160_CAAM_BUFFER_SIZE < 256)
+   #error MIMXRT1160_CAAM_BUFFER_SIZE parameter is not valid
 #endif
 
-//CBC mode support?
-#if (CBC_SUPPORT == ENABLED)
-   #include "cipher_mode/cbc.h"
+//C++ guard
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-//CFB mode support?
-#if (CFB_SUPPORT == ENABLED)
-   #include "cipher_mode/cfb.h"
-#endif
+//Global variables
+extern OsMutex mimxrt1160CryptoMutex;
 
-//OFB mode support?
-#if (OFB_SUPPORT == ENABLED)
-   #include "cipher_mode/ofb.h"
-#endif
+//i.MX RT1160 hardware cryptographic accelerator related functions
+error_t mimxrt1160CryptoInit(void);
 
-//CTR mode support?
-#if (CTR_SUPPORT == ENABLED)
-   #include "cipher_mode/ctr.h"
-#endif
-
-//XTS mode support?
-#if (XTS_SUPPORT == ENABLED)
-   #include "cipher_mode/xts.h"
+//C++ guard
+#ifdef __cplusplus
+}
 #endif
 
 #endif

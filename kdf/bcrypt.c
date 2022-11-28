@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,7 +34,7 @@
 //Dependencies
 #include "core/crypto.h"
 #include "kdf/bcrypt.h"
-#include "cipher_mode/ecb.h"
+#include "cipher_modes/ecb.h"
 #include "encoding/radix64.h"
 
 //Check crypto library configuration

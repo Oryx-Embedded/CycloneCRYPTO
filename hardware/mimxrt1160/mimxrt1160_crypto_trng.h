@@ -1,6 +1,6 @@
 /**
- * @file ecb.h
- * @brief Electronic Codebook (ECB) mode
+ * @file mimxrt1160_crypto_trng.h
+ * @brief i.MX RT1160 true random number generator
  *
  * @section License
  *
@@ -25,26 +25,29 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.1.8
+ * @version 2.2.0
  **/
 
-#ifndef _ECB_H
-#define _ECB_H
+#ifndef _MIMXRT1160_CRYPTO_TRNG_H
+#define _MIMXRT1160_CRYPTO_TRNG_H
 
 //Dependencies
 #include "core/crypto.h"
+
+//True random number generator
+#ifndef MIMXRT1160_CRYPTO_TRNG_SUPPORT
+   #define MIMXRT1160_CRYPTO_TRNG_SUPPORT ENABLED
+#elif (MIMXRT1160_CRYPTO_TRNG_SUPPORT != ENABLED && MIMXRT1160_CRYPTO_TRNG_SUPPORT != DISABLED)
+   #error MIMXRT1160_CRYPTO_TRNG_SUPPORT parameter is not valid
+#endif
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//ECB encryption and decryption routines
-error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
-   const uint8_t *p, uint8_t *c, size_t length);
-
-error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
-   const uint8_t *c, uint8_t *p, size_t length);
+//TRNG related functions
+error_t trngGetRandomData(uint8_t *data, size_t length);
 
 //C++ guard
 #ifdef __cplusplus
