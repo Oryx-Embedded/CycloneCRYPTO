@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -74,7 +74,7 @@ const uint8_t X509_DN_QUALIFIER_OID[3] = {0x55, 0x04, 0x2E};
 const uint8_t X509_PSEUDONYM_OID[3] = {0x55, 0x04, 0x41};
 
 //Subject Directory Attributes OID (2.5.29.9)
-const uint8_t X509_SUBJECT_DIRECTORY_ATTR_OID[3] = {0x55, 0x1D, 0x09};
+const uint8_t X509_SUBJECT_DIR_ATTR_OID[3] = {0x55, 0x1D, 0x09};
 //Subject Key Identifier OID (2.5.29.14)
 const uint8_t X509_SUBJECT_KEY_ID_OID[3] = {0x55, 0x1D, 0x0E};
 //Key Usage OID (2.5.29.15)
@@ -138,9 +138,9 @@ const uint8_t X509_KP_SSH_CLIENT_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0
 //Key Purpose Secure Shell Client (1.3.6.1.5.5.7.3.22)
 const uint8_t X509_KP_SSH_SERVER_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x16};
 
-//PKCS#9 Challenge Password OID (1.2.840.113549.1.9.7)
+//PKCS #9 Challenge Password OID (1.2.840.113549.1.9.7)
 const uint8_t X509_CHALLENGE_PASSWORD_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x07};
-//PKCS#9 Extension Request OID (1.2.840.113549.1.9.14)
+//PKCS #9 Extension Request OID (1.2.840.113549.1.9.14)
 const uint8_t X509_EXTENSION_REQUEST_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x0E};
 
 

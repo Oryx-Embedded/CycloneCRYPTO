@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -125,9 +125,14 @@ error_t ecdsaWriteSignature(const EcdsaSignature *signature, uint8_t *data,
 
    //R and S are always encoded in the smallest possible number of octets
    if(mpiGetBitValue(&signature->r, (rLen * 8) - 1))
+   {
       rLen++;
+   }
+
    if(mpiGetBitValue(&signature->s, (sLen * 8) - 1))
+   {
       sLen++;
+   }
 
    //The first pass computes the length of the ASN.1 sequence
    n = 0;

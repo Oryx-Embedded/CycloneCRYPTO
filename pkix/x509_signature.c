@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -232,7 +232,7 @@ error_t x509GenerateRsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
 {
 #if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
    error_t error;
-   uint8_t digest[X509_MAX_HASH_DIGEST_SIZE];
+   uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Digest the TBSCertificate structure using the specified hash algorithm
    error = hashAlgo->compute(tbsCert, tbsCertLen, digest);
@@ -275,7 +275,7 @@ error_t x509GenerateRsaPssSignature(const PrngAlgo *prngAlgo, void *prngContext,
 {
 #if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
    error_t error;
-   uint8_t digest[X509_MAX_HASH_DIGEST_SIZE];
+   uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Digest the TBSCertificate structure using the specified hash algorithm
    error = hashAlgo->compute(tbsCert, tbsCertLen, digest);
@@ -317,7 +317,7 @@ error_t x509GenerateDsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
 #if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
    error_t error;
    DsaSignature signature;
-   uint8_t digest[X509_MAX_HASH_DIGEST_SIZE];
+   uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Initialize DSA signature
    dsaInitSignature(&signature);
@@ -376,7 +376,7 @@ error_t x509GenerateEcdsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
    const EcCurveInfo *curveInfo;
    EcDomainParameters params;
    EcdsaSignature signature;
-   uint8_t digest[X509_MAX_HASH_DIGEST_SIZE];
+   uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Initialize EC domain parameters
    ecInitDomainParameters(&params);
@@ -671,7 +671,7 @@ error_t x509VerifyRsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
    error_t error;
    uint_t k;
    RsaPublicKey publicKey;
-   uint8_t digest[X509_MAX_HASH_DIGEST_SIZE];
+   uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Initialize RSA public key
    rsaInitPublicKey(&publicKey);
@@ -740,7 +740,7 @@ error_t x509VerifyRsaPssSignature(const uint8_t *tbsCert, size_t tbsCertLen,
    error_t error;
    uint_t k;
    RsaPublicKey publicKey;
-   uint8_t digest[X509_MAX_HASH_DIGEST_SIZE];
+   uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Initialize RSA public key
    rsaInitPublicKey(&publicKey);
@@ -808,7 +808,7 @@ error_t x509VerifyDsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
    uint_t k;
    DsaPublicKey publicKey;
    DsaSignature signature;
-   uint8_t digest[X509_MAX_HASH_DIGEST_SIZE];
+   uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Initialize DSA public key
    dsaInitPublicKey(&publicKey);
@@ -888,7 +888,7 @@ error_t x509VerifyEcdsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
    EcDomainParameters params;
    EcPublicKey publicKey;
    EcdsaSignature signature;
-   uint8_t digest[X509_MAX_HASH_DIGEST_SIZE];
+   uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Initialize EC domain parameters
    ecInitDomainParameters(&params);

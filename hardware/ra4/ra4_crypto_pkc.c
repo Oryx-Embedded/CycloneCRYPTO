@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -496,13 +496,13 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
       //Perform scalar multiplication
       if(n == 32)
       {
-         status = HW_SCE_ECC_256WrappedScalarMultiplication(&curveType,
+         status = HW_SCE_Ecc256ScalarMultiplicationSub(&curveType,
             &command, ecArgs.wrappedKey, ecArgs.g, ecArgs.q);
       }
       else if(n == 48)
       {
-         status = HW_SCE_ECC_384WrappedScalarMultiplication(&curveType,
-            &command, ecArgs.wrappedKey, ecArgs.g, ecArgs.q);
+         status = HW_SCE_Ecc384ScalarMultiplicationSub(&curveType,
+            ecArgs.wrappedKey, ecArgs.g, ecArgs.q);
       }
       else
       {

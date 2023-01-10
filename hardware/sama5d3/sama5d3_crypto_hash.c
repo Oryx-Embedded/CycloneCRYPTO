@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -177,7 +177,7 @@ error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
 #if (SHA224_SUPPORT == ENABLED)
 
 /**
- * @brief Digest a message using SHA-256
+ * @brief Digest a message using SHA-224
  * @param[in] data Pointer to the message being hashed
  * @param[in] length Length of the message
  * @param[out] digest Pointer to the calculated digest

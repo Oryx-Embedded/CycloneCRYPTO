@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -34,7 +34,6 @@
 //Dependencies
 #include "core/crypto.h"
 #include "kdf/bcrypt.h"
-#include "cipher_modes/ecb.h"
 #include "encoding/radix64.h"
 
 //Check crypto library configuration
@@ -189,10 +188,12 @@ error_t bcrypt(uint_t cost, const uint8_t *salt, const char_t *password,
          osMemcpy(buffer, "OrpheanBeholderScryDoubt", 24);
 
          //Repeatedly encrypt the text "OrpheanBeholderScryDoubt" 64 times
-         for(i = 0; i < 64 && !error; i++)
+         for(i = 0; i < 64; i++)
          {
             //Perform encryption using Blowfish in ECB mode
-            error = ecbEncrypt(BLOWFISH_CIPHER_ALGO, context, buffer, buffer, 24);
+            blowfishEncryptBlock(context, buffer, buffer);
+            blowfishEncryptBlock(context, buffer + 8, buffer + 8);
+            blowfishEncryptBlock(context, buffer + 16, buffer + 16);
          }
       }
 

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -103,34 +103,131 @@ error_t oidCheck(const uint8_t *oid, size_t oidLen)
 int_t oidComp(const uint8_t *oid1, size_t oidLen1, const uint8_t *oid2,
    size_t oidLen2)
 {
-   size_t i;
+   int_t res;
+   size_t n1;
+   size_t n2;
+   size_t pos1;
+   size_t pos2;
+   bool_t more1;
+   bool_t more2;
+
+   //Initialize variables
+   res = 0;
+   n1 = 0;
+   n2 = 0;
+   pos1 = 0;
+   pos2 = 0;
+   more1 = TRUE;
+   more2 = TRUE;
 
    //Perform lexicographical comparison
-   for(i = 0; i < oidLen1 && i < oidLen2; i++)
+   while(res == 0)
    {
-      //Compare current byte
-      if(oid1[i] < oid2[i])
+      //Extract sub-identifier from first OID
+      if(more1)
       {
-         return -1;
+         if(pos1 >= oidLen1)
+         {
+            more1 = FALSE;
+         }
+         else if(pos1 == 0)
+         {
+            pos1++;
+            n1++;
+            more1 = FALSE;
+         }
+         else if(n1 == 0 && oid1[pos1] == OID_MORE_FLAG)
+         {
+            pos1++;
+         }
+         else if((oid1[pos1] & OID_MORE_FLAG) != 0)
+         {
+            pos1++;
+            n1++;
+         }
+         else
+         {
+            pos1++;
+            n1++;
+            more1 = FALSE;
+         }
       }
-      else if(oid1[i] > oid2[i])
+
+      //Extract sub-identifier from second OID
+      if(more2)
       {
-         return 1;
+         if(pos2 >= oidLen2)
+         {
+            more2 = FALSE;
+         }
+         else if(pos2 == 0)
+         {
+            pos2++;
+            n2++;
+            more2 = FALSE;
+         }
+         else if(n2 == 0 && oid2[pos2] == OID_MORE_FLAG)
+         {
+            pos2++;
+         }
+         else if((oid2[pos2] & OID_MORE_FLAG) != 0)
+         {
+            pos2++;
+            n2++;
+         }
+         else
+         {
+            pos2++;
+            n2++;
+            more2 = FALSE;
+         }
+      }
+
+      //Compare sub-identifiers
+      if(!more1 && !more2)
+      {
+         //Check the length of the sub-identifiers
+         if(n1 == 0 && n2 == 0)
+         {
+            res = 0;
+            break;
+         }
+         else if(n1 < n2)
+         {
+            res = -1;
+         }
+         else if(n1 > n2)
+         {
+            res = 1;
+         }
+         else
+         {
+            //Compare sub-identifier values
+            res = osMemcmp(oid1 + pos1 - n1, oid2 + pos2 - n2, n1);
+
+            //Check comparison result
+            if(res < 0)
+            {
+               res = -1;
+            }
+            else if(res > 0)
+            {
+               res = 1;
+            }
+            else
+            {
+               //Decode next sub-identifiers
+               n1 = 0;
+               n2 = 0;
+               more1 = TRUE;
+               more2 = TRUE;
+            }
+         }
       }
    }
 
-   //Compare length
-   if(oidLen1 < oidLen2)
-   {
-      return -1;
-   }
-   else if(oidLen1 > oidLen2)
-   {
-      return 1;
-   }
-
-   //Object identifiers are equal
-   return 0;
+   //Return comparison result
+   return res;
 }
 
 

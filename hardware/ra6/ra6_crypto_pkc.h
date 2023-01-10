@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 #ifndef _RA6_CRYPTO_PKC_H
@@ -54,7 +54,6 @@ extern "C" {
 
 typedef struct
 {
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
    uint32_t n[128];
    uint32_t d[128];
    uint32_t e[1];
@@ -62,14 +61,6 @@ typedef struct
    uint32_t c[128];
    uint32_t key[160];
    uint32_t wrappedKey[256];
-#else
-   uint32_t n[64];
-   uint32_t d[64];
-   uint32_t e[1];
-   uint32_t m[64];
-   uint32_t c[64];
-   uint32_t key[160];
-#endif
 } Ra6RsaArgs;
 
 
@@ -85,9 +76,7 @@ typedef struct
    uint32_t q[24];
    uint32_t digest[12];
    uint32_t signature[24];
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
    uint32_t wrappedKey[32];
-#endif
 } Ra6EcArgs;
 
 

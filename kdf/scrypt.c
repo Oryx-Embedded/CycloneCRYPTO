@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -32,7 +32,7 @@
  * hardware. Refer to RFC 7914 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -136,8 +136,8 @@ error_t scrypt(const char_t *password, const uint8_t *salt, size_t saltLen,
       }
 
       //Compute B = PBKDF2-HMAC-SHA256(P, S, 1, p * 128 * r)
-      error = pbkdf2(SHA256_HASH_ALGO, (const uint8_t *) password, passwordLen,
-         salt, saltLen, 1, b, p * blockSize);
+      error = pbkdf2(SHA256_HASH_ALGO, (const uint8_t *) password,
+         passwordLen, salt, saltLen, 1, b, p * blockSize);
       //Any error to report?
       if(error)
          break;
@@ -150,8 +150,8 @@ error_t scrypt(const char_t *password, const uint8_t *salt, size_t saltLen,
       }
 
       //Compute DK = PBKDF2-HMAC-SHA256(P, B, 1, dkLen)
-      error = pbkdf2(SHA256_HASH_ALGO, (const uint8_t *) password, passwordLen,
-         b, p * blockSize, 1, dk, dkLen);
+      error = pbkdf2(SHA256_HASH_ALGO, (const uint8_t *) password,
+         passwordLen, b, p * blockSize, 1, dk, dkLen);
       //Any error to report?
       if(error)
          break;

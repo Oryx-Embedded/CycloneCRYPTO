@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "hw_sce_private.h"
+#include "hw_sce_ra_private.h"
 #include "hw_sce_aes_private.h"
 #include "core/crypto.h"
 #include "hardware/ra6/ra6_crypto.h"
@@ -42,13 +43,144 @@
 #include "aead/aead_algorithms.h"
 #include "debug.h"
 
-//SCE9 specific dependencies
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
-   #include "hw_sce_ra_private.h"
-#endif
-
 //Check crypto library configuration
 #if (RA6_CRYPTO_CIPHER_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
+
+
+/**
+ * @brief Perform AES encryption or decryption
+ * @param[in] context AES algorithm context
+ * @param[in,out] iv Initialization vector
+ * @param[in] input Data to be encrypted/decrypted
+ * @param[out] output Data resulting from the encryption/decryption process
+ * @param[in] length Total number of data bytes to be processed
+ * @param[in] command Operation mode
+ * @return Status code
+ **/
+
+error_t aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
+   uint8_t *output, size_t length, uint32_t command)
+{
+   fsp_err_t status;
+   size_t n;
+   uint32_t keyType;
+   uint32_t block[AES_BLOCK_SIZE / 4];
+
+   //Set key type
+   keyType = 0;
+   //Set operation mode
+   command = htobe32(command);
+
+   //Acquire exclusive access to the SCE module
+   osAcquireMutex(&ra6CryptoMutex);
+
+   //Initialize encryption or decryption operation
+   if(context->nr == 10)
+   {
+      status = HW_SCE_Aes128EncryptDecryptInitSub(&keyType, &command,
+         context->ek, (const uint32_t *) iv);
+   }
+   else if(context->nr == 12)
+   {
+      status = HW_SCE_Aes192EncryptDecryptInitSub(&command,
+         context->ek, (const uint32_t *) iv);
+   }
+   else if(context->nr == 14)
+   {
+      status = HW_SCE_Aes256EncryptDecryptInitSub(&keyType, &command,
+         context->ek, (const uint32_t *) iv);
+   }
+   else
+   {
+      status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
+   }
+
+   //Check status code
+   if(status == FSP_SUCCESS)
+   {
+      //Get the number of bytes in the last block
+      n = length % AES_BLOCK_SIZE;
+
+      //Process complete blocks only
+      if(context->nr == 10)
+      {
+         HW_SCE_Aes128EncryptDecryptUpdateSub((const uint32_t *) input,
+            (uint32_t *) output, (length - n) / 4);
+      }
+      else if(context->nr == 12)
+      {
+         HW_SCE_Aes192EncryptDecryptUpdateSub((const uint32_t *) input,
+            (uint32_t *) output, (length - n) / 4);
+      }
+      else
+      {
+         HW_SCE_Aes256EncryptDecryptUpdateSub((const uint32_t *) input,
+            (uint32_t *) output, (length - n) / 4);
+      }
+
+      //The final block requires special processing
+      if(n > 0)
+      {
+         //Copy the input data
+         osMemset(block, 0, AES_BLOCK_SIZE);
+         osMemcpy(block, input + length - n, n);
+
+         //Process the final block
+         if(context->nr == 10)
+         {
+            HW_SCE_Aes128EncryptDecryptUpdateSub(block, block,
+               AES_BLOCK_SIZE / 4);
+         }
+         else if(context->nr == 12)
+         {
+            HW_SCE_Aes192EncryptDecryptUpdateSub(block, block,
+               AES_BLOCK_SIZE / 4);
+         }
+         else
+         {
+            HW_SCE_Aes256EncryptDecryptUpdateSub(block, block,
+               AES_BLOCK_SIZE / 4);
+         }
+
+         //Copy the resulting ciphertext
+         osMemcpy(output + length - n, block, n);
+      }
+   }
+
+   //Check status code
+   if(status == FSP_SUCCESS)
+   {
+      //Finalize encryption or decryption operation
+      if(context->nr == 10)
+      {
+         status = HW_SCE_Aes128EncryptDecryptFinalSub();
+      }
+      else if(context->nr == 12)
+      {
+         status = HW_SCE_Aes192EncryptDecryptFinalSub();
+      }
+      else if(context->nr == 14)
+      {
+         status = HW_SCE_Aes256EncryptDecryptFinalSub();
+      }
+      else
+      {
+         status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
+      }
+   }
+
+   //Check status code
+   if(status != FSP_SUCCESS)
+   {
+      osMemset(output, 0, length);
+   }
+
+   //Release exclusive access to the SCE module
+   osReleaseMutex(&ra6CryptoMutex);
+
+   //Return status code
+   return (status == FSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
+}
 
 
 /**
@@ -67,10 +199,9 @@ error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
    if(context == NULL || key == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //Initialize status code
-   status = FSP_SUCCESS;
+   //Acquire exclusive access to the SCE module
+   osAcquireMutex(&ra6CryptoMutex);
 
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
    //Check the length of the key
    if(keyLen == 16)
    {
@@ -104,28 +235,9 @@ error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
       //Invalid key length
       status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
    }
-#else
-   //Check the length of the key
-   if(keyLen == 16)
-   {
-      //10 rounds are required for 128-bit key
-      context->nr = 10;
-      //Copy the key
-      osMemcpy(context->ek, key, keyLen);
-   }
-   else if(keyLen == 32)
-   {
-      //14 rounds are required for 256-bit key
-      context->nr = 14;
-      //Copy the key
-      osMemcpy(context->ek, key, keyLen);
-   }
-   else
-   {
-      //192-bit keys are not supported
-      status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-   }
-#endif
+
+   //Release exclusive access to the SCE module
+   osReleaseMutex(&ra6CryptoMutex);
 
    //Return status code
    return (status == FSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
@@ -141,46 +253,9 @@ error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
 
 void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 {
-   fsp_err_t status;
-
-   //Acquire exclusive access to the SCE module
-   osAcquireMutex(&ra6CryptoMutex);
-
-   //Check the length of the key
-   if(context->nr == 10)
-   {
-      //Perform AES encryption (128-bit key)
-      status = HW_SCE_AES_128EcbEncrypt(context->ek, AES_BLOCK_SIZE / 4,
-         (const uint32_t *) input, (uint32_t *) output);
-   }
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
-   else if(context->nr == 12)
-   {
-      //Perform AES encryption (192-bit key)
-      status = HW_SCE_AES_192EcbEncrypt(context->ek, AES_BLOCK_SIZE / 4,
-         (const uint32_t *) input, (uint32_t *) output);
-   }
-#endif
-   else if(context->nr == 14)
-   {
-      //Perform AES encryption (256-bit key)
-      status = HW_SCE_AES_256EcbEncrypt(context->ek, AES_BLOCK_SIZE / 4,
-         (const uint32_t *) input, (uint32_t *) output);
-   }
-   else
-   {
-      //Invalid key length
-      status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-   }
-
-   //Check status code
-   if(status != FSP_SUCCESS)
-   {
-      osMemset(output, 0, AES_BLOCK_SIZE);
-   }
-
-   //Release exclusive access to the SCE module
-   osReleaseMutex(&ra6CryptoMutex);
+   //Perform AES encryption
+   aesProcessData(context, NULL, input, output, AES_BLOCK_SIZE,
+      SCE_AES_IN_DATA_CMD_ECB_ENCRYPTION);
 }
 
 
@@ -193,46 +268,9 @@ void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 
 void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 {
-   fsp_err_t status;
-
-   //Acquire exclusive access to the SCE module
-   osAcquireMutex(&ra6CryptoMutex);
-
-   //Check the length of the key
-   if(context->nr == 10)
-   {
-      //Perform AES decryption (128-bit key)
-      status = HW_SCE_AES_128EcbDecrypt(context->ek, AES_BLOCK_SIZE / 4,
-         (const uint32_t *) input, (uint32_t *) output);
-   }
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
-   else if(context->nr == 12)
-   {
-      //Perform AES decryption (192-bit key)
-      status = HW_SCE_AES_192EcbDecrypt(context->ek, AES_BLOCK_SIZE / 4,
-         (const uint32_t *) input, (uint32_t *) output);
-   }
-#endif
-   else if(context->nr == 14)
-   {
-      //Perform AES decryption (256-bit key)
-      status = HW_SCE_AES_256EcbDecrypt(context->ek, AES_BLOCK_SIZE / 4,
-         (const uint32_t *) input, (uint32_t *) output);
-   }
-   else
-   {
-      //Invalid key length
-      status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-   }
-
-   //Check status code
-   if(status != FSP_SUCCESS)
-   {
-      osMemset(output, 0, AES_BLOCK_SIZE);
-   }
-
-   //Release exclusive access to the SCE module
-   osReleaseMutex(&ra6CryptoMutex);
+   //Perform AES decryption
+   aesProcessData(context, NULL, input, output, AES_BLOCK_SIZE,
+      SCE_AES_IN_DATA_CMD_ECB_DECRYPTION);
 }
 
 
@@ -251,10 +289,10 @@ void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
    const uint8_t *p, uint8_t *c, size_t length)
 {
-   fsp_err_t status;
+   error_t error;
 
    //Initialize status code
-   status = FSP_SUCCESS;
+   error = NO_ERROR;
 
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -266,48 +304,14 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % AES_BLOCK_SIZE) == 0)
       {
-         AesContext *aesContext;
-
-         //Point to the AES context
-         aesContext = (AesContext *) context;
-
-         //Acquire exclusive access to the SCE module
-         osAcquireMutex(&ra6CryptoMutex);
-
-         //Check the length of the key
-         if(aesContext->nr == 10)
-         {
-            //Perform AES-ECB encryption (128-bit key)
-            status = HW_SCE_AES_128EcbEncrypt(aesContext->ek, length / 4,
-               (const uint32_t *) p, (uint32_t *) c);
-         }
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
-         else if(aesContext->nr == 12)
-         {
-            //Perform AES-ECB encryption (192-bit key)
-            status = HW_SCE_AES_192EcbEncrypt(aesContext->ek, length / 4,
-               (const uint32_t *) p, (uint32_t *) c);
-         }
-#endif
-         else if(aesContext->nr == 14)
-         {
-            //Perform AES-ECB encryption (256-bit key)
-            status = HW_SCE_AES_256EcbEncrypt(aesContext->ek, length / 4,
-               (const uint32_t *) p, (uint32_t *) c);
-         }
-         else
-         {
-            //Invalid key length
-            status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-         }
-
-         //Release exclusive access to the SCE module
-         osReleaseMutex(&ra6CryptoMutex);
+         //Encrypt payload data
+         error = aesProcessData(context, NULL, p, c, length,
+            SCE_AES_IN_DATA_CMD_ECB_ENCRYPTION);
       }
       else
       {
          //The length of the payload must be a multiple of the block size
-         status = FSP_ERR_CRYPTO_INVALID_SIZE;
+         error = ERROR_INVALID_LENGTH;
       }
    }
    else
@@ -327,12 +331,12 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
       //The length of the payload must be a multiple of the block size
       if(length != 0)
       {
-         status = FSP_ERR_CRYPTO_INVALID_SIZE;
+         error = ERROR_INVALID_LENGTH;
       }
    }
 
    //Return status code
-   return (status == FSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
+   return error;
 }
 
 
@@ -349,10 +353,10 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
 error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    const uint8_t *c, uint8_t *p, size_t length)
 {
-   fsp_err_t status;
+   error_t error;
 
    //Initialize status code
-   status = FSP_SUCCESS;
+   error = NO_ERROR;
 
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -364,48 +368,14 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % AES_BLOCK_SIZE) == 0)
       {
-         AesContext *aesContext;
-
-         //Point to the AES context
-         aesContext = (AesContext *) context;
-
-         //Acquire exclusive access to the SCE module
-         osAcquireMutex(&ra6CryptoMutex);
-
-         //Check the length of the key
-         if(aesContext->nr == 10)
-         {
-            //Perform AES-ECB decryption (128-bit key)
-            status = HW_SCE_AES_128EcbDecrypt(aesContext->ek, length / 4,
-               (const uint32_t *) c, (uint32_t *) p);
-         }
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
-         else if(aesContext->nr == 12)
-         {
-            //Perform AES-ECB decryption (192-bit key)
-            status = HW_SCE_AES_192EcbDecrypt(aesContext->ek, length / 4,
-               (const uint32_t *) c, (uint32_t *) p);
-         }
-#endif
-         else if(aesContext->nr == 14)
-         {
-            //Perform AES-ECB decryption (256-bit key)
-            status = HW_SCE_AES_256EcbDecrypt(aesContext->ek, length / 4,
-               (const uint32_t *) c, (uint32_t *) p);
-         }
-         else
-         {
-            //Invalid key length
-            status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-         }
-
-         //Release exclusive access to the SCE module
-         osReleaseMutex(&ra6CryptoMutex);
+         //Decrypt payload data
+         error = aesProcessData(context, NULL, c, p, length,
+            SCE_AES_IN_DATA_CMD_ECB_DECRYPTION);
       }
       else
       {
          //The length of the payload must be a multiple of the block size
-         status = FSP_ERR_CRYPTO_INVALID_SIZE;
+         error = ERROR_INVALID_LENGTH;
       }
    }
    else
@@ -425,12 +395,12 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
       //The length of the payload must be a multiple of the block size
       if(length != 0)
       {
-         status = FSP_ERR_CRYPTO_INVALID_SIZE;
+         error = ERROR_INVALID_LENGTH;
       }
    }
 
    //Return status code
-   return (status == FSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
+   return error;
 }
 
 #endif
@@ -450,10 +420,10 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
 error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
    uint8_t *iv, const uint8_t *p, uint8_t *c, size_t length)
 {
-   fsp_err_t status;
+   error_t error;
 
    //Initialize status code
-   status = FSP_SUCCESS;
+   error = NO_ERROR;
 
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -465,51 +435,21 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % AES_BLOCK_SIZE) == 0)
       {
-         AesContext *aesContext;
+         //Encrypt payload data
+         error = aesProcessData(context, iv, p, c, length,
+            SCE_AES_IN_DATA_CMD_CBC_ENCRYPTION);
 
-         //Point to the AES context
-         aesContext = (AesContext *) context;
-
-         //Acquire exclusive access to the SCE module
-         osAcquireMutex(&ra6CryptoMutex);
-
-         //Check the length of the key
-         if(aesContext->nr == 10)
+         //Check status code
+         if(!error)
          {
-            //Perform AES-CBC encryption (128-bit key)
-            status = HW_SCE_AES_128CbcEncrypt(aesContext->ek,
-               (const uint32_t *) iv, length / 4, (const uint32_t *) p,
-               (uint32_t *) c, (uint32_t *) iv);
+            //Update the value of the initialization vector
+            osMemcpy(iv, c + length - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
          }
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
-         else if(aesContext->nr == 12)
-         {
-            //Perform AES-CBC encryption (192-bit key)
-            status = HW_SCE_AES_192CbcEncrypt(aesContext->ek,
-               (const uint32_t *) iv, length / 4, (const uint32_t *) p,
-               (uint32_t *) c, (uint32_t *) iv);
-         }
-#endif
-         else if(aesContext->nr == 14)
-         {
-            //Perform AES-CBC encryption (256-bit key)
-            status = HW_SCE_AES_256CbcEncrypt(aesContext->ek,
-               (const uint32_t *) iv, length / 4, (const uint32_t *) p,
-               (uint32_t *) c, (uint32_t *) iv);
-         }
-         else
-         {
-            //Invalid key length
-            status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-         }
-
-         //Release exclusive access to the SCE module
-         osReleaseMutex(&ra6CryptoMutex);
       }
       else
       {
          //The length of the payload must be a multiple of the block size
-         status = FSP_ERR_CRYPTO_INVALID_SIZE;
+         error = ERROR_INVALID_LENGTH;
       }
    }
    else
@@ -541,12 +481,12 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
       //The length of the payload must be a multiple of the block size
       if(length != 0)
       {
-         status = FSP_ERR_CRYPTO_INVALID_SIZE;
+         error = ERROR_INVALID_LENGTH;
       }
    }
 
    //Return status code
-   return (status == FSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
+   return error;
 }
 
 
@@ -564,10 +504,10 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
 error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
    uint8_t *iv, const uint8_t *c, uint8_t *p, size_t length)
 {
-   fsp_err_t status;
+   error_t error;
 
    //Initialize status code
-   status = FSP_SUCCESS;
+   error = NO_ERROR;
 
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -579,51 +519,26 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % AES_BLOCK_SIZE) == 0)
       {
-         AesContext *aesContext;
+         uint8_t block[AES_BLOCK_SIZE];
 
-         //Point to the AES context
-         aesContext = (AesContext *) context;
+         //Save the last input block
+         osMemcpy(block, c + length - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
 
-         //Acquire exclusive access to the SCE module
-         osAcquireMutex(&ra6CryptoMutex);
+         //Decrypt payload data
+         error = aesProcessData(context, iv, c, p, length,
+            SCE_AES_IN_DATA_CMD_CBC_DECRYPTION);
 
-         //Check the length of the key
-         if(aesContext->nr == 10)
+         //Check status code
+         if(!error)
          {
-            //Perform AES-CBC decryption (128-bit key)
-            status = HW_SCE_AES_128CbcDecrypt(aesContext->ek,
-               (const uint32_t *) iv, length / 4, (const uint32_t *) c,
-               (uint32_t *) p, (uint32_t *) iv);
+            //Update the value of the initialization vector
+            osMemcpy(iv, block, AES_BLOCK_SIZE);
          }
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
-         else if(aesContext->nr == 12)
-         {
-            //Perform AES-CBC decryption (192-bit key)
-            status = HW_SCE_AES_192CbcDecrypt(aesContext->ek,
-               (const uint32_t *) iv, length / 4, (const uint32_t *) c,
-               (uint32_t *) p, (uint32_t *) iv);
-         }
-#endif
-         else if(aesContext->nr == 14)
-         {
-            //Perform AES-CBC decryption (256-bit key)
-            status = HW_SCE_AES_256CbcDecrypt(aesContext->ek,
-               (const uint32_t *) iv, length / 4, (const uint32_t *) c,
-               (uint32_t *) p, (uint32_t *) iv);
-         }
-         else
-         {
-            //Invalid key length
-            status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-         }
-
-         //Release exclusive access to the SCE module
-         osReleaseMutex(&ra6CryptoMutex);
       }
       else
       {
          //The length of the payload must be a multiple of the block size
-         status = FSP_ERR_CRYPTO_INVALID_SIZE;
+         error = ERROR_INVALID_LENGTH;
       }
    }
    else
@@ -658,12 +573,12 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
       //The length of the payload must be a multiple of the block size
       if(length != 0)
       {
-         status = FSP_ERR_CRYPTO_INVALID_SIZE;
+         error = ERROR_INVALID_LENGTH;
       }
    }
 
    //Return status code
-   return (status == FSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
+   return error;
 }
 
 #endif
@@ -684,10 +599,10 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
 error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    uint8_t *t, const uint8_t *p, uint8_t *c, size_t length)
 {
-   fsp_err_t status;
+   error_t error;
 
    //Initialize status code
-   status = FSP_SUCCESS;
+   error = NO_ERROR;
 
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -696,63 +611,38 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
       if(m == (AES_BLOCK_SIZE * 8))
       {
          //Check the length of the payload
-         if(length == 0)
+         if(length > 0)
          {
-            //No data to process
-         }
-         else if((length % AES_BLOCK_SIZE) == 0)
-         {
-            AesContext *aesContext;
+            size_t i;
+            size_t j;
+            uint16_t temp;
 
-            //Point to the AES context
-            aesContext = (AesContext *) context;
+            //Encrypt payload data
+            error = aesProcessData(context, t, p, c, length,
+               SCE_AES_IN_DATA_CMD_CTR_ENCRYPTION_DECRYPTION);
 
-            //Acquire exclusive access to the SCE module
-            osAcquireMutex(&ra6CryptoMutex);
-
-            //Check the length of the key
-            if(aesContext->nr == 10)
+            //Update counter value
+            for(i = 0; i < length; i += AES_BLOCK_SIZE)
             {
-               //Perform AES-CTR encryption (128-bit key)
-               status = HW_SCE_AES_128CtrEncrypt(aesContext->ek,
-                  (const uint32_t *) t, length / 4, (const uint32_t *) p,
-                  (uint32_t *) c, (uint32_t *) t);
+               //Standard incrementing function
+               for(temp = 1, j = 1; j <= AES_BLOCK_SIZE; j++)
+               {
+                  //Increment the current byte and propagate the carry
+                  temp += t[AES_BLOCK_SIZE - j];
+                  t[AES_BLOCK_SIZE - j] = temp & 0xFF;
+                  temp >>= 8;
+               }
             }
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
-            else if(aesContext->nr == 12)
-            {
-               //Perform AES-CTR encryption (192-bit key)
-               status = HW_SCE_AES_192CtrEncrypt(aesContext->ek,
-                  (const uint32_t *) t, length / 4, (const uint32_t *) p,
-                  (uint32_t *) c, (uint32_t *) t);
-            }
-#endif
-            else if(aesContext->nr == 14)
-            {
-               //Perform AES-CTR encryption (256-bit key)
-               status = HW_SCE_AES_256CtrEncrypt(aesContext->ek,
-                  (const uint32_t *) t, length / 4, (const uint32_t *) p,
-                  (uint32_t *) c, (uint32_t *) t);
-            }
-            else
-            {
-               //Invalid key length
-               status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-            }
-
-            //Release exclusive access to the SCE module
-            osReleaseMutex(&ra6CryptoMutex);
          }
          else
          {
-            //The length of the payload must be a multiple of the block size
-            status = FSP_ERR_CRYPTO_INVALID_SIZE;
+            //No data to process
          }
       }
       else
       {
          //The value of the parameter is not valid
-         status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
+         error = ERROR_INVALID_PARAMETER;
       }
    }
    else
@@ -802,16 +692,16 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
       else
       {
          //The value of the parameter is not valid
-         status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
+         error = ERROR_INVALID_PARAMETER;
       }
    }
 
    //Return status code
-   return (status == FSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
+   return error;
 }
 
 #endif
-#if (GCM_SUPPORT == ENABLED && BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
+#if (GCM_SUPPORT == ENABLED)
 
 /**
  * @brief Initialize GCM context
@@ -901,11 +791,11 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
    }
    else if(aesContext->nr == 12)
    {
-      status = HW_SCE_Aes192GcmEncryptInitSub(&keyType, aesContext->ek, temp);
+      status = HW_SCE_Aes192GcmEncryptInitSub(aesContext->ek, temp);
    }
    else if(aesContext->nr == 14)
    {
-      status = HW_SCE_Aes256GcmEncryptInitSub(aesContext->ek, temp);
+      status = HW_SCE_Aes256GcmEncryptInitSub(&keyType, aesContext->ek, temp);
    }
    else
    {
@@ -1128,11 +1018,11 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    }
    else if(aesContext->nr == 12)
    {
-      status = HW_SCE_Aes192GcmDecryptInitSub(&keyType, aesContext->ek, temp);
+      status = HW_SCE_Aes192GcmDecryptInitSub(aesContext->ek, temp);
    }
    else if(aesContext->nr == 14)
    {
-      status = HW_SCE_Aes256GcmDecryptInitSub(aesContext->ek, temp);
+      status = HW_SCE_Aes256GcmDecryptInitSub(&keyType, aesContext->ek, temp);
    }
    else
    {

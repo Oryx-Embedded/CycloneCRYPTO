@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -230,12 +230,11 @@ error_t yarrowRead(YarrowContext *context, uint8_t *output, size_t length)
    //Apply generator gate?
    if(context->blockCount >= YARROW_PG)
    {
-      //Erase AES context
-      aesDeinit(&context->cipherContext);
-
       //Generate some random bytes
       yarrowGenerateBlock(context, context->key);
+
       //Use them as the new key
+      aesDeinit(&context->cipherContext);
       aesInit(&context->cipherContext, context->key, sizeof(context->key));
 
       //Reset block counter

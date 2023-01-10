@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.2.0"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.2.2"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 2
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 0
+#define CYCLONE_CRYPTO_REV_NUMBER 2
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -447,21 +447,21 @@
 
 //Camellia encryption support
 #ifndef CAMELLIA_SUPPORT
-   #define CAMELLIA_SUPPORT ENABLED
+   #define CAMELLIA_SUPPORT DISABLED
 #elif (CAMELLIA_SUPPORT != ENABLED && CAMELLIA_SUPPORT != DISABLED)
    #error CAMELLIA_SUPPORT parameter is not valid
 #endif
 
 //ARIA encryption support
 #ifndef ARIA_SUPPORT
-   #define ARIA_SUPPORT ENABLED
+   #define ARIA_SUPPORT DISABLED
 #elif (ARIA_SUPPORT != ENABLED && ARIA_SUPPORT != DISABLED)
    #error ARIA_SUPPORT parameter is not valid
 #endif
 
 //SEED encryption support
 #ifndef SEED_SUPPORT
-   #define SEED_SUPPORT ENABLED
+   #define SEED_SUPPORT DISABLED
 #elif (SEED_SUPPORT != ENABLED && SEED_SUPPORT != DISABLED)
    #error SEED_SUPPORT parameter is not valid
 #endif
@@ -674,6 +674,13 @@
    #define X509_SUPPORT ENABLED
 #elif (X509_SUPPORT != ENABLED && X509_SUPPORT != DISABLED)
    #error X509_SUPPORT parameter is not valid
+#endif
+
+//PKCS #5 support
+#ifndef PKCS5_SUPPORT
+   #define PKCS5_SUPPORT DISABLED
+#elif (PKCS5_SUPPORT != ENABLED && PKCS5_SUPPORT != DISABLED)
+   #error PKCS5_SUPPORT parameter is not valid
 #endif
 
 //Allocate memory block

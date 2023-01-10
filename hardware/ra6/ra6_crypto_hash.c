@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -128,7 +128,8 @@ void sha256Update(Sha256Context *context, const void *data, size_t length)
          n = length - (length % 64);
 
          //Update hash value
-         HW_SCE_SHA256_UpdateHash(data, n / 4, context->h);
+         HW_SCE_Sha224256GenerateMessageDigestSub(context->h, data, n / 4,
+            context->h);
 
          //Update the SHA-256 context
          context->totalSize += n;
@@ -157,7 +158,8 @@ void sha256Update(Sha256Context *context, const void *data, size_t length)
          if(context->size == 64)
          {
             //Update hash value
-            HW_SCE_SHA256_UpdateHash(context->w, 16, context->h);
+            HW_SCE_Sha224256GenerateMessageDigestSub(context->h, context->w, 16,
+               context->h);
 
             //Empty the buffer
             context->size = 0;
@@ -234,8 +236,11 @@ void sha256ProcessBlock(Sha256Context *context)
 {
    //Acquire exclusive access to the SCE module
    osAcquireMutex(&ra6CryptoMutex);
+
    //Accelerate SHA-256 inner compression loop
-   HW_SCE_SHA256_UpdateHash(context->w, 16, context->h);
+   HW_SCE_Sha224256GenerateMessageDigestSub(context->h, context->w, 16,
+      context->h);
+
    //Release exclusive access to the SCE module
    osReleaseMutex(&ra6CryptoMutex);
 }

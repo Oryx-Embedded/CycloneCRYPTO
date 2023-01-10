@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -1595,7 +1595,7 @@ __weak_func error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    mpiInit(&t);
 
    //Initialize precomputed values
-   for(i = 0; i < arraysize(s); i++)
+   for(i = 0; (uint_t) i < arraysize(s); i++)
    {
       mpiInit(&s[i]);
    }
@@ -1746,7 +1746,7 @@ end:
    mpiFree(&t);
 
    //Release precomputed values
-   for(i = 0; i < arraysize(s); i++)
+   for(i = 0; (uint_t) i < arraysize(s); i++)
    {
       mpiFree(&s[i]);
    }

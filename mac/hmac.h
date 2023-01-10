@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 #ifndef _HMAC_H
@@ -74,6 +74,8 @@ extern const uint8_t HMAC_WITH_SHA224_OID[8];
 extern const uint8_t HMAC_WITH_SHA256_OID[8];
 extern const uint8_t HMAC_WITH_SHA384_OID[8];
 extern const uint8_t HMAC_WITH_SHA512_OID[8];
+extern const uint8_t HMAC_WITH_SHA512_224_OID[8];
+extern const uint8_t HMAC_WITH_SHA512_256_OID[8];
 extern const uint8_t HMAC_WITH_SHA3_224_OID[9];
 extern const uint8_t HMAC_WITH_SHA3_256_OID[9];
 extern const uint8_t HMAC_WITH_SHA3_384_OID[9];

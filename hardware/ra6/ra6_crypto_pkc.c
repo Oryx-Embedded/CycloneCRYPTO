@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "hw_sce_private.h"
+#include "hw_sce_ra_private.h"
 #include "hw_sce_rsa_private.h"
 #include "hw_sce_ecc_private.h"
 #include "core/crypto.h"
@@ -43,131 +44,12 @@
 #include "ecc/ecdsa.h"
 #include "debug.h"
 
-//SCE9 specific dependencies
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
-   #include "hw_sce_ra_private.h"
-#endif
-
 //Check crypto library configuration
 #if (RA6_CRYPTO_PKC_SUPPORT == ENABLED)
 
 //Global variables
 static Ra6RsaArgs rsaArgs;
 static Ra6EcArgs ecArgs;
-
-
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
-#else
-
-/**
- * @brief RSA private key generation
- * @param[in] prngAlgo PRNG algorithm
- * @param[in] prngContext Pointer to the PRNG context
- * @param[in] k Required bit length of the modulus n (must be 2048)
- * @param[in] e Public exponent (must be 65537)
- * @param[out] privateKey RSA private key
- * @return Error code
- **/
-
-error_t rsaGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
-   size_t k, uint_t e, RsaPrivateKey *privateKey)
-{
-   error_t error;
-   fsp_err_t status;
-
-   //Check parameters
-   if(e != 65537 || privateKey == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Acquire exclusive access to the SCE module
-   osAcquireMutex(&ra6CryptoMutex);
-
-   //Check the length of the modulus
-   if(k == 2048)
-   {
-      //Generate a 2048-bit RSA private key
-      status = HW_SCE_RSA_2048KeyGenerate(UINT32_MAX, rsaArgs.d, rsaArgs.n,
-         rsaArgs.key);
-   }
-   else
-   {
-      //Report an error
-      status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-   }
-
-   //Check status code
-   if(status == FSP_SUCCESS)
-   {
-      //The value of the public exponent is fixed to 65537
-      error = mpiSetValue(&privateKey->e, e);
-
-      //Check status code
-      if(!error)
-      {
-         //Copy the private exponent
-         error = mpiReadRaw(&privateKey->d, (uint8_t *) rsaArgs.d, 256);
-      }
-
-      //Check status code
-      if(!error)
-      {
-         //Copy the modulus
-         error = mpiReadRaw(&privateKey->n, (uint8_t *) rsaArgs.n, 256);
-      }
-
-      //Check status code
-      if(!error)
-      {
-         //Copy the first factor
-         error = mpiReadRaw(&privateKey->p, (uint8_t *) rsaArgs.key + 384,
-            128);
-      }
-
-      //Check status code
-      if(!error)
-      {
-         //Copy the second factor
-         error = mpiReadRaw(&privateKey->q, (uint8_t *) rsaArgs.key + 128,
-            128);
-      }
-
-      //Check status code
-      if(!error)
-      {
-         //Copy the first factor's CRT exponent
-         error = mpiReadRaw(&privateKey->dp, (uint8_t *) rsaArgs.key + 256,
-            128);
-      }
-
-      //Check status code
-      if(!error)
-      {
-         //Copy the second factor's CRT exponent
-         error = mpiReadRaw(&privateKey->dq, (uint8_t *) rsaArgs.key, 128);
-      }
-
-      //Check status code
-      if(!error)
-      {
-         //Copy the CRT coefficient
-         error = mpiReadRaw(&privateKey->qinv, (uint8_t *) rsaArgs.key + 512,
-            128);
-      }
-   }
-   else
-   {
-      //Report an error
-      error = ERROR_FAILURE;
-   }
-
-   //Release exclusive access to the SCE module
-   osReleaseMutex(&ra6CryptoMutex);
-
-   //Return status code
-   return error;
-}
-
-#endif
 
 
 /**
@@ -295,12 +177,21 @@ error_t rsaep(const RsaPublicKey *key, const Mpi *m, Mpi *c)
       mpiWriteRaw(m, (uint8_t *) rsaArgs.m, 256);
 
       //Format public key
-      mpiWriteRaw(&key->n, (uint8_t *) rsaArgs.n, 256);
-      mpiWriteRaw(&key->e, (uint8_t *) rsaArgs.e, 4);
+      mpiWriteRaw(&key->n, (uint8_t *) rsaArgs.key, 256);
+      mpiWriteRaw(&key->e, (uint8_t *) rsaArgs.key + 256, 4);
 
-      //Perform RSA encryption
-      status = HW_SCE_RSA_2048PublicKeyEncrypt(rsaArgs.m, rsaArgs.e,
-         rsaArgs.n, rsaArgs.c);
+      //Install the plaintext public key and get the wrapped key
+      status = HW_SCE_GenerateOemKeyIndexPrivate(SCE_OEM_KEY_TYPE_PLAIN,
+         SCE_OEM_CMD_RSA2048_PUBLIC, NULL, NULL, (uint8_t *) rsaArgs.key,
+         rsaArgs.wrappedKey);
+
+      //Check status code
+      if(status == FSP_SUCCESS)
+      {
+         //Perform RSA encryption
+         status = HW_SCE_Rsa2048ModularExponentEncryptSub(rsaArgs.wrappedKey,
+            rsaArgs.m, rsaArgs.c);
+      }
 
       //Check status code
       if(status == FSP_SUCCESS)
@@ -384,7 +275,6 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
       mpiWriteRaw(&key->n, (uint8_t *) rsaArgs.key, 256);
       mpiWriteRaw(&key->d, (uint8_t *) rsaArgs.key + 256, 256);
 
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
       //Install the plaintext private key and get the wrapped key
       status = HW_SCE_GenerateOemKeyIndexPrivate(SCE_OEM_KEY_TYPE_PLAIN,
          SCE_OEM_CMD_RSA2048_PRIVATE, NULL, NULL, (uint8_t *) rsaArgs.key,
@@ -397,11 +287,6 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
          status = HW_SCE_Rsa2048ModularExponentDecryptSub(rsaArgs.wrappedKey,
             rsaArgs.c, rsaArgs.m);
       }
-#else
-      //Perform RSA decryption
-      status = HW_SCE_RSA_2048PrivateKeyDecrypt(rsaArgs.c, rsaArgs.key + 64,
-         rsaArgs.key, rsaArgs.m);
-#endif
 
       //Check status code
       if(status == FSP_SUCCESS)
@@ -451,7 +336,6 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
             mpiWriteRaw(&key->p, (uint8_t *) rsaArgs.key, 256);
             mpiWriteRaw(&key->dp, (uint8_t *) rsaArgs.key + 256, 256);
 
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
             //Install the plaintext private key and get the wrapped key
             status = HW_SCE_GenerateOemKeyIndexPrivate(SCE_OEM_KEY_TYPE_PLAIN,
                SCE_OEM_CMD_RSA2048_PRIVATE, NULL, NULL, (uint8_t *) rsaArgs.key,
@@ -464,11 +348,6 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
                status = HW_SCE_Rsa2048ModularExponentDecryptSub(rsaArgs.wrappedKey,
                   rsaArgs.c, rsaArgs.m);
             }
-#else
-            //Compute m1 = c ^ dP mod p
-            status = HW_SCE_RSA_2048PrivateKeyDecrypt(rsaArgs.c, rsaArgs.key + 64,
-               rsaArgs.key, rsaArgs.m);
-#endif
 
             //Check status code
             if(status == FSP_SUCCESS)
@@ -504,7 +383,6 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
             mpiWriteRaw(&key->q, (uint8_t *) rsaArgs.key, 256);
             mpiWriteRaw(&key->dq, (uint8_t *) rsaArgs.key + 256, 256);
 
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
             //Install the plaintext private key and get the wrapped key
             status = HW_SCE_GenerateOemKeyIndexPrivate(SCE_OEM_KEY_TYPE_PLAIN,
                SCE_OEM_CMD_RSA2048_PRIVATE, NULL, NULL, (uint8_t *) rsaArgs.key,
@@ -517,11 +395,6 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
                status = HW_SCE_Rsa2048ModularExponentDecryptSub(rsaArgs.wrappedKey,
                   rsaArgs.c, rsaArgs.m);
             }
-#else
-            //Compute m2 = c ^ dQ mod q
-            status = HW_SCE_RSA_2048PrivateKeyDecrypt(rsaArgs.c, rsaArgs.key + 64,
-               rsaArgs.key, rsaArgs.m);
-#endif
 
             //Check status code
             if(status == FSP_SUCCESS)
@@ -607,15 +480,10 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    error_t error;
    fsp_err_t status;
    size_t n;
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
    uint32_t curveType;
    uint32_t command;
    sce_oem_cmd_t oemCommand;
-#else
-   size_t modLen;
-#endif
 
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
    //Check elliptic curve parameters
    if(!osStrcmp(params->name, "secp256k1"))
    {
@@ -656,24 +524,6 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    {
       return ERROR_FAILURE;
    }
-#else
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&params->p);
-
-   //Compute the length of the scalar
-   if(modLen <= 32)
-   {
-      n = 32;
-   }
-   else if(modLen <= 48)
-   {
-      n = 48;
-   }
-   else
-   {
-      return ERROR_FAILURE;
-   }
-#endif
 
    //Acquire exclusive access to the SCE module
    osAcquireMutex(&ra6CryptoMutex);
@@ -685,7 +535,6 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    mpiWriteRaw(&s->x, (uint8_t *) ecArgs.g, n);
    mpiWriteRaw(&s->y, (uint8_t *) ecArgs.g + n, n);
 
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
    //Install the plaintext private key and get the wrapped key
    status = HW_SCE_GenerateOemKeyIndexPrivate(SCE_OEM_KEY_TYPE_PLAIN,
       oemCommand, NULL, NULL, (uint8_t *) ecArgs.d, ecArgs.wrappedKey);
@@ -696,42 +545,19 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
       //Perform scalar multiplication
       if(n == 32)
       {
-         status = HW_SCE_ECC_256WrappedScalarMultiplication(&curveType,
+         status = HW_SCE_Ecc256ScalarMultiplicationSub(&curveType,
             &command, ecArgs.wrappedKey, ecArgs.g, ecArgs.q);
       }
       else if(n == 48)
       {
-         status = HW_SCE_ECC_384WrappedScalarMultiplication(&curveType,
-            &command, ecArgs.wrappedKey, ecArgs.g, ecArgs.q);
+         status = HW_SCE_Ecc384ScalarMultiplicationSub(&curveType,
+            ecArgs.wrappedKey, ecArgs.g, ecArgs.q);
       }
       else
       {
          status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
       }
    }
-#else
-   //Set domain parameters
-   mpiWriteRaw(&params->a, (uint8_t *) ecArgs.params, n);
-   mpiWriteRaw(&params->b, (uint8_t *) ecArgs.params + n, n);
-   mpiWriteRaw(&params->p, (uint8_t *) ecArgs.params + n * 2, n);
-   mpiWriteRaw(&params->q, (uint8_t *) ecArgs.params + n * 3, n);
-
-   //Perform scalar multiplication
-   if(n == 32)
-   {
-      status = HW_SCE_ECC_256ScalarMultiplication(ecArgs.params, ecArgs.d,
-         ecArgs.g, ecArgs.q);
-   }
-   else if(n == 48)
-   {
-      status = HW_SCE_ECC_384ScalarMultiplication(ecArgs.params, ecArgs.d,
-         ecArgs.g, ecArgs.q);
-   }
-   else
-   {
-      status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-   }
-#endif
 
    //Check status code
    if(status == FSP_SUCCESS)
@@ -767,110 +593,6 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
 }
 
 
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
-#else
-
-/**
- * @brief EC key pair generation
- * @param[in] prngAlgo PRNG algorithm
- * @param[in] prngContext Pointer to the PRNG context
- * @param[in] params EC domain parameters
- * @param[out] privateKey EC private key
- * @param[out] publicKey EC public key
- * @return Error code
- **/
-
-error_t ecGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, EcPrivateKey *privateKey,
-   EcPublicKey *publicKey)
-{
-   error_t error;
-   fsp_err_t status;
-   size_t n;
-   size_t modLen;
-
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&params->p);
-
-   //Compute the length of the scalar
-   if(modLen <= 32)
-   {
-      n = 32;
-   }
-   else if(modLen <= 48)
-   {
-      n = 48;
-   }
-   else
-   {
-      return ERROR_FAILURE;
-   }
-
-   //Acquire exclusive access to the SCE module
-   osAcquireMutex(&ra6CryptoMutex);
-
-   //Set domain parameters
-   mpiWriteRaw(&params->a, (uint8_t *) ecArgs.params, n);
-   mpiWriteRaw(&params->b, (uint8_t *) ecArgs.params + n, n);
-   mpiWriteRaw(&params->p, (uint8_t *) ecArgs.params + n * 2, n);
-   mpiWriteRaw(&params->q, (uint8_t *) ecArgs.params + n * 3, n);
-
-   //Set base point
-   mpiWriteRaw(&params->g.x, (uint8_t *) ecArgs.g, n);
-   mpiWriteRaw(&params->g.y, (uint8_t *) ecArgs.g + n, n);
-
-   //Generate an EC key pair
-   if(n == 32)
-   {
-      status = HW_SCE_ECC_256GenerateKey(ecArgs.params, ecArgs.g, ecArgs.d,
-         ecArgs.q);
-   }
-   else if(n == 48)
-   {
-      status = HW_SCE_ECC_384GenerateKey(ecArgs.params, ecArgs.g, ecArgs.d,
-         ecArgs.q);
-   }
-   else
-   {
-      status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-   }
-
-   //Check status code
-   if(status == FSP_SUCCESS)
-   {
-      //Copy the private key
-      error = mpiReadRaw(&privateKey->d, (uint8_t *) ecArgs.d, n);
-
-      //Check status code
-      if(!error)
-      {
-         //Copy the x-coordinate of the public key
-         error = mpiReadRaw(&publicKey->q.x, (uint8_t *) ecArgs.q, n);
-      }
-
-      //Check status code
-      if(!error)
-      {
-         //Copy the y-coordinate of the public key
-         error = mpiReadRaw(&publicKey->q.y, (uint8_t *) ecArgs.q + n, n);
-      }
-   }
-   else
-   {
-      //Report an error
-      error = ERROR_FAILURE;
-   }
-
-   //Release exclusive access to the SCE module
-   osReleaseMutex(&ra6CryptoMutex);
-
-   //Return status code
-   return error;
-}
-
-#endif
-
-
 /**
  * @brief ECDSA signature generation
  * @param[in] prngAlgo PRNG algorithm
@@ -891,13 +613,9 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    fsp_err_t status;
    size_t n;
    size_t orderLen;
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
    uint32_t curveType;
    uint32_t command;
    sce_oem_cmd_t oemCommand;
-#else
-   size_t modLen;
-#endif
 
    //Check parameters
    if(params == NULL || privateKey == NULL || digest == NULL || signature == NULL)
@@ -906,7 +624,6 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    //Retrieve the length of the base point order, in bytes
    orderLen = mpiGetByteLength(&params->q);
 
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
    //Check elliptic curve parameters
    if(!osStrcmp(params->name, "secp256k1"))
    {
@@ -947,24 +664,6 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    {
       return ERROR_FAILURE;
    }
-#else
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&params->p);
-
-   //Check elliptic curve parameters
-   if(modLen <= 32 && orderLen <= 32)
-   {
-      n = 32;
-   }
-   else if(modLen <= 48 && orderLen <= 48)
-   {
-      n = 48;
-   }
-   else
-   {
-      return ERROR_FAILURE;
-   }
-#endif
 
    //Keep the leftmost bits of the hash value
    digestLen = MIN(digestLen, orderLen);
@@ -979,7 +678,6 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    //Set private key
    mpiWriteRaw(&privateKey->d, (uint8_t *) ecArgs.d, n);
 
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
    //Install the plaintext private key and get the wrapped key
    status = HW_SCE_GenerateOemKeyIndexPrivate(SCE_OEM_KEY_TYPE_PLAIN,
       oemCommand, NULL, NULL, (uint8_t *) ecArgs.d, ecArgs.wrappedKey);
@@ -1003,33 +701,6 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
          status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
       }
    }
-#else
-   //Set domain parameters
-   mpiWriteRaw(&params->a, (uint8_t *) ecArgs.params, n);
-   mpiWriteRaw(&params->b, (uint8_t *) ecArgs.params + n, n);
-   mpiWriteRaw(&params->p, (uint8_t *) ecArgs.params + n * 2, n);
-   mpiWriteRaw(&params->q, (uint8_t *) ecArgs.params + n * 3, n);
-
-   //Set base point
-   mpiWriteRaw(&params->g.x, (uint8_t *) ecArgs.g, n);
-   mpiWriteRaw(&params->g.y, (uint8_t *) ecArgs.g + n, n);
-
-   //Generate ECDSA signature
-   if(n == 32)
-   {
-      status = HW_SCE_ECC_256GenerateSign(ecArgs.params, ecArgs.g, ecArgs.d,
-         ecArgs.digest, ecArgs.signature, ecArgs.signature + 8);
-   }
-   else if(n == 48)
-   {
-      status = HW_SCE_ECC_384GenerateSign(ecArgs.params, ecArgs.g, ecArgs.d,
-         ecArgs.digest, ecArgs.signature, ecArgs.signature + 12);
-   }
-   else
-   {
-      status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-   }
-#endif
 
    //Check status code
    if(status == FSP_SUCCESS)
@@ -1075,13 +746,9 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    fsp_err_t status;
    size_t n;
    size_t orderLen;
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
    uint32_t curveType;
    uint32_t command;
    sce_oem_cmd_t oemCommand;
-#else
-   size_t modLen;
-#endif
 
    //Check parameters
    if(params == NULL || publicKey == NULL || digest == NULL || signature == NULL)
@@ -1106,7 +773,6 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    //Retrieve the length of the base point order, in bytes
    orderLen = mpiGetByteLength(&params->q);
 
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
    //Check elliptic curve parameters
    if(!osStrcmp(params->name, "secp256k1"))
    {
@@ -1147,24 +813,6 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    {
       return ERROR_FAILURE;
    }
-#else
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&params->p);
-
-   //Check elliptic curve parameters
-   if(modLen <= 32 && orderLen <= 32)
-   {
-      n = 32;
-   }
-   else if(modLen <= 48 && orderLen <= 48)
-   {
-      n = 48;
-   }
-   else
-   {
-      return ERROR_FAILURE;
-   }
-#endif
 
    //Keep the leftmost bits of the hash value
    digestLen = MIN(digestLen, orderLen);
@@ -1184,7 +832,6 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    mpiWriteRaw(&signature->r, (uint8_t *) ecArgs.signature, n);
    mpiWriteRaw(&signature->s, (uint8_t *) ecArgs.signature + n, n);
 
-#if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
    //Install the plaintext public key and get the wrapped key
    status = HW_SCE_GenerateOemKeyIndexPrivate(SCE_OEM_KEY_TYPE_PLAIN,
       oemCommand, NULL, NULL, (uint8_t *) ecArgs.q, ecArgs.wrappedKey);
@@ -1208,33 +855,6 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
          status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
       }
    }
-#else
-   //Set domain parameters
-   mpiWriteRaw(&params->a, (uint8_t *) ecArgs.params, n);
-   mpiWriteRaw(&params->b, (uint8_t *) ecArgs.params + n, n);
-   mpiWriteRaw(&params->p, (uint8_t *) ecArgs.params + n * 2, n);
-   mpiWriteRaw(&params->q, (uint8_t *) ecArgs.params + n * 3, n);
-
-   //Set base point
-   mpiWriteRaw(&params->g.x, (uint8_t *) ecArgs.g, n);
-   mpiWriteRaw(&params->g.y, (uint8_t *) ecArgs.g + n, n);
-
-   //Verify ECDSA signature
-   if(n == 32)
-   {
-      status = HW_SCE_ECC_256VerifySign(ecArgs.params, ecArgs.g, ecArgs.q,
-         ecArgs.digest, ecArgs.signature, ecArgs.signature + 8);
-   }
-   else if(n == 48)
-   {
-      status = HW_SCE_ECC_384VerifySign(ecArgs.params, ecArgs.g, ecArgs.q,
-         ecArgs.digest, ecArgs.signature, ecArgs.signature + 12);
-   }
-   else
-   {
-      status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-   }
-#endif
 
    //Release exclusive access to the SCE module
    osReleaseMutex(&ra6CryptoMutex);

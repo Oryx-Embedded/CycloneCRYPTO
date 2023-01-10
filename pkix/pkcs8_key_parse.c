@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -727,6 +727,109 @@ error_t pkcs8ParseEddsaPrivateKey(const uint8_t *data, size_t length,
 
    //Successful processing
    return NO_ERROR;
+}
+
+
+/**
+ * @brief Parse EncryptedPrivateKeyInfo structure
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] encryptedPrivateKeyInfo Information resulting from the parsing process
+ * @return Error code
+ **/
+
+error_t pkcs8ParseEncryptedPrivateKeyInfo(const uint8_t *data, size_t length,
+   Pkcs8EncryptedPrivateKeyInfo *encryptedPrivateKeyInfo)
+{
+   error_t error;
+   size_t n;
+   Asn1Tag tag;
+
+   //Read EncryptedPrivateKeyInfo structure
+   error = asn1ReadSequence(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Point to the first field
+   data = tag.value;
+   length = tag.length;
+
+   //Parse EncryptionAlgorithmIdentifier structure
+   error = pkcs8ParseEncryptionAlgoId(data, length, &n,
+      &encryptedPrivateKeyInfo->encryptionAlgo);
+   //Any error to report?
+   if(error)
+      return error;
+
+   //Point to the next field
+   data += n;
+   length -= n;
+
+   //The EncryptedData is encapsulated within an octet string
+   error = asn1ReadOctetString(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //The EncryptedData is the result of encrypting the private-key information
+   encryptedPrivateKeyInfo->encryptedData = tag.value;
+   encryptedPrivateKeyInfo->encryptedDataLen = tag.length;
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Parse EncryptionAlgorithmIdentifier structure
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] totalLength Number of bytes that have been parsed
+ * @param[out] encryptionAlgoId Information resulting from the parsing process
+ * @return Error code
+ **/
+
+error_t pkcs8ParseEncryptionAlgoId(const uint8_t *data, size_t length,
+   size_t *totalLength, X509AlgoId *encryptionAlgoId)
+{
+   error_t error;
+   Asn1Tag tag;
+
+   //Read the contents of the EncryptionAlgorithmIdentifier structure
+   error = asn1ReadSequence(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Save the total length of the field
+   *totalLength = tag.totalLength;
+
+   //Point to the first field of the sequence
+   data = tag.value;
+   length = tag.length;
+
+   //Read the encryption algorithm identifier
+   error = asn1ReadOid(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Save the encryption algorithm identifier
+   encryptionAlgoId->oid = tag.value;
+   encryptionAlgoId->oidLen = tag.length;
+
+   //Point to the next field (if any)
+   data += tag.totalLength;
+   length -= tag.totalLength;
+
+   //The contents of the optional parameters field will vary according to the
+   //algorithm identified
+   encryptionAlgoId->params = data;
+   encryptionAlgoId->paramsLen = length;
+
+   //Return status code
+   return error;
 }
 
 

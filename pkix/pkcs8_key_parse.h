@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 #ifndef _PKCS8_KEY_PARSE_H
@@ -127,6 +127,18 @@ typedef struct
 } Pkcs8PrivateKeyInfo;
 
 
+/**
+ * @brief Encrypted private key information
+ **/
+
+typedef struct
+{
+   X509AlgoId encryptionAlgo;
+   const uint8_t *encryptedData;
+   size_t encryptedDataLen;
+} Pkcs8EncryptedPrivateKeyInfo;
+
+
 //Key parsing functions
 error_t pkcs8ParsePrivateKeyInfo(const uint8_t *data, size_t length,
    Pkcs8PrivateKeyInfo *privateKeyInfo);
@@ -145,6 +157,12 @@ error_t pkcs8ParseEcPrivateKey(const uint8_t *data, size_t length,
 
 error_t pkcs8ParseEddsaPrivateKey(const uint8_t *data, size_t length,
    Pkcs8EddsaPrivateKey *eddsaPrivateKey);
+
+error_t pkcs8ParseEncryptedPrivateKeyInfo(const uint8_t *data, size_t length,
+   Pkcs8EncryptedPrivateKeyInfo *encryptedPrivateKeyInfo);
+
+error_t pkcs8ParseEncryptionAlgoId(const uint8_t *data, size_t length,
+   size_t *totalLength, X509AlgoId *encryptionAlgoId);
 
 error_t pkcs8ImportRsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
    RsaPrivateKey *privateKey);

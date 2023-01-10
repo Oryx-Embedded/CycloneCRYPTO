@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 #ifndef _PEM_EXPORT_H
@@ -87,9 +87,6 @@ error_t pemExportEddsaPublicKey(const EcCurveInfo *curveInfo,
 
 error_t pemExportEddsaPrivateKey(const EcCurveInfo *curveInfo,
    const EddsaPrivateKey *privateKey, char_t *output, size_t *written);
-
-error_t pemEncodeFile(const void *input, size_t inputLen, const char_t *label,
-   char_t *output, size_t *outputLen);
 
 //C++ guard
 #ifdef __cplusplus

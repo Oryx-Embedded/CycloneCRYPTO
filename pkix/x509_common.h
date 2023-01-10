@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 #ifndef _X509_COMMON_H
@@ -361,27 +361,9 @@
    #error X509_MAX_CUSTOM_EXTENSIONS parameter is not valid
 #endif
 
-//Maximum digest size
-#if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
-   #define X509_MAX_HASH_DIGEST_SIZE 64
-#elif (X509_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
-   #define X509_MAX_HASH_DIGEST_SIZE 64
-#elif (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
-   #define X509_MAX_HASH_DIGEST_SIZE 48
-#elif (X509_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
-   #define X509_MAX_HASH_DIGEST_SIZE 48
-#elif (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
-   #define X509_MAX_HASH_DIGEST_SIZE 32
-#elif (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
-   #define X509_MAX_HASH_DIGEST_SIZE 32
-#elif (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
-   #define X509_MAX_HASH_DIGEST_SIZE 28
-#elif (X509_SHA224_SUPPORT == ENABLED && SHA224_SUPPORT == ENABLED)
-   #define X509_MAX_HASH_DIGEST_SIZE 28
-#elif (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
-   #define X509_MAX_HASH_DIGEST_SIZE 20
-#elif (X509_MD5_SUPPORT == ENABLED && MD5_SUPPORT == ENABLED)
-   #define X509_MAX_HASH_DIGEST_SIZE 16
+//Application specific extensions
+#ifndef X509_PRIVATE_EXTENSIONS
+   #define X509_PRIVATE_EXTENSIONS
 #endif
 
 //C++ guard
@@ -636,6 +618,19 @@ typedef struct
 
 
 /**
+ * @brief Algorithm identifier
+ **/
+
+typedef struct
+{
+   const uint8_t *oid;
+   size_t oidLen;
+   const uint8_t *params;
+   size_t paramsLen;
+} X509AlgoId;
+
+
+/**
  * @brief RSA public key
  **/
 
@@ -861,6 +856,7 @@ typedef struct
    X509NsCertType nsCertType;
    uint_t numCustomExtensions;
    X509Extension customExtensions[X509_MAX_CUSTOM_EXTENSIONS];
+   X509_PRIVATE_EXTENSIONS
 } X509Extensions;
 
 
@@ -1099,7 +1095,7 @@ typedef struct
 
 
 /**
- * @brief PKCS#9 ChallengePassword attribute
+ * @brief PKCS #9 ChallengePassword attribute
  **/
 
 typedef struct
@@ -1179,7 +1175,7 @@ extern const uint8_t X509_GENERATION_QUALIFIER_OID[3];
 extern const uint8_t X509_DN_QUALIFIER_OID[3];
 extern const uint8_t X509_PSEUDONYM_OID[3];
 
-extern const uint8_t X509_SUBJECT_DIRECTORY_ATTR_OID[3];
+extern const uint8_t X509_SUBJECT_DIR_ATTR_OID[3];
 extern const uint8_t X509_SUBJECT_KEY_ID_OID[3];
 extern const uint8_t X509_KEY_USAGE_OID[3];
 extern const uint8_t X509_SUBJECT_ALT_NAME_OID[3];

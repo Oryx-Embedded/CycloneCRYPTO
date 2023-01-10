@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -38,7 +38,6 @@
 #include "pkix/x509_cert_create.h"
 #include "pkix/x509_key_format.h"
 #include "encoding/asn1.h"
-#include "encoding/base64.h"
 #include "mpi/mpi.h"
 #include "debug.h"
 
@@ -989,69 +988,6 @@ error_t pemExportEddsaPrivateKey(const EcCurveInfo *curveInfo,
    //Not implemented
    return ERROR_NOT_IMPLEMENTED;
 #endif
-}
-
-
-/**
- * @brief Convert ASN.1 data to PEM encoding
- * @param[in] input ASN.1 data to encode
- * @param[in] inputLen Length of the ASN.1 data to encode
- * @param[in] label Label indicating the type of data
- * @param[out] output PEM container (optional parameter)
- * @param[out] outputLen Length of the PEM container
- **/
-
-error_t pemEncodeFile(const void *input, size_t inputLen, const char_t *label,
-   char_t *output, size_t *outputLen)
-{
-   size_t n;
-   size_t labelLen;
-   char_t *p;
-
-   //Check parameters
-   if(input == NULL || label == NULL || outputLen == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Calculate the length of the label
-   labelLen = osStrlen(label);
-
-   //Generators must wrap the Base64-encoded lines so that each line consists
-   //of exactly 64 characters except for the final line, which will encode the
-   //remainder of the data (refer to RFC 7468, section 2)
-   base64EncodeMultiline(input, inputLen, output, &n, 64);
-
-   //If the output parameter is NULL, then the function calculates the length
-   //of the resulting PEM file without copying any data
-   if(output != NULL)
-   {
-      //A PEM file starts with a beginning tag
-      p = output + osStrlen("-----BEGIN -----\r\n") + labelLen;
-
-      //Make room for the beginning tag
-      osMemmove(p, output, n);
-
-      //The type of data encoded is labeled depending on the type label in
-      //the "-----BEGIN " line (refer to RFC 7468, section 2)
-      osStrcpy(output, "-----BEGIN ");
-      osStrcpy(output + 11, label);
-      osMemcpy(p - 7, "-----\r\n", 7);
-
-      //Generators must put the same label on the "-----END " line as the
-      //corresponding "-----BEGIN " line
-      osStrcpy(p + n, "\r\n-----END ");
-      osStrcpy(p + n + 11, label);
-      osStrcpy(p + n + labelLen + 11, "-----\r\n");
-   }
-
-   //Consider the length of the PEM tags
-   n += osStrlen("-----BEGIN -----\r\n") + labelLen;
-   n += osStrlen("\r\n-----END -----\r\n") + labelLen;
-
-   //Total number of bytes that have been written
-   *outputLen = n;
-
-   //Successful processing
-   return NO_ERROR;
 }
 
 #endif

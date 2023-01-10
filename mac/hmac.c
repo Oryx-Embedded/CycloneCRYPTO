@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2022 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -32,7 +32,7 @@
  * key. Refer to RFC 2104 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.0
+ * @version 2.2.2
  **/
 
 //Switch to the appropriate trace level
@@ -61,6 +61,10 @@ const uint8_t HMAC_WITH_SHA256_OID[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x0
 const uint8_t HMAC_WITH_SHA384_OID[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x0A};
 //HMAC with SHA-512 OID (1.2.840.113549.2.11)
 const uint8_t HMAC_WITH_SHA512_OID[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x0B};
+//HMAC with SHA-512/224 OID (1.2.840.113549.2.12)
+const uint8_t HMAC_WITH_SHA512_224_OID[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x0C};
+//HMAC with SHA-512/256 OID (1.2.840.113549.2.13)
+const uint8_t HMAC_WITH_SHA512_256_OID[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x0D};
 //HMAC with SHA-3-224 object identifier (2.16.840.1.101.3.4.2.13)
 const uint8_t HMAC_WITH_SHA3_224_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0D};
 //HMAC with SHA-3-256 object identifier (2.16.840.1.101.3.4.2.14)
