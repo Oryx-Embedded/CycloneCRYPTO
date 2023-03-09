@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 #ifndef _GMAC_H
@@ -51,6 +51,11 @@
    #define GMAC_REVERSE_BITS(n) reverseInt8(n)
 #endif
 
+//Application specific context
+#ifndef GMAC_PRIVATE_CONTEXT
+   #define GMAC_PRIVATE_CONTEXT
+#endif
+
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
@@ -71,6 +76,7 @@ typedef struct
    size_t bufferLength;
    uint64_t totalLength;
    uint8_t mac[16];
+   GMAC_PRIVATE_CONTEXT
 } GmacContext;
 
 

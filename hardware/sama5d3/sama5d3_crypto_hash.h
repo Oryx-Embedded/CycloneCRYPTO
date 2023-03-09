@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 #ifndef _SAMA5D3_CRYPTO_HASH_H
@@ -45,20 +45,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-/**
- * @brief ICM region descriptor
- **/
-
-typedef struct
-{
-   uint32_t raddr; ///<ICM region start address
-   uint32_t rcfg;  ///<ICM region configuration
-   uint32_t rctrl; ///<ICM region control
-   uint32_t rnext; ///<ICM region next address
-} Same54IcmDesc;
-
 
 //C++ guard
 #ifdef __cplusplus

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 #ifndef _SAMV71_CRYPTO_HASH_H
@@ -91,7 +91,7 @@ typedef struct
    uint32_t rcfg;  ///<ICM region configuration
    uint32_t rctrl; ///<ICM region control
    uint32_t rnext; ///<ICM region next address
-} Same54IcmDesc;
+} Samv71IcmDesc;
 
 
 //C++ guard

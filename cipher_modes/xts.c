@@ -30,7 +30,7 @@
  * storage. Refer to IEEE Std 1619 and SP 800-38E for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 //Switch to the appropriate trace level

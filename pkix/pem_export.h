@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 #ifndef _PEM_EXPORT_H
@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "pkix/pem_common.h"
 #include "pkc/dh.h"
 #include "pkc/rsa.h"
 #include "pkc/dsa.h"

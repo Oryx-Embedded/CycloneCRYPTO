@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 #ifndef _X509_CERT_PARSE_H
@@ -124,12 +124,6 @@ error_t x509ParseNsCertType(bool_t critical, const uint8_t *data,
 error_t x509ParseUnknownExtension(const uint8_t *oid,
    size_t oidLen, bool_t critical, const uint8_t *data, size_t dataLen,
    X509Extensions *extensions);
-
-error_t x509ParseSignatureAlgo(const uint8_t *data, size_t length,
-   size_t *totalLength, X509SignatureAlgoId *signatureAlgo);
-
-error_t x509ParseSignatureValue(const uint8_t *data, size_t length,
-   size_t *totalLength, X509SignatureValue *signatureValue);
 
 error_t x509ParseInt(const uint8_t *data, size_t length, uint_t *value);
 

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 //Switch to the appropriate trace level
@@ -74,6 +74,9 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
 {
    size_t i;
    uint32_t value;
+
+   //Initialize variable
+   value = 0;
 
    //Acquire exclusive access to the TRNG module
    osAcquireMutex(&sam9x60CryptoMutex);

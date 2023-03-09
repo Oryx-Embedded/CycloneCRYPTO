@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 #ifndef _KMAC_H
@@ -34,6 +34,11 @@
 //Dependencies
 #include "core/crypto.h"
 #include "xof/cshake.h"
+
+//Application specific context
+#ifndef KMAC_PRIVATE_CONTEXT
+   #define KMAC_PRIVATE_CONTEXT
+#endif
 
 //C++ guard
 #ifdef __cplusplus
@@ -48,6 +53,7 @@ extern "C" {
 typedef struct
 {
    CshakeContext cshakeContext;
+   KMAC_PRIVATE_CONTEXT
 } KmacContext;
 
 

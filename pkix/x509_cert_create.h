@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 #ifndef _X509_CERT_CREATE_H
@@ -95,14 +95,6 @@ error_t x509FormatAuthorityKeyId(const X509AuthorityKeyId *authKeyId,
    uint8_t *output, size_t *written);
 
 error_t x509FormatNsCertType(const X509NsCertType *nsCertType,
-   uint8_t *output, size_t *written);
-
-error_t x509FormatSignatureAlgo(const X509SignatureAlgoId *signatureAlgo,
-   uint8_t *output, size_t *written);
-
-error_t x509FormatSignatureValue(const PrngAlgo *prngAlgo, void *prngContext,
-   const uint8_t *tbsCert, size_t tbsCertLen, const X509SignatureAlgoId *signatureAlgoId,
-   const X509SubjectPublicKeyInfo *publicKeyInfo, const void *privateKey,
    uint8_t *output, size_t *written);
 
 //C++ guard

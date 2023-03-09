@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 #ifndef _CMAC_H
@@ -34,6 +34,11 @@
 //Dependencies
 #include "core/crypto.h"
 #include "cipher/cipher_algorithms.h"
+
+//Application specific context
+#ifndef CMAC_PRIVATE_CONTEXT
+   #define CMAC_PRIVATE_CONTEXT
+#endif
 
 //C++ guard
 #ifdef __cplusplus
@@ -54,6 +59,7 @@ typedef struct
    uint8_t buffer[MAX_CIPHER_BLOCK_SIZE];
    size_t bufferLength;
    uint8_t mac[MAX_CIPHER_BLOCK_SIZE];
+   CMAC_PRIVATE_CONTEXT
 } CmacContext;
 
 

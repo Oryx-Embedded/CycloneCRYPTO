@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 //Switch to the appropriate trace level
@@ -1445,7 +1445,9 @@ error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
 
    //If the label L is not provided, let L be the empty string
    if(label == NULL)
+   {
       label = "";
+   }
 
    //Let lHash = Hash(L)
    hash->init(hashContext);
@@ -1513,7 +1515,9 @@ uint32_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
    {
       //If the label L is not provided, let L be the empty string
       if(label == NULL)
+      {
          label = "";
+      }
 
       //Let lHash = Hash(L)
       hash->init(hashContext);

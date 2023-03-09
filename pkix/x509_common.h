@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 #ifndef _X509_COMMON_H
@@ -38,6 +38,13 @@
 #include "ecc/ecdsa.h"
 #include "ecc/eddsa.h"
 #include "date_time.h"
+
+//Signature generation/verification callback functions
+#ifndef X509_SIGN_CALLBACK_SUPPORT
+   #define X509_SIGN_CALLBACK_SUPPORT DISABLED
+#elif (X509_SIGN_CALLBACK_SUPPORT != ENABLED && X509_SIGN_CALLBACK_SUPPORT != DISABLED)
+   #error X509_SIGN_CALLBACK_SUPPORT parameter is not valid
+#endif
 
 //RSA certificate support
 #ifndef X509_RSA_SUPPORT
@@ -408,15 +415,20 @@ typedef enum
 
 typedef enum
 {
-   X509_EXT_KEY_USAGE_SERVER_AUTH      = 0x01,
-   X509_EXT_KEY_USAGE_CLIENT_AUTH      = 0x02,
-   X509_EXT_KEY_USAGE_CODE_SIGNING     = 0x04,
-   X509_EXT_KEY_USAGE_EMAIL_PROTECTION = 0x08,
-   X509_EXT_KEY_USAGE_TIME_STAMPING    = 0x10,
-   X509_EXT_KEY_USAGE_OCSP_SIGNING     = 0x20,
-   X509_EXT_KEY_USAGE_SSH_CLIENT       = 0x40,
-   X509_EXT_KEY_USAGE_SSH_SERVER       = 0x80,
-   X509_EXT_KEY_USAGE_ANY              = 0xFF
+   X509_EXT_KEY_USAGE_SERVER_AUTH      = 0x00000001,
+   X509_EXT_KEY_USAGE_CLIENT_AUTH      = 0x00000002,
+   X509_EXT_KEY_USAGE_CODE_SIGNING     = 0x00000004,
+   X509_EXT_KEY_USAGE_EMAIL_PROTECTION = 0x00000008,
+   X509_EXT_KEY_USAGE_IPSEC_END_SYSTEM = 0x00000010,
+   X509_EXT_KEY_USAGE_IPSEC_TUNNEL     = 0x00000020,
+   X509_EXT_KEY_USAGE_IPSEC_USER       = 0x00000040,
+   X509_EXT_KEY_USAGE_TIME_STAMPING    = 0x00000080,
+   X509_EXT_KEY_USAGE_OCSP_SIGNING     = 0x00000100,
+   X509_EXT_KEY_USAGE_IPSEC_IKE        = 0x00000200,
+   X509_EXT_KEY_USAGE_SSH_CLIENT       = 0x00000400,
+   X509_EXT_KEY_USAGE_SSH_SERVER       = 0x00000800,
+   X509_EXT_KEY_USAGE_DOC_SIGNING      = 0x00001000,
+   X509_EXT_KEY_USAGE_ANY              = 0x00001FFF
 } X509ExtKeyUsageBitmap;
 
 
@@ -759,7 +771,7 @@ typedef struct
 typedef struct
 {
    bool_t critical;
-   uint8_t bitmap;
+   uint16_t bitmap;
 } X509ExtendedKeyUsage;
 
 
@@ -1204,10 +1216,15 @@ extern const uint8_t X509_KP_SERVER_AUTH_OID[8];
 extern const uint8_t X509_KP_CLIENT_AUTH_OID[8];
 extern const uint8_t X509_KP_CODE_SIGNING_OID[8];
 extern const uint8_t X509_KP_EMAIL_PROTECTION_OID[8];
+extern const uint8_t X509_KP_IPSEC_END_SYSTEM_OID[8];
+extern const uint8_t X509_KP_IPSEC_TUNNEL_OID[8];
+extern const uint8_t X509_KP_IPSEC_USER_OID[8];
 extern const uint8_t X509_KP_TIME_STAMPING_OID[8];
 extern const uint8_t X509_KP_OCSP_SIGNING_OID[8];
+extern const uint8_t X509_KP_IPSEC_IKE_OID[8];
 extern const uint8_t X509_KP_SSH_CLIENT_OID[8];
 extern const uint8_t X509_KP_SSH_SERVER_OID[8];
+extern const uint8_t X509_KP_DOC_SIGNING_OID[8];
 
 extern const uint8_t X509_CHALLENGE_PASSWORD_OID[9];
 extern const uint8_t X509_EXTENSION_REQUEST_OID[9];

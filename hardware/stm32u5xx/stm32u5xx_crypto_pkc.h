@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 #ifndef _STM32U5XX_CRYPTO_PKC_H
@@ -49,8 +49,8 @@
 //PKA operation modes
 #define PKA_CR_MODE_MODULAR_EXP           0x00
 #define PKA_CR_MODE_MONTGOMERY_PARAM      0x01
-#define PKA_CR_MODE_MODULAR_EXP_FAST_MODE 0x02
-#define PKA_CR_MODE_MODULAR_EXP_PROTECT   0x03
+#define PKA_CR_MODE_MODULAR_EXP_FAST      0x02
+#define PKA_CR_MODE_MODULAR_EXP_PROTECTED 0x03
 #define PKA_CR_MODE_RSA_CRT_EXP           0x07
 #define PKA_CR_MODE_MODULAR_INV           0x08
 #define PKA_CR_MODE_ARITHMETIC_ADD        0x09

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 #ifndef _CIPHER_ALGORITHMS_H
@@ -119,6 +119,16 @@
    #include "cipher/present.h"
 #endif
 
+//TEA cipher support?
+#if (TEA_SUPPORT == ENABLED)
+   #include "cipher/tea.h"
+#endif
+
+//XTEA cipher support?
+#if (XTEA_SUPPORT == ENABLED)
+   #include "cipher/xtea.h"
+#endif
+
 //Trivium cipher support?
 #if (TRIVIUM_SUPPORT == ENABLED)
    #include "cipher/trivium.h"
@@ -167,6 +177,10 @@
    #define MAX_CIPHER_BLOCK_SIZE BLOWFISH_BLOCK_SIZE
 #elif (PRESENT_SUPPORT == ENABLED)
    #define MAX_CIPHER_BLOCK_SIZE PRESENT_BLOCK_SIZE
+#elif (TEA_SUPPORT == ENABLED)
+   #define MAX_CIPHER_BLOCK_SIZE TEA_BLOCK_SIZE
+#elif (XTEA_SUPPORT == ENABLED)
+   #define MAX_CIPHER_BLOCK_SIZE XTEA_BLOCK_SIZE
 #endif
 
 //C++ guard
@@ -231,6 +245,12 @@ typedef union
 #endif
 #if (PRESENT_SUPPORT == ENABLED)
    PresentContext presentContext;
+#endif
+#if (TEA_SUPPORT == ENABLED)
+   TeaContext teaContext;
+#endif
+#if (XTEA_SUPPORT == ENABLED)
+   XteaContext xteaContext;
 #endif
 #if (TRIVIUM_SUPPORT == ENABLED)
    TriviumContext triviumContext;

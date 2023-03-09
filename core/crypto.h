@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.2.2"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.2.4"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 2
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 2
+#define CYCLONE_CRYPTO_REV_NUMBER 4
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -473,6 +473,20 @@
    #error PRESENT_SUPPORT parameter is not valid
 #endif
 
+//TEA encryption support
+#ifndef TEA_SUPPORT
+   #define TEA_SUPPORT DISABLED
+#elif (TEA_SUPPORT != ENABLED && TEA_SUPPORT != DISABLED)
+   #error TEA_SUPPORT parameter is not valid
+#endif
+
+//XTEA encryption support
+#ifndef XTEA_SUPPORT
+   #define XTEA_SUPPORT DISABLED
+#elif (XTEA_SUPPORT != ENABLED && XTEA_SUPPORT != DISABLED)
+   #error XTEA_SUPPORT parameter is not valid
+#endif
+
 //Trivium encryption support
 #ifndef TRIVIUM_SUPPORT
    #define TRIVIUM_SUPPORT DISABLED
@@ -625,6 +639,13 @@
    #define PBKDF_SUPPORT ENABLED
 #elif (PBKDF_SUPPORT != ENABLED && PBKDF_SUPPORT != DISABLED)
    #error PBKDF_SUPPORT parameter is not valid
+#endif
+
+//Concat KDF support
+#ifndef CONCAT_KDF_SUPPORT
+   #define CONCAT_KDF_SUPPORT DISABLED
+#elif (CONCAT_KDF_SUPPORT != ENABLED && CONCAT_KDF_SUPPORT != DISABLED)
+   #error CONCAT_KDF_SUPPORT parameter is not valid
 #endif
 
 //bcrypt support

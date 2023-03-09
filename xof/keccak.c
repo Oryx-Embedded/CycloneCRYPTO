@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 //Switch to the appropriate trace level
@@ -84,8 +84,8 @@ static void theta(keccak_lane_t a[5][5])
    keccak_lane_t c[5];
    keccak_lane_t d[5];
 
-   //The effect of the theta transformation is to XOR each bit in the
-   //state with the parities of two columns in the array
+   //The effect of the theta transformation is to XOR each bit in the state
+   //with the parities of two columns in the array
    c[0] = a[0][0] ^ a[1][0] ^ a[2][0] ^ a[3][0] ^ a[4][0];
    c[1] = a[0][1] ^ a[1][1] ^ a[2][1] ^ a[3][1] ^ a[4][1];
    c[2] = a[0][2] ^ a[1][2] ^ a[2][2] ^ a[3][2] ^ a[4][2];
@@ -179,8 +179,8 @@ static void pi(keccak_lane_t a[5][5])
 {
    keccak_lane_t temp;
 
-   //The effect of the pi transformation is to rearrange the
-   //positions of the lanes
+   //The effect of the pi transformation is to rearrange the positions of
+   //the lanes
    temp = a[0][1];
    a[0][1] = a[1][1];
    a[1][1] = a[1][4];
@@ -219,8 +219,8 @@ static void chi(keccak_lane_t a[5][5])
    keccak_lane_t temp1;
    keccak_lane_t temp2;
 
-   //The effect of the chi transformation is to XOR each bit with
-   //a non linear function of two other bits in its row
+   //The effect of the chi transformation is to XOR each bit with a non
+   //linear function of two other bits in its row
    temp1 = a[0][0];
    temp2 = a[0][1];
    a[0][0] ^= ~a[0][1] & a[0][2];
@@ -478,8 +478,8 @@ void keccakPermutBlock(KeccakContext *context)
 {
    uint_t i;
 
-   //Each round consists of a sequence of five transformations,
-   //which are called the step mappings
+   //Each round consists of a sequence of five transformations, which are
+   //called the step mappings
    for(i = 0; i < KECCAK_NR; i++)
    {
       //Apply theta step mapping

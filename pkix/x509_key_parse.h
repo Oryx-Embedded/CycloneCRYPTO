@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 #ifndef _X509_KEY_PARSE_H
@@ -49,21 +49,6 @@ error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
 
 error_t x509ParseRsaPublicKey(const uint8_t *data, size_t length,
    X509RsaPublicKey *rsaPublicKey);
-
-error_t x509ParseRsaPssParameters(const uint8_t *data, size_t length,
-   X509RsaPssParameters *rsaPssParams);
-
-error_t x509ParseRsaPssHashAlgo(const uint8_t *data, size_t length,
-   X509RsaPssParameters *rsaPssParams);
-
-error_t x509ParseRsaPssMaskGenAlgo(const uint8_t *data, size_t length,
-   X509RsaPssParameters *rsaPssParams);
-
-error_t x509ParseRsaPssMaskGenHashAlgo(const uint8_t *data, size_t length,
-   X509RsaPssParameters *rsaPssParams);
-
-error_t x509ParseRsaPssSaltLength(const uint8_t *data, size_t length,
-   X509RsaPssParameters *rsaPssParams);
 
 error_t x509ParseDsaPublicKey(const uint8_t *data, size_t length,
    X509DsaPublicKey *dsaPublicKey);

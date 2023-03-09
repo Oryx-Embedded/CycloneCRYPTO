@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 //Switch to the appropriate trace level
@@ -36,6 +36,7 @@
 #include "pkix/x509_cert_parse.h"
 #include "pkix/x509_csr_parse.h"
 #include "pkix/x509_key_parse.h"
+#include "pkix/x509_sign_parse.h"
 #include "encoding/asn1.h"
 #include "encoding/oid.h"
 #include "debug.h"

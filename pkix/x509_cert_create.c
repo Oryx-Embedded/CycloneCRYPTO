@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 //Switch to the appropriate trace level
@@ -35,7 +35,7 @@
 #include "core/crypto.h"
 #include "pkix/x509_cert_create.h"
 #include "pkix/x509_key_format.h"
-#include "pkix/x509_signature.h"
+#include "pkix/x509_sign_format.h"
 #include "encoding/asn1.h"
 #include "encoding/oid.h"
 #include "hash/sha1.h"
@@ -1811,210 +1811,6 @@ error_t x509FormatNsCertType(const X509NsCertType *nsCertType,
 
    //Total number of bytes that have been written
    *written = length;
-
-   //Successful processing
-   return NO_ERROR;
-}
-
-
-/**
- * @brief Format SignatureAlgorithm structure
- * @param[in] signatureAlgo Pointer to the SignatureAlgorithm structure
- * @param[out] output Buffer where to format the ASN.1 structure
- * @param[out] written Length of the resulting ASN.1 structure
- * @return Error code
- **/
-
-error_t x509FormatSignatureAlgo(const X509SignatureAlgoId *signatureAlgo,
-   uint8_t *output, size_t *written)
-{
-   error_t error;
-   size_t n;
-   size_t length;
-   uint8_t *p;
-   Asn1Tag tag;
-   X509SignatureAlgo signAlgo;
-   const HashAlgo *hashAlgo;
-
-   //Point to the buffer where to write the ASN.1 structure
-   p = output;
-   //Length of the ASN.1 structure
-   length = 0;
-
-   //Retrieve the signature algorithm that will be used to sign the certificate
-   error = x509GetSignHashAlgo(signatureAlgo, &signAlgo, &hashAlgo);
-   //Unsupported signature algorithm?
-   if(error)
-      return error;
-
-   //The Algorithm field contains the OID for the algorithm used by the CA
-   //to sign the certificate
-   tag.constructed = FALSE;
-   tag.objClass = ASN1_CLASS_UNIVERSAL;
-   tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
-   tag.length = signatureAlgo->oidLen;
-   tag.value = signatureAlgo->oid;
-
-   //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, p, &n);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Advance data pointer
-   p += n;
-   length += n;
-
-#if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
-   //RSA signature algorithm?
-   if(signAlgo == X509_SIGN_ALGO_RSA)
-   {
-      //For RSA signature algorithm, the parameters component of that type
-      //shall be the ASN.1 type NULL (refer to RFC 3279, section 2.2.1)
-      tag.constructed = FALSE;
-      tag.objClass = ASN1_CLASS_UNIVERSAL;
-      tag.objType = ASN1_TYPE_NULL;
-      tag.length = 0;
-      tag.value = NULL;
-
-      //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, p, &n);
-   }
-   else
-#endif
-#if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
-   //RSA-PSS signature algorithm?
-   if(signAlgo == X509_SIGN_ALGO_RSA_PSS)
-   {
-      //The parameters must be present when used in the algorithm identifier
-      //associated with a signature value (refer to RFC 4055, section 3.1)
-      error = x509FormatRsaPssParameters(&signatureAlgo->rsaPssParams, p, &n);
-   }
-   else
-#endif
-#if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
-   //DSA signature algorithm?
-   if(signAlgo == X509_SIGN_ALGO_DSA)
-   {
-      //For DSA signature algorithm, the encoding shall omit the parameters
-      //field (refer to RFC 3279, section 2.2.2)
-      n = 0;
-   }
-   else
-#endif
-#if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
-   //ECDSA signature algorithm?
-   if(signAlgo == X509_SIGN_ALGO_ECDSA)
-   {
-      //For ECDSA signature algorithm, the encoding must omit the parameters
-      //field (refer to RFC 3279, section 2.2.3)
-      n = 0;
-   }
-   else
-#endif
-#if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
-   //Ed25519 signature algorithm?
-   if(signAlgo == X509_SIGN_ALGO_ED25519)
-   {
-      //The parameters must be absent (refer to RFC 8410, section 6)
-      n = 0;
-   }
-   else
-#endif
-#if (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED)
-   //Ed448 signature algorithm?
-   if(signAlgo == X509_SIGN_ALGO_ED448)
-   {
-      //The parameters must be absent (refer to RFC 8410, section 6)
-      n = 0;
-   }
-   else
-#endif
-   //Invalid signature algorithm?
-   {
-      //Report an error
-      error = ERROR_UNSUPPORTED_SIGNATURE_ALGO;
-   }
-
-   //Check status code
-   if(error)
-      return error;
-
-   //Advance data pointer
-   p += n;
-   length += n;
-
-   //The Algorithm and Parameters fields are encapsulated within a sequence
-   tag.constructed = TRUE;
-   tag.objClass = ASN1_CLASS_UNIVERSAL;
-   tag.objType = ASN1_TYPE_SEQUENCE;
-   tag.length = length;
-   tag.value = output;
-
-   //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &length);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Total number of bytes that have been written
-   *written = length;
-
-   //Successful processing
-   return NO_ERROR;
-}
-
-
-/**
- * @brief Format SignatureValue field
- * @param[in] prngAlgo PRNG algorithm
- * @param[in] prngContext Pointer to the PRNG context
- * @param[in] tbsCert Pointer to the TBSCertificate to be signed
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
- * @param[in] signatureAlgoId Signature algorithm identifier
- * @param[in] publicKeyInfo Signer's public key information
- * @param[in] privateKey Signer's private key
- * @param[out] output Buffer where to format the ASN.1 structure
- * @param[out] written Length of the resulting ASN.1 structure
- * @return Error code
- **/
-
-error_t x509FormatSignatureValue(const PrngAlgo *prngAlgo, void *prngContext,
-   const uint8_t *tbsCert, size_t tbsCertLen, const X509SignatureAlgoId *signatureAlgoId,
-   const X509SubjectPublicKeyInfo *publicKeyInfo, const void *privateKey,
-   uint8_t *output, size_t *written)
-{
-   error_t error;
-   size_t n;
-   Asn1Tag tag;
-
-   //The bit string shall contain an initial octet which encodes the number
-   //of unused bits in the final subsequent octet
-   output[0] = 0;
-
-   //The ASN.1 DER-encoded tbsCertificate is used as the input to the signature
-   //function
-   error = x509GenerateSignature(prngAlgo, prngContext, tbsCert, tbsCertLen,
-      signatureAlgoId, publicKeyInfo, privateKey, output + 1, &n);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //The signature is encapsulated within a bit string
-   tag.constructed = FALSE;
-   tag.objClass = ASN1_CLASS_UNIVERSAL;
-   tag.objType = ASN1_TYPE_BIT_STRING;
-   tag.length = n + 1;
-   tag.value = output;
-
-   //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &n);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Total number of bytes that have been written
-   *written = n;
 
    //Successful processing
    return NO_ERROR;

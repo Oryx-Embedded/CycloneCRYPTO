@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 //Switch to the appropriate trace level
@@ -35,6 +35,7 @@
 #include "core/crypto.h"
 #include "pkix/x509_cert_parse.h"
 #include "pkix/x509_key_parse.h"
+#include "pkix/x509_sign_parse.h"
 #include "encoding/asn1.h"
 #include "encoding/oid.h"
 #include "hash/hash_algorithms.h"
@@ -1642,6 +1643,27 @@ error_t x509ParseExtendedKeyUsage(bool_t critical, const uint8_t *data,
          //Email protection
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_EMAIL_PROTECTION;
       }
+      //id-kp-ipsecEndSystem ?
+      else if(!oidComp(tag.value, tag.length,
+         X509_KP_IPSEC_END_SYSTEM_OID, sizeof(X509_KP_IPSEC_END_SYSTEM_OID)))
+      {
+         //IPsec end system
+         extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_IPSEC_END_SYSTEM;
+      }
+      //id-kp-ipsecTunnel ?
+      else if(!oidComp(tag.value, tag.length,
+         X509_KP_IPSEC_TUNNEL_OID, sizeof(X509_KP_IPSEC_TUNNEL_OID)))
+      {
+         //IPsec tunnel
+         extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_IPSEC_TUNNEL;
+      }
+      //id-kp-ipsecUser ?
+      else if(!oidComp(tag.value, tag.length,
+         X509_KP_IPSEC_USER_OID, sizeof(X509_KP_IPSEC_USER_OID)))
+      {
+         //IPsec user
+         extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_IPSEC_USER;
+      }
       //id-kp-timeStamping?
       else if(!oidComp(tag.value, tag.length,
          X509_KP_TIME_STAMPING_OID, sizeof(X509_KP_TIME_STAMPING_OID)))
@@ -1656,6 +1678,13 @@ error_t x509ParseExtendedKeyUsage(bool_t critical, const uint8_t *data,
          //Signing OCSP responses
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_OCSP_SIGNING;
       }
+      //id-kp-ipsecIKE ?
+      else if(!oidComp(tag.value, tag.length,
+         X509_KP_IPSEC_IKE_OID, sizeof(X509_KP_IPSEC_IKE_OID)))
+      {
+         //The certificate is intended to be used with IKE
+         extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_IPSEC_IKE;
+      }
       //id-kp-secureShellClient?
       else if(!oidComp(tag.value, tag.length,
          X509_KP_SSH_CLIENT_OID, sizeof(X509_KP_SSH_CLIENT_OID)))
@@ -1669,6 +1698,15 @@ error_t x509ParseExtendedKeyUsage(bool_t critical, const uint8_t *data,
       {
          //The key can be used for a Secure Shell server
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_SSH_SERVER;
+      }
+      //id-kp-documentSigning?
+      else if(!oidComp(tag.value, tag.length,
+         X509_KP_DOC_SIGNING_OID, sizeof(X509_KP_DOC_SIGNING_OID)))
+      {
+         //The public key encoded in the certificate has been certified to be
+         //used for cryptographic operations on contents that are consumed by
+         //people (refer to RFC 9336, section 3.1)
+         extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_DOC_SIGNING;
       }
       //Unknown key purpose?
       else
@@ -2043,119 +2081,6 @@ __weak_func error_t x509ParseUnknownExtension(const uint8_t *oid,
 {
    //The extension is not supported
    return ERROR_UNSUPPORTED_EXTENSION;
-}
-
-
-/**
- * @brief Parse SignatureAlgorithm structure
- * @param[in] data Pointer to the ASN.1 structure to parse
- * @param[in] length Length of the ASN.1 structure
- * @param[out] totalLength Number of bytes that have been parsed
- * @param[out] signatureAlgo Information resulting from the parsing process
- * @return Error code
- **/
-
-error_t x509ParseSignatureAlgo(const uint8_t *data, size_t length,
-   size_t *totalLength, X509SignatureAlgoId *signatureAlgo)
-{
-   error_t error;
-   Asn1Tag tag;
-
-   //Debug message
-   TRACE_DEBUG("  Parsing SignatureAlgorithm...\r\n");
-
-   //Read the contents of the SignatureAlgorithm structure
-   error = asn1ReadSequence(data, length, &tag);
-   //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Save the total length of the field
-   *totalLength = tag.totalLength;
-
-   //Point to the first field of the sequence
-   data = tag.value;
-   length = tag.length;
-
-   //Read the signature algorithm identifier
-   error = asn1ReadOid(data, length, &tag);
-   //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Save the signature algorithm identifier
-   signatureAlgo->oid = tag.value;
-   signatureAlgo->oidLen = tag.length;
-
-   //Point to the next field (if any)
-   data += tag.totalLength;
-   length -= tag.totalLength;
-
-#if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
-   //RSASSA-PSS algorithm identifier?
-   if(!asn1CheckOid(&tag, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
-   {
-      //Read RSASSA-PSS parameters
-      error = x509ParseRsaPssParameters(data, length,
-         &signatureAlgo->rsaPssParams);
-   }
-   else
-#endif
-   //Unknown algorithm identifier?
-   {
-      //The parameters are optional
-      error = NO_ERROR;
-   }
-
-   //Return status code
-   return error;
-}
-
-
-/**
- * @brief Parse SignatureValue field
- * @param[in] data Pointer to the ASN.1 structure to parse
- * @param[in] length Length of the ASN.1 structure
- * @param[out] totalLength Number of bytes that have been parsed
- * @param[out] signatureValue Information resulting from the parsing process
- * @return Error code
- **/
-
-error_t x509ParseSignatureValue(const uint8_t *data, size_t length,
-   size_t *totalLength, X509SignatureValue *signatureValue)
-{
-   error_t error;
-   Asn1Tag tag;
-
-   //Debug message
-   TRACE_DEBUG("  Parsing SignatureValue...\r\n");
-
-   //Read the contents of the SignatureValue structure
-   error = asn1ReadTag(data, length, &tag);
-   //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
-
-   //Save the total length of the field
-   *totalLength = tag.totalLength;
-
-   //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_BIT_STRING);
-   //Invalid tag?
-   if(error)
-      return error;
-
-   //The bit string shall contain an initial octet which encodes the number
-   //of unused bits in the final subsequent octet
-   if(tag.length < 1 || tag.value[0] != 0x00)
-      return ERROR_FAILURE;
-
-   //Get the signature value
-   signatureValue->data = tag.value + 1;
-   signatureValue->length = tag.length - 1;
-
-   //Successful processing
-   return NO_ERROR;
 }
 
 

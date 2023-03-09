@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 //Switch to the appropriate trace level
@@ -48,7 +48,7 @@
 //ICM region descriptor
 #pragma data_alignment = 64
 #pragma location = SAMV71_ICM_RAM_SECTION
-static Same54IcmDesc icmDesc;
+static Samv71IcmDesc icmDesc;
 //ICM data buffer
 #pragma data_alignment = 4
 #pragma location = SAMV71_ICM_RAM_SECTION
@@ -62,7 +62,7 @@ static uint32_t icmHash[8];
 #else
 
 //ICM region descriptor
-static Same54IcmDesc icmDesc
+static Samv71IcmDesc icmDesc
    __attribute__((aligned(64), __section__(SAMV71_ICM_RAM_SECTION)));
 //ICM data buffer
 static uint8_t icmBuffer[SAMV71_ICM_BUFFER_SIZE]

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.2
+ * @version 2.2.4
  **/
 
 //Switch to the appropriate trace level
@@ -129,14 +129,24 @@ const uint8_t X509_KP_CLIENT_AUTH_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 
 const uint8_t X509_KP_CODE_SIGNING_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x03};
 //Key Purpose Email Protection OID (1.3.6.1.5.5.7.3.4)
 const uint8_t X509_KP_EMAIL_PROTECTION_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x04};
+//Key Purpose IPsec End System OID (1.3.6.1.5.5.7.3.5)
+const uint8_t X509_KP_IPSEC_END_SYSTEM_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x05};
+//Key Purpose IPsec Tunnel OID (1.3.6.1.5.5.7.3.6)
+const uint8_t X509_KP_IPSEC_TUNNEL_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x06};
+//Key Purpose IPsec User OID (1.3.6.1.5.5.7.3.7)
+const uint8_t X509_KP_IPSEC_USER_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x07};
 //Key Purpose Time Stamping OID (1.3.6.1.5.5.7.3.8)
 const uint8_t X509_KP_TIME_STAMPING_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x08};
 //Key Purpose OCSP Signing OID (1.3.6.1.5.5.7.3.9)
 const uint8_t X509_KP_OCSP_SIGNING_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x09};
+//Key Purpose IPsec IKE OID (1.3.6.1.5.5.7.3.17)
+const uint8_t X509_KP_IPSEC_IKE_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x11};
 //Key Purpose Secure Shell Client (1.3.6.1.5.5.7.3.21)
 const uint8_t X509_KP_SSH_CLIENT_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x15};
 //Key Purpose Secure Shell Client (1.3.6.1.5.5.7.3.22)
 const uint8_t X509_KP_SSH_SERVER_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x16};
+//Key Purpose Document Signing (1.3.6.1.5.5.7.3.36)
+const uint8_t X509_KP_DOC_SIGNING_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x24};
 
 //PKCS #9 Challenge Password OID (1.2.840.113549.1.9.7)
 const uint8_t X509_CHALLENGE_PASSWORD_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x07};
