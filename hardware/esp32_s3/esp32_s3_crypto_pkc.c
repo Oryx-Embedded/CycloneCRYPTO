@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,10 +33,11 @@
 
 //Dependencies
 #include "esp_crypto_lock.h"
+#include "soc/system_reg.h"
 #include "soc/hwcrypto_reg.h"
 #include "soc/dport_reg.h"
 #include "soc/dport_access.h"
-#include "driver/periph_ctrl.h"
+#include "esp_private/periph_ctrl.h"
 #include "hardware/esp32_s3/esp32_s3_crypto.h"
 #include "hardware/esp32_s3/esp32_s3_crypto_pkc.h"
 #include "pkc/rsa.h"

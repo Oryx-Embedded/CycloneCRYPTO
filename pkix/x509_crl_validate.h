@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _X509_CRL_VALIDATE_H
@@ -42,9 +42,9 @@ extern "C" {
 
 //CSR related functions
 error_t x509ValidateCrl(const X509CrlInfo *crlInfo,
-   const X509CertificateInfo *issuerCertInfo);
+   const X509CertInfo *issuerCertInfo);
 
-error_t x509CheckRevokedCertificate(const X509CertificateInfo *certInfo,
+error_t x509CheckRevokedCertificate(const X509CertInfo *certInfo,
    const X509CrlInfo *crlInfo);
 
 //C++ guard

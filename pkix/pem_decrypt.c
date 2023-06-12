@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -301,8 +301,8 @@ error_t pemDecryptPrivateKey(const char_t *input, size_t inputLen,
          if(!error)
          {
             //Point to the encrypted data
-            data = (uint8_t *) encryptedPrivateKeyInfo.encryptedData;
-            n = encryptedPrivateKeyInfo.encryptedDataLen;
+            data = (uint8_t *) encryptedPrivateKeyInfo.encryptedData.value;
+            n = encryptedPrivateKeyInfo.encryptedData.length;
 
             //Decrypt the private key information
             error = pkcs5Decrypt(&encryptedPrivateKeyInfo.encryptionAlgo,
@@ -505,7 +505,7 @@ error_t pemFormatIv(const PemHeader *header, uint8_t *iv, size_t ivLen)
       //Extract the IV from the PEM encapsulated header
       for(i = 0; i < ivLen && !error; i++)
       {
-         //Hexadecimal representation of the current byte 
+         //Hexadecimal representation of the current byte
          buffer[0] = header->dekInfo.iv.value[2 * i];
          buffer[1] = header->dekInfo.iv.value[2 * i + 1];
          buffer[2] = '\0';

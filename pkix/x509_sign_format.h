@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _X509_SIGN_FORMAT_H
@@ -41,11 +41,11 @@ extern "C" {
 #endif
 
 //X.509 related functions
-error_t x509FormatSignatureAlgo(const X509SignatureAlgoId *signatureAlgo,
+error_t x509FormatSignatureAlgo(const X509SignAlgoId *signatureAlgo,
    uint8_t *output, size_t *written);
 
 error_t x509FormatSignatureValue(const PrngAlgo *prngAlgo, void *prngContext,
-   const uint8_t *tbsCert, size_t tbsCertLen, const X509SignatureAlgoId *signatureAlgoId,
+   const X509OctetString *tbsCert, const X509SignAlgoId *signAlgoId,
    const X509SubjectPublicKeyInfo *publicKeyInfo, const void *privateKey,
    uint8_t *output, size_t *written);
 

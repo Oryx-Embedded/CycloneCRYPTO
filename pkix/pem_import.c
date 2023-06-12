@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -300,8 +300,8 @@ error_t pemImportRsaPublicKey(const char_t *input, size_t length,
          if(!error)
          {
             //Set public key algorithm identifier
-            publicKeyInfo.oid = RSA_ENCRYPTION_OID;
-            publicKeyInfo.oidLen = sizeof(RSA_ENCRYPTION_OID);
+            publicKeyInfo.oid.value = RSA_ENCRYPTION_OID;
+            publicKeyInfo.oid.length = sizeof(RSA_ENCRYPTION_OID);
 
             //Import the RSA public key
             error = x509ImportRsaPublicKey(&publicKeyInfo, publicKey);
@@ -443,8 +443,8 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Set private key algorithm identifier
-            privateKeyInfo.oid = RSA_ENCRYPTION_OID;
-            privateKeyInfo.oidLen = sizeof(RSA_ENCRYPTION_OID);
+            privateKeyInfo.oid.value = RSA_ENCRYPTION_OID;
+            privateKeyInfo.oid.length = sizeof(RSA_ENCRYPTION_OID);
 
             //Import the RSA private key
             error = pkcs8ImportRsaPrivateKey(&privateKeyInfo, privateKey);
@@ -525,8 +525,8 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Point to the encrypted data
-            data = (uint8_t *) encryptedPrivateKeyInfo.encryptedData;
-            n = encryptedPrivateKeyInfo.encryptedDataLen;
+            data = (uint8_t *) encryptedPrivateKeyInfo.encryptedData.value;
+            n = encryptedPrivateKeyInfo.encryptedData.length;
 
             //Decrypt the private key information
             error = pkcs5Decrypt(&encryptedPrivateKeyInfo.encryptionAlgo,
@@ -730,8 +730,8 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Set private key algorithm identifier
-            privateKeyInfo.oid = DSA_OID;
-            privateKeyInfo.oidLen = sizeof(DSA_OID);
+            privateKeyInfo.oid.value = DSA_OID;
+            privateKeyInfo.oid.length = sizeof(DSA_OID);
 
             //Import the DSA private key
             error = pkcs8ImportDsaPrivateKey(&privateKeyInfo, privateKey);
@@ -812,8 +812,8 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Point to the encrypted data
-            data = (uint8_t *) encryptedPrivateKeyInfo.encryptedData;
-            n = encryptedPrivateKeyInfo.encryptedDataLen;
+            data = (uint8_t *) encryptedPrivateKeyInfo.encryptedData.value;
+            n = encryptedPrivateKeyInfo.encryptedData.length;
 
             //Decrypt the private key information
             error = pkcs5Decrypt(&encryptedPrivateKeyInfo.encryptionAlgo,
@@ -1217,8 +1217,8 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Set public key algorithm identifier
-            privateKeyInfo.oid = EC_PUBLIC_KEY_OID;
-            privateKeyInfo.oidLen = sizeof(EC_PUBLIC_KEY_OID);
+            privateKeyInfo.oid.value = EC_PUBLIC_KEY_OID;
+            privateKeyInfo.oid.length = sizeof(EC_PUBLIC_KEY_OID);
 
             //Import the EC private key
             error = pkcs8ImportEcPrivateKey(&privateKeyInfo, privateKey);
@@ -1299,8 +1299,8 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Point to the encrypted data
-            data = (uint8_t *) encryptedPrivateKeyInfo.encryptedData;
-            n = encryptedPrivateKeyInfo.encryptedDataLen;
+            data = (uint8_t *) encryptedPrivateKeyInfo.encryptedData.value;
+            n = encryptedPrivateKeyInfo.encryptedData.length;
 
             //Decrypt the private key information
             error = pkcs5Decrypt(&encryptedPrivateKeyInfo.encryptionAlgo,
@@ -1529,8 +1529,8 @@ error_t pemImportEddsaPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Point to the encrypted data
-            data = (uint8_t *) encryptedPrivateKeyInfo.encryptedData;
-            n = encryptedPrivateKeyInfo.encryptedDataLen;
+            data = (uint8_t *) encryptedPrivateKeyInfo.encryptedData.value;
+            n = encryptedPrivateKeyInfo.encryptedData.length;
 
             //Decrypt the private key information
             error = pkcs5Decrypt(&encryptedPrivateKeyInfo.encryptionAlgo,
@@ -1650,8 +1650,8 @@ error_t pemGetPublicKeyType(const char_t *input, size_t length,
          if(!error)
          {
             //Check public key algorithm identifier
-            *keyType = x509GetPublicKeyType(publicKeyInfo.oid,
-               publicKeyInfo.oidLen);
+            *keyType = x509GetPublicKeyType(publicKeyInfo.oid.value,
+               publicKeyInfo.oid.length);
 
             //Unknown algorithm identifier?
             if(*keyType == X509_KEY_TYPE_UNKNOWN)
@@ -1764,8 +1764,8 @@ error_t pemGetPrivateKeyType(const char_t *input, size_t length,
          if(!error)
          {
             //Check private key algorithm identifier
-            *keyType = x509GetPublicKeyType(privateKeyInfo.oid,
-               privateKeyInfo.oidLen);
+            *keyType = x509GetPublicKeyType(privateKeyInfo.oid.value,
+               privateKeyInfo.oid.length);
 
             //Unknown algorithm identifier?
             if(*keyType == X509_KEY_TYPE_UNKNOWN)

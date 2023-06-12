@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -78,15 +78,15 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
    *totalLength = tag.totalLength;
 
    //Raw contents of the ASN.1 sequence
-   publicKeyInfo->rawData = data;
-   publicKeyInfo->rawDataLen = tag.totalLength;
+   publicKeyInfo->raw.value = data;
+   publicKeyInfo->raw.length = tag.totalLength;
 
    //Point to the first field of the sequence
    data = tag.value;
    length = tag.length;
 
    //Read AlgorithmIdentifier field
-   error = x509ParseAlgorithmIdentifier(data, length, &n, publicKeyInfo);
+   error = x509ParseAlgoId(data, length, &n, publicKeyInfo);
    //Any error to report?
    if(error)
       return error;
@@ -117,9 +117,14 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
    data = tag.value + 1;
    length = tag.length - 1;
 
+   //Raw contents of the SubjectPublicKey (excluding the tag, length, and
+   //number of unused bits)
+   publicKeyInfo->rawSubjectPublicKey.value = data;
+   publicKeyInfo->rawSubjectPublicKey.length = length;
+
    //Get the public key algorithm identifier
-   oid = publicKeyInfo->oid;
-   oidLen = publicKeyInfo->oidLen;
+   oid = publicKeyInfo->oid.value;
+   oidLen = publicKeyInfo->oid.length;
 
 #if (RSA_SUPPORT == ENABLED)
    //RSA or RSA-PSS algorithm identifier?
@@ -189,7 +194,7 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
  * @return Error code
  **/
 
-error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
+error_t x509ParseAlgoId(const uint8_t *data, size_t length,
    size_t *totalLength, X509SubjectPublicKeyInfo *publicKeyInfo)
 {
    error_t error;
@@ -218,8 +223,8 @@ error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
       return error;
 
    //Save the algorithm identifier
-   publicKeyInfo->oid = tag.value;
-   publicKeyInfo->oidLen = tag.length;
+   publicKeyInfo->oid.value = tag.value;
+   publicKeyInfo->oid.length = tag.length;
 
    //Point to the next field (if any)
    data += tag.totalLength;
@@ -335,8 +340,8 @@ error_t x509ParseRsaPublicKey(const uint8_t *data, size_t length,
       return error;
 
    //Save the modulus
-   rsaPublicKey->n = tag.value;
-   rsaPublicKey->nLen = tag.length;
+   rsaPublicKey->n.value = tag.value;
+   rsaPublicKey->n.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -355,8 +360,8 @@ error_t x509ParseRsaPublicKey(const uint8_t *data, size_t length,
       return error;
 
    //Save the public exponent
-   rsaPublicKey->e = tag.value;
-   rsaPublicKey->eLen = tag.length;
+   rsaPublicKey->e.value = tag.value;
+   rsaPublicKey->e.length = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -393,8 +398,8 @@ error_t x509ParseDsaPublicKey(const uint8_t *data, size_t length,
       return error;
 
    //Save the DSA public value
-   dsaPublicKey->y = tag.value;
-   dsaPublicKey->yLen = tag.length;
+   dsaPublicKey->y.value = tag.value;
+   dsaPublicKey->y.length = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -441,8 +446,8 @@ error_t x509ParseDsaParameters(const uint8_t *data, size_t length,
       return error;
 
    //Save the parameter p
-   dsaParams->p = tag.value;
-   dsaParams->pLen = tag.length;
+   dsaParams->p.value = tag.value;
+   dsaParams->p.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -461,8 +466,8 @@ error_t x509ParseDsaParameters(const uint8_t *data, size_t length,
       return error;
 
    //Save the parameter q
-   dsaParams->q = tag.value;
-   dsaParams->qLen = tag.length;
+   dsaParams->q.value = tag.value;
+   dsaParams->q.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -481,8 +486,8 @@ error_t x509ParseDsaParameters(const uint8_t *data, size_t length,
       return error;
 
    //Save the parameter g
-   dsaParams->g = tag.value;
-   dsaParams->gLen = tag.length;
+   dsaParams->g.value = tag.value;
+   dsaParams->g.length = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -508,8 +513,8 @@ error_t x509ParseEcPublicKey(const uint8_t *data, size_t length,
       return ERROR_BAD_CERTIFICATE;
 
    //Save the EC public key
-   ecPublicKey->q = data;
-   ecPublicKey->qLen = length;
+   ecPublicKey->q.value = data;
+   ecPublicKey->q.length = length;
 
    //Successful processing
    return NO_ERROR;
@@ -542,8 +547,8 @@ error_t x509ParseEcParameters(const uint8_t *data, size_t length,
    //The namedCurve field identifies all the required values for a particular
    //set of elliptic curve domain parameters to be represented by an object
    //identifier
-   ecParams->namedCurve = tag.value;
-   ecParams->namedCurveLen = tag.length;
+   ecParams->namedCurve.value = tag.value;
+   ecParams->namedCurve.length = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -567,27 +572,27 @@ error_t x509ImportRsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
    size_t oidLen;
 
    //Get the public key algorithm identifier
-   oid = publicKeyInfo->oid;
-   oidLen = publicKeyInfo->oidLen;
+   oid = publicKeyInfo->oid.value;
+   oidLen = publicKeyInfo->oid.length;
 
    //RSA algorithm identifier?
    if(!oidComp(oid, oidLen, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)) ||
       !oidComp(oid, oidLen, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
    {
       //Sanity check
-      if(publicKeyInfo->rsaPublicKey.n != NULL &&
-         publicKeyInfo->rsaPublicKey.e != NULL)
+      if(publicKeyInfo->rsaPublicKey.n.value != NULL &&
+         publicKeyInfo->rsaPublicKey.e.value != NULL)
       {
          //Read modulus
-         error = mpiImport(&publicKey->n, publicKeyInfo->rsaPublicKey.n,
-            publicKeyInfo->rsaPublicKey.nLen, MPI_FORMAT_BIG_ENDIAN);
+         error = mpiImport(&publicKey->n, publicKeyInfo->rsaPublicKey.n.value,
+            publicKeyInfo->rsaPublicKey.n.length, MPI_FORMAT_BIG_ENDIAN);
 
          //Check status code
          if(!error)
          {
             //Read public exponent
-            error = mpiImport(&publicKey->e, publicKeyInfo->rsaPublicKey.e,
-               publicKeyInfo->rsaPublicKey.eLen, MPI_FORMAT_BIG_ENDIAN);
+            error = mpiImport(&publicKey->e, publicKeyInfo->rsaPublicKey.e.value,
+               publicKeyInfo->rsaPublicKey.e.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
@@ -634,41 +639,41 @@ error_t x509ImportDsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
 
 #if (DSA_SUPPORT == ENABLED)
    //DSA algorithm identifier?
-   if(!oidComp(publicKeyInfo->oid, publicKeyInfo->oidLen, DSA_OID,
-      sizeof(DSA_OID)))
+   if(!oidComp(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      DSA_OID, sizeof(DSA_OID)))
    {
       //Sanity check
-      if(publicKeyInfo->dsaParams.p != NULL &&
-         publicKeyInfo->dsaParams.q != NULL &&
-         publicKeyInfo->dsaParams.g != NULL &&
-         publicKeyInfo->dsaPublicKey.y != NULL)
+      if(publicKeyInfo->dsaParams.p.value != NULL &&
+         publicKeyInfo->dsaParams.q.value != NULL &&
+         publicKeyInfo->dsaParams.g.value != NULL &&
+         publicKeyInfo->dsaPublicKey.y.value != NULL)
       {
          //Read parameter p
-         error = mpiImport(&publicKey->params.p, publicKeyInfo->dsaParams.p,
-            publicKeyInfo->dsaParams.pLen, MPI_FORMAT_BIG_ENDIAN);
+         error = mpiImport(&publicKey->params.p, publicKeyInfo->dsaParams.p.value,
+            publicKeyInfo->dsaParams.p.length, MPI_FORMAT_BIG_ENDIAN);
 
          //Check status code
          if(!error)
          {
             //Read parameter q
-            error = mpiImport(&publicKey->params.q, publicKeyInfo->dsaParams.q,
-               publicKeyInfo->dsaParams.qLen, MPI_FORMAT_BIG_ENDIAN);
+            error = mpiImport(&publicKey->params.q, publicKeyInfo->dsaParams.q.value,
+               publicKeyInfo->dsaParams.q.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
          if(!error)
          {
             //Read parameter g
-            error = mpiImport(&publicKey->params.g, publicKeyInfo->dsaParams.g,
-               publicKeyInfo->dsaParams.gLen, MPI_FORMAT_BIG_ENDIAN);
+            error = mpiImport(&publicKey->params.g, publicKeyInfo->dsaParams.g.value,
+               publicKeyInfo->dsaParams.g.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
          if(!error)
          {
             //Read public value
-            error = mpiImport(&publicKey->y, publicKeyInfo->dsaPublicKey.y,
-               publicKeyInfo->dsaPublicKey.yLen, MPI_FORMAT_BIG_ENDIAN);
+            error = mpiImport(&publicKey->y, publicKeyInfo->dsaPublicKey.y.value,
+               publicKeyInfo->dsaPublicKey.y.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
@@ -722,19 +727,19 @@ error_t x509ImportEcPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
    EcDomainParameters params;
 
    //EC public key identifier?
-   if(!oidComp(publicKeyInfo->oid, publicKeyInfo->oidLen, EC_PUBLIC_KEY_OID,
-      sizeof(EC_PUBLIC_KEY_OID)))
+   if(!oidComp(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
    {
       //Sanity check
-      if(publicKeyInfo->ecParams.namedCurve != NULL &&
-         publicKeyInfo->ecPublicKey.q != NULL)
+      if(publicKeyInfo->ecParams.namedCurve.value != NULL &&
+         publicKeyInfo->ecPublicKey.q.value != NULL)
       {
          //Initialize EC domain parameters
          ecInitDomainParameters(&params);
 
          //Retrieve EC domain parameters
-         curveInfo = x509GetCurveInfo(publicKeyInfo->ecParams.namedCurve,
-            publicKeyInfo->ecParams.namedCurveLen);
+         curveInfo = x509GetCurveInfo(publicKeyInfo->ecParams.namedCurve.value,
+            publicKeyInfo->ecParams.namedCurve.length);
 
          //Make sure the specified elliptic curve is supported
          if(curveInfo != NULL)
@@ -752,8 +757,9 @@ error_t x509ImportEcPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
          if(!error)
          {
             //Read the EC public key
-            error = ecImport(&params, &publicKey->q, publicKeyInfo->ecPublicKey.q,
-               publicKeyInfo->ecPublicKey.qLen);
+            error = ecImport(&params, &publicKey->q,
+               publicKeyInfo->ecPublicKey.q.value,
+               publicKeyInfo->ecPublicKey.q.length);
          }
 
          //Check status code
@@ -804,7 +810,8 @@ error_t x509ImportEcParameters(const X509EcParameters *ecParams,
    const EcCurveInfo *curveInfo;
 
    //Retrieve EC domain parameters
-   curveInfo = ecGetCurveInfo(ecParams->namedCurve, ecParams->namedCurveLen);
+   curveInfo = ecGetCurveInfo(ecParams->namedCurve.value,
+      ecParams->namedCurve.length);
 
    //Make sure the specified elliptic curve is supported
    if(curveInfo != NULL)
@@ -838,16 +845,16 @@ error_t x509ImportEddsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
 
 #if (ED25519_SUPPORT == ENABLED)
    //Ed25519 algorithm identifier?
-   if(!oidComp(publicKeyInfo->oid, publicKeyInfo->oidLen, ED25519_OID,
-      sizeof(ED25519_OID)))
+   if(!oidComp(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      ED25519_OID, sizeof(ED25519_OID)))
    {
       //Check the length of the Ed25519 public key
-      if(publicKeyInfo->ecPublicKey.q != NULL &&
-         publicKeyInfo->ecPublicKey.qLen == ED25519_PUBLIC_KEY_LEN)
+      if(publicKeyInfo->ecPublicKey.q.value != NULL &&
+         publicKeyInfo->ecPublicKey.q.length == ED25519_PUBLIC_KEY_LEN)
       {
          //Read the Ed25519 public key
-         error = mpiImport(&publicKey->q, publicKeyInfo->ecPublicKey.q,
-            publicKeyInfo->ecPublicKey.qLen, MPI_FORMAT_LITTLE_ENDIAN);
+         error = mpiImport(&publicKey->q, publicKeyInfo->ecPublicKey.q.value,
+            publicKeyInfo->ecPublicKey.q.length, MPI_FORMAT_LITTLE_ENDIAN);
       }
       else
       {
@@ -859,16 +866,16 @@ error_t x509ImportEddsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
 #endif
 #if (ED448_SUPPORT == ENABLED)
    //Ed448 algorithm identifier?
-   if(!oidComp(publicKeyInfo->oid, publicKeyInfo->oidLen, ED448_OID,
-      sizeof(ED448_OID)))
+   if(!oidComp(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      ED448_OID, sizeof(ED448_OID)))
    {
       //Check the length of the Ed448 public key
-      if(publicKeyInfo->ecPublicKey.q != NULL &&
-         publicKeyInfo->ecPublicKey.qLen == ED448_PUBLIC_KEY_LEN)
+      if(publicKeyInfo->ecPublicKey.q.value != NULL &&
+         publicKeyInfo->ecPublicKey.q.length == ED448_PUBLIC_KEY_LEN)
       {
          //Read the Ed448 public key
-         error = mpiImport(&publicKey->q, publicKeyInfo->ecPublicKey.q,
-            publicKeyInfo->ecPublicKey.qLen, MPI_FORMAT_LITTLE_ENDIAN);
+         error = mpiImport(&publicKey->q, publicKeyInfo->ecPublicKey.q.value,
+            publicKeyInfo->ecPublicKey.q.length, MPI_FORMAT_LITTLE_ENDIAN);
       }
       else
       {

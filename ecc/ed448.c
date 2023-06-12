@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -134,7 +134,7 @@ error_t ed448GeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
    error_t error;
 
    //Check parameters
-   if(prngAlgo == NULL || prngContext == NULL || privateKey == NULL )
+   if(prngAlgo == NULL || prngContext == NULL || privateKey == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //The private key is 57 octets of cryptographically secure random data

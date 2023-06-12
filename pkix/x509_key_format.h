@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _X509_KEY_FORMAT_H
@@ -44,7 +44,7 @@ extern "C" {
 error_t x509FormatSubjectPublicKeyInfo(const X509SubjectPublicKeyInfo *publicKeyInfo,
    const void *publicKey, uint8_t *keyId, uint8_t *output, size_t *written);
 
-error_t x509FormatAlgorithmIdentifier(const X509SubjectPublicKeyInfo *publicKeyInfo,
+error_t x509FormatAlgoId(const X509SubjectPublicKeyInfo *publicKeyInfo,
    const void *params, uint8_t *output, size_t *written);
 
 error_t x509FormatRsaPublicKey(const X509RsaPublicKey *rsaPublicKey,

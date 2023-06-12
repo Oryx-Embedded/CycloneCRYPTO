@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _X509_SIGN_GENERATE_H
@@ -46,8 +46,8 @@ extern "C" {
  **/
 
 typedef error_t (*X509SignGenCallback)(const PrngAlgo *prngAlgo,
-   void *prngContext, const uint8_t *tbsCert, size_t tbsCertLen,
-   const X509SignatureAlgoId *signatureAlgoId,
+   void *prngContext, const X509OctetString *tbsData,
+   const X509SignAlgoId *signAlgoId,
    const X509SubjectPublicKeyInfo *publicKeyInfo, const void *privateKey,
    uint8_t *output, size_t *written);
 
@@ -56,32 +56,31 @@ typedef error_t (*X509SignGenCallback)(const PrngAlgo *prngAlgo,
 error_t x509RegisterSignGenCallback(X509SignGenCallback callback);
 
 error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const uint8_t *tbsCert, size_t tbsCertLen, const X509SignatureAlgoId *signatureAlgoId,
+   const X509OctetString *tbsData, const X509SignAlgoId *signAlgoId,
    const X509SubjectPublicKeyInfo *publicKeyInfo, const void *privateKey,
    uint8_t *output, size_t *written);
 
-error_t x509GenerateRsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509GenerateRsaSignature(const X509OctetString *tbsData,
    const HashAlgo *hashAlgo, const RsaPrivateKey *privateKey, uint8_t *output,
    size_t *written);
 
 error_t x509GenerateRsaPssSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const uint8_t *tbsCert, size_t tbsCertLen, const HashAlgo *hashAlgo,
-   size_t saltLen, const RsaPrivateKey *privateKey, uint8_t *output,
-   size_t *written);
+   const X509OctetString *tbsData, const HashAlgo *hashAlgo, size_t saltLen,
+   const RsaPrivateKey *privateKey, uint8_t *output, size_t *written);
 
 error_t x509GenerateDsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const uint8_t *tbsCert, size_t tbsCertLen, const HashAlgo *hashAlgo,
+   const X509OctetString *tbsData, const HashAlgo *hashAlgo,
    const DsaPrivateKey *privateKey, uint8_t *output, size_t *written);
 
 error_t x509GenerateEcdsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const uint8_t *tbsCert, size_t tbsCertLen, const HashAlgo *hashAlgo,
+   const X509OctetString *tbsData, const HashAlgo *hashAlgo,
    const X509SubjectPublicKeyInfo *publicKeyInfo, const EcPrivateKey *privateKey,
    uint8_t *output, size_t *written);
 
-error_t x509GenerateEd25519Signature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509GenerateEd25519Signature(const X509OctetString *tbsData,
    const EddsaPrivateKey *privateKey, uint8_t *output, size_t *written);
 
-error_t x509GenerateEd448Signature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509GenerateEd448Signature(const X509OctetString *tbsData,
    const EddsaPrivateKey *privateKey, uint8_t *output, size_t *written);
 
 //C++ guard

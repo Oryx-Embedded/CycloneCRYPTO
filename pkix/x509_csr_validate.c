@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -57,8 +57,7 @@ error_t x509ValidateCsr(const X509CsrInfo *csrInfo)
 
    //The ASN.1 DER-encoded certificationRequestInfo is used as the input
    //to the signature function
-   error = x509VerifySignature(csrInfo->certReqInfo.rawData,
-      csrInfo->certReqInfo.rawDataLen, &csrInfo->signatureAlgo,
+   error = x509VerifySignature(&csrInfo->certReqInfo.raw, &csrInfo->signatureAlgo,
       &csrInfo->certReqInfo.subjectPublicKeyInfo, &csrInfo->signatureValue);
 
    //Return status code

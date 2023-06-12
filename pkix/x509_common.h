@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _X509_COMMON_H
@@ -347,6 +347,13 @@
    #error X509_SERIAL_NUMBER_SIZE parameter is not valid
 #endif
 
+//Maximum number of domain components
+#ifndef X509_MAX_DOMAIN_COMPONENTS
+   #define X509_MAX_DOMAIN_COMPONENTS 4
+#elif (X509_MAX_DOMAIN_COMPONENTS < 1)
+   #error X509_MAX_DOMAIN_COMPONENTS parameter is not valid
+#endif
+
 //Maximum number of subject alternative names
 #ifndef X509_MAX_SUBJECT_ALT_NAMES
    #define X509_MAX_SUBJECT_ALT_NAMES 4
@@ -354,11 +361,39 @@
    #error X509_MAX_SUBJECT_ALT_NAMES parameter is not valid
 #endif
 
-//Maximum number of certificate issuer names
-#ifndef X509_MAX_CERT_ISSUER_NAMES
-   #define X509_MAX_CERT_ISSUER_NAMES 4
-#elif (X509_MAX_CERT_ISSUER_NAMES < 1)
-   #error X509_MAX_CERT_ISSUER_NAMES parameter is not valid
+//Maximum number of certificate issuers
+#ifndef X509_MAX_CERT_ISSUERS
+   #define X509_MAX_CERT_ISSUERS 4
+#elif (X509_MAX_CERT_ISSUERS < 1)
+   #error X509_MAX_CERT_ISSUERS parameter is not valid
+#endif
+
+//Maximum number of CRL issuers
+#ifndef X509_MAX_CRL_ISSUERS
+   #define X509_MAX_CRL_ISSUERS 2
+#elif (X509_MAX_CRL_ISSUERS < 1)
+   #error X509_MAX_CRL_ISSUERS parameter is not valid
+#endif
+
+//Maximum number of distribution points
+#ifndef X509_MAX_DISTR_POINTS
+   #define X509_MAX_DISTR_POINTS 2
+#elif (X509_MAX_DISTR_POINTS < 1)
+   #error X509_MAX_DISTR_POINTS parameter is not valid
+#endif
+
+//Maximum number of full names
+#ifndef X509_MAX_FULL_NAMES
+   #define X509_MAX_FULL_NAMES 2
+#elif (X509_MAX_FULL_NAMES < 1)
+   #error X509_MAX_FULL_NAMES parameter is not valid
+#endif
+
+//Maximum number of access descriptions
+#ifndef X509_MAX_ACCESS_DESCRIPTIONS
+   #define X509_MAX_ACCESS_DESCRIPTIONS 2
+#elif (X509_MAX_ACCESS_DESCRIPTIONS < 1)
+   #error X509_MAX_ACCESS_DESCRIPTIONS parameter is not valid
 #endif
 
 //Maximum number of custom extensions
@@ -380,14 +415,35 @@ extern "C" {
 
 
 /**
+ * @brief PKCS #1 versions
+ **/
+
+typedef enum
+{
+   PKCS1_VERSION_1 = 0
+} Pkcs1Version;
+
+
+/**
+ * @brief PKCS #8 versions
+ **/
+
+typedef enum
+{
+   PKCS8_VERSION_1 = 0,
+   PKCS8_VERSION_2 = 1
+} Pkcs8Version;
+
+
+/**
  * @brief X.509 versions
  **/
 
 typedef enum
 {
-   X509_VERSION_1 = 0x00,
-   X509_VERSION_2 = 0x01,
-   X509_VERSION_3 = 0x02,
+   X509_VERSION_1 = 0,
+   X509_VERSION_2 = 1,
+   X509_VERSION_3 = 2
 } X509Version;
 
 
@@ -554,12 +610,34 @@ typedef enum
 
 
 /**
+ * @brief String
+ **/
+
+typedef struct
+{
+   const char_t *value;
+   size_t length;
+} X509String;
+
+
+/**
+ * @brief Octet string
+ **/
+
+typedef struct
+{
+   const uint8_t *value;
+   size_t length;
+} X509OctetString;
+
+
+/**
  * @brief Serial number
  **/
 
 typedef struct
 {
-   const uint8_t *data;
+   const uint8_t *value;
    size_t length;
 } X509SerialNumber;
 
@@ -570,38 +648,24 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *rawData;
-   size_t rawDataLen;
-   const char_t *commonName;
-   size_t commonNameLen;
-   const char_t *surname;
-   size_t surnameLen;
-   const char_t *serialNumber;
-   size_t serialNumberLen;
-   const char_t *countryName;
-   size_t countryNameLen;
-   const char_t *localityName;
-   size_t localityNameLen;
-   const char_t *stateOrProvinceName;
-   size_t stateOrProvinceNameLen;
-   const char_t *organizationName;
-   size_t organizationNameLen;
-   const char_t *organizationalUnitName;
-   size_t organizationalUnitNameLen;
-   const char_t *title;
-   size_t titleLen;
-   const char_t *name;
-   size_t nameLen;
-   const char_t *givenName;
-   size_t givenNameLen;
-   const char_t *initials;
-   size_t initialsLen;
-   const char_t *generationQualifier;
-   size_t generationQualifierLen;
-   const char_t *dnQualifier;
-   size_t dnQualifierLen;
-   const char_t *pseudonym;
-   size_t pseudonymLen;
+   X509OctetString raw;
+   X509String commonName;
+   X509String surname;
+   X509String serialNumber;
+   X509String countryName;
+   X509String localityName;
+   X509String stateOrProvinceName;
+   X509String organizationName;
+   X509String organizationalUnitName;
+   X509String title;
+   X509String name;
+   X509String givenName;
+   X509String initials;
+   X509String generationQualifier;
+   X509String dnQualifier;
+   X509String pseudonym;
+   uint_t numDomainComponents;
+   X509String domainComponents[X509_MAX_DOMAIN_COMPONENTS];
 } X509Name;
 
 
@@ -611,10 +675,9 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *type;
-   size_t typeLen;
-   const char_t *value;
-   size_t valueLen;
+   X509OctetString oid;
+   uint_t type;
+   X509String data;
 } X509NameAttribute;
 
 
@@ -635,10 +698,8 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *oid;
-   size_t oidLen;
-   const uint8_t *params;
-   size_t paramsLen;
+   X509OctetString oid;
+   X509OctetString params;
 } X509AlgoId;
 
 
@@ -648,10 +709,8 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *n;
-   size_t nLen;
-   const uint8_t *e;
-   size_t eLen;
+   X509OctetString n;
+   X509OctetString e;
 } X509RsaPublicKey;
 
 
@@ -661,12 +720,9 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *p;
-   size_t pLen;
-   const uint8_t *q;
-   size_t qLen;
-   const uint8_t *g;
-   size_t gLen;
+   X509OctetString p;
+   X509OctetString q;
+   X509OctetString g;
 } X509DsaParameters;
 
 
@@ -676,8 +732,7 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *y;
-   size_t yLen;
+   X509OctetString y;
 } X509DsaPublicKey;
 
 
@@ -687,8 +742,7 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *namedCurve;
-   size_t namedCurveLen;
+   X509OctetString namedCurve;
 } X509EcParameters;
 
 
@@ -698,21 +752,19 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *q;
-   size_t qLen;
+   X509OctetString q;
 } X509EcPublicKey;
 
 
 /**
- * @brief Subject public key information
+ * @brief Subject Public Key Information extension
  **/
 
 typedef struct
 {
-   const uint8_t *rawData;
-   size_t rawDataLen;
-   const uint8_t *oid;
-   size_t oidLen;
+   X509OctetString raw;
+   X509OctetString oid;
+   X509OctetString rawSubjectPublicKey;
 #if (RSA_SUPPORT == ENABLED)
    X509RsaPublicKey rsaPublicKey;
 #endif
@@ -728,7 +780,7 @@ typedef struct
 
 
 /**
- * @brief Basic constraints
+ * @brief Basic Constraints extension
  **/
 
 typedef struct
@@ -740,21 +792,19 @@ typedef struct
 
 
 /**
- * @brief Name constraints
+ * @brief Name Constraints extension
  **/
 
 typedef struct
 {
    bool_t critical;
-   const uint8_t *permittedSubtrees;
-   size_t permittedSubtreesLen;
-   const uint8_t *excludedSubtrees;
-   size_t excludedSubtreesLen;
+   X509OctetString permittedSubtrees;
+   X509OctetString excludedSubtrees;
 } X509NameConstraints;
 
 
 /**
- * @brief Key usage
+ * @brief Key Usage extension
  **/
 
 typedef struct
@@ -765,7 +815,7 @@ typedef struct
 
 
 /**
- * @brief Extended key usage
+ * @brief Extended Key Usage extension
  **/
 
 typedef struct
@@ -788,21 +838,20 @@ typedef struct
 
 
 /**
- * @brief Subject alternative name
+ * @brief Subject Alternative Name extension
  **/
 
 typedef struct
 {
    bool_t critical;
-   const uint8_t *rawData;
-   size_t rawDataLen;
+   X509OctetString raw;
    uint_t numGeneralNames;
    X509GeneralName generalNames[X509_MAX_SUBJECT_ALT_NAMES];
 } X509SubjectAltName;
 
 
 /**
- * @brief Subject key identifier
+ * @brief Subject Key Identifier extension
  **/
 
 typedef struct
@@ -814,15 +863,87 @@ typedef struct
 
 
 /**
- * @brief Authority key identifier
+ * @brief Authority Key Identifier extension
  **/
 
 typedef struct
 {
    bool_t critical;
-   const uint8_t *keyId;
-   size_t keyIdLen;
-} X509AuthorityKeyId;
+   X509OctetString keyId;
+} X509AuthKeyId;
+
+
+/**
+ * @brief Distribution Point Name structure
+ **/
+
+typedef struct
+{
+   uint_t numFullNames;
+   X509GeneralName fullNames[X509_MAX_FULL_NAMES];
+   X509NameAttribute relativeName;
+} X509DistrPointName;
+
+
+/**
+ * @brief Distribution Point structure
+ **/
+
+typedef struct
+{
+   X509DistrPointName distrPointName;
+   uint16_t reasonFlags;
+   uint_t numCrlIssuers;
+   X509GeneralName crlIssuers[X509_MAX_CRL_ISSUERS];
+} X509DistrPoint;
+
+
+/**
+ * @brief CRL Distribution Points extension
+ **/
+
+typedef struct
+{
+   bool_t critical;
+   X509OctetString raw;
+   uint_t numDistrPoints;
+   X509DistrPoint distrPoints[X509_MAX_DISTR_POINTS];
+} X509CrlDistrPoints;
+
+
+/**
+ * @brief Access Description extension
+ **/
+
+typedef struct
+{
+   X509OctetString accessMethod;
+   X509GeneralName accessLocation;
+} X509AccessDescription;
+
+
+/**
+ * @brief Authority Information Access extension
+ **/
+
+typedef struct
+{
+   bool_t critical;
+   X509OctetString raw;
+   uint_t numAccessDescriptions;
+   X509AccessDescription accessDescriptions[X509_MAX_ACCESS_DESCRIPTIONS];
+} X509AuthInfoAccess;
+
+
+/**
+ * @brief PKIX OCSP No Check extension
+ **/
+
+typedef struct
+{
+   bool_t critical;
+   bool_t present;
+} X509PkixOcspNoCheck;
 
 
 /**
@@ -842,11 +963,9 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *oid;
-   size_t oidLen;
+   X509OctetString oid;
    bool_t critical;
-   const uint8_t *value;
-   size_t valueLen;
+   X509OctetString data;
 } X509Extension;
 
 
@@ -856,15 +975,17 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *rawData;
-   size_t rawDataLen;
+   X509OctetString raw;
    X509BasicConstraints basicConstraints;
    X509NameConstraints nameConstraints;
    X509KeyUsage keyUsage;
    X509ExtendedKeyUsage extKeyUsage;
    X509SubjectAltName subjectAltName;
    X509SubjectKeyId subjectKeyId;
-   X509AuthorityKeyId authKeyId;
+   X509AuthKeyId authKeyId;
+   X509CrlDistrPoints crlDistrPoints;
+   X509AuthInfoAccess authInfoAccess;
+   X509PkixOcspNoCheck pkixOcspNoCheck;
    X509NsCertType nsCertType;
    uint_t numCustomExtensions;
    X509Extension customExtensions[X509_MAX_CUSTOM_EXTENSIONS];
@@ -878,12 +999,9 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *hashAlgo;
-   size_t hashAlgoLen;
-   const uint8_t *maskGenAlgo;
-   size_t maskGenAlgoLen;
-   const uint8_t *maskGenHashAlgo;
-   size_t maskGenHashAlgoLen;
+   X509OctetString hashAlgo;
+   X509OctetString maskGenAlgo;
+   X509OctetString maskGenHashAlgo;
    size_t saltLen;
 } X509RsaPssParameters;
 
@@ -894,23 +1012,11 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *oid;
-   size_t oidLen;
+   X509OctetString oid;
 #if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
    X509RsaPssParameters rsaPssParams;
 #endif
-} X509SignatureAlgoId;
-
-
-/**
- * @brief Signature value
- **/
-
-typedef struct
-{
-   const uint8_t *data;
-   size_t length;
-} X509SignatureValue;
+} X509SignAlgoId;
 
 
 /**
@@ -919,11 +1025,10 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *rawData;
-   size_t rawDataLen;
+   X509OctetString raw;
    X509Version version;
    X509SerialNumber serialNumber;
-   X509SignatureAlgoId signatureAlgo;
+   X509SignAlgoId signatureAlgo;
    X509Name issuer;
    X509Validity validity;
    X509Name subject;
@@ -939,13 +1044,13 @@ typedef struct
 typedef struct
 {
    X509TbsCertificate tbsCert;
-   X509SignatureAlgoId signatureAlgo;
-   X509SignatureValue signatureValue;
-} X509CertificateInfo;
+   X509SignAlgoId signatureAlgo;
+   X509OctetString signatureValue;
+} X509CertInfo;
 
 
 /**
- * @brief CRL reason
+ * @brief CRL Reason extension
  **/
 
 typedef struct
@@ -956,7 +1061,7 @@ typedef struct
 
 
 /**
- * @brief Invalidity date
+ * @brief Invalidity Date extension
  **/
 
 typedef struct
@@ -967,27 +1072,25 @@ typedef struct
 
 
 /**
- * @brief Certificate issuer
+ * @brief Certificate Issuer extension
  **/
 
 typedef struct
 {
    bool_t critical;
-   const uint8_t *rawData;
-   size_t rawDataLen;
+   X509OctetString raw;
    uint_t numGeneralNames;
-   X509GeneralName generalNames[X509_MAX_CERT_ISSUER_NAMES];
+   X509GeneralName generalNames[X509_MAX_CERT_ISSUERS];
 } X509CertificateIssuer;
 
 
 /**
- * @brief CRL extensions
+ * @brief CRL entry extensions
  **/
 
 typedef struct
 {
-   const uint8_t *rawData;
-   size_t rawDataLen;
+   X509OctetString raw;
    X509CrlReason reasonCode;
    X509InvalidityDate invalidityDate;
    X509CertificateIssuer certIssuer;
@@ -1019,33 +1122,18 @@ typedef struct
 
 
 /**
- * @brief Delta CRL indicator
+ * @brief Delta CRL Indicator extension
  **/
 
 typedef struct
 {
    bool_t critical;
-   const uint8_t *baseCrlNumber;
-   size_t baseCrlNumberLen;
+   X509OctetString baseCrlNumber;
 } X509DeltaCrlIndicator;
 
 
 /**
- * @brief Distribution point name
- **/
-
-typedef struct
-{
-   bool_t critical;
-   const uint8_t *fullName;
-   size_t fullNameLen;
-   const uint8_t *nameRelativeToCrlIssuer;
-   size_t nameRelativeToCrlIssuerLen;
-} X509DistrPointName;
-
-
-/**
- * @brief Issuing distribution point
+ * @brief Issuing Distribution Point extension
  **/
 
 typedef struct
@@ -1066,12 +1154,11 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *rawData;
-   size_t rawDataLen;
+   X509OctetString raw;
    X509CrlNumber crlNumber;
    X509DeltaCrlIndicator deltaCrlIndicator;
    X509IssuingDistrPoint issuingDistrPoint;
-   X509AuthorityKeyId authKeyId;
+   X509AuthKeyId authKeyId;
 } X509CrlExtensions;
 
 
@@ -1081,15 +1168,13 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *rawData;
-   size_t rawDataLen;
+   X509OctetString raw;
    X509Version version;
-   X509SignatureAlgoId signatureAlgo;
+   X509SignAlgoId signatureAlgo;
    X509Name issuer;
    DateTime thisUpdate;
    DateTime nextUpdate;
-   const uint8_t *revokedCerts;
-   size_t revokedCertsLen;
+   X509OctetString revokedCerts;
    X509CrlExtensions crlExtensions;
 } X509TbsCertList;
 
@@ -1101,8 +1186,8 @@ typedef struct
 typedef struct
 {
    X509TbsCertList tbsCertList;
-   X509SignatureAlgoId signatureAlgo;
-   X509SignatureValue signatureValue;
+   X509SignAlgoId signatureAlgo;
+   X509OctetString signatureValue;
 } X509CrlInfo;
 
 
@@ -1123,10 +1208,8 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *oid;
-   size_t oidLen;
-   const uint8_t *value;
-   size_t valueLen;
+   X509OctetString oid;
+   X509OctetString data;
 } X509Attribute;
 
 
@@ -1136,8 +1219,7 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *rawData;
-   size_t rawDataLen;
+   X509OctetString raw;
    X509ChallengePassword challengePwd;
    X509Extensions extensionReq;
 } X509Attributes;
@@ -1149,8 +1231,7 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *rawData;
-   size_t rawDataLen;
+   X509OctetString raw;
    X509Version version;
    X509Name subject;
    X509SubjectPublicKeyInfo subjectPublicKeyInfo;
@@ -1165,8 +1246,8 @@ typedef struct
 typedef struct
 {
    X509CertRequestInfo certReqInfo;
-   X509SignatureAlgoId signatureAlgo;
-   X509SignatureValue signatureValue;
+   X509SignAlgoId signatureAlgo;
+   X509OctetString signatureValue;
 } X509CsrInfo;
 
 
@@ -1186,6 +1267,7 @@ extern const uint8_t X509_INITIALS_OID[3];
 extern const uint8_t X509_GENERATION_QUALIFIER_OID[3];
 extern const uint8_t X509_DN_QUALIFIER_OID[3];
 extern const uint8_t X509_PSEUDONYM_OID[3];
+extern const uint8_t X509_DOMAIN_COMPONENT_OID[10];
 
 extern const uint8_t X509_SUBJECT_DIR_ATTR_OID[3];
 extern const uint8_t X509_SUBJECT_KEY_ID_OID[3];
@@ -1208,7 +1290,8 @@ extern const uint8_t X509_POLICY_CONSTRAINTS_OID[3];
 extern const uint8_t X509_EXTENDED_KEY_USAGE_OID[3];
 extern const uint8_t X509_FRESHEST_CRL_OID[3];
 extern const uint8_t X509_INHIBIT_ANY_POLICY_OID[3];
-
+extern const uint8_t X509_AUTH_INFO_ACCESS_OID[8];
+extern const uint8_t X509_PKIX_OCSP_NO_CHECK_OID[9];
 extern const uint8_t X509_NS_CERT_TYPE_OID[9];
 
 extern const uint8_t X509_ANY_EXT_KEY_USAGE_OID[4];
@@ -1226,6 +1309,9 @@ extern const uint8_t X509_KP_SSH_CLIENT_OID[8];
 extern const uint8_t X509_KP_SSH_SERVER_OID[8];
 extern const uint8_t X509_KP_DOC_SIGNING_OID[8];
 
+extern const uint8_t X509_AD_CA_ISSUERS[8];
+extern const uint8_t X509_AD_OCSP[8];
+
 extern const uint8_t X509_CHALLENGE_PASSWORD_OID[9];
 extern const uint8_t X509_EXTENSION_REQUEST_OID[9];
 
@@ -1233,7 +1319,7 @@ extern const uint8_t X509_EXTENSION_REQUEST_OID[9];
 bool_t x509IsSignAlgoSupported(X509SignatureAlgo signAlgo);
 bool_t x509IsHashAlgoSupported(X509HashAlgo hashAlgo);
 
-error_t x509GetSignHashAlgo(const X509SignatureAlgoId *signAlgoId,
+error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
    X509SignatureAlgo *signAlgo, const HashAlgo **hashAlgo);
 
 X509KeyType x509GetPublicKeyType(const uint8_t *oid, size_t length);

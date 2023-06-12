@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,6 +34,7 @@
 //Dependencies
 #include "core/crypto.h"
 #include "pkix/x509_cert_parse.h"
+#include "pkix/x509_cert_ext_parse.h"
 #include "pkix/x509_cert_validate.h"
 #include "pkix/x509_sign_verify.h"
 #include "debug.h"
@@ -45,13 +46,13 @@
 /**
  * @brief X.509 certificate validation
  * @param[in] certInfo X.509 certificate to be verified
- * @param[in] issuerCertInfo Issuer certificate
+ * @param[in] issuerCertInfo Issuer's certificate
  * @param[in] pathLen Certificate path length
  * @return Error code
  **/
 
-error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
-   const X509CertificateInfo *issuerCertInfo, uint_t pathLen)
+error_t x509ValidateCertificate(const X509CertInfo *certInfo,
+   const X509CertInfo *issuerCertInfo, uint_t pathLen)
 {
    error_t error;
    time_t currentTime;
@@ -88,10 +89,10 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
    }
 
    //Make sure that the subject and issuer names chain correctly
-   if(!x509CompareName(certInfo->tbsCert.issuer.rawData,
-      certInfo->tbsCert.issuer.rawDataLen,
-      issuerCertInfo->tbsCert.subject.rawData,
-      issuerCertInfo->tbsCert.subject.rawDataLen))
+   if(!x509CompareName(certInfo->tbsCert.issuer.raw.value,
+      certInfo->tbsCert.issuer.raw.length,
+      issuerCertInfo->tbsCert.subject.raw.value,
+      issuerCertInfo->tbsCert.subject.raw.length))
    {
       //Report an error
       return ERROR_BAD_CERTIFICATE;
@@ -130,8 +131,7 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
 
    //The ASN.1 DER-encoded tbsCertificate is used as the input to the signature
    //function
-   error = x509VerifySignature(certInfo->tbsCert.rawData,
-      certInfo->tbsCert.rawDataLen, &certInfo->signatureAlgo,
+   error = x509VerifySignature(&certInfo->tbsCert.raw, &certInfo->signatureAlgo,
       &issuerCertInfo->tbsCert.subjectPublicKeyInfo, &certInfo->signatureValue);
 
    //Return status code
@@ -146,7 +146,7 @@ error_t x509ValidateCertificate(const X509CertificateInfo *certInfo,
  * @return Error code
  **/
 
-error_t x509CheckSubjectName(const X509CertificateInfo *certInfo,
+error_t x509CheckSubjectName(const X509CertInfo *certInfo,
    const char_t *fqdn)
 {
    error_t error;
@@ -171,14 +171,14 @@ error_t x509CheckSubjectName(const X509CertificateInfo *certInfo,
       i = 0;
 
       //Valid SubjectAltName extension?
-      if(extensions->subjectAltName.rawDataLen > 0)
+      if(extensions->subjectAltName.raw.length > 0)
       {
          //The subject alternative name extension allows identities to be bound
          //to the subject of the certificate. These identities may be included
          //in addition to or in place of the identity in the subject field of
          //the certificate
-         data = extensions->subjectAltName.rawData;
-         length = extensions->subjectAltName.rawDataLen;
+         data = extensions->subjectAltName.raw.value;
+         length = extensions->subjectAltName.raw.length;
 
          //Loop through the list of subject alternative names
          while(!res && length > 0)
@@ -212,11 +212,11 @@ error_t x509CheckSubjectName(const X509CertificateInfo *certInfo,
          //The implementation must not seek a match for a reference identifier
          //of CN-ID if the presented identifiers include a DNS-ID, SRV-ID or
          //URI-ID (refer to RFC 6125, section 6.4.4)
-         if(i == 0 && certInfo->tbsCert.subject.commonNameLen > 0)
+         if(i == 0 && certInfo->tbsCert.subject.commonName.length > 0)
          {
             //The implementation may as a last resort check the CN-ID for a match
-            res = x509CompareSubjectName(certInfo->tbsCert.subject.commonName,
-               certInfo->tbsCert.subject.commonNameLen, fqdn);
+            res = x509CompareSubjectName(certInfo->tbsCert.subject.commonName.value,
+               certInfo->tbsCert.subject.commonName.length, fqdn);
          }
       }
 
@@ -243,7 +243,7 @@ error_t x509CheckSubjectName(const X509CertificateInfo *certInfo,
  **/
 
 error_t x509CheckNameConstraints(const char_t *subjectName,
-   const X509CertificateInfo *certInfo)
+   const X509CertInfo *certInfo)
 {
    error_t error;
    bool_t match;
@@ -264,8 +264,8 @@ error_t x509CheckNameConstraints(const char_t *subjectName,
    if(subjectName != NULL)
    {
       //Point to the list of excluded name subtrees
-      data = extensions->nameConstraints.excludedSubtrees;
-      length = extensions->nameConstraints.excludedSubtreesLen;
+      data = extensions->nameConstraints.excludedSubtrees.value;
+      length = extensions->nameConstraints.excludedSubtrees.length;
 
       //Loop through the names constraints
       while(length > 0)
@@ -298,11 +298,11 @@ error_t x509CheckNameConstraints(const char_t *subjectName,
                break;
 
             //Valid common name?
-            if(name.commonName != NULL)
+            if(name.commonName.value != NULL)
             {
                //Check whether the subject name matches the subtree
-               match = x509CompareSubtree(subjectName, name.commonName,
-                  name.commonNameLen);
+               match = x509CompareSubtree(subjectName, name.commonName.value,
+                  name.commonName.length);
             }
          }
          else
@@ -329,8 +329,8 @@ error_t x509CheckNameConstraints(const char_t *subjectName,
       if(!error)
       {
          //Point to the list of permitted name subtrees
-         data = extensions->nameConstraints.permittedSubtrees;
-         length = extensions->nameConstraints.permittedSubtreesLen;
+         data = extensions->nameConstraints.permittedSubtrees.value;
+         length = extensions->nameConstraints.permittedSubtrees.length;
 
          //Loop through the names constraints
          while(length > 0)
@@ -363,11 +363,11 @@ error_t x509CheckNameConstraints(const char_t *subjectName,
                   break;
 
                //Valid common name?
-               if(name.commonName != NULL)
+               if(name.commonName.value != NULL)
                {
                   //Check whether the subject name matches the subtree
-                  match = x509CompareSubtree(subjectName, name.commonName,
-                     name.commonNameLen);
+                  match = x509CompareSubtree(subjectName, name.commonName.value,
+                     name.commonName.length);
                }
             }
             else

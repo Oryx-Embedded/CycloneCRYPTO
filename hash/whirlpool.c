@@ -30,7 +30,7 @@
  * in length, and produces a message digest of 512 bits
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -294,9 +294,13 @@ void whirlpoolFinal(WhirlpoolContext *context, uint8_t *digest)
 
    //Pad the message so that its length is congruent to 32 modulo 64
    if(context->size < 32)
+   {
       paddingSize = 32 - context->size;
+   }
    else
+   {
       paddingSize = 64 + 32 - context->size;
+   }
 
    //Append padding
    whirlpoolUpdate(context, padding, paddingSize);

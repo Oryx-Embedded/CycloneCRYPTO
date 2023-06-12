@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _X509_SIGN_VERIFY_H
@@ -45,44 +45,44 @@ extern "C" {
  * @brief Signature verification callback function
  **/
 
-typedef error_t (*X509SignVerifyCallback)(const uint8_t *tbsCert,
-   size_t tbsCertLen, const X509SignatureAlgoId *signatureAlgoId,
+typedef error_t (*X509SignVerifyCallback)(const X509OctetString *tbsData,
+   const X509SignAlgoId *signAlgoId,
    const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue);
+   const X509OctetString *signature);
 
 
 //X.509 related functions
 error_t x509RegisterSignVerifyCallback(X509SignVerifyCallback callback);
 
-error_t x509VerifySignature(const uint8_t *tbsCert, size_t tbsCertLen,
-   const X509SignatureAlgoId *signatureAlgoId,
+error_t x509VerifySignature(const X509OctetString *tbsData,
+   const X509SignAlgoId *signAlgoId,
    const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue);
+   const X509OctetString *signature);
 
-error_t x509VerifyRsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509VerifyRsaSignature(const X509OctetString *tbsData,
    const HashAlgo *hashAlgo, const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue);
+   const X509OctetString *signature);
 
-error_t x509VerifyRsaPssSignature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509VerifyRsaPssSignature(const X509OctetString *tbsData,
    const HashAlgo *hashAlgo, size_t saltLen,
    const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue);
+   const X509OctetString *signature);
 
-error_t x509VerifyDsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509VerifyDsaSignature(const X509OctetString *tbsData,
    const HashAlgo *hashAlgo, const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue);
+   const X509OctetString *signature);
 
-error_t x509VerifyEcdsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509VerifyEcdsaSignature(const X509OctetString *tbsData,
    const HashAlgo *hashAlgo, const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue);
+   const X509OctetString *signature);
 
-error_t x509VerifyEd25519Signature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509VerifyEd25519Signature(const X509OctetString *tbsData,
    const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue);
+   const X509OctetString *signature);
 
-error_t x509VerifyEd448Signature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509VerifyEd448Signature(const X509OctetString *tbsData,
    const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue);
+   const X509OctetString *signature);
 
 //C++ guard
 #ifdef __cplusplus

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _X509_SIGN_PARSE_H
@@ -42,10 +42,10 @@ extern "C" {
 
 //X.509 related functions
 error_t x509ParseSignatureAlgo(const uint8_t *data, size_t length,
-   size_t *totalLength, X509SignatureAlgoId *signatureAlgo);
+   size_t *totalLength, X509SignAlgoId *signatureAlgo);
 
 error_t x509ParseSignatureValue(const uint8_t *data, size_t length,
-   size_t *totalLength, X509SignatureValue *signatureValue);
+   size_t *totalLength, X509OctetString *signature);
 
 error_t x509ParseRsaPssParameters(const uint8_t *data, size_t length,
    X509RsaPssParameters *rsaPssParams);

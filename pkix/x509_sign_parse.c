@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -51,7 +51,7 @@
  **/
 
 error_t x509ParseSignatureAlgo(const uint8_t *data, size_t length,
-   size_t *totalLength, X509SignatureAlgoId *signatureAlgo)
+   size_t *totalLength, X509SignAlgoId *signatureAlgo)
 {
    error_t error;
    Asn1Tag tag;
@@ -79,8 +79,8 @@ error_t x509ParseSignatureAlgo(const uint8_t *data, size_t length,
       return error;
 
    //Save the signature algorithm identifier
-   signatureAlgo->oid = tag.value;
-   signatureAlgo->oidLen = tag.length;
+   signatureAlgo->oid.value = tag.value;
+   signatureAlgo->oid.length = tag.length;
 
    //Point to the next field (if any)
    data += tag.totalLength;
@@ -112,12 +112,12 @@ error_t x509ParseSignatureAlgo(const uint8_t *data, size_t length,
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
  * @param[out] totalLength Number of bytes that have been parsed
- * @param[out] signatureValue Information resulting from the parsing process
+ * @param[out] signature Information resulting from the parsing process
  * @return Error code
  **/
 
 error_t x509ParseSignatureValue(const uint8_t *data, size_t length,
-   size_t *totalLength, X509SignatureValue *signatureValue)
+   size_t *totalLength, X509OctetString *signature)
 {
    error_t error;
    Asn1Tag tag;
@@ -135,7 +135,8 @@ error_t x509ParseSignatureValue(const uint8_t *data, size_t length,
    *totalLength = tag.totalLength;
 
    //Enforce encoding, class and type
-   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_BIT_STRING);
+   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
+      ASN1_TYPE_BIT_STRING);
    //Invalid tag?
    if(error)
       return error;
@@ -146,8 +147,8 @@ error_t x509ParseSignatureValue(const uint8_t *data, size_t length,
       return ERROR_FAILURE;
 
    //Get the signature value
-   signatureValue->data = tag.value + 1;
-   signatureValue->length = tag.length - 1;
+   signature->value = tag.value + 1;
+   signature->length = tag.length - 1;
 
    //Successful processing
    return NO_ERROR;
@@ -173,21 +174,21 @@ error_t x509ParseRsaPssParameters(const uint8_t *data, size_t length,
 
 #if (SHA1_SUPPORT == ENABLED)
    //The default hash algorithm is SHA-1 (refer to RFC 4055, section 3.1)
-   rsaPssParams->hashAlgo = SHA1_OID;
-   rsaPssParams->hashAlgoLen = sizeof(SHA1_OID);
+   rsaPssParams->hashAlgo.value = SHA1_OID;
+   rsaPssParams->hashAlgo.length = sizeof(SHA1_OID);
 #endif
 
 #if (RSA_SUPPORT == ENABLED)
    //The default mask generation function is MGF1 with SHA-1
-   rsaPssParams->maskGenAlgo = MGF1_OID;
-   rsaPssParams->maskGenAlgoLen = sizeof(MGF1_OID);
+   rsaPssParams->maskGenAlgo.value = MGF1_OID;
+   rsaPssParams->maskGenAlgo.length = sizeof(MGF1_OID);
 #endif
 
 #if (SHA1_SUPPORT == ENABLED)
    //MGF1 requires a one-way hash function that is identified in the
    //parameters field of the MGF1 algorithm identifier
-   rsaPssParams->maskGenHashAlgo = SHA1_OID;
-   rsaPssParams->maskGenHashAlgoLen = sizeof(SHA1_OID);
+   rsaPssParams->maskGenHashAlgo.value = SHA1_OID;
+   rsaPssParams->maskGenHashAlgo.length = sizeof(SHA1_OID);
 #endif
 
    //The default length of the salt is 20
@@ -282,8 +283,8 @@ error_t x509ParseRsaPssHashAlgo(const uint8_t *data, size_t length,
       return error;
 
    //Save the hash algorithm identifier
-   rsaPssParams->hashAlgo = tag.value;
-   rsaPssParams->hashAlgoLen = tag.length;
+   rsaPssParams->hashAlgo.value = tag.value;
+   rsaPssParams->hashAlgo.length = tag.length;
 
    //No error to report
    return NO_ERROR;
@@ -321,8 +322,8 @@ error_t x509ParseRsaPssMaskGenAlgo(const uint8_t *data, size_t length,
       return error;
 
    //Save the mask generation algorithm identifier
-   rsaPssParams->maskGenAlgo = tag.value;
-   rsaPssParams->maskGenAlgoLen = tag.length;
+   rsaPssParams->maskGenAlgo.value = tag.value;
+   rsaPssParams->maskGenAlgo.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -372,8 +373,8 @@ error_t x509ParseRsaPssMaskGenHashAlgo(const uint8_t *data, size_t length,
       return error;
 
    //Save the hash algorithm identifier
-   rsaPssParams->maskGenHashAlgo = tag.value;
-   rsaPssParams->maskGenHashAlgoLen = tag.length;
+   rsaPssParams->maskGenHashAlgo.value = tag.value;
+   rsaPssParams->maskGenHashAlgo.length = tag.length;
 
    //No error to report
    return NO_ERROR;

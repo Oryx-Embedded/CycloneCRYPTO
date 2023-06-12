@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _X509_KEY_PARSE_H
@@ -44,7 +44,7 @@ extern "C" {
 error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
    size_t *totalLength, X509SubjectPublicKeyInfo *subjectPublicKeyInfo);
 
-error_t x509ParseAlgorithmIdentifier(const uint8_t *data, size_t length,
+error_t x509ParseAlgoId(const uint8_t *data, size_t length,
    size_t *totalLength, X509SubjectPublicKeyInfo *subjectPublicKeyInfo);
 
 error_t x509ParseRsaPublicKey(const uint8_t *data, size_t length,

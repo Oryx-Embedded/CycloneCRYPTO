@@ -1,6 +1,6 @@
 /**
  * @file pic32cx_sg_crypto_pkc.c
- * @brief PIC32CX SG40/SG41/SG61 public-key hardware accelerator (PUKCC)
+ * @brief PIC32CX SG41/SG60/SG61 public-key hardware accelerator (PUKCC)
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -957,7 +957,7 @@ error_t ecAffinify(const EcDomainParameters *ecParams, EcPoint *r,
    error_t error;
    size_t modLen;
    uint8_t *pos;
-   PukccZpEcConvProjToAffineParams params;
+   PukccZpEcConvProjToAffineParams params = {0};
 
    //Retrieve the length of the modulus, in bytes
    modLen = mpiGetByteLength(&ecParams->p);
@@ -1068,7 +1068,7 @@ error_t ecMult(const EcDomainParameters *ecParams, EcPoint *r, const Mpi *d,
    size_t kLen;
    size_t modLen;
    uint8_t *pos;
-   PukccZpEccMulParams params;
+   PukccZpEccMulParams params = {0};
 
    //Retrieve the length of the modulus, in bytes
    modLen = mpiGetByteLength(&ecParams->p);

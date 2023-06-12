@@ -31,7 +31,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -366,7 +366,7 @@ __weak_func error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    uint8_t r[16];
    uint8_t s[16];
 
-   ///Make sure the GCM context is valid
+   //Make sure the GCM context is valid
    if(context == NULL)
       return ERROR_INVALID_PARAMETER;
 

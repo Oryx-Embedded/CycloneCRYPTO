@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -69,7 +69,7 @@ error_t pkcs5Decrypt(const X509AlgoId *encryptionAlgoId,
       plaintext != NULL && plaintextLen != NULL)
    {
       //Check encryption algorithm identifier
-      if(!oidComp(encryptionAlgoId->oid, encryptionAlgoId->oidLen,
+      if(!oidComp(encryptionAlgoId->oid.value, encryptionAlgoId->oid.length,
          PBES2_OID, sizeof(PBES2_OID)))
       {
          //Perform PBES2 decryption operation
@@ -126,22 +126,22 @@ error_t pkcs5DecryptPbes1(const X509AlgoId *encryptionAlgoId,
       return ERROR_DECRYPTION_FAILED;
 
    //Obtain the eight-octet salt S and the iteration count c
-   error = pkcs5ParsePbes1Params(encryptionAlgoId->params,
-      encryptionAlgoId->paramsLen, &pbes1Params);
+   error = pkcs5ParsePbes1Params(encryptionAlgoId->params.value,
+      encryptionAlgoId->params.length, &pbes1Params);
    //Any error to report?
    if(error)
       return error;
 
    //Retrieve hash algorithm
-   hashAlgo = pkcs5GetPbes1HashAlgo(encryptionAlgoId->oid,
-      encryptionAlgoId->oidLen);
+   hashAlgo = pkcs5GetPbes1HashAlgo(encryptionAlgoId->oid.value,
+      encryptionAlgoId->oid.length);
    //Invalid hash algorithm?
    if(hashAlgo == NULL)
       return ERROR_UNSUPPORTED_HASH_ALGO;
 
    //Retrieve cipher algorithm
-   cipherAlgo = pkcs5GetPbes1CipherAlgo(encryptionAlgoId->oid,
-      encryptionAlgoId->oidLen);
+   cipherAlgo = pkcs5GetPbes1CipherAlgo(encryptionAlgoId->oid.value,
+      encryptionAlgoId->oid.length);
    //Invalid cipher algorithm?
    if(cipherAlgo == NULL)
       return ERROR_UNSUPPORTED_CIPHER_ALGO;
@@ -156,8 +156,9 @@ error_t pkcs5DecryptPbes1(const X509AlgoId *encryptionAlgoId,
 
    //Apply the PBKDF1 key derivation function to the password P, the salt S,
    //and the iteration count c to produce a derived key DK of length 16 octets
-   error = pbkdf1(hashAlgo, (uint8_t *) password, passwordLen, pbes1Params.salt,
-      pbes1Params.saltLen, pbes1Params.iterationCount, dk, 16);
+   error = pbkdf1(hashAlgo, (uint8_t *) password, passwordLen,
+      pbes1Params.salt.value, pbes1Params.salt.length,
+      pbes1Params.iterationCount, dk, 16);
    //Any error to report?
    if(error)
       return error;
@@ -262,30 +263,30 @@ error_t pkcs5DecryptPbes2(const X509AlgoId *encryptionAlgoId,
 
    //Obtain the salt S for the operation and the iteration count c for the
    //key derivation function
-   error = pkcs5ParsePbes2Params(encryptionAlgoId->params,
-      encryptionAlgoId->paramsLen, &pbes2Params);
+   error = pkcs5ParsePbes2Params(encryptionAlgoId->params.value,
+      encryptionAlgoId->params.length, &pbes2Params);
    //Any error to report?
    if(error)
       return error;
 
    //Retrieve PRF hash algorithm
-   hashAlgo = pkcs5GetPbes2HashAlgo(pbes2Params.keyDerivationFunc.prfAlgoId,
-      pbes2Params.keyDerivationFunc.prfAlgoIdLen);
+   hashAlgo = pkcs5GetPbes2HashAlgo(pbes2Params.keyDerivationFunc.prfAlgoId.value,
+      pbes2Params.keyDerivationFunc.prfAlgoId.length);
    //Invalid hash algorithm?
    if(hashAlgo == NULL)
       return ERROR_UNSUPPORTED_HASH_ALGO;
 
    //Retrieve cipher algorithm
-   cipherAlgo = pkcs5GetPbes2CipherAlgo(pbes2Params.encryptionScheme.oid,
-      pbes2Params.encryptionScheme.oidLen);
+   cipherAlgo = pkcs5GetPbes2CipherAlgo(pbes2Params.encryptionScheme.oid.value,
+      pbes2Params.encryptionScheme.oid.length);
    //Invalid cipher algorithm?
    if(cipherAlgo == NULL)
       return ERROR_UNSUPPORTED_CIPHER_ALGO;
 
    //Obtain the key length in octets, dkLen, for the derived key for the
    //underlying encryption scheme
-   dkLen = pkcs5GetPbes2KeyLength(pbes2Params.encryptionScheme.oid,
-      pbes2Params.encryptionScheme.oidLen);
+   dkLen = pkcs5GetPbes2KeyLength(pbes2Params.encryptionScheme.oid.value,
+      pbes2Params.encryptionScheme.oid.length);
    //Invalid key length?
    if(dkLen == 0)
       return ERROR_UNSUPPORTED_CIPHER_ALGO;
@@ -296,11 +297,11 @@ error_t pkcs5DecryptPbes2(const X509AlgoId *encryptionAlgoId,
       return ERROR_DECRYPTION_FAILED;
 
    //Check the length of the IV
-   if(pbes2Params.encryptionScheme.ivLen != cipherAlgo->blockSize)
+   if(pbes2Params.encryptionScheme.iv.length != cipherAlgo->blockSize)
       return ERROR_DECRYPTION_FAILED;
 
    //Copy initialization vector
-   osMemcpy(iv, pbes2Params.encryptionScheme.iv, cipherAlgo->blockSize);
+   osMemcpy(iv, pbes2Params.encryptionScheme.iv.value, cipherAlgo->blockSize);
 
    //Retrieve the length of the password
    passwordLen = osStrlen(password);
@@ -308,7 +309,8 @@ error_t pkcs5DecryptPbes2(const X509AlgoId *encryptionAlgoId,
    //Apply the selected KDF function to the password P, the salt S, and the
    //iteration count c to produce a derived key DK of length dkLen octets
    error = pbkdf2(hashAlgo, (uint8_t *) password, passwordLen,
-      pbes2Params.keyDerivationFunc.salt, pbes2Params.keyDerivationFunc.saltLen,
+      pbes2Params.keyDerivationFunc.salt.value,
+      pbes2Params.keyDerivationFunc.salt.length,
       pbes2Params.keyDerivationFunc.iterationCount, dk, dkLen);
    //Any error to report?
    if(error)
@@ -410,8 +412,8 @@ error_t pkcs5ParsePbes1Params(const uint8_t *data, size_t length,
       return ERROR_INVALID_SYNTAX;
 
    //Save salt value
-   pbes1Params->salt = tag.value;
-   pbes1Params->saltLen = tag.length;
+   pbes1Params->salt.value = tag.value;
+   pbes1Params->salt.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -522,12 +524,12 @@ error_t pkcs5ParseKeyDerivationFunc(const uint8_t *data, size_t length,
       return error;
 
    //Save algorithm identifier
-   keyDerivationFunc->kdfAlgoId = tag.value;
-   keyDerivationFunc->kdfAlgoIdLen = tag.length;
+   keyDerivationFunc->kdfAlgoId.value = tag.value;
+   keyDerivationFunc->kdfAlgoId.length = tag.length;
 
    //Check KDF algorithm identifier
-   if(oidComp(keyDerivationFunc->kdfAlgoId, keyDerivationFunc->kdfAlgoIdLen,
-      PBKDF2_OID, arraysize(PBKDF2_OID)))
+   if(oidComp(keyDerivationFunc->kdfAlgoId.value,
+      keyDerivationFunc->kdfAlgoId.length, PBKDF2_OID, arraysize(PBKDF2_OID)))
    {
       return ERROR_WRONG_IDENTIFIER;
    }
@@ -581,8 +583,8 @@ error_t pkcs5ParsePbkdf2Params(const uint8_t *data, size_t length,
       return error;
 
    //Save salt value
-   keyDerivationFunc->salt = tag.value;
-   keyDerivationFunc->saltLen = tag.length;
+   keyDerivationFunc->salt.value = tag.value;
+   keyDerivationFunc->salt.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -648,15 +650,15 @@ error_t pkcs5ParsePbkdf2Params(const uint8_t *data, size_t length,
          return error;
 
       //Save algorithm identifier
-      keyDerivationFunc->prfAlgoId = tag.value;
-      keyDerivationFunc->prfAlgoIdLen = tag.length;
+      keyDerivationFunc->prfAlgoId.value = tag.value;
+      keyDerivationFunc->prfAlgoId.length = tag.length;
    }
    else
    {
       //The default pseudorandom function is HMAC-SHA-1 (refer to RFC 8018,
       //section A.2)
-      keyDerivationFunc->prfAlgoId = HMAC_WITH_SHA1_OID;
-      keyDerivationFunc->prfAlgoIdLen = sizeof(HMAC_WITH_SHA1_OID);
+      keyDerivationFunc->prfAlgoId.value = HMAC_WITH_SHA1_OID;
+      keyDerivationFunc->prfAlgoId.length = sizeof(HMAC_WITH_SHA1_OID);
    }
 
    //Successful processing
@@ -699,8 +701,8 @@ error_t pkcs5ParseEncryptionScheme(const uint8_t *data, size_t length,
       return error;
 
    //Save algorithm identifier
-   encryptionScheme->oid = tag.value;
-   encryptionScheme->oidLen = tag.length;
+   encryptionScheme->oid.value = tag.value;
+   encryptionScheme->oid.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -715,8 +717,8 @@ error_t pkcs5ParseEncryptionScheme(const uint8_t *data, size_t length,
       return error;
 
    //Save initialization vector
-   encryptionScheme->iv = tag.value;
-   encryptionScheme->ivLen = tag.length;
+   encryptionScheme->iv.value = tag.value;
+   encryptionScheme->iv.length = tag.length;
 
    //Successful processing
    return NO_ERROR;

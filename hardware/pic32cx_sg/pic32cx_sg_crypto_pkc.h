@@ -1,6 +1,6 @@
 /**
  * @file pic32cx_sg_crypto_pkc.h
- * @brief PIC32CX SG40/SG41/SG61 public-key hardware accelerator (PUKCC)
+ * @brief PIC32CX SG41/SG60/SG61 public-key hardware accelerator (PUKCC)
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _PIC32CX_SG_CRYPTO_PKC_H

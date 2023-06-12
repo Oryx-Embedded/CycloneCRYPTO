@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -69,9 +69,8 @@ error_t x509RegisterSignGenCallback(X509SignGenCallback callback)
  * @brief Certificate signature generation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] tbsCert Pointer to the TBSCertificate to be signed
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
- * @param[in] signatureAlgoId Signature algorithm identifier
+ * @param[in] tbsData Pointer to the data to be signed
+ * @param[in] signAlgoId Signature algorithm identifier
  * @param[in] publicKeyInfo Signer's public key information
  * @param[in] privateKey Signer's private key
  * @param[out] output Resulting signature
@@ -80,7 +79,7 @@ error_t x509RegisterSignGenCallback(X509SignGenCallback callback)
  **/
 
 error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const uint8_t *tbsCert, size_t tbsCertLen, const X509SignatureAlgoId *signatureAlgoId,
+   const X509OctetString *tbsData, const X509SignAlgoId *signAlgoId,
    const X509SubjectPublicKeyInfo *publicKeyInfo, const void *privateKey,
    uint8_t *output, size_t *written)
 {
@@ -93,8 +92,8 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    if(x509SignGenCallback != NULL)
    {
       //Invoke user-defined callback
-      error = x509SignGenCallback(prngAlgo, prngContext, tbsCert, tbsCertLen,
-         signatureAlgoId, publicKeyInfo, privateKey, output, written);
+      error = x509SignGenCallback(prngAlgo, prngContext, tbsData,
+         signAlgoId, publicKeyInfo, privateKey, output, written);
    }
    else
 #endif
@@ -109,7 +108,7 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    {
       //Retrieve the signature algorithm that will be used to sign the
       //certificate
-      error = x509GetSignHashAlgo(signatureAlgoId, &signAlgo, &hashAlgo);
+      error = x509GetSignHashAlgo(signAlgoId, &signAlgo, &hashAlgo);
 
       //Check status code
       if(!error)
@@ -119,8 +118,8 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
          if(signAlgo == X509_SIGN_ALGO_RSA)
          {
             //Generate RSA signature (RSASSA-PKCS1-v1_5 signature scheme)
-            error = x509GenerateRsaSignature(tbsCert, tbsCertLen, hashAlgo,
-               privateKey, output, written);
+            error = x509GenerateRsaSignature(tbsData, hashAlgo, privateKey,
+               output, written);
          }
          else
 #endif
@@ -129,9 +128,9 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
          if(signAlgo == X509_SIGN_ALGO_RSA_PSS)
          {
             //Generate RSA signature (RSASSA-PSS signature scheme)
-            error = x509GenerateRsaPssSignature(prngAlgo, prngContext, tbsCert,
-               tbsCertLen, hashAlgo, signatureAlgoId->rsaPssParams.saltLen,
-               privateKey, output, written);
+            error = x509GenerateRsaPssSignature(prngAlgo, prngContext, tbsData,
+               hashAlgo, signAlgoId->rsaPssParams.saltLen, privateKey, output,
+               written);
          }
          else
 #endif
@@ -140,8 +139,8 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
          if(signAlgo == X509_SIGN_ALGO_DSA)
          {
             //Generate DSA signature
-            error = x509GenerateDsaSignature(prngAlgo, prngContext, tbsCert,
-               tbsCertLen, hashAlgo, privateKey, output, written);
+            error = x509GenerateDsaSignature(prngAlgo, prngContext, tbsData,
+               hashAlgo, privateKey, output, written);
          }
          else
 #endif
@@ -150,9 +149,8 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
          if(signAlgo == X509_SIGN_ALGO_ECDSA)
          {
             //Generate ECDSA signature
-            error = x509GenerateEcdsaSignature(prngAlgo, prngContext, tbsCert,
-               tbsCertLen, hashAlgo, publicKeyInfo, privateKey, output,
-               written);
+            error = x509GenerateEcdsaSignature(prngAlgo, prngContext, tbsData,
+               hashAlgo, publicKeyInfo, privateKey, output, written);
          }
          else
 #endif
@@ -161,8 +159,8 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
          if(signAlgo == X509_SIGN_ALGO_ED25519)
          {
             //Generate Ed25519 signature (PureEdDSA mode)
-            error = x509GenerateEd25519Signature(tbsCert, tbsCertLen,
-               privateKey, output, written);
+            error = x509GenerateEd25519Signature(tbsData, privateKey, output,
+               written);
          }
          else
 #endif
@@ -171,8 +169,8 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
          if(signAlgo == X509_SIGN_ALGO_ED448)
          {
             //Generate Ed448 signature (PureEdDSA mode)
-            error = x509GenerateEd448Signature(tbsCert, tbsCertLen, privateKey,
-               output, written);
+            error = x509GenerateEd448Signature(tbsData, privateKey, output,
+               written);
          }
          else
 #endif
@@ -191,8 +189,7 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
 
 /**
  * @brief RSA signature generation
- * @param[in] tbsCert Pointer to the TBSCertificate to be signed
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
+ * @param[in] tbsData Pointer to the data to be signed
  * @param[in] hashAlgo Underlying hash function
  * @param[in] privateKey Signer's private key
  * @param[out] output Resulting signature
@@ -200,7 +197,7 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t x509GenerateRsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509GenerateRsaSignature(const X509OctetString *tbsData,
    const HashAlgo *hashAlgo, const RsaPrivateKey *privateKey, uint8_t *output,
    size_t *written)
 {
@@ -209,7 +206,7 @@ error_t x509GenerateRsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
    uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Digest the TBSCertificate structure using the specified hash algorithm
-   error = hashAlgo->compute(tbsCert, tbsCertLen, digest);
+   error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
 
    //Check status code
    if(!error)
@@ -232,8 +229,7 @@ error_t x509GenerateRsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
  * @brief RSA-PSS signature generation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] tbsCert Pointer to the TBSCertificate to be signed
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
+ * @param[in] tbsData Pointer to the data to be signed
  * @param[in] hashAlgo Underlying hash function
  * @param[in] saltLen Length of the salt, in bytes
  * @param[in] privateKey Signer's private key
@@ -243,16 +239,15 @@ error_t x509GenerateRsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
  **/
 
 error_t x509GenerateRsaPssSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const uint8_t *tbsCert, size_t tbsCertLen, const HashAlgo *hashAlgo,
-   size_t saltLen, const RsaPrivateKey *privateKey, uint8_t *output,
-   size_t *written)
+   const X509OctetString *tbsData, const HashAlgo *hashAlgo, size_t saltLen,
+   const RsaPrivateKey *privateKey, uint8_t *output, size_t *written)
 {
 #if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
    error_t error;
    uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Digest the TBSCertificate structure using the specified hash algorithm
-   error = hashAlgo->compute(tbsCert, tbsCertLen, digest);
+   error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
 
    //Check status code
    if(!error)
@@ -275,8 +270,7 @@ error_t x509GenerateRsaPssSignature(const PrngAlgo *prngAlgo, void *prngContext,
  * @brief DSA signature generation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] tbsCert Pointer to the TBSCertificate to be signed
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
+ * @param[in] tbsData Pointer to the data to be signed
  * @param[in] hashAlgo Underlying hash function
  * @param[in] privateKey Signer's private key
  * @param[out] output Resulting signature
@@ -285,37 +279,37 @@ error_t x509GenerateRsaPssSignature(const PrngAlgo *prngAlgo, void *prngContext,
  **/
 
 error_t x509GenerateDsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const uint8_t *tbsCert, size_t tbsCertLen, const HashAlgo *hashAlgo,
+   const X509OctetString *tbsData, const HashAlgo *hashAlgo,
    const DsaPrivateKey *privateKey, uint8_t *output, size_t *written)
 {
 #if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
    error_t error;
-   DsaSignature signature;
+   DsaSignature dsaSignature;
    uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Initialize DSA signature
-   dsaInitSignature(&signature);
+   dsaInitSignature(&dsaSignature);
 
    //Digest the TBSCertificate structure using the specified hash algorithm
-   error = hashAlgo->compute(tbsCert, tbsCertLen, digest);
+   error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
 
    //Check status code
    if(!error)
    {
       //Generate DSA signature
       error = dsaGenerateSignature(prngAlgo, prngContext, privateKey, digest,
-         hashAlgo->digestSize, &signature);
+         hashAlgo->digestSize, &dsaSignature);
    }
 
    //Check status code
    if(!error)
    {
       //Encode DSA signature using ASN.1
-      error = dsaWriteSignature(&signature, output, written);
+      error = dsaWriteSignature(&dsaSignature, output, written);
    }
 
    //Release previously allocated resources
-   dsaFreeSignature(&signature);
+   dsaFreeSignature(&dsaSignature);
 
    //Return status code
    return error;
@@ -330,8 +324,7 @@ error_t x509GenerateDsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
  * @brief ECDSA signature generation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] tbsCert Pointer to the TBSCertificate to be signed
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
+ * @param[in] tbsData Pointer to the data to be signed
  * @param[in] hashAlgo Underlying hash function
  * @param[in] publicKeyInfo Signer's public key information
  * @param[in] privateKey Signer's private key
@@ -341,31 +334,31 @@ error_t x509GenerateDsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
  **/
 
 error_t x509GenerateEcdsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const uint8_t *tbsCert, size_t tbsCertLen, const HashAlgo *hashAlgo,
+   const X509OctetString *tbsData, const HashAlgo *hashAlgo,
    const X509SubjectPublicKeyInfo *publicKeyInfo, const EcPrivateKey *privateKey,
    uint8_t *output, size_t *written)
 {
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
    error_t error;
    const EcCurveInfo *curveInfo;
-   EcDomainParameters params;
-   EcdsaSignature signature;
+   EcDomainParameters ecParams;
+   EcdsaSignature ecdsaSignature;
    uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Initialize EC domain parameters
-   ecInitDomainParameters(&params);
+   ecInitDomainParameters(&ecParams);
    //Initialize ECDSA signature
-   ecdsaInitSignature(&signature);
+   ecdsaInitSignature(&ecdsaSignature);
 
    //Retrieve EC domain parameters
-   curveInfo = x509GetCurveInfo(publicKeyInfo->ecParams.namedCurve,
-      publicKeyInfo->ecParams.namedCurveLen);
+   curveInfo = x509GetCurveInfo(publicKeyInfo->ecParams.namedCurve.value,
+      publicKeyInfo->ecParams.namedCurve.length);
 
    //Make sure the specified elliptic curve is supported
    if(curveInfo != NULL)
    {
       //Load EC domain parameters
-      error = ecLoadDomainParameters(&params, curveInfo);
+      error = ecLoadDomainParameters(&ecParams, curveInfo);
    }
    else
    {
@@ -377,27 +370,27 @@ error_t x509GenerateEcdsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
    if(!error)
    {
       //Digest the TBSCertificate structure using the specified hash algorithm
-      error = hashAlgo->compute(tbsCert, tbsCertLen, digest);
+      error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
    }
 
    //Check status code
    if(!error)
    {
       //Generate ECDSA signature
-      error = ecdsaGenerateSignature(prngAlgo, prngContext, &params, privateKey,
-         digest, hashAlgo->digestSize, &signature);
+      error = ecdsaGenerateSignature(prngAlgo, prngContext, &ecParams,
+         privateKey, digest, hashAlgo->digestSize, &ecdsaSignature);
    }
 
    //Check status code
    if(!error)
    {
       //Encode ECDSA signature using ASN.1
-      error = ecdsaWriteSignature(&signature, output, written);
+      error = ecdsaWriteSignature(&ecdsaSignature, output, written);
    }
 
    //Release previously allocated resources
-   ecFreeDomainParameters(&params);
-   ecdsaFreeSignature(&signature);
+   ecFreeDomainParameters(&ecParams);
+   ecdsaFreeSignature(&ecdsaSignature);
 
    //Return status code
    return error;
@@ -410,15 +403,14 @@ error_t x509GenerateEcdsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
 
 /**
  * @brief Ed25519 signature generation
- * @param[in] tbsCert Pointer to the TBSCertificate to be signed
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
+ * @param[in] tbsData Pointer to the data to be signed
  * @param[in] privateKey Signer's private key
  * @param[out] output Resulting signature
  * @param[out] written Length of the resulting signature
  * @return Error code
  **/
 
-error_t x509GenerateEd25519Signature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509GenerateEd25519Signature(const X509OctetString *tbsData,
    const EddsaPrivateKey *privateKey, uint8_t *output, size_t *written)
 {
 #if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
@@ -437,8 +429,8 @@ error_t x509GenerateEd25519Signature(const uint8_t *tbsCert, size_t tbsCertLen,
       if(!error)
       {
          //Generate Ed25519 signature (PureEdDSA mode)
-         error = ed25519GenerateSignature(d, NULL, tbsCert, tbsCertLen,
-            NULL, 0, 0, output);
+         error = ed25519GenerateSignature(d, NULL, tbsData->value,
+            tbsData->length, NULL, 0, 0, output);
       }
 
       //Length of the resulting EdDSA signature
@@ -461,15 +453,14 @@ error_t x509GenerateEd25519Signature(const uint8_t *tbsCert, size_t tbsCertLen,
 
 /**
  * @brief Ed448 signature generation
- * @param[in] tbsCert Pointer to the TBSCertificate to be signed
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
+ * @param[in] tbsData Pointer to the data to be signed
  * @param[in] privateKey Signer's private key
  * @param[out] output Resulting signature
  * @param[out] written Length of the resulting signature
  * @return Error code
  **/
 
-error_t x509GenerateEd448Signature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509GenerateEd448Signature(const X509OctetString *tbsData,
    const EddsaPrivateKey *privateKey, uint8_t *output, size_t *written)
 {
 #if (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED)
@@ -488,8 +479,8 @@ error_t x509GenerateEd448Signature(const uint8_t *tbsCert, size_t tbsCertLen,
       if(!error)
       {
          //Generate Ed448 signature (PureEdDSA mode)
-         error = ed448GenerateSignature(d, NULL, tbsCert, tbsCertLen,
-            NULL, 0, 0, output);
+         error = ed448GenerateSignature(d, NULL, tbsData->value,
+            tbsData->length, NULL, 0, 0, output);
       }
 
       //Length of the resulting EdDSA signature

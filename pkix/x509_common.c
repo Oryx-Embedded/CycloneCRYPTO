@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -72,6 +72,8 @@ const uint8_t X509_GENERATION_QUALIFIER_OID[3] = {0x55, 0x04, 0x2C};
 const uint8_t X509_DN_QUALIFIER_OID[3] = {0x55, 0x04, 0x2E};
 //Pseudonym OID (2.5.4.65)
 const uint8_t X509_PSEUDONYM_OID[3] = {0x55, 0x04, 0x41};
+//Domain Component OID (0.9.2342.19200300.100.1.25)
+const uint8_t X509_DOMAIN_COMPONENT_OID[10] = {0x09, 0x92, 0x26, 0x89, 0x93, 0xF2, 0x2C, 0x64, 0x01, 0x19};
 
 //Subject Directory Attributes OID (2.5.29.9)
 const uint8_t X509_SUBJECT_DIR_ATTR_OID[3] = {0x55, 0x1D, 0x09};
@@ -115,7 +117,10 @@ const uint8_t X509_EXTENDED_KEY_USAGE_OID[3] = {0x55, 0x1D, 0x25};
 const uint8_t X509_FRESHEST_CRL_OID[3] = {0x55, 0x1D, 0x2E};
 //Inhibit Any-Policy OID (2.5.29.54)
 const uint8_t X509_INHIBIT_ANY_POLICY_OID[3] = {0x55, 0x1D, 0x36};
-
+//Authority Information Access OID (1.3.6.1.5.5.7.1.1)
+const uint8_t X509_AUTH_INFO_ACCESS_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x01, 0x01};
+//PKIX OCSP No Check OID (1.3.6.1.5.5.7.48.1.5)
+const uint8_t X509_PKIX_OCSP_NO_CHECK_OID[9] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, 0x05};
 //Netscape Certificate Type OID (2.16.840.1.113730.1.1)
 const uint8_t X509_NS_CERT_TYPE_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x86, 0xF8, 0x42, 0x01, 0x01};
 
@@ -141,12 +146,17 @@ const uint8_t X509_KP_TIME_STAMPING_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07
 const uint8_t X509_KP_OCSP_SIGNING_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x09};
 //Key Purpose IPsec IKE OID (1.3.6.1.5.5.7.3.17)
 const uint8_t X509_KP_IPSEC_IKE_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x11};
-//Key Purpose Secure Shell Client (1.3.6.1.5.5.7.3.21)
+//Key Purpose Secure Shell Client OID (1.3.6.1.5.5.7.3.21)
 const uint8_t X509_KP_SSH_CLIENT_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x15};
-//Key Purpose Secure Shell Client (1.3.6.1.5.5.7.3.22)
+//Key Purpose Secure Shell Client OID (1.3.6.1.5.5.7.3.22)
 const uint8_t X509_KP_SSH_SERVER_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x16};
-//Key Purpose Document Signing (1.3.6.1.5.5.7.3.36)
+//Key Purpose Document Signing OID (1.3.6.1.5.5.7.3.36)
 const uint8_t X509_KP_DOC_SIGNING_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x24};
+
+//Access Description CA Issuers OID (1.3.6.1.5.5.7.48.1)
+const uint8_t X509_AD_CA_ISSUERS[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01};
+//Access Description OCSP (1.3.6.1.5.5.7.48.2)
+const uint8_t X509_AD_OCSP[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x02};
 
 //PKCS #9 Challenge Password OID (1.2.840.113549.1.9.7)
 const uint8_t X509_CHALLENGE_PASSWORD_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x07};
@@ -327,7 +337,7 @@ bool_t x509IsHashAlgoSupported(X509HashAlgo hashAlgo)
  * @return Error code
  **/
 
-error_t x509GetSignHashAlgo(const X509SignatureAlgoId *signAlgoId,
+error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
    X509SignatureAlgo *signAlgo, const HashAlgo **hashAlgo)
 {
    error_t error;
@@ -338,8 +348,8 @@ error_t x509GetSignHashAlgo(const X509SignatureAlgoId *signAlgoId,
    error = NO_ERROR;
 
    //Point to the object identifier
-   oid = signAlgoId->oid;
-   oidLen = signAlgoId->oidLen;
+   oid = signAlgoId->oid.value;
+   oidLen = signAlgoId->oid.length;
 
 #if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
 #if (X509_MD5_SUPPORT == ENABLED && MD5_SUPPORT == ENABLED)
@@ -449,8 +459,8 @@ error_t x509GetSignHashAlgo(const X509SignatureAlgoId *signAlgoId,
       sizeof(RSASSA_PSS_OID)))
    {
       //Get the OID of the hash algorithm
-      oid = signAlgoId->rsaPssParams.hashAlgo;
-      oidLen = signAlgoId->rsaPssParams.hashAlgoLen;
+      oid = signAlgoId->rsaPssParams.hashAlgo.value;
+      oidLen = signAlgoId->rsaPssParams.hashAlgo.length;
 
 #if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
       //SHA-1 hash algorithm identifier?

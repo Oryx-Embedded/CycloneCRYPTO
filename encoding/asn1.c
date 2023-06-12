@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -804,94 +804,102 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
             TRACE_DEBUG_ARRAY(prefix[level + 1], tag.value, tag.length);
          }
       }
-      //Primitive type?
       else
       {
-         //Check the type of the current tag
-         switch(tag.objType)
+         //Universal tag?
+         if((tag.objClass & ASN1_CLASS_MASK) == ASN1_CLASS_UNIVERSAL)
          {
-         //OID?
-         case ASN1_TYPE_OBJECT_IDENTIFIER:
-            //Append prefix
-            TRACE_DEBUG("%s", prefix[level + 1]);
-            //Print OID
-            TRACE_DEBUG("%s", oidToString(tag.value, tag.length, NULL, 0));
-            //Add a line feed
-            TRACE_DEBUG("\r\n");
-            break;
-
-         //String?
-         case ASN1_TYPE_UTF8_STRING:
-         case ASN1_TYPE_NUMERIC_STRING:
-         case ASN1_TYPE_PRINTABLE_STRING:
-         case ASN1_TYPE_TELETEX_STRING:
-         case ASN1_TYPE_VIDEOTEX_STRING:
-         case ASN1_TYPE_IA5_STRING:
-         case ASN1_TYPE_GRAPHIC_STRING:
-         case ASN1_TYPE_VISIBLE_STRING:
-         case ASN1_TYPE_GENERAL_STRING:
-         case ASN1_TYPE_UNIVERSAL_STRING:
-         case ASN1_TYPE_BMP_STRING:
-            //Append prefix
-            TRACE_DEBUG("%s", prefix[level + 1]);
-
-            //Dump the entire string
-            for(i = 0; i < tag.length; i++)
+            //Check the type of the current tag
+            switch(tag.objType)
             {
-               TRACE_DEBUG("%c", tag.value[i]);
+            //OID?
+            case ASN1_TYPE_OBJECT_IDENTIFIER:
+               //Append prefix
+               TRACE_DEBUG("%s", prefix[level + 1]);
+               //Print OID
+               TRACE_DEBUG("%s", oidToString(tag.value, tag.length, NULL, 0));
+               //Add a line feed
+               TRACE_DEBUG("\r\n");
+               break;
+
+            //String?
+            case ASN1_TYPE_UTF8_STRING:
+            case ASN1_TYPE_NUMERIC_STRING:
+            case ASN1_TYPE_PRINTABLE_STRING:
+            case ASN1_TYPE_TELETEX_STRING:
+            case ASN1_TYPE_VIDEOTEX_STRING:
+            case ASN1_TYPE_IA5_STRING:
+            case ASN1_TYPE_GRAPHIC_STRING:
+            case ASN1_TYPE_VISIBLE_STRING:
+            case ASN1_TYPE_GENERAL_STRING:
+            case ASN1_TYPE_UNIVERSAL_STRING:
+            case ASN1_TYPE_BMP_STRING:
+               //Append prefix
+               TRACE_DEBUG("%s", prefix[level + 1]);
+
+               //Dump the entire string
+               for(i = 0; i < tag.length; i++)
+               {
+                  TRACE_DEBUG("%c", tag.value[i]);
+               }
+
+               //Add a line feed
+               TRACE_DEBUG("\r\n");
+               break;
+
+            //UTC time?
+            case ASN1_TYPE_UTC_TIME:
+               //Check length
+               if(tag.length != 13)
+                  return ERROR_WRONG_ENCODING;
+               //The encoding shall terminate with a "Z"
+               if(tag.value[tag.length - 1] != 'Z')
+                  return ERROR_WRONG_ENCODING;
+
+               //Append prefix
+               TRACE_DEBUG("%s", prefix[level + 1]);
+               //Display date
+               TRACE_DEBUG("%c%c/%c%c/%c%c ", tag.value[0], tag.value[1],
+                  tag.value[2], tag.value[3], tag.value[4], tag.value[5]);
+               //Display time
+               TRACE_DEBUG("%c%c:%c%c:%c%c", tag.value[6], tag.value[7],
+                  tag.value[8], tag.value[9], tag.value[10], tag.value[11]);
+               //Add a line feed
+               TRACE_DEBUG("\r\n");
+               break;
+
+            //Generalized time?
+            case ASN1_TYPE_GENERALIZED_TIME:
+               //Check length
+               if(tag.length != 15)
+                  return ERROR_WRONG_ENCODING;
+               //The encoding shall terminate with a "Z"
+               if(tag.value[tag.length - 1] != 'Z')
+                  return ERROR_WRONG_ENCODING;
+
+               //Append prefix
+               TRACE_DEBUG("%s", prefix[level + 1]);
+               //Display date
+               TRACE_DEBUG("%c%c%c%c/%c%c/%c%c ", tag.value[0], tag.value[1], tag.value[2],
+                  tag.value[3], tag.value[4], tag.value[5], tag.value[6], tag.value[7]);
+               //Display time
+               TRACE_DEBUG("%c%c:%c%c:%c%c", tag.value[8], tag.value[9],
+                  tag.value[10], tag.value[11], tag.value[12], tag.value[13]);
+               //Add a line feed
+               TRACE_DEBUG("\r\n");
+               break;
+
+            //Any other type?
+            default:
+               //Dump the contents of the tag
+               TRACE_DEBUG_ARRAY(prefix[level + 1], tag.value, tag.length);
+               break;
             }
-
-            //Add a line feed
-            TRACE_DEBUG("\r\n");
-            break;
-
-         //UTC time?
-         case ASN1_TYPE_UTC_TIME:
-            //Check length
-            if(tag.length != 13)
-               return ERROR_WRONG_ENCODING;
-            //The encoding shall terminate with a "Z"
-            if(tag.value[tag.length - 1] != 'Z')
-               return ERROR_WRONG_ENCODING;
-
-            //Append prefix
-            TRACE_DEBUG("%s", prefix[level + 1]);
-            //Display date
-            TRACE_DEBUG("%c%c/%c%c/%c%c ", tag.value[0], tag.value[1],
-               tag.value[2], tag.value[3], tag.value[4], tag.value[5]);
-            //Display time
-            TRACE_DEBUG("%c%c:%c%c:%c%c", tag.value[6], tag.value[7],
-               tag.value[8], tag.value[9], tag.value[10], tag.value[11]);
-            //Add a line feed
-            TRACE_DEBUG("\r\n");
-            break;
-
-         //Generalized time?
-         case ASN1_TYPE_GENERALIZED_TIME:
-            //Check length
-            if(tag.length != 15)
-               return ERROR_WRONG_ENCODING;
-            //The encoding shall terminate with a "Z"
-            if(tag.value[tag.length - 1] != 'Z')
-               return ERROR_WRONG_ENCODING;
-
-            //Append prefix
-            TRACE_DEBUG("%s", prefix[level + 1]);
-            //Display date
-            TRACE_DEBUG("%c%c%c%c/%c%c/%c%c ", tag.value[0], tag.value[1], tag.value[2],
-               tag.value[3], tag.value[4], tag.value[5], tag.value[6], tag.value[7]);
-            //Display time
-            TRACE_DEBUG("%c%c:%c%c:%c%c", tag.value[8], tag.value[9],
-               tag.value[10], tag.value[11], tag.value[12], tag.value[13]);
-            //Add a line feed
-            TRACE_DEBUG("\r\n");
-            break;
-
-         //Any other type?
-         default:
+         }
+         else
+         {
             //Dump the contents of the tag
             TRACE_DEBUG_ARRAY(prefix[level + 1], tag.value, tag.length);
-            break;
          }
       }
    }

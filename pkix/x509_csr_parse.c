@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,6 +34,7 @@
 //Dependencies
 #include "core/crypto.h"
 #include "pkix/x509_cert_parse.h"
+#include "pkix/x509_cert_ext_parse.h"
 #include "pkix/x509_csr_parse.h"
 #include "pkix/x509_key_parse.h"
 #include "pkix/x509_sign_parse.h"
@@ -151,8 +152,8 @@ error_t x509ParseCertRequestInfo(const uint8_t *data, size_t length,
 
    //The ASN.1 DER-encoded CertificationRequestInfo is used as the input
    //to the signature function
-   certReqInfo->rawData = data;
-   certReqInfo->rawDataLen = tag.totalLength;
+   certReqInfo->raw.value = data;
+   certReqInfo->raw.length = tag.totalLength;
 
    //Point to the very first field of the CertificationRequestInfo
    data = tag.value;
@@ -237,8 +238,8 @@ error_t x509ParseAttributes(const uint8_t *data, size_t length,
 
    //This field is a collection of attributes providing additional information
    //about the subject of the certificate
-   attributes->rawData = tag.value;
-   attributes->rawDataLen = tag.length;
+   attributes->raw.value = tag.value;
+   attributes->raw.length = tag.length;
 
    //Point to the first item of the collection
    data = tag.value;
@@ -254,22 +255,22 @@ error_t x509ParseAttributes(const uint8_t *data, size_t length,
          return error;
 
       //PKCS#9 Challenge Password attribute found?
-      if(!oidComp(attribute.oid, attribute.oidLen,
+      if(!oidComp(attribute.oid.value, attribute.oid.length,
          X509_CHALLENGE_PASSWORD_OID, sizeof(X509_CHALLENGE_PASSWORD_OID)))
       {
          //The interpretation of challenge passwords is intended to be specified
          //by certificate issuers
-         error = x509ParseChallengePassword(attribute.value,
-            attribute.valueLen, &attributes->challengePwd);
+         error = x509ParseChallengePassword(attribute.data.value,
+            attribute.data.length, &attributes->challengePwd);
       }
       //PKCS#9 Extension Request attribute found?
-      else if(!oidComp(attribute.oid, attribute.oidLen,
+      else if(!oidComp(attribute.oid.value, attribute.oid.length,
          X509_EXTENSION_REQUEST_OID, sizeof(X509_EXTENSION_REQUEST_OID)))
       {
          //This attribute may be used to carry information about certificate
          //extensions the requester wishes to be included in a certificate
-         error = x509ParseExtensionRequest(attribute.value,
-            attribute.valueLen, &attributes->extensionReq);
+         error = x509ParseExtensionRequest(attribute.data.value,
+            attribute.data.length, &attributes->extensionReq);
       }
       //Unknown attribute?
       else
@@ -327,8 +328,8 @@ error_t x509ParseAttribute(const uint8_t *data, size_t length,
       return error;
 
    //Save the object identifier
-   attribute->oid = tag.value;
-   attribute->oidLen = tag.length;
+   attribute->oid.value = tag.value;
+   attribute->oid.length = tag.length;
 
    //Next item
    data += tag.totalLength;
@@ -347,8 +348,8 @@ error_t x509ParseAttribute(const uint8_t *data, size_t length,
       return error;
 
    //Save the value of the attribute
-   attribute->value = tag.value;
-   attribute->valueLen = tag.length;
+   attribute->data.value = tag.value;
+   attribute->data.length = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -413,8 +414,8 @@ error_t x509ParseExtensionRequest(const uint8_t *data, size_t length,
       return error;
 
    //Raw contents of the ASN.1 sequence
-   extensionReq->rawData = tag.value;
-   extensionReq->rawDataLen = tag.length;
+   extensionReq->raw.value = tag.value;
+   extensionReq->raw.length = tag.length;
 
    //Point to the first item of the sequence
    data = tag.value;
@@ -429,84 +430,83 @@ error_t x509ParseExtensionRequest(const uint8_t *data, size_t length,
       if(error)
          return error;
 
-      //BasicConstraints extension found?
-      if(!oidComp(extension.oid, extension.oidLen,
+      //Jump to the next extension
+      data += n;
+      length -= n;
+
+      //Test if the current extension is a duplicate
+      error = x509CheckDuplicateExtension(extension.oid.value,
+         extension.oid.length, data, length);
+      //Duplicate extension found?
+      if(error)
+         return error;
+
+      //Check extension identifier
+      if(!oidComp(extension.oid.value, extension.oid.length,
          X509_BASIC_CONSTRAINTS_OID, sizeof(X509_BASIC_CONSTRAINTS_OID)))
       {
          //Parse BasicConstraints extension
-         error = x509ParseBasicConstraints(extension.critical, extension.value,
-            extension.valueLen, &extensionReq->basicConstraints);
+         error = x509ParseBasicConstraints(extension.critical, extension.data.value,
+            extension.data.length, &extensionReq->basicConstraints);
       }
-      //NameConstraints extension found?
-      else if(!oidComp(extension.oid, extension.oidLen,
+      else if(!oidComp(extension.oid.value, extension.oid.length,
          X509_NAME_CONSTRAINTS_OID, sizeof(X509_NAME_CONSTRAINTS_OID)))
       {
          //Parse NameConstraints extension
-         error = x509ParseNameConstraints(extension.critical, extension.value,
-            extension.valueLen, &extensionReq->nameConstraints);
+         error = x509ParseNameConstraints(extension.critical, extension.data.value,
+            extension.data.length, &extensionReq->nameConstraints);
       }
-      //KeyUsage extension found?
-      else if(!oidComp(extension.oid, extension.oidLen,
+      else if(!oidComp(extension.oid.value, extension.oid.length,
          X509_KEY_USAGE_OID, sizeof(X509_KEY_USAGE_OID)))
       {
          //Parse KeyUsage extension
-         error = x509ParseKeyUsage(extension.critical, extension.value,
-            extension.valueLen, &extensionReq->keyUsage);
+         error = x509ParseKeyUsage(extension.critical, extension.data.value,
+            extension.data.length, &extensionReq->keyUsage);
       }
-      //ExtendedKeyUsage extension found?
-      else if(!oidComp(extension.oid, extension.oidLen,
+      else if(!oidComp(extension.oid.value, extension.oid.length,
          X509_EXTENDED_KEY_USAGE_OID, sizeof(X509_EXTENDED_KEY_USAGE_OID)))
       {
          //Parse ExtendedKeyUsage extension
-         error = x509ParseExtendedKeyUsage(extension.critical, extension.value,
-            extension.valueLen, &extensionReq->extKeyUsage);
+         error = x509ParseExtendedKeyUsage(extension.critical, extension.data.value,
+            extension.data.length, &extensionReq->extKeyUsage);
       }
-      //SubjectAltName extension found?
-      else if(!oidComp(extension.oid, extension.oidLen,
+      else if(!oidComp(extension.oid.value, extension.oid.length,
          X509_SUBJECT_ALT_NAME_OID, sizeof(X509_SUBJECT_ALT_NAME_OID)))
       {
          //Parse SubjectAltName extension
-         error = x509ParseSubjectAltName(extension.critical, extension.value,
-            extension.valueLen, &extensionReq->subjectAltName);
+         error = x509ParseSubjectAltName(extension.critical, extension.data.value,
+            extension.data.length, &extensionReq->subjectAltName);
       }
-      //SubjectKeyIdentifier extension found?
-      else if(!oidComp(extension.oid, extension.oidLen,
+      else if(!oidComp(extension.oid.value, extension.oid.length,
          X509_SUBJECT_KEY_ID_OID, sizeof(X509_SUBJECT_KEY_ID_OID)))
       {
          //Parse SubjectKeyIdentifier extension
-         error = x509ParseSubjectKeyId(extension.critical, extension.value,
-            extension.valueLen, &extensionReq->subjectKeyId);
+         error = x509ParseSubjectKeyId(extension.critical, extension.data.value,
+            extension.data.length, &extensionReq->subjectKeyId);
       }
-      //AuthorityKeyIdentifier extension found?
-      else if(!oidComp(extension.oid, extension.oidLen,
+      else if(!oidComp(extension.oid.value, extension.oid.length,
          X509_AUTHORITY_KEY_ID_OID, sizeof(X509_AUTHORITY_KEY_ID_OID)))
       {
          //Parse AuthorityKeyIdentifier extension
-         error = x509ParseAuthorityKeyId(extension.critical, extension.value,
-            extension.valueLen, &extensionReq->authKeyId);
+         error = x509ParseAuthKeyId(extension.critical, extension.data.value,
+            extension.data.length, &extensionReq->authKeyId);
       }
-      //NetscapeCertType extension found?
-      else if(!oidComp(extension.oid, extension.oidLen,
+      else if(!oidComp(extension.oid.value, extension.oid.length,
          X509_NS_CERT_TYPE_OID, sizeof(X509_NS_CERT_TYPE_OID)))
       {
          //Parse NetscapeCertType extension
-         error = x509ParseNsCertType(extension.critical, extension.value,
-            extension.valueLen, &extensionReq->nsCertType);
+         error = x509ParseNsCertType(extension.critical, extension.data.value,
+            extension.data.length, &extensionReq->nsCertType);
       }
-      //Unknown extension?
       else
       {
-         //Discard current extension
+         //Discard unknown extensions
          error = NO_ERROR;
       }
 
       //Any parsing error?
       if(error)
          return error;
-
-      //Next extension
-      data += n;
-      length -= n;
    }
 
    //Successful processing

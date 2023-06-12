@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -66,8 +66,8 @@ error_t x509FormatSubjectPublicKeyInfo(const X509SubjectPublicKeyInfo *publicKey
    Asn1Tag tag;
 
    //Get the public key identifier
-   oid = publicKeyInfo->oid;
-   oidLen = publicKeyInfo->oidLen;
+   oid = publicKeyInfo->oid.value;
+   oidLen = publicKeyInfo->oid.length;
 
    //Point to the buffer where to write the ASN.1 structure
    p = output;
@@ -84,14 +84,14 @@ error_t x509FormatSubjectPublicKeyInfo(const X509SubjectPublicKeyInfo *publicKey
       dsaPublicKey = (DsaPublicKey *) publicKey;
 
       //Format AlgorithmIdentifier field
-      error = x509FormatAlgorithmIdentifier(publicKeyInfo,
+      error = x509FormatAlgoId(publicKeyInfo,
          &dsaPublicKey->params, p, &n);
    }
    else
 #endif
    {
       //Format AlgorithmIdentifier field
-      error = x509FormatAlgorithmIdentifier(publicKeyInfo, NULL, p, &n);
+      error = x509FormatAlgoId(publicKeyInfo, NULL, p, &n);
    }
 
    //Any error to report?
@@ -274,7 +274,7 @@ error_t x509FormatSubjectPublicKeyInfo(const X509SubjectPublicKeyInfo *publicKey
  * @return Error code
  **/
 
-error_t x509FormatAlgorithmIdentifier(const X509SubjectPublicKeyInfo *publicKeyInfo,
+error_t x509FormatAlgoId(const X509SubjectPublicKeyInfo *publicKeyInfo,
    const void *params, uint8_t *output, size_t *written)
 {
    error_t error;
@@ -286,8 +286,8 @@ error_t x509FormatAlgorithmIdentifier(const X509SubjectPublicKeyInfo *publicKeyI
    Asn1Tag tag;
 
    //Get the public key identifier
-   oid = publicKeyInfo->oid;
-   oidLen = publicKeyInfo->oidLen;
+   oid = publicKeyInfo->oid.value;
+   oidLen = publicKeyInfo->oid.length;
 
    //Point to the buffer where to write the ASN.1 structure
    p = output;
@@ -445,8 +445,8 @@ error_t x509FormatRsaPublicKey(const X509RsaPublicKey *rsaPublicKey,
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_INTEGER;
-   tag.length = rsaPublicKey->nLen;
-   tag.value = rsaPublicKey->n;
+   tag.length = rsaPublicKey->n.length;
+   tag.value = rsaPublicKey->n.value;
 
    //Write the corresponding ASN.1 tag
    error = asn1WriteTag(&tag, FALSE, p, &n);
@@ -462,8 +462,8 @@ error_t x509FormatRsaPublicKey(const X509RsaPublicKey *rsaPublicKey,
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_INTEGER;
-   tag.length = rsaPublicKey->eLen;
-   tag.value = rsaPublicKey->e;
+   tag.length = rsaPublicKey->e.length;
+   tag.value = rsaPublicKey->e.value;
 
    //Write the corresponding ASN.1 tag
    error = asn1WriteTag(&tag, FALSE, p, &n);
@@ -515,8 +515,8 @@ error_t x509FormatDsaPublicKey(const X509DsaPublicKey *dsaPublicKey,
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_INTEGER;
-   tag.length = dsaPublicKey->yLen;
-   tag.value = dsaPublicKey->y;
+   tag.length = dsaPublicKey->y.length;
+   tag.value = dsaPublicKey->y.value;
 
    //Write the corresponding ASN.1 tag
    error = asn1WriteTag(&tag, FALSE, output, &n);
@@ -558,8 +558,8 @@ error_t x509FormatDsaParameters(const X509DsaParameters *dsaParams,
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_INTEGER;
-   tag.length = dsaParams->pLen;
-   tag.value = dsaParams->p;
+   tag.length = dsaParams->p.length;
+   tag.value = dsaParams->p.value;
 
    //Write the corresponding ASN.1 tag
    error = asn1WriteTag(&tag, FALSE, p, &n);
@@ -575,8 +575,8 @@ error_t x509FormatDsaParameters(const X509DsaParameters *dsaParams,
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_INTEGER;
-   tag.length = dsaParams->qLen;
-   tag.value = dsaParams->q;
+   tag.length = dsaParams->q.length;
+   tag.value = dsaParams->q.value;
 
    //Write the corresponding ASN.1 tag
    error = asn1WriteTag(&tag, FALSE, p, &n);
@@ -592,8 +592,8 @@ error_t x509FormatDsaParameters(const X509DsaParameters *dsaParams,
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_INTEGER;
-   tag.length = dsaParams->gLen;
-   tag.value = dsaParams->g;
+   tag.length = dsaParams->g.length;
+   tag.value = dsaParams->g.value;
 
    //Write the corresponding ASN.1 tag
    error = asn1WriteTag(&tag, FALSE, p, &n);
@@ -637,16 +637,11 @@ error_t x509FormatDsaParameters(const X509DsaParameters *dsaParams,
 error_t x509FormatEcPublicKey(const X509EcPublicKey *ecPublicKey,
    uint8_t *output, size_t *written)
 {
-   size_t n;
-
-   //Retrieve the length of the EC public key
-   n = ecPublicKey->qLen;
-
    //Copy the EC public key
-   osMemcpy(output, ecPublicKey->q, n);
+   osMemcpy(output, ecPublicKey->q.value, ecPublicKey->q.length);
 
    //Total number of bytes that have been written
-   *written = n;
+   *written = ecPublicKey->q.length;
 
    //Successful processing
    return NO_ERROR;
@@ -674,8 +669,8 @@ error_t x509FormatEcParameters(const X509EcParameters *ecParams,
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
-   tag.length = ecParams->namedCurveLen;
-   tag.value = ecParams->namedCurve;
+   tag.length = ecParams->namedCurve.length;
+   tag.value = ecParams->namedCurve.value;
 
    //Write the corresponding ASN.1 tag
    error = asn1WriteTag(&tag, FALSE, output, &n);
@@ -777,7 +772,7 @@ error_t x509ExportRsaPrivateKey(const RsaPrivateKey *privateKey,
    length = 0;
 
    //Write Version field
-   error = asn1WriteInt32(0, FALSE, p, &n);
+   error = asn1WriteInt32(PKCS1_VERSION_1, FALSE, p, &n);
    //Any error to report?
    if(error)
       return error;
@@ -1082,8 +1077,8 @@ error_t x509ExportEcPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
    ecInitDomainParameters(&params);
 
    //Retrieve EC domain parameters
-   curveInfo = x509GetCurveInfo(publicKeyInfo->ecParams.namedCurve,
-      publicKeyInfo->ecParams.namedCurveLen);
+   curveInfo = x509GetCurveInfo(publicKeyInfo->ecParams.namedCurve.value,
+      publicKeyInfo->ecParams.namedCurve.length);
 
    //Make sure the specified elliptic curve is supported
    if(curveInfo != NULL)

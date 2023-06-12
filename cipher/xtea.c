@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -113,7 +113,7 @@ void xteaEncryptBlock(XteaContext *context, const uint8_t *input,
    for(i = 0; i < 32; i++)
    {
       y += (((z << 4) ^ (z >> 5)) + z) ^ (sum + context->k[sum & 0x03]);
-      sum += DELTA ;
+      sum += DELTA;
       z += (((y << 4) ^ (y >> 5)) + y) ^ (sum + context->k[(sum >> 11) & 0x03]);
    }
 

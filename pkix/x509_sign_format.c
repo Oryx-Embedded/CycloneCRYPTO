@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -50,7 +50,7 @@
  * @return Error code
  **/
 
-error_t x509FormatSignatureAlgo(const X509SignatureAlgoId *signatureAlgo,
+error_t x509FormatSignatureAlgo(const X509SignAlgoId *signatureAlgo,
    uint8_t *output, size_t *written)
 {
    error_t error;
@@ -77,8 +77,8 @@ error_t x509FormatSignatureAlgo(const X509SignatureAlgoId *signatureAlgo,
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
-   tag.length = signatureAlgo->oidLen;
-   tag.value = signatureAlgo->oid;
+   tag.length = signatureAlgo->oid.length;
+   tag.value = signatureAlgo->oid.value;
 
    //Write the corresponding ASN.1 tag
    error = asn1WriteTag(&tag, FALSE, p, &n);
@@ -195,8 +195,7 @@ error_t x509FormatSignatureAlgo(const X509SignatureAlgoId *signatureAlgo,
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
  * @param[in] tbsCert Pointer to the TBSCertificate to be signed
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
- * @param[in] signatureAlgoId Signature algorithm identifier
+ * @param[in] signAlgoId Signature algorithm identifier
  * @param[in] publicKeyInfo Signer's public key information
  * @param[in] privateKey Signer's private key
  * @param[out] output Buffer where to format the ASN.1 structure
@@ -205,7 +204,7 @@ error_t x509FormatSignatureAlgo(const X509SignatureAlgoId *signatureAlgo,
  **/
 
 error_t x509FormatSignatureValue(const PrngAlgo *prngAlgo, void *prngContext,
-   const uint8_t *tbsCert, size_t tbsCertLen, const X509SignatureAlgoId *signatureAlgoId,
+   const X509OctetString *tbsCert, const X509SignAlgoId *signAlgoId,
    const X509SubjectPublicKeyInfo *publicKeyInfo, const void *privateKey,
    uint8_t *output, size_t *written)
 {
@@ -219,8 +218,8 @@ error_t x509FormatSignatureValue(const PrngAlgo *prngAlgo, void *prngContext,
 
    //The ASN.1 DER-encoded tbsCertificate is used as the input to the signature
    //function
-   error = x509GenerateSignature(prngAlgo, prngContext, tbsCert, tbsCertLen,
-      signatureAlgoId, publicKeyInfo, privateKey, output + 1, &n);
+   error = x509GenerateSignature(prngAlgo, prngContext, tbsCert,
+      signAlgoId, publicKeyInfo, privateKey, output + 1, &n);
    //Any error to report?
    if(error)
       return error;
@@ -338,14 +337,15 @@ error_t x509FormatRsaPssHashAlgo(const X509RsaPssParameters *rsaPssParams,
    n = 0;
 
    //The default hash algorithm is SHA-1
-   if(rsaPssParams->hashAlgo != NULL && rsaPssParams->hashAlgoLen > 0)
+   if(rsaPssParams->hashAlgo.value != NULL &&
+      rsaPssParams->hashAlgo.length > 0)
    {
       //Write the hash algorithm identifier
       tag.constructed = FALSE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
-      tag.length = rsaPssParams->hashAlgoLen;
-      tag.value = rsaPssParams->hashAlgo;
+      tag.length = rsaPssParams->hashAlgo.length;
+      tag.value = rsaPssParams->hashAlgo.value;
 
       //Write the corresponding ASN.1 tag
       error = asn1WriteTag(&tag, FALSE, output, &n);
@@ -411,14 +411,15 @@ error_t x509FormatRsaPssMaskGenAlgo(const X509RsaPssParameters *rsaPssParams,
    length = 0;
 
    //The default mask generation function is MGF1
-   if(rsaPssParams->maskGenAlgo != NULL && rsaPssParams->maskGenAlgoLen > 0)
+   if(rsaPssParams->maskGenAlgo.value != NULL &&
+      rsaPssParams->maskGenAlgo.length > 0)
    {
       //Write the mask generation algorithm identifier
       tag.constructed = FALSE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
-      tag.length = rsaPssParams->maskGenAlgoLen;
-      tag.value = rsaPssParams->maskGenAlgo;
+      tag.length = rsaPssParams->maskGenAlgo.length;
+      tag.value = rsaPssParams->maskGenAlgo.value;
 
       //Write the corresponding ASN.1 tag
       error = asn1WriteTag(&tag, FALSE, p, &n);
@@ -495,16 +496,16 @@ error_t x509FormatRsaPssMaskGenHashAlgo(const X509RsaPssParameters *rsaPssParams
    n = 0;
 
    //The default hash algorithm is SHA-1
-   if(rsaPssParams->maskGenHashAlgo != NULL &&
-      rsaPssParams->maskGenHashAlgoLen > 0)
+   if(rsaPssParams->maskGenHashAlgo.value != NULL &&
+      rsaPssParams->maskGenHashAlgo.length > 0)
    {
       //Write the algorithm identifier of the one-way hash function employed
       //with the mask generation function
       tag.constructed = FALSE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
-      tag.length = rsaPssParams->maskGenHashAlgoLen;
-      tag.value = rsaPssParams->maskGenHashAlgo;
+      tag.length = rsaPssParams->maskGenHashAlgo.length;
+      tag.value = rsaPssParams->maskGenHashAlgo.value;
 
       //Write the corresponding ASN.1 tag
       error = asn1WriteTag(&tag, FALSE, output, &n);

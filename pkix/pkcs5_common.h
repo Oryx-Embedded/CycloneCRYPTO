@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _PKCS5_COMMON_H
@@ -132,13 +132,23 @@ extern "C" {
 
 
 /**
+ * @brief Octet string
+ **/
+
+typedef struct
+{
+   const uint8_t *value;
+   size_t length;
+} Pkcs5OctetString;
+
+
+/**
  * @brief PBES1 parameters
  **/
 
 typedef struct
 {
-   const uint8_t *salt;
-   size_t saltLen;
+   Pkcs5OctetString salt;
    uint_t iterationCount;
 } Pkcs5Pbes1Params;
 
@@ -149,14 +159,11 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *kdfAlgoId;
-   size_t kdfAlgoIdLen;
-   const uint8_t *salt;
-   size_t saltLen;
+   Pkcs5OctetString kdfAlgoId;
+   Pkcs5OctetString salt;
    uint_t iterationCount;
    uint_t keyLen;
-   const uint8_t *prfAlgoId;
-   size_t prfAlgoIdLen;
+   Pkcs5OctetString prfAlgoId;
 } Pkcs5KeyDerivationFunc;
 
 
@@ -166,10 +173,8 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *oid;
-   size_t oidLen;
-   const uint8_t *iv;
-   size_t ivLen;
+   Pkcs5OctetString oid;
+   Pkcs5OctetString iv;
 } Pkcs5EncryptionScheme;
 
 

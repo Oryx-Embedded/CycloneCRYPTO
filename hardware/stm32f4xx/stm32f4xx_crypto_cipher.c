@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -1295,7 +1295,7 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
    temp = CRYP->CR & ~CRYP_CR_ALGOMODE;
    CRYP->CR = temp | CRYP_CR_ALGOMODE_AES_GCM;
 
-   //Configure GCM_CCMPH bits to '00' to start the GCM Init phase
+   //Configure GCM_CCMPH bits to '00' to start the GCM init phase
    temp = CRYP->CR & ~CRYP_CR_GCM_CCMPH;
    CRYP->CR = temp | CRYP_CR_GCM_CCMPH_INIT;
 
@@ -1317,8 +1317,7 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
    {
    }
 
-   //Set the GCM_CCMPH bits to '01' in CRYP_CR to indicate that the header
-   //phase has started
+   //Configure GCM_CCMPH bits to '01' to start GCM header phase
    temp = CRYP->CR & ~CRYP_CR_GCM_CCMPH;
    CRYP->CR = temp | CRYP_CR_GCM_CCMPH_HEADER;
 
@@ -1373,7 +1372,7 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
    //Set the CRYPEN bit to 0
    CRYP->CR &= ~CRYP_CR_CRYPEN;
 
-   //Configure the GCM_CCMPH bits to '10' in CRYP_CR
+   //Configure GCM_CCMPH bits to '10' to start GCM payload phase
    temp = CRYP->CR & ~CRYP_CR_GCM_CCMPH;
    CRYP->CR = temp | CRYP_CR_GCM_CCMPH_PAYLOAD;
 
@@ -1515,7 +1514,7 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
    {
    }
 
-   //Configure the GCM_CCMPH bits to '11' in CRYP_CR
+   //Configure GCM_CCMPH bits to '11' to start GCM final phase
    temp = CRYP->CR & ~CRYP_CR_GCM_CCMPH;
    CRYP->CR = temp | CRYP_CR_GCM_CCMPH_FINAL;
 
@@ -1707,7 +1706,7 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
    temp = CRYP->CR & ~CRYP_CR_ALGOMODE;
    CRYP->CR = temp | CRYP_CR_ALGOMODE_AES_CCM;
 
-   //Configure GCM_CCMPH bits to '00' to start the GCM Init phase
+   //Configure GCM_CCMPH bits to '00' to start the CCM init phase
    temp = CRYP->CR & ~CRYP_CR_GCM_CCMPH;
    CRYP->CR = temp | CRYP_CR_GCM_CCMPH_INIT;
 
@@ -1747,8 +1746,7 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
    {
    }
 
-   //Configure GCM_CCMPH bits to '01' in CRYP_CR to indicate that the header
-   //phase has started
+   //Configure GCM_CCMPH bits to '01' to start CCM header phase
    temp = CRYP->CR & ~CRYP_CR_GCM_CCMPH;
    CRYP->CR = temp | CRYP_CR_GCM_CCMPH_HEADER;
 
@@ -1854,8 +1852,7 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
    //Set the CRYPEN bit to 0
    CRYP->CR &= ~CRYP_CR_CRYPEN;
 
-   //Configure GCM_CCMPH bits to '10' in CRYP_CR to indicate that the payload
-   //phase is ongoing
+   //Configure GCM_CCMPH bits to '10' to start CCM payload phase
    temp = CRYP->CR & ~CRYP_CR_GCM_CCMPH;
    CRYP->CR = temp | CRYP_CR_GCM_CCMPH_PAYLOAD;
 
@@ -2005,7 +2002,7 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
    {
    }
 
-   //Configure GCM_CCMPH bits to '11' in CRYP_CR to indicate that the final
+   //Configure GCM_CCMPH bits to '11' in CRYP_CR to indicate that the CCM final
    //phase is ongoing and set the ALGODIR bit to 0 in the same register
    temp = CRYP->CR & ~(CRYP_CR_GCM_CCMPH | CRYP_CR_ALGODIR);
    CRYP->CR = temp | CRYP_CR_GCM_CCMPH_FINAL;

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -47,12 +47,12 @@
 /**
  * @brief CRL validation
  * @param[in] crlInfo Pointer to the CRL to be verified
- * @param[in] issuerCertInfo Issuer certificate
+ * @param[in] issuerCertInfo Issuer's certificate
  * @return Error code
  **/
 
 error_t x509ValidateCrl(const X509CrlInfo *crlInfo,
-   const X509CertificateInfo *issuerCertInfo)
+   const X509CertInfo *issuerCertInfo)
 {
    error_t error;
    time_t currentTime;
@@ -77,7 +77,7 @@ error_t x509ValidateCrl(const X509CrlInfo *crlInfo,
       if(compareDateTime(&currentDate, &crlInfo->tbsCertList.thisUpdate) < 0)
       {
          //The CRL is not yet valid
-         return ERROR_CERTIFICATE_EXPIRED;
+         return ERROR_CRL_EXPIRED;
       }
 
       //The nextUpdate field indicates the date by which the next CRL will
@@ -85,18 +85,18 @@ error_t x509ValidateCrl(const X509CrlInfo *crlInfo,
       if(compareDateTime(&currentDate, &crlInfo->tbsCertList.nextUpdate) > 0)
       {
          //The CRL has expired
-         return ERROR_CERTIFICATE_EXPIRED;
+         return ERROR_CRL_EXPIRED;
       }
    }
 
    //Verify the issuer of the CRL
-   if(!x509CompareName(crlInfo->tbsCertList.issuer.rawData,
-      crlInfo->tbsCertList.issuer.rawDataLen,
-      issuerCertInfo->tbsCert.subject.rawData,
-      issuerCertInfo->tbsCert.subject.rawDataLen))
+   if(!x509CompareName(crlInfo->tbsCertList.issuer.raw.value,
+      crlInfo->tbsCertList.issuer.raw.length,
+      issuerCertInfo->tbsCert.subject.raw.value,
+      issuerCertInfo->tbsCert.subject.raw.length))
    {
       //Report an error
-      return ERROR_BAD_CERTIFICATE;
+      return ERROR_WRONG_ISSUER;
    }
 
    //Point to the X.509 extensions of the issuer certificate
@@ -114,8 +114,7 @@ error_t x509ValidateCrl(const X509CrlInfo *crlInfo,
 
    //The ASN.1 DER-encoded TBSCertList is used as the input to the signature
    //function
-   error = x509VerifySignature(crlInfo->tbsCertList.rawData,
-      crlInfo->tbsCertList.rawDataLen, &crlInfo->signatureAlgo,
+   error = x509VerifySignature(&crlInfo->tbsCertList.raw, &crlInfo->signatureAlgo,
       &issuerCertInfo->tbsCert.subjectPublicKeyInfo, &crlInfo->signatureValue);
 
    //Return status code
@@ -130,7 +129,7 @@ error_t x509ValidateCrl(const X509CrlInfo *crlInfo,
  * @return Error code
  **/
 
-error_t x509CheckRevokedCertificate(const X509CertificateInfo *certInfo,
+error_t x509CheckRevokedCertificate(const X509CertInfo *certInfo,
    const X509CrlInfo *crlInfo)
 {
    error_t error;
@@ -151,12 +150,12 @@ error_t x509CheckRevokedCertificate(const X509CertificateInfo *certInfo,
    //an indirect CRL, the certificate issuer defaults to the CRL issuer
    issuer.numGeneralNames = 1;
    issuer.generalNames[0].type = X509_GENERAL_NAME_TYPE_DIRECTORY;
-   issuer.generalNames[0].value = (char_t *) crlInfo->tbsCertList.issuer.rawData;
-   issuer.generalNames[0].length = crlInfo->tbsCertList.issuer.rawDataLen;
+   issuer.generalNames[0].value = (char_t *) crlInfo->tbsCertList.issuer.raw.value;
+   issuer.generalNames[0].length = crlInfo->tbsCertList.issuer.raw.length;
 
    //Point to the first entry of the list
-   data = crlInfo->tbsCertList.revokedCerts;
-   length = crlInfo->tbsCertList.revokedCertsLen;
+   data = crlInfo->tbsCertList.revokedCerts.value;
+   length = crlInfo->tbsCertList.revokedCerts.length;
 
    //Loop through the list of revoked certificates
    while(length > 0)
@@ -185,15 +184,15 @@ error_t x509CheckRevokedCertificate(const X509CertificateInfo *certInfo,
       }
 
       //Check whether the issuer of the certificate matches the current entry
-      for(i = 0; i < issuer.numGeneralNames && i < X509_MAX_CERT_ISSUER_NAMES; i++)
+      for(i = 0; i < issuer.numGeneralNames && i < X509_MAX_CRL_ISSUERS; i++)
       {
          //Distinguished name?
          if(issuer.generalNames[i].type == X509_GENERAL_NAME_TYPE_DIRECTORY)
          {
             //Compare distinguished names
             if(x509CompareName((uint8_t *) issuer.generalNames[i].value,
-               issuer.generalNames[i].length, certInfo->tbsCert.issuer.rawData,
-               certInfo->tbsCert.issuer.rawDataLen))
+               issuer.generalNames[i].length, certInfo->tbsCert.issuer.raw.value,
+               certInfo->tbsCert.issuer.raw.length))
             {
                break;
             }
@@ -201,14 +200,14 @@ error_t x509CheckRevokedCertificate(const X509CertificateInfo *certInfo,
       }
 
       //Matching certificate issuer?
-      if(i < issuer.numGeneralNames && i < X509_MAX_CERT_ISSUER_NAMES)
+      if(i < issuer.numGeneralNames && i < X509_MAX_CRL_ISSUERS)
       {
          //Check the length of the serial number
          if(certInfo->tbsCert.serialNumber.length == revokedCert.userCert.length)
          {
             //Compare serial numbers
-            if(!osMemcmp(certInfo->tbsCert.serialNumber.data,
-               revokedCert.userCert.data, revokedCert.userCert.length))
+            if(!osMemcmp(certInfo->tbsCert.serialNumber.value,
+               revokedCert.userCert.value, revokedCert.userCert.length))
             {
                //The certificate has been revoked
                error = ERROR_CERTIFICATE_REVOKED;

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -104,8 +104,8 @@ error_t pkcs8ParsePrivateKeyInfo(const uint8_t *data, size_t length,
    length = tag.length;
 
    //Get the private key algorithm identifier
-   oid = privateKeyInfo->oid;
-   oidLen = privateKeyInfo->oidLen;
+   oid = privateKeyInfo->oid.value;
+   oidLen = privateKeyInfo->oid.length;
 
 #if (RSA_SUPPORT == ENABLED)
    //RSA or RSA-PSS algorithm identifier?
@@ -206,8 +206,8 @@ error_t pkcs8ParsePrivateKeyAlgo(const uint8_t *data, size_t length,
       return error;
 
    //Save the private key algorithm identifier
-   privateKeyInfo->oid = tag.value;
-   privateKeyInfo->oidLen = tag.length;
+   privateKeyInfo->oid.value = tag.value;
+   privateKeyInfo->oid.length = tag.length;
 
    //Point to the next field (if any)
    data += tag.totalLength;
@@ -330,8 +330,8 @@ error_t pkcs8ParseRsaPrivateKey(const uint8_t *data, size_t length,
       return error;
 
    //Save the modulus
-   rsaPrivateKey->n = tag.value;
-   rsaPrivateKey->nLen = tag.length;
+   rsaPrivateKey->n.value = tag.value;
+   rsaPrivateKey->n.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -350,8 +350,8 @@ error_t pkcs8ParseRsaPrivateKey(const uint8_t *data, size_t length,
       return error;
 
    //Save the public exponent
-   rsaPrivateKey->e = tag.value;
-   rsaPrivateKey->eLen = tag.length;
+   rsaPrivateKey->e.value = tag.value;
+   rsaPrivateKey->e.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -370,8 +370,8 @@ error_t pkcs8ParseRsaPrivateKey(const uint8_t *data, size_t length,
       return error;
 
    //Save the private exponent
-   rsaPrivateKey->d = tag.value;
-   rsaPrivateKey->dLen = tag.length;
+   rsaPrivateKey->d.value = tag.value;
+   rsaPrivateKey->d.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -390,8 +390,8 @@ error_t pkcs8ParseRsaPrivateKey(const uint8_t *data, size_t length,
       return error;
 
    //Save the first factor
-   rsaPrivateKey->p = tag.value;
-   rsaPrivateKey->pLen = tag.length;
+   rsaPrivateKey->p.value = tag.value;
+   rsaPrivateKey->p.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -410,8 +410,8 @@ error_t pkcs8ParseRsaPrivateKey(const uint8_t *data, size_t length,
       return error;
 
    //Save the second factor
-   rsaPrivateKey->q = tag.value;
-   rsaPrivateKey->qLen = tag.length;
+   rsaPrivateKey->q.value = tag.value;
+   rsaPrivateKey->q.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -430,8 +430,8 @@ error_t pkcs8ParseRsaPrivateKey(const uint8_t *data, size_t length,
       return error;
 
    //Save the first exponent
-   rsaPrivateKey->dp = tag.value;
-   rsaPrivateKey->dpLen = tag.length;
+   rsaPrivateKey->dp.value = tag.value;
+   rsaPrivateKey->dp.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -450,8 +450,8 @@ error_t pkcs8ParseRsaPrivateKey(const uint8_t *data, size_t length,
       return error;
 
    //Save the second exponent
-   rsaPrivateKey->dq = tag.value;
-   rsaPrivateKey->dqLen = tag.length;
+   rsaPrivateKey->dq.value = tag.value;
+   rsaPrivateKey->dq.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -470,8 +470,8 @@ error_t pkcs8ParseRsaPrivateKey(const uint8_t *data, size_t length,
       return error;
 
    //Save the coefficient
-   rsaPrivateKey->qinv = tag.value;
-   rsaPrivateKey->qinvLen = tag.length;
+   rsaPrivateKey->qinv.value = tag.value;
+   rsaPrivateKey->qinv.length = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -531,8 +531,8 @@ error_t pkcs8ParseDsaPrivateKey(const uint8_t *data, size_t length,
          return error;
 
       //Save the parameter p
-      dsaParams->p = tag.value;
-      dsaParams->pLen = tag.length;
+      dsaParams->p.value = tag.value;
+      dsaParams->p.length = tag.length;
 
       //Point to the next field
       data += tag.totalLength;
@@ -552,8 +552,8 @@ error_t pkcs8ParseDsaPrivateKey(const uint8_t *data, size_t length,
          return error;
 
       //Save the parameter q
-      dsaParams->q = tag.value;
-      dsaParams->qLen = tag.length;
+      dsaParams->q.value = tag.value;
+      dsaParams->q.length = tag.length;
 
       //Point to the next field
       data += tag.totalLength;
@@ -573,8 +573,8 @@ error_t pkcs8ParseDsaPrivateKey(const uint8_t *data, size_t length,
          return error;
 
       //Save the parameter g
-      dsaParams->g = tag.value;
-      dsaParams->gLen = tag.length;
+      dsaParams->g.value = tag.value;
+      dsaParams->g.length = tag.length;
 
       //Point to the next field
       data += tag.totalLength;
@@ -611,8 +611,8 @@ error_t pkcs8ParseDsaPrivateKey(const uint8_t *data, size_t length,
       return error;
 
    //Save the private value x
-   dsaPrivateKey->x = tag.value;
-   dsaPrivateKey->xLen = tag.length;
+   dsaPrivateKey->x.value = tag.value;
+   dsaPrivateKey->x.length = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -661,8 +661,8 @@ error_t pkcs8ParseEcPrivateKey(const uint8_t *data, size_t length,
       return error;
 
    //Save the EC private key
-   ecPrivateKey->d = tag.value;
-   ecPrivateKey->dLen = tag.length;
+   ecPrivateKey->d.value = tag.value;
+   ecPrivateKey->d.length = tag.length;
 
    //Point to the next field
    data += tag.totalLength;
@@ -722,8 +722,8 @@ error_t pkcs8ParseEddsaPrivateKey(const uint8_t *data, size_t length,
       return error;
 
    //Save the EdDSA private key
-   eddsaPrivateKey->d = tag.value;
-   eddsaPrivateKey->dLen = tag.length;
+   eddsaPrivateKey->d.value = tag.value;
+   eddsaPrivateKey->d.length = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -773,8 +773,8 @@ error_t pkcs8ParseEncryptedPrivateKeyInfo(const uint8_t *data, size_t length,
       return error;
 
    //The EncryptedData is the result of encrypting the private-key information
-   encryptedPrivateKeyInfo->encryptedData = tag.value;
-   encryptedPrivateKeyInfo->encryptedDataLen = tag.length;
+   encryptedPrivateKeyInfo->encryptedData.value = tag.value;
+   encryptedPrivateKeyInfo->encryptedData.length = tag.length;
 
    //Successful processing
    return NO_ERROR;
@@ -816,8 +816,8 @@ error_t pkcs8ParseEncryptionAlgoId(const uint8_t *data, size_t length,
       return error;
 
    //Save the encryption algorithm identifier
-   encryptionAlgoId->oid = tag.value;
-   encryptionAlgoId->oidLen = tag.length;
+   encryptionAlgoId->oid.value = tag.value;
+   encryptionAlgoId->oid.length = tag.length;
 
    //Point to the next field (if any)
    data += tag.totalLength;
@@ -825,8 +825,8 @@ error_t pkcs8ParseEncryptionAlgoId(const uint8_t *data, size_t length,
 
    //The contents of the optional parameters field will vary according to the
    //algorithm identified
-   encryptionAlgoId->params = data;
-   encryptionAlgoId->paramsLen = length;
+   encryptionAlgoId->params.value = data;
+   encryptionAlgoId->params.length = length;
 
    //Return status code
    return error;
@@ -850,81 +850,81 @@ error_t pkcs8ImportRsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
    size_t oidLen;
 
    //Get the private key algorithm identifier
-   oid = privateKeyInfo->oid;
-   oidLen = privateKeyInfo->oidLen;
+   oid = privateKeyInfo->oid.value;
+   oidLen = privateKeyInfo->oid.length;
 
    //RSA or RSA-PSS algorithm identifier?
    if(!oidComp(oid, oidLen, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)) ||
       !oidComp(oid, oidLen, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
    {
       //Sanity check
-      if(privateKeyInfo->rsaPrivateKey.n != NULL &&
-         privateKeyInfo->rsaPrivateKey.e != NULL &&
-         privateKeyInfo->rsaPrivateKey.d != NULL &&
-         privateKeyInfo->rsaPrivateKey.p != NULL &&
-         privateKeyInfo->rsaPrivateKey.q != NULL &&
-         privateKeyInfo->rsaPrivateKey.dp != NULL &&
-         privateKeyInfo->rsaPrivateKey.dq != NULL &&
-         privateKeyInfo->rsaPrivateKey.qinv != NULL)
+      if(privateKeyInfo->rsaPrivateKey.n.value != NULL &&
+         privateKeyInfo->rsaPrivateKey.e.value != NULL &&
+         privateKeyInfo->rsaPrivateKey.d.value != NULL &&
+         privateKeyInfo->rsaPrivateKey.p.value != NULL &&
+         privateKeyInfo->rsaPrivateKey.q.value != NULL &&
+         privateKeyInfo->rsaPrivateKey.dp.value != NULL &&
+         privateKeyInfo->rsaPrivateKey.dq.value != NULL &&
+         privateKeyInfo->rsaPrivateKey.qinv.value != NULL)
       {
          //Read modulus
-         error = mpiImport(&privateKey->n, privateKeyInfo->rsaPrivateKey.n,
-            privateKeyInfo->rsaPrivateKey.nLen, MPI_FORMAT_BIG_ENDIAN);
+         error = mpiImport(&privateKey->n, privateKeyInfo->rsaPrivateKey.n.value,
+            privateKeyInfo->rsaPrivateKey.n.length, MPI_FORMAT_BIG_ENDIAN);
 
          //Check status code
          if(!error)
          {
             //Read public exponent
-            error = mpiImport(&privateKey->e, privateKeyInfo->rsaPrivateKey.e,
-               privateKeyInfo->rsaPrivateKey.eLen, MPI_FORMAT_BIG_ENDIAN);
+            error = mpiImport(&privateKey->e, privateKeyInfo->rsaPrivateKey.e.value,
+               privateKeyInfo->rsaPrivateKey.e.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
          if(!error)
          {
             //Read private exponent
-            error = mpiImport(&privateKey->d, privateKeyInfo->rsaPrivateKey.d,
-               privateKeyInfo->rsaPrivateKey.dLen, MPI_FORMAT_BIG_ENDIAN);
+            error = mpiImport(&privateKey->d, privateKeyInfo->rsaPrivateKey.d.value,
+               privateKeyInfo->rsaPrivateKey.d.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
          if(!error)
          {
             //Read first factor
-            error = mpiImport(&privateKey->p, privateKeyInfo->rsaPrivateKey.p,
-               privateKeyInfo->rsaPrivateKey.pLen, MPI_FORMAT_BIG_ENDIAN);
+            error = mpiImport(&privateKey->p, privateKeyInfo->rsaPrivateKey.p.value,
+               privateKeyInfo->rsaPrivateKey.p.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
          if(!error)
          {
             //Read second factor
-            error = mpiImport(&privateKey->q, privateKeyInfo->rsaPrivateKey.q,
-               privateKeyInfo->rsaPrivateKey.qLen, MPI_FORMAT_BIG_ENDIAN);
+            error = mpiImport(&privateKey->q, privateKeyInfo->rsaPrivateKey.q.value,
+               privateKeyInfo->rsaPrivateKey.q.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
          if(!error)
          {
             //Read first exponent
-            error = mpiImport(&privateKey->dp, privateKeyInfo->rsaPrivateKey.dp,
-               privateKeyInfo->rsaPrivateKey.dpLen, MPI_FORMAT_BIG_ENDIAN);
+            error = mpiImport(&privateKey->dp, privateKeyInfo->rsaPrivateKey.dp.value,
+               privateKeyInfo->rsaPrivateKey.dp.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
          if(!error)
          {
             //Read second exponent
-            error = mpiImport(&privateKey->dq, privateKeyInfo->rsaPrivateKey.dq,
-               privateKeyInfo->rsaPrivateKey.dqLen, MPI_FORMAT_BIG_ENDIAN);
+            error = mpiImport(&privateKey->dq, privateKeyInfo->rsaPrivateKey.dq.value,
+               privateKeyInfo->rsaPrivateKey.dq.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
          if(!error)
          {
             //Read coefficient
-            error = mpiImport(&privateKey->qinv, privateKeyInfo->rsaPrivateKey.qinv,
-               privateKeyInfo->rsaPrivateKey.qinvLen, MPI_FORMAT_BIG_ENDIAN);
+            error = mpiImport(&privateKey->qinv, privateKeyInfo->rsaPrivateKey.qinv.value,
+               privateKeyInfo->rsaPrivateKey.qinv.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
@@ -983,41 +983,41 @@ error_t pkcs8ImportDsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
 
 #if (DSA_SUPPORT == ENABLED)
    //DSA algorithm identifier?
-   if(!oidComp(privateKeyInfo->oid, privateKeyInfo->oidLen, DSA_OID,
-      sizeof(DSA_OID)))
+   if(!oidComp(privateKeyInfo->oid.value, privateKeyInfo->oid.length,
+      DSA_OID, sizeof(DSA_OID)))
    {
       //Sanity check
-      if(privateKeyInfo->dsaParams.p != NULL &&
-         privateKeyInfo->dsaParams.q != NULL &&
-         privateKeyInfo->dsaParams.g != NULL &&
-         privateKeyInfo->dsaPrivateKey.x != NULL)
+      if(privateKeyInfo->dsaParams.p.value != NULL &&
+         privateKeyInfo->dsaParams.q.value != NULL &&
+         privateKeyInfo->dsaParams.g.value != NULL &&
+         privateKeyInfo->dsaPrivateKey.x.value != NULL)
       {
          //Read parameter p
-         error = mpiImport(&privateKey->params.p, privateKeyInfo->dsaParams.p,
-            privateKeyInfo->dsaParams.pLen, MPI_FORMAT_BIG_ENDIAN);
+         error = mpiImport(&privateKey->params.p, privateKeyInfo->dsaParams.p.value,
+            privateKeyInfo->dsaParams.p.length, MPI_FORMAT_BIG_ENDIAN);
 
          //Check status code
          if(!error)
          {
             //Read parameter q
-            error = mpiImport(&privateKey->params.q, privateKeyInfo->dsaParams.q,
-               privateKeyInfo->dsaParams.qLen, MPI_FORMAT_BIG_ENDIAN);
+            error = mpiImport(&privateKey->params.q, privateKeyInfo->dsaParams.q.value,
+               privateKeyInfo->dsaParams.q.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
          if(!error)
          {
             //Read parameter g
-            error = mpiImport(&privateKey->params.g, privateKeyInfo->dsaParams.g,
-               privateKeyInfo->dsaParams.gLen, MPI_FORMAT_BIG_ENDIAN);
+            error = mpiImport(&privateKey->params.g, privateKeyInfo->dsaParams.g.value,
+               privateKeyInfo->dsaParams.g.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
          if(!error)
          {
             //Read private value
-            error = mpiImport(&privateKey->x, privateKeyInfo->dsaPrivateKey.x,
-               privateKeyInfo->dsaPrivateKey.xLen, MPI_FORMAT_BIG_ENDIAN);
+            error = mpiImport(&privateKey->x, privateKeyInfo->dsaPrivateKey.x.value,
+               privateKeyInfo->dsaPrivateKey.x.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
@@ -1068,15 +1068,15 @@ error_t pkcs8ImportEcPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
 
 #if (EC_SUPPORT == ENABLED)
    //EC public key algorithm identifier?
-   if(!oidComp(privateKeyInfo->oid, privateKeyInfo->oidLen, EC_PUBLIC_KEY_OID,
-      sizeof(EC_PUBLIC_KEY_OID)))
+   if(!oidComp(privateKeyInfo->oid.value, privateKeyInfo->oid.length,
+      EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
    {
       //Sanity check
-      if(privateKeyInfo->ecPrivateKey.d != NULL)
+      if(privateKeyInfo->ecPrivateKey.d.value != NULL)
       {
          //Read the EC private key
-         error = mpiImport(&privateKey->d, privateKeyInfo->ecPrivateKey.d,
-            privateKeyInfo->ecPrivateKey.dLen, MPI_FORMAT_BIG_ENDIAN);
+         error = mpiImport(&privateKey->d, privateKeyInfo->ecPrivateKey.d.value,
+            privateKeyInfo->ecPrivateKey.d.length, MPI_FORMAT_BIG_ENDIAN);
 
          //Check status code
          if(!error)
@@ -1119,16 +1119,16 @@ error_t pkcs8ImportEddsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
 
 #if (ED25519_SUPPORT == ENABLED)
    //Ed25519 algorithm identifier?
-   if(!oidComp(privateKeyInfo->oid, privateKeyInfo->oidLen, ED25519_OID,
-      sizeof(ED25519_OID)))
+   if(!oidComp(privateKeyInfo->oid.value, privateKeyInfo->oid.length,
+      ED25519_OID, sizeof(ED25519_OID)))
    {
       //Check the length of the Ed25519 private key
-      if(privateKeyInfo->eddsaPrivateKey.d != NULL &&
-         privateKeyInfo->eddsaPrivateKey.dLen == ED25519_PRIVATE_KEY_LEN)
+      if(privateKeyInfo->eddsaPrivateKey.d.value != NULL &&
+         privateKeyInfo->eddsaPrivateKey.d.length == ED25519_PRIVATE_KEY_LEN)
       {
          //Read the Ed25519 private key
-         error = mpiImport(&privateKey->d, privateKeyInfo->eddsaPrivateKey.d,
-            privateKeyInfo->eddsaPrivateKey.dLen, MPI_FORMAT_LITTLE_ENDIAN);
+         error = mpiImport(&privateKey->d, privateKeyInfo->eddsaPrivateKey.d.value,
+            privateKeyInfo->eddsaPrivateKey.d.length, MPI_FORMAT_LITTLE_ENDIAN);
       }
       else
       {
@@ -1140,16 +1140,16 @@ error_t pkcs8ImportEddsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
 #endif
 #if (ED448_SUPPORT == ENABLED)
    //Ed448 algorithm identifier?
-   if(!oidComp(privateKeyInfo->oid, privateKeyInfo->oidLen, ED448_OID,
-      sizeof(ED448_OID)))
+   if(!oidComp(privateKeyInfo->oid.value, privateKeyInfo->oid.length,
+      ED448_OID, sizeof(ED448_OID)))
    {
       //Check the length of the Ed448 private key
-      if(privateKeyInfo->eddsaPrivateKey.d != NULL &&
-         privateKeyInfo->eddsaPrivateKey.dLen == ED448_PRIVATE_KEY_LEN)
+      if(privateKeyInfo->eddsaPrivateKey.d.value != NULL &&
+         privateKeyInfo->eddsaPrivateKey.d.length == ED448_PRIVATE_KEY_LEN)
       {
          //Read the Ed448 private key
-         error = mpiImport(&privateKey->d, privateKeyInfo->eddsaPrivateKey.d,
-            privateKeyInfo->eddsaPrivateKey.dLen, MPI_FORMAT_LITTLE_ENDIAN);
+         error = mpiImport(&privateKey->d, privateKeyInfo->eddsaPrivateKey.d.value,
+            privateKeyInfo->eddsaPrivateKey.d.length, MPI_FORMAT_LITTLE_ENDIAN);
       }
       else
       {

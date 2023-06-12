@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -68,18 +68,17 @@ error_t x509RegisterSignVerifyCallback(X509SignVerifyCallback callback)
 
 /**
  * @brief Certificate signature verification
- * @param[in] tbsCert TBSCertificate whose signature is to be verified
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
- * @param[in] signatureAlgoId Signature algorithm identifier
+ * @param[in] tbsData Data whose signature is to be verified
+ * @param[in] signAlgoId Signature algorithm identifier
  * @param[in] publicKeyInfo Issuer's public key
- * @param[in] signatureValue Signature to be verified
+ * @param[in] signature Signature to be verified
  * @return Error code
  **/
 
-error_t x509VerifySignature(const uint8_t *tbsCert, size_t tbsCertLen,
-   const X509SignatureAlgoId *signatureAlgoId,
+error_t x509VerifySignature(const X509OctetString *tbsData,
+   const X509SignAlgoId *signAlgoId,
    const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue)
+   const X509OctetString *signature)
 {
    error_t error;
    X509SignatureAlgo signAlgo;
@@ -90,8 +89,8 @@ error_t x509VerifySignature(const uint8_t *tbsCert, size_t tbsCertLen,
    if(x509SignVerifyCallback != NULL)
    {
       //Invoke user-defined callback
-      error = x509SignVerifyCallback(tbsCert, tbsCertLen, signatureAlgoId,
-         publicKeyInfo, signatureValue);
+      error = x509SignVerifyCallback(tbsData, signAlgoId, publicKeyInfo,
+         signatureValue);
    }
    else
 #endif
@@ -104,7 +103,7 @@ error_t x509VerifySignature(const uint8_t *tbsCert, size_t tbsCertLen,
    if(error == ERROR_UNSUPPORTED_SIGNATURE_ALGO)
    {
       //Retrieve the signature algorithm that was used to sign the certificate
-      error = x509GetSignHashAlgo(signatureAlgoId, &signAlgo, &hashAlgo);
+      error = x509GetSignHashAlgo(signAlgoId, &signAlgo, &hashAlgo);
 
       //Check status code
       if(!error)
@@ -114,8 +113,8 @@ error_t x509VerifySignature(const uint8_t *tbsCert, size_t tbsCertLen,
          if(signAlgo == X509_SIGN_ALGO_RSA)
          {
             //Verify RSA signature (RSASSA-PKCS1-v1_5 signature scheme)
-            error = x509VerifyRsaSignature(tbsCert, tbsCertLen, hashAlgo,
-               publicKeyInfo, signatureValue);
+            error = x509VerifyRsaSignature(tbsData, hashAlgo, publicKeyInfo,
+               signature);
          }
          else
 #endif
@@ -124,9 +123,8 @@ error_t x509VerifySignature(const uint8_t *tbsCert, size_t tbsCertLen,
          if(signAlgo == X509_SIGN_ALGO_RSA_PSS)
          {
             //Verify RSA signature (RSASSA-PSS signature scheme)
-            error = x509VerifyRsaPssSignature(tbsCert, tbsCertLen, hashAlgo,
-               signatureAlgoId->rsaPssParams.saltLen, publicKeyInfo,
-               signatureValue);
+            error = x509VerifyRsaPssSignature(tbsData, hashAlgo,
+               signAlgoId->rsaPssParams.saltLen, publicKeyInfo, signature);
          }
          else
 #endif
@@ -135,8 +133,8 @@ error_t x509VerifySignature(const uint8_t *tbsCert, size_t tbsCertLen,
          if(signAlgo == X509_SIGN_ALGO_DSA)
          {
             //Verify DSA signature
-            error = x509VerifyDsaSignature(tbsCert, tbsCertLen, hashAlgo,
-               publicKeyInfo, signatureValue);
+            error = x509VerifyDsaSignature(tbsData, hashAlgo, publicKeyInfo,
+               signature);
          }
          else
 #endif
@@ -145,8 +143,8 @@ error_t x509VerifySignature(const uint8_t *tbsCert, size_t tbsCertLen,
          if(signAlgo == X509_SIGN_ALGO_ECDSA)
          {
             //Verify ECDSA signature
-            error = x509VerifyEcdsaSignature(tbsCert, tbsCertLen, hashAlgo,
-               publicKeyInfo, signatureValue);
+            error = x509VerifyEcdsaSignature(tbsData, hashAlgo, publicKeyInfo,
+               signature);
          }
          else
 #endif
@@ -155,8 +153,8 @@ error_t x509VerifySignature(const uint8_t *tbsCert, size_t tbsCertLen,
          if(signAlgo == X509_SIGN_ALGO_ED25519)
          {
             //Verify Ed25519 signature (PureEdDSA mode)
-            error = x509VerifyEd25519Signature(tbsCert, tbsCertLen,
-               publicKeyInfo, signatureValue);
+            error = x509VerifyEd25519Signature(tbsData, publicKeyInfo,
+               signature);
          }
          else
 #endif
@@ -165,8 +163,8 @@ error_t x509VerifySignature(const uint8_t *tbsCert, size_t tbsCertLen,
          if(signAlgo == X509_SIGN_ALGO_ED448)
          {
             //Verify Ed448 signature (PureEdDSA mode)
-            error = x509VerifyEd448Signature(tbsCert, tbsCertLen, publicKeyInfo,
-               signatureValue);
+            error = x509VerifyEd448Signature(tbsData, publicKeyInfo,
+               signature);
          }
          else
 #endif
@@ -185,42 +183,41 @@ error_t x509VerifySignature(const uint8_t *tbsCert, size_t tbsCertLen,
 
 /**
  * @brief RSA signature verification
- * @param[in] tbsCert TBSCertificate whose signature is to be verified
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
+ * @param[in] tbsData Data whose signature is to be verified
  * @param[in] hashAlgo Underlying hash function
  * @param[in] publicKeyInfo Issuer's public key
- * @param[in] signatureValue Signature to be verified
+ * @param[in] signature Signature to be verified
  * @return Error code
  **/
 
-error_t x509VerifyRsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509VerifyRsaSignature(const X509OctetString *tbsData,
    const HashAlgo *hashAlgo, const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue)
+   const X509OctetString *signature)
 {
 #if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
    error_t error;
    uint_t k;
-   RsaPublicKey publicKey;
+   RsaPublicKey rsaPublicKey;
    uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Initialize RSA public key
-   rsaInitPublicKey(&publicKey);
+   rsaInitPublicKey(&rsaPublicKey);
 
    //Digest the TBSCertificate structure using the specified hash algorithm
-   error = hashAlgo->compute(tbsCert, tbsCertLen, digest);
+   error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
 
    //Check status code
    if(!error)
    {
       //Import the RSA public key
-      error = x509ImportRsaPublicKey(publicKeyInfo, &publicKey);
+      error = x509ImportRsaPublicKey(publicKeyInfo, &rsaPublicKey);
    }
 
    //Check status code
    if(!error)
    {
       //Get the length of the modulus, in bits
-      k = mpiGetBitLength(&publicKey.n);
+      k = mpiGetBitLength(&rsaPublicKey.n);
 
       //Make sure the modulus is acceptable
       if(k < X509_MIN_RSA_MODULUS_SIZE || k > X509_MAX_RSA_MODULUS_SIZE)
@@ -234,12 +231,12 @@ error_t x509VerifyRsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
    if(!error)
    {
       //Verify RSA signature (RSASSA-PKCS1-v1_5 signature scheme)
-      error = rsassaPkcs1v15Verify(&publicKey, hashAlgo, digest,
-         signatureValue->data, signatureValue->length);
+      error = rsassaPkcs1v15Verify(&rsaPublicKey, hashAlgo, digest,
+         signature->value, signature->length);
    }
 
    //Release previously allocated resources
-   rsaFreePublicKey(&publicKey);
+   rsaFreePublicKey(&rsaPublicKey);
 
    //Return status code
    return error;
@@ -252,44 +249,43 @@ error_t x509VerifyRsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
 
 /**
  * @brief RSA-PSS signature verification
- * @param[in] tbsCert TBSCertificate whose signature is to be verified
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
+ * @param[in] tbsData Data whose signature is to be verified
  * @param[in] hashAlgo Underlying hash function
  * @param[in] saltLen Length of the salt, in bytes
  * @param[in] publicKeyInfo Issuer's public key
- * @param[in] signatureValue Signature to be verified
+ * @param[in] signature Signature to be verified
  * @return Error code
  **/
 
-error_t x509VerifyRsaPssSignature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509VerifyRsaPssSignature(const X509OctetString *tbsData,
    const HashAlgo *hashAlgo, size_t saltLen,
    const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue)
+   const X509OctetString *signature)
 {
 #if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
    error_t error;
    uint_t k;
-   RsaPublicKey publicKey;
+   RsaPublicKey rsaPublicKey;
    uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Initialize RSA public key
-   rsaInitPublicKey(&publicKey);
+   rsaInitPublicKey(&rsaPublicKey);
 
    //Digest the TBSCertificate structure using the specified hash algorithm
-   error = hashAlgo->compute(tbsCert, tbsCertLen, digest);
+   error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
 
    //Check status code
    if(!error)
    {
       //Import the RSA public key
-      error = x509ImportRsaPublicKey(publicKeyInfo, &publicKey);
+      error = x509ImportRsaPublicKey(publicKeyInfo, &rsaPublicKey);
    }
 
    //Check status code
    if(!error)
    {
       //Get the length of the modulus, in bits
-      k = mpiGetBitLength(&publicKey.n);
+      k = mpiGetBitLength(&rsaPublicKey.n);
 
       //Make sure the modulus is acceptable
       if(k < X509_MIN_RSA_MODULUS_SIZE || k > X509_MAX_RSA_MODULUS_SIZE)
@@ -303,12 +299,12 @@ error_t x509VerifyRsaPssSignature(const uint8_t *tbsCert, size_t tbsCertLen,
    if(!error)
    {
       //Verify RSA signature (RSASSA-PSS signature scheme)
-      error = rsassaPssVerify(&publicKey, hashAlgo, saltLen, digest,
-         signatureValue->data, signatureValue->length);
+      error = rsassaPssVerify(&rsaPublicKey, hashAlgo, saltLen, digest,
+         signature->value, signature->length);
    }
 
    //Release previously allocated resources
-   rsaFreePublicKey(&publicKey);
+   rsaFreePublicKey(&rsaPublicKey);
 
    //Return status code
    return error;
@@ -321,45 +317,44 @@ error_t x509VerifyRsaPssSignature(const uint8_t *tbsCert, size_t tbsCertLen,
 
 /**
  * @brief DSA signature verification
- * @param[in] tbsCert TBSCertificate whose signature is to be verified
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
+ * @param[in] tbsData Data whose signature is to be verified
  * @param[in] hashAlgo Underlying hash function
  * @param[in] publicKeyInfo Issuer's public key
- * @param[in] signatureValue Signature to be verified
+ * @param[in] signature Signature to be verified
  * @return Error code
  **/
 
-error_t x509VerifyDsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509VerifyDsaSignature(const X509OctetString *tbsData,
    const HashAlgo *hashAlgo, const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue)
+   const X509OctetString *signature)
 {
 #if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
    error_t error;
    uint_t k;
-   DsaPublicKey publicKey;
-   DsaSignature signature;
+   DsaPublicKey dsaPublicKey;
+   DsaSignature dsaSignature;
    uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Initialize DSA public key
-   dsaInitPublicKey(&publicKey);
+   dsaInitPublicKey(&dsaPublicKey);
    //Initialize DSA signature
-   dsaInitSignature(&signature);
+   dsaInitSignature(&dsaSignature);
 
    //Digest the TBSCertificate structure using the specified hash algorithm
-   error = hashAlgo->compute(tbsCert, tbsCertLen, digest);
+   error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
 
    //Check status code
    if(!error)
    {
       //Import the DSA public key
-      error = x509ImportDsaPublicKey(publicKeyInfo, &publicKey);
+      error = x509ImportDsaPublicKey(publicKeyInfo, &dsaPublicKey);
    }
 
    //Check status code
    if(!error)
    {
       //Get the length of the prime modulus, in bits
-      k = mpiGetBitLength(&publicKey.params.p);
+      k = mpiGetBitLength(&dsaPublicKey.params.p);
 
       //Make sure the prime modulus is acceptable
       if(k < X509_MIN_DSA_MODULUS_SIZE || k > X509_MAX_DSA_MODULUS_SIZE)
@@ -373,21 +368,21 @@ error_t x509VerifyDsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
    if(!error)
    {
       //Read the ASN.1 encoded signature
-      error = dsaReadSignature(signatureValue->data, signatureValue->length,
-         &signature);
+      error = dsaReadSignature(signature->value, signature->length,
+         &dsaSignature);
    }
 
    //Check status code
    if(!error)
    {
       //Verify DSA signature
-      error = dsaVerifySignature(&publicKey, digest, hashAlgo->digestSize,
-         &signature);
+      error = dsaVerifySignature(&dsaPublicKey, digest, hashAlgo->digestSize,
+         &dsaSignature);
    }
 
    //Release previously allocated resources
-   dsaFreePublicKey(&publicKey);
-   dsaFreeSignature(&signature);
+   dsaFreePublicKey(&dsaPublicKey);
+   dsaFreeSignature(&dsaSignature);
 
    //Return status code
    return error;
@@ -400,42 +395,41 @@ error_t x509VerifyDsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
 
 /**
  * @brief ECDSA signature verification
- * @param[in] tbsCert TBSCertificate whose signature is to be verified
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
+ * @param[in] tbsData Data whose signature is to be verified
  * @param[in] hashAlgo Underlying hash function
  * @param[in] publicKeyInfo Issuer's public key
- * @param[in] signatureValue Signature to be verified
+ * @param[in] signature Signature to be verified
  * @return Error code
  **/
 
-error_t x509VerifyEcdsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509VerifyEcdsaSignature(const X509OctetString *tbsData,
    const HashAlgo *hashAlgo, const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue)
+   const X509OctetString *signature)
 {
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
    error_t error;
    const EcCurveInfo *curveInfo;
-   EcDomainParameters params;
-   EcPublicKey publicKey;
-   EcdsaSignature signature;
+   EcDomainParameters ecParams;
+   EcPublicKey ecPublicKey;
+   EcdsaSignature ecdsaSignature;
    uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
    //Initialize EC domain parameters
-   ecInitDomainParameters(&params);
+   ecInitDomainParameters(&ecParams);
    //Initialize EC public key
-   ecInitPublicKey(&publicKey);
+   ecInitPublicKey(&ecPublicKey);
    //Initialize ECDSA signature
-   ecdsaInitSignature(&signature);
+   ecdsaInitSignature(&ecdsaSignature);
 
    //Retrieve EC domain parameters
-   curveInfo = x509GetCurveInfo(publicKeyInfo->ecParams.namedCurve,
-      publicKeyInfo->ecParams.namedCurveLen);
+   curveInfo = x509GetCurveInfo(publicKeyInfo->ecParams.namedCurve.value,
+      publicKeyInfo->ecParams.namedCurve.length);
 
    //Make sure the specified elliptic curve is supported
    if(curveInfo != NULL)
    {
       //Load EC domain parameters
-      error = ecLoadDomainParameters(&params, curveInfo);
+      error = ecLoadDomainParameters(&ecParams, curveInfo);
    }
    else
    {
@@ -447,37 +441,38 @@ error_t x509VerifyEcdsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
    if(!error)
    {
       //Digest the TBSCertificate structure using the specified hash algorithm
-      error = hashAlgo->compute(tbsCert, tbsCertLen, digest);
+      error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
    }
 
    //Check status code
    if(!error)
    {
       //Retrieve the EC public key
-      error = ecImport(&params, &publicKey.q, publicKeyInfo->ecPublicKey.q,
-         publicKeyInfo->ecPublicKey.qLen);
+      error = ecImport(&ecParams, &ecPublicKey.q,
+         publicKeyInfo->ecPublicKey.q.value,
+         publicKeyInfo->ecPublicKey.q.length);
    }
 
    //Check status code
    if(!error)
    {
       //Read the ASN.1 encoded signature
-      error = ecdsaReadSignature(signatureValue->data,
-         signatureValue->length, &signature);
+      error = ecdsaReadSignature(signature->value, signature->length,
+         &ecdsaSignature);
    }
 
    //Check status code
    if(!error)
    {
       //Verify ECDSA signature
-      error = ecdsaVerifySignature(&params, &publicKey, digest,
-         hashAlgo->digestSize, &signature);
+      error = ecdsaVerifySignature(&ecParams, &ecPublicKey, digest,
+         hashAlgo->digestSize, &ecdsaSignature);
    }
 
    //Release previously allocated resources
-   ecFreeDomainParameters(&params);
-   ecFreePublicKey(&publicKey);
-   ecdsaFreeSignature(&signature);
+   ecFreeDomainParameters(&ecParams);
+   ecFreePublicKey(&ecPublicKey);
+   ecdsaFreeSignature(&ecdsaSignature);
 
    //Return status code
    return error;
@@ -490,29 +485,28 @@ error_t x509VerifyEcdsaSignature(const uint8_t *tbsCert, size_t tbsCertLen,
 
 /**
  * @brief Ed25519 signature verification
- * @param[in] tbsCert TBSCertificate whose signature is to be verified
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
+ * @param[in] tbsData Data whose signature is to be verified
  * @param[in] publicKeyInfo Issuer's public key
- * @param[in] signatureValue Signature to be verified
+ * @param[in] signature Signature to be verified
  * @return Error code
  **/
 
-error_t x509VerifyEd25519Signature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509VerifyEd25519Signature(const X509OctetString *tbsData,
    const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue)
+   const X509OctetString *signature)
 {
 #if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
    error_t error;
 
    //Check the length of the public key
-   if(publicKeyInfo->ecPublicKey.qLen == ED25519_PUBLIC_KEY_LEN)
+   if(publicKeyInfo->ecPublicKey.q.length == ED25519_PUBLIC_KEY_LEN)
    {
       //Check the length of the EdDSA signature
-      if(signatureValue->length == ED25519_SIGNATURE_LEN)
+      if(signature->length == ED25519_SIGNATURE_LEN)
       {
          //Verify signature (PureEdDSA mode)
-         error = ed25519VerifySignature(publicKeyInfo->ecPublicKey.q,
-            tbsCert, tbsCertLen, NULL, 0, 0, signatureValue->data);
+         error = ed25519VerifySignature(publicKeyInfo->ecPublicKey.q.value,
+            tbsData->value, tbsData->length, NULL, 0, 0, signature->value);
       }
       else
       {
@@ -537,29 +531,28 @@ error_t x509VerifyEd25519Signature(const uint8_t *tbsCert, size_t tbsCertLen,
 
 /**
  * @brief Ed448 signature verification
- * @param[in] tbsCert TBSCertificate whose signature is to be verified
- * @param[in] tbsCertLen Length of the TBSCertificate, in bytes
+ * @param[in] tbsData Data whose signature is to be verified
  * @param[in] publicKeyInfo Issuer's public key
- * @param[in] signatureValue Signature to be verified
+ * @param[in] signature Signature to be verified
  * @return Error code
  **/
 
-error_t x509VerifyEd448Signature(const uint8_t *tbsCert, size_t tbsCertLen,
+error_t x509VerifyEd448Signature(const X509OctetString *tbsData,
    const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const X509SignatureValue *signatureValue)
+   const X509OctetString *signature)
 {
 #if (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED)
    error_t error;
 
    //Check the length of the public key
-   if(publicKeyInfo->ecPublicKey.qLen == ED448_PUBLIC_KEY_LEN)
+   if(publicKeyInfo->ecPublicKey.q.length == ED448_PUBLIC_KEY_LEN)
    {
       //Check the length of the EdDSA signature
-      if(signatureValue->length == ED448_SIGNATURE_LEN)
+      if(signature->length == ED448_SIGNATURE_LEN)
       {
          //Verify signature (PureEdDSA mode)
-         error = ed448VerifySignature(publicKeyInfo->ecPublicKey.q,
-            tbsCert, tbsCertLen, NULL, 0, 0, signatureValue->data);
+         error = ed448VerifySignature(publicKeyInfo->ecPublicKey.q.value,
+            tbsData->value, tbsData->length, NULL, 0, 0, signature->value);
       }
       else
       {

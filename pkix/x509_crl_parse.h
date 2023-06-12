@@ -1,6 +1,6 @@
 /**
  * @file x509_crl_parse.h
- * @brief CRL (Certificate Revocation List)
+ * @brief CRL (Certificate Revocation List) parsing
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _X509_CRL_PARSE_H
@@ -55,30 +55,6 @@ error_t x509ParseRevokedCertificates(const uint8_t *data, size_t length,
 
 error_t x509ParseRevokedCertificate(const uint8_t *data, size_t length,
    size_t *totalLength, X509RevokedCertificate *revokedCertificate);
-
-error_t x509ParseCrlExtensions(const uint8_t *data, size_t length,
-   size_t *totalLength, X509CrlExtensions *crlExtensions);
-
-error_t x509ParseCrlNumber(bool_t critical, const uint8_t *data,
-   size_t length, X509CrlNumber *crlNumber);
-
-error_t x509ParseDeltaCrlIndicator(bool_t critical, const uint8_t *data,
-   size_t length, X509DeltaCrlIndicator *deltaCrlIndicator);
-
-error_t x509ParseIssuingDistrPoint(bool_t critical, const uint8_t *data,
-   size_t length, X509IssuingDistrPoint *issuingDistrPoint);
-
-error_t x509ParseCrlEntryExtensions(const uint8_t *data, size_t length,
-   size_t *totalLength, X509CrlEntryExtensions *crlEntryExtensions);
-
-error_t x509ParseReasonCode(bool_t critical, const uint8_t *data,
-   size_t length, X509CrlReason *reasonCode);
-
-error_t x509ParseInvalidityDate(bool_t critical, const uint8_t *data,
-   size_t length, X509InvalidityDate *invalidityDate);
-
-error_t x509ParseCertificateIssuer(bool_t critical, const uint8_t *data,
-   size_t length, X509CertificateIssuer *certificateIssuer);
 
 //C++ guard
 #ifdef __cplusplus

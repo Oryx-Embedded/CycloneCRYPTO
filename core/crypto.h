@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.2.4"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.3.0"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
-#define CYCLONE_CRYPTO_MINOR_VERSION 2
+#define CYCLONE_CRYPTO_MINOR_VERSION 3
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 4
+#define CYCLONE_CRYPTO_REV_NUMBER 0
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -620,11 +620,32 @@
    #error ECDSA_SUPPORT parameter is not valid
 #endif
 
-//Streamlined NTRU Prime support
+//Streamlined NTRU Prime 761 KEM support
 #ifndef SNTRUP761_SUPPORT
    #define SNTRUP761_SUPPORT DISABLED
 #elif (SNTRUP761_SUPPORT != ENABLED && SNTRUP761_SUPPORT != DISABLED)
    #error SNTRUP761_SUPPORT parameter is not valid
+#endif
+
+//Kyber-512 KEM support
+#ifndef KYBER512_SUPPORT
+   #define KYBER512_SUPPORT DISABLED
+#elif (KYBER512_SUPPORT != ENABLED && KYBER512_SUPPORT != DISABLED)
+   #error KYBER512_SUPPORT parameter is not valid
+#endif
+
+//Kyber-768 KEM support
+#ifndef KYBER768_SUPPORT
+   #define KYBER768_SUPPORT DISABLED
+#elif (KYBER768_SUPPORT != ENABLED && KYBER768_SUPPORT != DISABLED)
+   #error KYBER768_SUPPORT parameter is not valid
+#endif
+
+//Kyber-1024 KEM support
+#ifndef KYBER1024_SUPPORT
+   #define KYBER1024_SUPPORT DISABLED
+#elif (KYBER1024_SUPPORT != ENABLED && KYBER1024_SUPPORT != DISABLED)
+   #error KYBER1024_SUPPORT parameter is not valid
 #endif
 
 //HKDF support

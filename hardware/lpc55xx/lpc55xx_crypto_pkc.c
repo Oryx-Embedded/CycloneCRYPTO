@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 //Switch to the appropriate trace level
@@ -142,7 +142,7 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
       //Set the z-coordinate of the result
       error = mpiSetValue(&r->z, 1);
    }
-   
+
    //Release exclusive access to the CASPER module
    osReleaseMutex(&lpc55xxCryptoMutex);
 

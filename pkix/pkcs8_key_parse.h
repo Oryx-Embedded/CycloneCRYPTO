@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _PKCS8_KEY_PARSE_H
@@ -48,22 +48,14 @@ extern "C" {
 typedef struct
 {
    int32_t version;
-   const uint8_t *n;
-   size_t nLen;
-   const uint8_t *e;
-   size_t eLen;
-   const uint8_t *d;
-   size_t dLen;
-   const uint8_t *p;
-   size_t pLen;
-   const uint8_t *q;
-   size_t qLen;
-   const uint8_t *dp;
-   size_t dpLen;
-   const uint8_t *dq;
-   size_t dqLen;
-   const uint8_t *qinv;
-   size_t qinvLen;
+   X509OctetString n;
+   X509OctetString e;
+   X509OctetString d;
+   X509OctetString p;
+   X509OctetString q;
+   X509OctetString dp;
+   X509OctetString dq;
+   X509OctetString qinv;
 } Pkcs8RsaPrivateKey;
 
 
@@ -73,8 +65,7 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *x;
-   size_t xLen;
+   X509OctetString x;
 } Pkcs8DsaPrivateKey;
 
 
@@ -85,8 +76,7 @@ typedef struct
 typedef struct
 {
    int32_t version;
-   const uint8_t *d;
-   size_t dLen;
+   X509OctetString d;
 } Pkcs8EcPrivateKey;
 
 
@@ -96,8 +86,7 @@ typedef struct
 
 typedef struct
 {
-   const uint8_t *d;
-   size_t dLen;
+   X509OctetString d;
 } Pkcs8EddsaPrivateKey;
 
 
@@ -108,8 +97,7 @@ typedef struct
 typedef struct
 {
    int32_t version;
-   const uint8_t *oid;
-   size_t oidLen;
+   X509OctetString oid;
 #if (RSA_SUPPORT == ENABLED)
    Pkcs8RsaPrivateKey rsaPrivateKey;
 #endif
@@ -134,8 +122,7 @@ typedef struct
 typedef struct
 {
    X509AlgoId encryptionAlgo;
-   const uint8_t *encryptedData;
-   size_t encryptedDataLen;
+   X509OctetString encryptedData;
 } Pkcs8EncryptedPrivateKeyInfo;
 
 

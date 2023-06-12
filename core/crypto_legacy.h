@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.2.4
+ * @version 2.3.0
  **/
 
 #ifndef _CRYPTO_LEGACY_H
@@ -59,5 +59,8 @@
 #endif
 
 #define yarrowRelease yarrowDeinit
+
+#define X509CertificateInfo X509CertInfo
+#define X509SignatureAlgoId X509SignAlgoId
 
 #endif
