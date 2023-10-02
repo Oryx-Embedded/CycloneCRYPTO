@@ -31,7 +31,7 @@
  * Refer to RFC 5794 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -312,33 +312,33 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
    //Check the length of the master key
    if(keyLen == 16)
    {
+      //128-bit master keys require a total of 12 rounds
+      context->nr = 12;
+
       //Select the relevant constants
       ck1 = c + 0;
       ck2 = c + 4;
       ck3 = c + 8;
-
-      //The number of rounds depends on the size of the master key
-      context->nr = 12;
    }
    else if(keyLen == 24)
    {
+      //192-bit master keys require a total of 14 rounds
+      context->nr = 14;
+
       //Select the relevant constants
       ck1 = c + 4;
       ck2 = c + 8;
       ck3 = c + 0;
-
-      //The number of rounds depends on the size of the master key
-      context->nr = 14;
    }
    else if(keyLen == 32)
    {
+      //256-bit master keys require a total of 16 rounds
+      context->nr = 16;
+
       //Select the relevant constants
       ck1 = c + 8;
       ck2 = c + 0;
       ck3 = c + 4;
-
-      //The number of rounds depends on the size of the master key
-      context->nr = 16;
    }
    else
    {
@@ -469,25 +469,26 @@ void ariaEncryptBlock(AriaContext *context, const uint8_t *input,
    EF(p, ek + 36);
    OF(p, ek + 40);
 
-   //128-bit master keys require a total of 12 rounds
+   //The number of rounds depends on the length of the master key
    if(context->nr == 12)
    {
+      //128-bit master keys require a total of 12 rounds
       XOR128(p, ek + 44);
       SL2(q, p);
       XOR128(q, ek + 48);
    }
-   //192-bit master keys require a total of 14 rounds
    else if(context->nr == 14)
    {
+      //192-bit master keys require a total of 14 rounds
       EF(p, ek + 44);
       OF(p, ek + 48);
       XOR128(p, ek + 52);
       SL2(q, p);
       XOR128(q, ek + 56);
    }
-   //256-bit master keys require a total of 16 rounds
    else
    {
+      //256-bit master keys require a total of 16 rounds
       EF(p, ek + 44);
       OF(p, ek + 48);
       EF(p, ek + 52);
@@ -535,25 +536,26 @@ void ariaDecryptBlock(AriaContext *context, const uint8_t *input,
    EF(p, dk + 36);
    OF(p, dk + 40);
 
-   //128-bit master keys require a total of 12 rounds
+   //The number of rounds depends on the length of the master key
    if(context->nr == 12)
    {
+      //128-bit master keys require a total of 12 rounds
       XOR128(p, dk + 44);
       SL2(q, p);
       XOR128(q, dk + 48);
    }
-   //192-bit master keys require a total of 14 rounds
    else if(context->nr == 14)
    {
+      //192-bit master keys require a total of 14 rounds
       EF(p, dk + 44);
       OF(p, dk + 48);
       XOR128(p, dk + 52);
       SL2(q, p);
       XOR128(q, dk + 56);
    }
-   //256-bit master keys require a total of 16 rounds
    else
    {
+      //256-bit master keys require a total of 16 rounds
       EF(p, dk + 44);
       OF(p, dk + 48);
       EF(p, dk + 52);

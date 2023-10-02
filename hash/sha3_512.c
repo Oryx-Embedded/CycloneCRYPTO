@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 202 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -75,36 +75,41 @@ const HashAlgo sha3_512HashAlgo =
 
 error_t sha3_512Compute(const void *data, size_t length, uint8_t *digest)
 {
-   error_t error;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    Sha3_512Context *context;
+#else
+   Sha3_512Context context[1];
+#endif
 
+   //Check parameters
+   if(data == NULL && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if(digest == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the SHA3-512 context
    context = cryptoAllocMem(sizeof(Sha3_512Context));
+   //Failed to allocate memory?
+   if(context == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(context != NULL)
-   {
-      //Initialize the SHA3-512 context
-      sha3_512Init(context);
-      //Digest the message
-      sha3_512Update(context, data, length);
-      //Finalize the SHA3-512 message digest
-      sha3_512Final(context, digest);
+   //Initialize the SHA3-512 context
+   sha3_512Init(context);
+   //Digest the message
+   sha3_512Update(context, data, length);
+   //Finalize the SHA3-512 message digest
+   sha3_512Final(context, digest);
 
-      //Free previously allocated memory
-      cryptoFreeMem(context);
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Free previously allocated memory
+   cryptoFreeMem(context);
+#endif
 
-      //Successful processing
-      error = NO_ERROR;
-   }
-   else
-   {
-      //Failed to allocate memory
-      error = ERROR_OUT_OF_MEMORY;
-   }
-
-   //Return status code
-   return error;
+   //Successful processing
+   return NO_ERROR;
 }
 
 

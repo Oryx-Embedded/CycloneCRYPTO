@@ -30,7 +30,7 @@
  * revision 1, section 5.8.1
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -62,8 +62,12 @@ error_t concatKdf(const HashAlgo *hash, const uint8_t *z, size_t zLen,
 {
    size_t n;
    uint32_t i;
-   HashContext *hashContext;
    uint8_t counter[4];
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   HashContext *hashContext;
+#else
+   HashContext hashContext[1];
+#endif
 
    //Check parameters
    if(hash == NULL || z == NULL || dk == NULL)
@@ -73,11 +77,13 @@ error_t concatKdf(const HashAlgo *hash, const uint8_t *z, size_t zLen,
    if(otherInfo == NULL && otherInfoLen != 0)
       return ERROR_INVALID_PARAMETER;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the hash context
    hashContext = cryptoAllocMem(hash->contextSize);
    //Failed to allocate memory?
    if(hashContext == NULL)
       return ERROR_OUT_OF_MEMORY;
+#endif
 
    //Derive the keying material
    for(i = 1; dkLen > 0; i++)
@@ -109,8 +115,10 @@ error_t concatKdf(const HashAlgo *hash, const uint8_t *z, size_t zLen,
       dkLen -= n;
    }
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Free previously allocated memory
    cryptoFreeMem(hashContext);
+#endif
 
    //Successful processing
    return NO_ERROR;

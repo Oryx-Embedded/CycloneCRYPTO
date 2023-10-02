@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -95,36 +95,41 @@ const HashAlgo ripemd128HashAlgo =
 
 error_t ripemd128Compute(const void *data, size_t length, uint8_t *digest)
 {
-   error_t error;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    Ripemd128Context *context;
+#else
+   Ripemd128Context context[1];
+#endif
 
+   //Check parameters
+   if(data == NULL && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if(digest == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the RIPEMD-128 context
    context = cryptoAllocMem(sizeof(Ripemd128Context));
+   //Failed to allocate memory?
+   if(context == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(context != NULL)
-   {
-      //Initialize the RIPEMD-128 context
-      ripemd128Init(context);
-      //Digest the message
-      ripemd128Update(context, data, length);
-      //Finalize the RIPEMD-128 message digest
-      ripemd128Final(context, digest);
+   //Initialize the RIPEMD-128 context
+   ripemd128Init(context);
+   //Digest the message
+   ripemd128Update(context, data, length);
+   //Finalize the RIPEMD-128 message digest
+   ripemd128Final(context, digest);
 
-      //Free previously allocated memory
-      cryptoFreeMem(context);
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Free previously allocated memory
+   cryptoFreeMem(context);
+#endif
 
-      //Successful processing
-      error = NO_ERROR;
-   }
-   else
-   {
-      //Failed to allocate memory
-      error = ERROR_OUT_OF_MEMORY;
-   }
-
-   //Return status code
-   return error;
+   //Successful operation
+   return NO_ERROR;
 }
 
 

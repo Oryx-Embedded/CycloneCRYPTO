@@ -32,7 +32,7 @@
  * with the first plaintext block. Refer to SP 800-38A for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level

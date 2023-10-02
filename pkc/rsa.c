@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -287,9 +287,13 @@ error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
    uint32_t a;
    uint32_t badPadding;
    uint32_t badLength;
-   uint8_t *em;
    Mpi c;
    Mpi m;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   uint8_t *em;
+#else
+   uint8_t em[RSA_MAX_MODULUS_SIZE / 8];
+#endif
 
    //Check parameters
    if(key == NULL || ciphertext == NULL)
@@ -329,11 +333,17 @@ error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
    if(ciphertextLen != k || ciphertextLen < 11)
       return ERROR_INVALID_LENGTH;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a buffer to store the encoded message EM
    em = cryptoAllocMem(k);
    //Failed to allocate memory?
    if(em == NULL)
       return ERROR_OUT_OF_MEMORY;
+#else
+   //Check the length of the modulus
+   if(k > sizeof(em))
+      return ERROR_BUFFER_OVERFLOW;
+#endif
 
    //Start of exception handling block
    do
@@ -397,8 +407,10 @@ error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
       //End of exception handling block
    } while(0);
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release the encoded message
    cryptoFreeMem(em);
+#endif
 
    //Release multiple precision integers
    mpiFree(&c);
@@ -542,9 +554,13 @@ error_t rsaesOaepDecrypt(const RsaPrivateKey *key, const HashAlgo *hash,
    uint32_t a;
    uint32_t badPadding;
    uint32_t badLength;
-   uint8_t *em;
    Mpi c;
    Mpi m;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   uint8_t *em;
+#else
+   uint8_t em[RSA_MAX_MODULUS_SIZE / 8];
+#endif
 
    //Check parameters
    if(key == NULL || ciphertext == NULL)
@@ -588,11 +604,17 @@ error_t rsaesOaepDecrypt(const RsaPrivateKey *key, const HashAlgo *hash,
    if(ciphertextLen != k)
       return ERROR_INVALID_LENGTH;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a buffer to store the encoded message EM
    em = cryptoAllocMem(k);
    //Failed to allocate memory?
    if(em == NULL)
       return ERROR_OUT_OF_MEMORY;
+#else
+   //Check the length of the modulus
+   if(k > sizeof(em))
+      return ERROR_BUFFER_OVERFLOW;
+#endif
 
    //Start of exception handling block
    do
@@ -656,8 +678,10 @@ error_t rsaesOaepDecrypt(const RsaPrivateKey *key, const HashAlgo *hash,
       //End of exception handling block
    } while(0);
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release the encoded message
    cryptoFreeMem(em);
+#endif
 
    //Release multiple precision integers
    mpiFree(&c);
@@ -816,9 +840,13 @@ error_t rsassaPkcs1v15Verify(const RsaPublicKey *key, const HashAlgo *hash,
 {
    error_t error;
    uint_t k;
-   uint8_t *em;
    Mpi s;
    Mpi m;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   uint8_t *em;
+#else
+   uint8_t em[RSA_MAX_MODULUS_SIZE / 8];
+#endif
 
    //Check parameters
    if(key == NULL || hash == NULL || digest == NULL || signature == NULL)
@@ -850,11 +878,17 @@ error_t rsassaPkcs1v15Verify(const RsaPublicKey *key, const HashAlgo *hash,
    if(signatureLen != k)
       return ERROR_INVALID_SIGNATURE;
 
-   //Allocate a memory buffer to hold the encoded message
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Allocate a buffer to store the encoded message EM
    em = cryptoAllocMem(k);
    //Failed to allocate memory?
    if(em == NULL)
       return ERROR_OUT_OF_MEMORY;
+#else
+   //Check the length of the modulus
+   if(k > sizeof(em))
+      return ERROR_BUFFER_OVERFLOW;
+#endif
 
    //Start of exception handling block
    do
@@ -895,8 +929,10 @@ error_t rsassaPkcs1v15Verify(const RsaPublicKey *key, const HashAlgo *hash,
       //End of exception handling block
    } while(0);
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release the encoded message
    cryptoFreeMem(em);
+#endif
 
    //Release multiple precision integers
    mpiFree(&s);
@@ -1047,9 +1083,13 @@ error_t rsassaPssVerify(const RsaPublicKey *key, const HashAlgo *hash,
    error_t error;
    uint_t k;
    uint_t modBits;
-   uint8_t *em;
    Mpi s;
    Mpi m;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   uint8_t *em;
+#else
+   uint8_t em[RSA_MAX_MODULUS_SIZE / 8];
+#endif
 
    //Check parameters
    if(key == NULL || hash == NULL || digest == NULL || signature == NULL)
@@ -1084,11 +1124,17 @@ error_t rsassaPssVerify(const RsaPublicKey *key, const HashAlgo *hash,
    if(signatureLen != k)
       return ERROR_INVALID_SIGNATURE;
 
-   //Allocate a memory buffer to hold the encoded message
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Allocate a buffer to store the encoded message EM
    em = cryptoAllocMem(k);
    //Failed to allocate memory?
    if(em == NULL)
       return ERROR_OUT_OF_MEMORY;
+#else
+   //Check the length of the modulus
+   if(k > sizeof(em))
+      return ERROR_BUFFER_OVERFLOW;
+#endif
 
    //Start of exception handling block
    do
@@ -1130,8 +1176,10 @@ error_t rsassaPssVerify(const RsaPublicKey *key, const HashAlgo *hash,
       //End of exception handling block
    } while(0);
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release the encoded message
    cryptoFreeMem(em);
+#endif
 
    //Release multiple precision integers
    mpiFree(&s);
@@ -1420,7 +1468,11 @@ error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
    size_t n;
    uint8_t *db;
    uint8_t *seed;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    HashContext *hashContext;
+#else
+   HashContext hashContext[1];
+#endif
 
    //Check the length of the message
    if(messageLen > (k - 2 * hash->digestSize - 2))
@@ -1437,11 +1489,13 @@ error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
    if(error)
       return error;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the hash context
    hashContext = cryptoAllocMem(hash->contextSize);
    //Failed to allocate memory?
    if(hashContext == NULL)
       return ERROR_OUT_OF_MEMORY;
+#endif
 
    //If the label L is not provided, let L be the empty string
    if(label == NULL)
@@ -1476,8 +1530,10 @@ error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
    //maskedDB to form an encoded message EM of length k octets
    em[0] = 0x00;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release hash context
    cryptoFreeMem(hashContext);
+#endif
 
    //Successful processing
    return NO_ERROR;
@@ -1504,76 +1560,78 @@ uint32_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
    uint32_t bad;
    uint8_t *db;
    uint8_t *seed;
-   HashContext *hashContext;
    uint8_t lHash[MAX_HASH_DIGEST_SIZE];
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   HashContext *hashContext;
+#else
+   HashContext hashContext[1];
+#endif
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the hash context
    hashContext = cryptoAllocMem(hash->contextSize);
+   //Failed to allocate memory?
+   if(hashContext == NULL)
+      return TRUE;
+#endif
 
-   //Successful memory allocation?
-   if(hashContext != NULL)
+   //If the label L is not provided, let L be the empty string
+   if(label == NULL)
    {
-      //If the label L is not provided, let L be the empty string
-      if(label == NULL)
-      {
-         label = "";
-      }
-
-      //Let lHash = Hash(L)
-      hash->init(hashContext);
-      hash->update(hashContext, label, osStrlen(label));
-      hash->final(hashContext, lHash);
-
-      //Separate the encoded message EM into a single octet Y, an octet string
-      //maskedSeed of length hLen, and an octet string maskedDB of length k - hLen - 1
-      seed = em + 1;
-      db = em + hash->digestSize + 1;
-
-      //Calculate the length of the data block
-      n = k - hash->digestSize - 1;
-
-      //Let seed = maskedSeed xor MGF(maskedDB, hLen)
-      mgf1(hash, hashContext, db, n, seed, hash->digestSize);
-      //Let DB = maskedDB xor MGF(seed, k - hLen - 1)
-      mgf1(hash, hashContext, seed, hash->digestSize, db, n);
-
-      //Release hash context
-      cryptoFreeMem(hashContext);
-
-      //Separate DB into an octet string lHash' of length hLen, a padding string
-      //PS consisting of octets with hexadecimal value 0x00, and a message M
-      for(m = 0, i = hash->digestSize; i < n; i++)
-      {
-         //Constant time implementation
-         c = CRYPTO_TEST_NZ_8(db[i]);
-         c &= CRYPTO_TEST_Z_32(m);
-         m = CRYPTO_SELECT_32(m, i, c);
-      }
-
-      //Make sure the padding string PS is terminated
-      bad = CRYPTO_TEST_Z_32(m);
-
-      //If there is no octet with hexadecimal value 0x01 to separate PS from M,
-      //then report a decryption error
-      bad |= CRYPTO_TEST_NEQ_8(db[m], 0x01);
-
-      //If lHash does not equal lHash', then report a decryption error
-      for(i = 0; i < hash->digestSize; i++)
-      {
-         bad |= CRYPTO_TEST_NEQ_8(db[i], lHash[i]);
-      }
-
-      //If Y is nonzero, then report a decryption error
-      bad |= CRYPTO_TEST_NEQ_8(em[0], 0x00);
-
-      //Return the length of the decrypted message
-      *messageLen = CRYPTO_SELECT_32(n - m - 1, 0, bad);
+      label = "";
    }
-   else
+
+   //Let lHash = Hash(L)
+   hash->init(hashContext);
+   hash->update(hashContext, label, osStrlen(label));
+   hash->final(hashContext, lHash);
+
+   //Separate the encoded message EM into a single octet Y, an octet string
+   //maskedSeed of length hLen, and an octet string maskedDB of length k - hLen - 1
+   seed = em + 1;
+   db = em + hash->digestSize + 1;
+
+   //Calculate the length of the data block
+   n = k - hash->digestSize - 1;
+
+   //Let seed = maskedSeed xor MGF(maskedDB, hLen)
+   mgf1(hash, hashContext, db, n, seed, hash->digestSize);
+   //Let DB = maskedDB xor MGF(seed, k - hLen - 1)
+   mgf1(hash, hashContext, seed, hash->digestSize, db, n);
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Release hash context
+   cryptoFreeMem(hashContext);
+#endif
+
+   //Separate DB into an octet string lHash' of length hLen, a padding string
+   //PS consisting of octets with hexadecimal value 0x00, and a message M
+   for(m = 0, i = hash->digestSize; i < n; i++)
    {
-      //Failed to allocate memory
-      bad = TRUE;
+      //Constant time implementation
+      c = CRYPTO_TEST_NZ_8(db[i]);
+      c &= CRYPTO_TEST_Z_32(m);
+      m = CRYPTO_SELECT_32(m, i, c);
    }
+
+   //Make sure the padding string PS is terminated
+   bad = CRYPTO_TEST_Z_32(m);
+
+   //If there is no octet with hexadecimal value 0x01 to separate PS from M,
+   //then report a decryption error
+   bad |= CRYPTO_TEST_NEQ_8(db[m], 0x01);
+
+   //If lHash does not equal lHash', then report a decryption error
+   for(i = 0; i < hash->digestSize; i++)
+   {
+      bad |= CRYPTO_TEST_NEQ_8(db[i], lHash[i]);
+   }
+
+   //If Y is nonzero, then report a decryption error
+   bad |= CRYPTO_TEST_NEQ_8(em[0], 0x00);
+
+   //Return the length of the decrypted message
+   *messageLen = CRYPTO_SELECT_32(n - m - 1, 0, bad);
 
    //Care must be taken to ensure that an opponent cannot distinguish the
    //different error conditions, whether by error message or timing
@@ -1740,7 +1798,11 @@ error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
    uint8_t *db;
    uint8_t *salt;
    uint8_t h[MAX_HASH_DIGEST_SIZE];
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    HashContext *hashContext;
+#else
+   HashContext hashContext[1];
+#endif
 
    //The encoded message is an octet string of length emLen = ceil(emBits / 8)
    emLen = (emBits + 7) / 8;
@@ -1763,11 +1825,13 @@ error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
    if(error)
       return error;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the hash context
    hashContext = cryptoAllocMem(hash->contextSize);
    //Failed to allocate memory?
    if(hashContext == NULL)
       return ERROR_OUT_OF_MEMORY;
+#endif
 
    //Let H = Hash(00 00 00 00 00 00 00 00 || mHash || salt)
    hash->init(hashContext);
@@ -1794,8 +1858,10 @@ error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
    osMemcpy(em + n, h, hash->digestSize);
    em[n + hash->digestSize] = 0xBC;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release hash context
    cryptoFreeMem(hashContext);
+#endif
 
    //Successful processing
    return NO_ERROR;
@@ -1823,7 +1889,11 @@ error_t emsaPssVerify(const HashAlgo *hash, size_t saltLen,
    uint8_t *h;
    uint8_t *db;
    uint8_t *salt;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    HashContext *hashContext;
+#else
+   HashContext hashContext[1];
+#endif
 
    //The encoded message is an octet string of length emLen = ceil(emBits / 8)
    emLen = (emBits + 7) / 8;
@@ -1832,11 +1902,13 @@ error_t emsaPssVerify(const HashAlgo *hash, size_t saltLen,
    if(emLen < (hash->digestSize + saltLen + 2))
       return ERROR_INVALID_LENGTH;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the hash context
    hashContext = cryptoAllocMem(hash->contextSize);
    //Failed to allocate memory?
    if(hashContext == NULL)
       return ERROR_OUT_OF_MEMORY;
+#endif
 
    //If the rightmost octet of EM does not have hexadecimal value 0xbc, output
    //"inconsistent" and stop
@@ -1891,8 +1963,10 @@ error_t emsaPssVerify(const HashAlgo *hash, size_t saltLen,
       bad |= h[i] ^ hashContext->digest[i];
    }
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release hash context
    cryptoFreeMem(hashContext);
+#endif
 
    //Verification result
    return (bad != 0) ? ERROR_INCONSISTENT_VALUE : NO_ERROR;

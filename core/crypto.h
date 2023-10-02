@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,20 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.3.0"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.3.2"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 3
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 0
+#define CYCLONE_CRYPTO_REV_NUMBER 2
+
+//Static memory allocation
+#ifndef CRYPTO_STATIC_MEM_SUPPORT
+   #define CRYPTO_STATIC_MEM_SUPPORT DISABLED
+#elif (CRYPTO_STATIC_MEM_SUPPORT != ENABLED && CRYPTO_STATIC_MEM_SUPPORT != DISABLED)
+   #error CRYPTO_STATIC_MEM_SUPPORT parameter is not valid
+#endif
 
 //Multiple precision integer support
 #ifndef MPI_SUPPORT
@@ -125,7 +132,7 @@
 
 //MD5 hash support
 #ifndef MD5_SUPPORT
-   #define MD5_SUPPORT ENABLED
+   #define MD5_SUPPORT DISABLED
 #elif (MD5_SUPPORT != ENABLED && MD5_SUPPORT != DISABLED)
    #error MD5_SUPPORT parameter is not valid
 #endif
@@ -312,6 +319,13 @@
    #error BLAKE2S256_SUPPORT parameter is not valid
 #endif
 
+//SM3 hash support
+#ifndef SM3_SUPPORT
+   #define SM3_SUPPORT DISABLED
+#elif (SM3_SUPPORT != ENABLED && SM3_SUPPORT != DISABLED)
+   #error SM3_SUPPORT parameter is not valid
+#endif
+
 //Tiger hash support
 #ifndef TIGER_SUPPORT
    #define TIGER_SUPPORT DISABLED
@@ -333,13 +347,6 @@
    #error CMAC_SUPPORT parameter is not valid
 #endif
 
-//GMAC support
-#ifndef GMAC_SUPPORT
-   #define GMAC_SUPPORT DISABLED
-#elif (GMAC_SUPPORT != ENABLED && GMAC_SUPPORT != DISABLED)
-   #error GMAC_SUPPORT parameter is not valid
-#endif
-
 //HMAC support
 #ifndef HMAC_SUPPORT
    #define HMAC_SUPPORT ENABLED
@@ -347,11 +354,25 @@
    #error HMAC_SUPPORT parameter is not valid
 #endif
 
+//GMAC support
+#ifndef GMAC_SUPPORT
+   #define GMAC_SUPPORT DISABLED
+#elif (GMAC_SUPPORT != ENABLED && GMAC_SUPPORT != DISABLED)
+   #error GMAC_SUPPORT parameter is not valid
+#endif
+
 //KMAC support
 #ifndef KMAC_SUPPORT
    #define KMAC_SUPPORT DISABLED
 #elif (KMAC_SUPPORT != ENABLED && KMAC_SUPPORT != DISABLED)
    #error KMAC_SUPPORT parameter is not valid
+#endif
+
+//XCBC-MAC support
+#ifndef XCBC_MAC_SUPPORT
+   #define XCBC_MAC_SUPPORT DISABLED
+#elif (XCBC_MAC_SUPPORT != ENABLED && XCBC_MAC_SUPPORT != DISABLED)
+   #error XCBC_MAC_SUPPORT parameter is not valid
 #endif
 
 //RC2 encryption support
@@ -398,14 +419,14 @@
 
 //DES encryption support
 #ifndef DES_SUPPORT
-   #define DES_SUPPORT ENABLED
+   #define DES_SUPPORT DISABLED
 #elif (DES_SUPPORT != ENABLED && DES_SUPPORT != DISABLED)
    #error DES_SUPPORT parameter is not valid
 #endif
 
 //Triple DES encryption support
 #ifndef DES3_SUPPORT
-   #define DES3_SUPPORT ENABLED
+   #define DES3_SUPPORT DISABLED
 #elif (DES3_SUPPORT != ENABLED && DES3_SUPPORT != DISABLED)
    #error DES3_SUPPORT parameter is not valid
 #endif
@@ -464,6 +485,13 @@
    #define SEED_SUPPORT DISABLED
 #elif (SEED_SUPPORT != ENABLED && SEED_SUPPORT != DISABLED)
    #error SEED_SUPPORT parameter is not valid
+#endif
+
+//SM4 encryption support
+#ifndef SM4_SUPPORT
+   #define SM4_SUPPORT DISABLED
+#elif (SM4_SUPPORT != ENABLED && SM4_SUPPORT != DISABLED)
+   #error SM4_SUPPORT parameter is not valid
 #endif
 
 //PRESENT encryption support
@@ -580,7 +608,7 @@
 
 //Diffie-Hellman support
 #ifndef DH_SUPPORT
-   #define DH_SUPPORT ENABLED
+   #define DH_SUPPORT DISABLED
 #elif (DH_SUPPORT != ENABLED && DH_SUPPORT != DISABLED)
    #error DH_SUPPORT parameter is not valid
 #endif
@@ -594,7 +622,7 @@
 
 //DSA support
 #ifndef DSA_SUPPORT
-   #define DSA_SUPPORT ENABLED
+   #define DSA_SUPPORT DISABLED
 #elif (DSA_SUPPORT != ENABLED && DSA_SUPPORT != DISABLED)
    #error DSA_SUPPORT parameter is not valid
 #endif
@@ -657,7 +685,7 @@
 
 //PBKDF support
 #ifndef PBKDF_SUPPORT
-   #define PBKDF_SUPPORT ENABLED
+   #define PBKDF_SUPPORT DISABLED
 #elif (PBKDF_SUPPORT != ENABLED && PBKDF_SUPPORT != DISABLED)
    #error PBKDF_SUPPORT parameter is not valid
 #endif
@@ -671,14 +699,14 @@
 
 //bcrypt support
 #ifndef BCRYPT_SUPPORT
-   #define BCRYPT_SUPPORT ENABLED
+   #define BCRYPT_SUPPORT DISABLED
 #elif (BCRYPT_SUPPORT != ENABLED && BCRYPT_SUPPORT != DISABLED)
    #error BCRYPT_SUPPORT parameter is not valid
 #endif
 
 //scrypt support
 #ifndef SCRYPT_SUPPORT
-   #define SCRYPT_SUPPORT ENABLED
+   #define SCRYPT_SUPPORT DISABLED
 #elif (SCRYPT_SUPPORT != ENABLED && SCRYPT_SUPPORT != DISABLED)
    #error SCRYPT_SUPPORT parameter is not valid
 #endif

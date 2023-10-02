@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 #ifndef _MAC_ALGORITHMS_H
@@ -33,6 +33,11 @@
 
 //Dependencies
 #include "core/crypto.h"
+
+//CMAC support?
+#if (CMAC_SUPPORT == ENABLED)
+   #include "mac/cmac.h"
+#endif
 
 //HMAC support?
 #if (HMAC_SUPPORT == ENABLED)
@@ -44,14 +49,14 @@
    #include "mac/gmac.h"
 #endif
 
-//CMAC support?
-#if (CMAC_SUPPORT == ENABLED)
-   #include "mac/cmac.h"
-#endif
-
 //KMAC support?
 #if (KMAC_SUPPORT == ENABLED)
    #include "mac/kmac.h"
+#endif
+
+//XCBC-MAC support?
+#if (XCBC_MAC_SUPPORT == ENABLED)
+   #include "mac/xcbc_mac.h"
 #endif
 
 //Poly1305 support?

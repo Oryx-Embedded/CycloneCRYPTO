@@ -31,7 +31,7 @@
  * built from cSHAKE128 and cSHAKE256, respectively
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -70,34 +70,36 @@ error_t kmacCompute(uint_t strength, const void *key, size_t keyLen,
    uint8_t *mac, size_t macLen)
 {
    error_t error;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    KmacContext *context;
+#else
+   KmacContext context[1];
+#endif
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the KMAC context
    context = cryptoAllocMem(sizeof(KmacContext));
+   //Failed to allocate memory?
+   if(context == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(context != NULL)
+   //Initialize the KMAC context
+   error = kmacInit(context, strength, key, keyLen, custom, customLen);
+
+   //Check status code
+   if(!error)
    {
-      //Initialize the KMAC context
-      error = kmacInit(context, strength, key, keyLen, custom, customLen);
-
-      //Check status code
-      if(!error)
-      {
-         //Digest the message
-         kmacUpdate(context, data, dataLen);
-         //Finalize the KMAC computation
-         error = kmacFinal(context, mac, macLen);
-      }
-
-      //Free previously allocated memory
-      cryptoFreeMem(context);
+      //Digest the message
+      kmacUpdate(context, data, dataLen);
+      //Finalize the KMAC computation
+      error = kmacFinal(context, mac, macLen);
    }
-   else
-   {
-      //Failed to allocate memory
-      error = ERROR_OUT_OF_MEMORY;
-   }
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Free previously allocated memory
+   cryptoFreeMem(context);
+#endif
 
    //Return status code
    return error;
@@ -219,6 +221,22 @@ error_t kmacFinal(KmacContext *context, uint8_t *mac, size_t macLen)
 
    //Successful processing
    return NO_ERROR;
+}
+
+
+/**
+ * @brief Release KMAC context
+ * @param[in] context Pointer to the KMAC context
+ **/
+
+void kmacDeinit(KmacContext *context)
+{
+   //Make sure the KMAC context is valid
+   if(context != NULL)
+   {
+      //Clear KMAC context
+      osMemset(context, 0, sizeof(KmacContext));
+   }
 }
 
 

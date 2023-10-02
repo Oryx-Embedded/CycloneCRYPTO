@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -189,15 +189,28 @@ error_t x509CheckSubjectName(const X509CertInfo *certInfo,
             if(error)
                return error;
 
-            //DNS name found?
+            //DNS name or IP address?
             if(generalName.type == X509_GENERAL_NAME_TYPE_DNS)
             {
-               //Check whether the alternative name matches the specified FQDN
+               //Check whether the alternative name matches the specified string
                res = x509CompareSubjectName(generalName.value,
                   generalName.length, fqdn);
 
                //Increment counter
                i++;
+            }
+            else if(generalName.type == X509_GENERAL_NAME_TYPE_IP_ADDRESS)
+            {
+               //Check whether the IP address matches the specified string
+               res = x509CompareIpAddr((uint8_t *) generalName.value,
+                  generalName.length, fqdn);
+
+               //Increment counter
+               i++;
+            }
+            else
+            {
+               //Unknown general name type
             }
 
             //Next item
@@ -438,8 +451,8 @@ bool_t x509CompareName(const uint8_t *name1, size_t nameLen1,
  * @return TRUE if the subject name matches the specified FQDN, else FALSE
  **/
 
-bool_t x509CompareSubjectName(const char_t *subjectName,
-   size_t subjectNameLen, const char_t *fqdn)
+bool_t x509CompareSubjectName(const char_t *subjectName, size_t subjectNameLen,
+   const char_t *fqdn)
 {
    size_t i;
    size_t j;
@@ -511,8 +524,8 @@ bool_t x509CompareSubjectName(const char_t *subjectName,
  * @return Comparison result
  **/
 
-bool_t x509CompareSubtree(const char_t *subjectName,
-   const char_t *subtree, size_t subtreeLen)
+bool_t x509CompareSubtree(const char_t *subjectName, const char_t *subtree,
+   size_t subtreeLen)
 {
    int_t i;
    int_t j;
@@ -556,6 +569,309 @@ bool_t x509CompareSubtree(const char_t *subjectName,
    {
       return FALSE;
    }
+}
+
+
+/**
+ * @brief Check whether the IP address matches the specified string
+ * @param[in] ipAddr Binary representation of the IP address
+ * @param[in] ipAddrLen Length of the IP address, in bytes
+ * @param[in] str NULL-terminated string representing an IP address
+ * @return TRUE if the IP address matches the specified string, else FALSE
+ **/
+
+bool_t x509CompareIpAddr(const uint8_t *ipAddr, size_t ipAddrLen,
+   const char_t *str)
+{
+   bool_t res;
+   error_t error;
+   uint8_t buffer[16];
+
+   //Initialize flag
+   res = FALSE;
+
+   //Check the length of the IP address
+   if(ipAddrLen == 4)
+   {
+      //Convert the dot-decimal string to a binary IPv4 address
+      error = x509ParseIpv4Addr(str, buffer);
+
+      //Valid IPv4 address?
+      if(!error)
+      {
+         //Compare addresses
+         if(osMemcmp(ipAddr, buffer, 4) == 0)
+         {
+            res = TRUE;
+         }
+      }
+   }
+   else if(ipAddrLen == 16)
+   {
+      //Convert the string representation to a binary IPv6 address
+      error = x509ParseIpv6Addr(str, buffer);
+
+      //Valid IPv6 address?
+      if(!error)
+      {
+         //Compare addresses
+         if(osMemcmp(ipAddr, buffer, 16) == 0)
+         {
+            res = TRUE;
+         }
+      }
+   }
+   else
+   {
+      //Invalid IP address
+   }
+
+   //Return TRUE if the IP address matches the specified string
+   return res;
+}
+
+
+/**
+ * @brief Convert a dot-decimal string to a binary IPv4 address
+ * @param[in] str NULL-terminated string representing the IPv4 address
+ * @param[out] ipAddr Binary representation of the IPv4 address
+ * @return Error code
+ **/
+
+error_t x509ParseIpv4Addr(const char_t *str, uint8_t *ipAddr)
+{
+   error_t error;
+   int_t i = 0;
+   int_t value = -1;
+
+   //Parse input string
+   while(1)
+   {
+      //Decimal digit found?
+      if(osIsdigit(*str))
+      {
+         //First digit to be decoded?
+         if(value < 0)
+            value = 0;
+
+         //Update the value of the current byte
+         value = (value * 10) + (*str - '0');
+
+         //The resulting value shall be in range 0 to 255
+         if(value > 255)
+         {
+            //The conversion failed
+            error = ERROR_INVALID_SYNTAX;
+            break;
+         }
+      }
+      //Dot separator found?
+      else if(*str == '.' && i < 4)
+      {
+         //Each dot must be preceded by a valid number
+         if(value < 0)
+         {
+            //The conversion failed
+            error = ERROR_INVALID_SYNTAX;
+            break;
+         }
+
+         //Save the current byte
+         ipAddr[i++] = value;
+         //Prepare to decode the next byte
+         value = -1;
+      }
+      //End of string detected?
+      else if(*str == '\0' && i == 3)
+      {
+         //The NULL character must be preceded by a valid number
+         if(value < 0)
+         {
+            //The conversion failed
+            error = ERROR_INVALID_SYNTAX;
+         }
+         else
+         {
+            //Save the last byte of the IPv4 address
+            ipAddr[i] = value;
+            //The conversion succeeded
+            error = NO_ERROR;
+         }
+
+         //We are done
+         break;
+      }
+      //Invalid character...
+      else
+      {
+         //The conversion failed
+         error = ERROR_INVALID_SYNTAX;
+         break;
+      }
+
+      //Point to the next character
+      str++;
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Convert a string representation of an IPv6 address to a binary IPv6 address
+ * @param[in] str NULL-terminated string representing the IPv6 address
+ * @param[out] ipAddr Binary representation of the IPv6 address
+ * @return Error code
+ **/
+
+error_t x509ParseIpv6Addr(const char_t *str, uint8_t *ipAddr)
+{
+   error_t error;
+   int_t i = 0;
+   int_t j = -1;
+   int_t k = 0;
+   int32_t value = -1;
+
+   //Parse input string
+   while(1)
+   {
+      //Hexadecimal digit found?
+      if(isxdigit((uint8_t) *str))
+      {
+         //First digit to be decoded?
+         if(value < 0)
+         {
+            value = 0;
+         }
+
+         //Update the value of the current 16-bit word
+         if(osIsdigit(*str))
+         {
+            value = (value * 16) + (*str - '0');
+         }
+         else if(osIsupper(*str))
+         {
+            value = (value * 16) + (*str - 'A' + 10);
+         }
+         else
+         {
+            value = (value * 16) + (*str - 'a' + 10);
+         }
+
+         //Check resulting value
+         if(value > 0xFFFF)
+         {
+            //The conversion failed
+            error = ERROR_INVALID_SYNTAX;
+            break;
+         }
+      }
+      //"::" symbol found?
+      else if(!osStrncmp(str, "::", 2))
+      {
+         //The "::" can only appear once in an IPv6 address
+         if(j >= 0)
+         {
+            //The conversion failed
+            error = ERROR_INVALID_SYNTAX;
+            break;
+         }
+
+         //The "::" symbol is preceded by a number?
+         if(value >= 0)
+         {
+            //Save the current 16-bit word
+            STORE16BE(value, ipAddr + 2 * i);
+            i++;
+
+            //Prepare to decode the next 16-bit word
+            value = -1;
+         }
+
+         //Save the position of the "::" symbol
+         j = i;
+         //Point to the next character
+         str++;
+      }
+      //":" symbol found?
+      else if(*str == ':' && i < 8)
+      {
+         //Each ":" must be preceded by a valid number
+         if(value < 0)
+         {
+            //The conversion failed
+            error = ERROR_INVALID_SYNTAX;
+            break;
+         }
+
+         //Save the current 16-bit word
+         STORE16BE(value, ipAddr + 2 * i);
+         i++;
+
+         //Prepare to decode the next 16-bit word
+         value = -1;
+      }
+      //End of string detected?
+      else if(*str == '\0' && i == 7 && j < 0)
+      {
+         //The NULL character must be preceded by a valid number
+         if(value < 0)
+         {
+            //The conversion failed
+            error = ERROR_INVALID_SYNTAX;
+         }
+         else
+         {
+            //Save the last 16-bit word of the IPv6 address
+            STORE16BE(value, ipAddr + 2 * i);
+            //The conversion succeeded
+            error = NO_ERROR;
+         }
+
+         //We are done
+         break;
+      }
+      else if(*str == '\0' && i < 7 && j >= 0)
+      {
+         //Save the last 16-bit word of the IPv6 address
+         if(value >= 0)
+         {
+            STORE16BE(value, ipAddr + 2 * i);
+            i++;
+         }
+
+         //Move the part of the address that follows the "::" symbol
+         for(k = 0; k < (i - j); k++)
+         {
+            value = LOAD16BE(ipAddr + 2 * (i - 1 - k));
+            STORE16BE(value, ipAddr + 2 * (7 - k));
+         }
+
+         //A sequence of zeroes can now be written in place of "::"
+         for(k = 0; k < (8 - i); k++)
+         {
+            STORE16BE(0, ipAddr + 2 * (j + k));
+         }
+
+         //The conversion succeeded
+         error = NO_ERROR;
+         break;
+      }
+      //Invalid character...
+      else
+      {
+         //The conversion failed
+         error = ERROR_INVALID_SYNTAX;
+         break;
+      }
+
+      //Point to the next character
+      str++;
+   }
+
+   //Return status code
+   return error;
 }
 
 #endif

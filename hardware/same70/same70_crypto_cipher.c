@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -309,7 +309,7 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
       else if((length % AES_BLOCK_SIZE) == 0)
       {
          //Encrypt payload data
-         aesProcessData(context, NULL, p, c, length, AES_MR_CIPHER |
+         aesProcessData(context, NULL, p, c, length, AES_MR_CIPHER_Msk |
             AES_MR_OPMOD_ECB);
       }
       else
@@ -608,7 +608,7 @@ error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
          if(length > 0)
          {
             //Encrypt payload data
-            aesProcessData(context, iv, p, c, length, AES_MR_CIPHER |
+            aesProcessData(context, iv, p, c, length, AES_MR_CIPHER_Msk |
                AES_MR_OPMOD_CFB | AES_MR_CFBS_SIZE_128BIT);
          }
          else
@@ -796,7 +796,7 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
          if(length > 0)
          {
             //Encrypt payload data
-            aesProcessData(context, iv, p, c, length, AES_MR_CIPHER |
+            aesProcessData(context, iv, p, c, length, AES_MR_CIPHER_Msk |
                AES_MR_OPMOD_OFB);
          }
          else
@@ -1046,6 +1046,10 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
 error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
    void *cipherContext)
 {
+   //Check parameters
+   if(context == NULL || cipherContext == NULL)
+      return ERROR_INVALID_PARAMETER;
+
    //The CRYP module only supports AES cipher algorithm
    if(cipherAlgo != AES_CIPHER_ALGO)
       return ERROR_INVALID_PARAMETER;

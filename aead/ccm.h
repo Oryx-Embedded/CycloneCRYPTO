@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 #ifndef _CCM_H
@@ -48,8 +48,13 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
    size_t nLen, const uint8_t *a, size_t aLen, const uint8_t *c, uint8_t *p,
    size_t length, const uint8_t *t, size_t tLen);
 
+error_t ccmFormatBlock0(size_t q, const uint8_t *n, size_t nLen, size_t aLen,
+   size_t tLen, uint8_t *b);
+
 void ccmXorBlock(uint8_t *x, const uint8_t *a, const uint8_t *b, size_t n);
-void ccmIncCounter(uint8_t *x, size_t n);
+
+void ccmFormatCounter0(const uint8_t *n, size_t nLen, uint8_t *ctr);
+void ccmIncCounter(uint8_t *ctr, size_t n);
 
 //C++ guard
 #ifdef __cplusplus

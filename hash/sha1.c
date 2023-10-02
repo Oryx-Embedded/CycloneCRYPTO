@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -44,7 +44,7 @@
 #if (SHA1_SUPPORT == ENABLED)
 
 //Macro to access the workspace as a circular buffer
-#define W(t) w[(t) & 0x0F]
+#define W(n) w[(n) & 0x0F]
 
 //SHA-1 auxiliary functions
 #define CH(x, y, z) (((x) & (y)) | (~(x) & (z)))
@@ -108,36 +108,41 @@ const HashAlgo sha1HashAlgo =
 
 __weak_func error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
 {
-   error_t error;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    Sha1Context *context;
+#else
+   Sha1Context context[1];
+#endif
 
+   //Check parameters
+   if(data == NULL && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if(digest == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the SHA-1 context
    context = cryptoAllocMem(sizeof(Sha1Context));
+   //Failed to allocate memory?
+   if(context == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(context != NULL)
-   {
-      //Initialize the SHA-1 context
-      sha1Init(context);
-      //Digest the message
-      sha1Update(context, data, length);
-      //Finalize the SHA-1 message digest
-      sha1Final(context, digest);
+   //Initialize the SHA-1 context
+   sha1Init(context);
+   //Digest the message
+   sha1Update(context, data, length);
+   //Finalize the SHA-1 message digest
+   sha1Final(context, digest);
 
-      //Free previously allocated memory
-      cryptoFreeMem(context);
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Free previously allocated memory
+   cryptoFreeMem(context);
+#endif
 
-      //Successful processing
-      error = NO_ERROR;
-   }
-   else
-   {
-      //Failed to allocate memory
-      error = ERROR_OUT_OF_MEMORY;
-   }
-
-   //Return status code
-   return error;
+   //Successful processing
+   return NO_ERROR;
 }
 
 
@@ -285,7 +290,7 @@ __weak_func void sha1FinalRaw(Sha1Context *context, uint8_t *digest)
 
 __weak_func void sha1ProcessBlock(Sha1Context *context)
 {
-   uint_t t;
+   uint_t i;
    uint32_t temp;
 
    //Initialize the 5 working registers
@@ -299,39 +304,39 @@ __weak_func void sha1ProcessBlock(Sha1Context *context)
    uint32_t *w = context->w;
 
    //Convert from big-endian byte order to host byte order
-   for(t = 0; t < 16; t++)
+   for(i = 0; i < 16; i++)
    {
-      w[t] = betoh32(w[t]);
+      w[i] = betoh32(w[i]);
    }
 
    //SHA-1 hash computation (alternate method)
-   for(t = 0; t < 80; t++)
+   for(i = 0; i < 80; i++)
    {
       //Prepare the message schedule
-      if(t >= 16)
+      if(i >= 16)
       {
-         W(t) = ROL32(W(t + 13) ^ W(t + 8) ^ W(t + 2) ^ W(t), 1);
+         W(i) = ROL32(W(i + 13) ^ W(i + 8) ^ W(i + 2) ^ W(i), 1);
       }
 
       //Calculate T
-      if(t < 20)
+      if(i < 20)
       {
-         temp = ROL32(a, 5) + CH(b, c, d) + e + W(t) + k[0];
+         temp = ROL32(a, 5) + CH(b, c, d) + e + W(i) + k[0];
       }
-      else if(t < 40)
+      else if(i < 40)
       {
-         temp = ROL32(a, 5) + PARITY(b, c, d) + e + W(t) + k[1];
+         temp = ROL32(a, 5) + PARITY(b, c, d) + e + W(i) + k[1];
       }
-      else if(t < 60)
+      else if(i < 60)
       {
-         temp = ROL32(a, 5) + MAJ(b, c, d) + e + W(t) + k[2];
+         temp = ROL32(a, 5) + MAJ(b, c, d) + e + W(i) + k[2];
       }
       else
       {
-         temp = ROL32(a, 5) + PARITY(b, c, d) + e + W(t) + k[3];
+         temp = ROL32(a, 5) + PARITY(b, c, d) + e + W(i) + k[3];
       }
 
-      //Update the working registers
+      //Update working registers
       e = d;
       d = c;
       c = ROL32(b, 30);

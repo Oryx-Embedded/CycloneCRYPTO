@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -80,36 +80,41 @@ const HashAlgo sha384HashAlgo =
 
 __weak_func error_t sha384Compute(const void *data, size_t length, uint8_t *digest)
 {
-   error_t error;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    Sha384Context *context;
+#else
+   Sha384Context context[1];
+#endif
 
+   //Check parameters
+   if(data == NULL && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if(digest == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the SHA-384 context
    context = cryptoAllocMem(sizeof(Sha384Context));
+   //Failed to allocate memory?
+   if(context == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(context != NULL)
-   {
-      //Initialize the SHA-384 context
-      sha384Init(context);
-      //Digest the message
-      sha384Update(context, data, length);
-      //Finalize the SHA-384 message digest
-      sha384Final(context, digest);
+   //Initialize the SHA-384 context
+   sha384Init(context);
+   //Digest the message
+   sha384Update(context, data, length);
+   //Finalize the SHA-384 message digest
+   sha384Final(context, digest);
 
-      //Free previously allocated memory
-      cryptoFreeMem(context);
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Free previously allocated memory
+   cryptoFreeMem(context);
+#endif
 
-      //Successful processing
-      error = NO_ERROR;
-   }
-   else
-   {
-      //Failed to allocate memory
-      error = ERROR_OUT_OF_MEMORY;
-   }
-
-   //Return status code
-   return error;
+   //Successful processing
+   return NO_ERROR;
 }
 
 

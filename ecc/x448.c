@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -55,17 +55,23 @@ error_t x448(uint8_t *r, const uint8_t *k, const uint8_t *u)
    int_t i;
    uint32_t b;
    uint32_t swap;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    X448State *state;
+#else
+   X448State state[1];
+#endif
 
    //Check parameters
    if(r == NULL || k == NULL || u == NULL)
       return ERROR_INVALID_PARAMETER;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate working state
    state = cryptoAllocMem(sizeof(X448State));
    //Failed to allocate memory?
    if(state == NULL)
       return ERROR_OUT_OF_MEMORY;
+#endif
 
    //Copy scalar
    curve448Import(state->k, k);
@@ -159,8 +165,11 @@ error_t x448(uint8_t *r, const uint8_t *k, const uint8_t *u)
 
    //Erase working state
    osMemset(state, 0, sizeof(X448State));
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
    cryptoFreeMem(state);
+#endif
 
    //Successful processing
    return NO_ERROR;

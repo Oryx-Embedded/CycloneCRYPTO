@@ -30,7 +30,7 @@
  * SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -105,41 +105,43 @@ error_t gmacCompute(const CipherAlgo *cipher, const void *key, size_t keyLen,
    uint8_t *mac, size_t macLen)
 {
    error_t error;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    GmacContext *context;
+#else
+   GmacContext context[1];
+#endif
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the GMAC context
    context = cryptoAllocMem(sizeof(GmacContext));
+   //Failed to allocate memory?
+   if(context == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(context != NULL)
+   //Initialize the GMAC context
+   error = gmacInit(context, cipher, key, keyLen);
+
+   //Check status code
+   if(!error)
    {
-      //Initialize the GMAC context
-      error = gmacInit(context, cipher, key, keyLen);
-
-      //Check status code
-      if(!error)
-      {
-         //Reset GMAC context
-         error = gmacReset(context, iv, ivLen);
-      }
-
-      //Check status code
-      if(!error)
-      {
-         //Digest the message
-         gmacUpdate(context, data, dataLen);
-         //Finalize the GMAC computation
-         error = gmacFinal(context, mac, macLen);
-      }
-
-      //Free previously allocated memory
-      cryptoFreeMem(context);
+      //Reset GMAC context
+      error = gmacReset(context, iv, ivLen);
    }
-   else
+
+   //Check status code
+   if(!error)
    {
-      //Failed to allocate memory
-      error = ERROR_OUT_OF_MEMORY;
+      //Digest the message
+      gmacUpdate(context, data, dataLen);
+      //Finalize the GMAC computation
+      error = gmacFinal(context, mac, macLen);
    }
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Free previously allocated memory
+   cryptoFreeMem(context);
+#endif
 
    //Return status code
    return error;
@@ -442,6 +444,25 @@ error_t gmacFinal(GmacContext *context, uint8_t *mac, size_t macLen)
 
 
 /**
+ * @brief Release GMAC context
+ * @param[in] context Pointer to the GMAC context
+ **/
+
+void gmacDeinit(GmacContext *context)
+{
+   //Make sure the GMAC context is valid
+   if(context != NULL)
+   {
+      //Release cipher context
+      context->cipher->deinit(&context->cipherContext);
+
+      //Clear GMAC context
+      osMemset(context, 0, sizeof(GmacContext));
+   }
+}
+
+
+/**
  * @brief Multiplication operation in GF(2^128)
  * @param[in] context Pointer to the GMAC context
  * @param[in, out] x 16-byte block to be multiplied by H
@@ -550,23 +571,23 @@ void gmacXorBlock(uint8_t *x, const uint8_t *a, const uint8_t *b, size_t n)
 
 /**
  * @brief Increment counter block
- * @param[in,out] x Pointer to the counter block
+ * @param[in,out] ctr Pointer to the counter block
  **/
 
-void gmacIncCounter(uint8_t *x)
+void gmacIncCounter(uint8_t *ctr)
 {
    uint16_t temp;
 
    //The function increments the right-most 32 bits of the block. The remaining
    //left-most 96 bits remain unchanged
-   temp = x[15] + 1;
-   x[15] = temp & 0xFF;
-   temp = (temp >> 8) + x[14];
-   x[14] = temp & 0xFF;
-   temp = (temp >> 8) + x[13];
-   x[13] = temp & 0xFF;
-   temp = (temp >> 8) + x[12];
-   x[12] = temp & 0xFF;
+   temp = ctr[15] + 1;
+   ctr[15] = temp & 0xFF;
+   temp = (temp >> 8) + ctr[14];
+   ctr[14] = temp & 0xFF;
+   temp = (temp >> 8) + ctr[13];
+   ctr[13] = temp & 0xFF;
+   temp = (temp >> 8) + ctr[12];
+   ctr[12] = temp & 0xFF;
 }
 
 #endif

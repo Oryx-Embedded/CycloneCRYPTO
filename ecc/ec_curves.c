@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -2039,7 +2039,7 @@ error_t secp384r1Mod(Mpi *a, const Mpi *p)
    //Compute T = T + S2
    MPI_CHECK(mpiAdd(&t, &t, &s));
 
-   //Compute S3 = A20 | A19 | A18 | A17 | A16 | A15 | A14 | A13 | A12 | A23| A22 | A21
+   //Compute S3 = A20 | A19 | A18 | A17 | A16 | A15 | A14 | A13 | A12 | A23 | A22 | A21
    COPY_WORD32(&s, 0, a, 21, 3);
    COPY_WORD32(&s, 3, a, 12, 9);
    //Compute T = T + S3

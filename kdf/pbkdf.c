@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -65,8 +65,12 @@ error_t pbkdf1(const HashAlgo *hash, const uint8_t *p, size_t pLen,
    const uint8_t *s, size_t sLen, uint_t c, uint8_t *dk, size_t dkLen)
 {
    uint_t i;
-   HashContext *hashContext;
    uint8_t t[MAX_HASH_DIGEST_SIZE];
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   HashContext *hashContext;
+#else
+   HashContext hashContext[1];
+#endif
 
    //Check parameters
    if(hash == NULL || p == NULL || s == NULL || dk == NULL)
@@ -80,11 +84,13 @@ error_t pbkdf1(const HashAlgo *hash, const uint8_t *p, size_t pLen,
    if(dkLen > hash->digestSize)
       return ERROR_INVALID_LENGTH;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the hash context
    hashContext = cryptoAllocMem(hash->contextSize);
    //Failed to allocate memory?
    if(hashContext == NULL)
       return ERROR_OUT_OF_MEMORY;
+#endif
 
    //Apply the hash function to the concatenation of P and S
    hash->init(hashContext);
@@ -104,8 +110,10 @@ error_t pbkdf1(const HashAlgo *hash, const uint8_t *p, size_t pLen,
    //Output the derived key DK
    osMemcpy(dk, t, dkLen);
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Free previously allocated memory
    cryptoFreeMem(hashContext);
+#endif
 
    //Successful processing
    return NO_ERROR;
@@ -135,10 +143,14 @@ error_t pbkdf2(const HashAlgo *hash, const uint8_t *p, size_t pLen,
    uint_t i;
    uint_t j;
    uint_t k;
-   HmacContext *hashContext;
    uint8_t a[4];
    uint8_t t[MAX_HASH_DIGEST_SIZE];
    uint8_t u[MAX_HASH_DIGEST_SIZE];
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   HmacContext *hmacContext;
+#else
+   HmacContext hmacContext[1];
+#endif
 
    //Check parameters
    if(hash == NULL || p == NULL || s == NULL || dk == NULL)
@@ -148,11 +160,13 @@ error_t pbkdf2(const HashAlgo *hash, const uint8_t *p, size_t pLen,
    if(c < 1)
       return ERROR_INVALID_PARAMETER;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the HMAC context
-   hashContext = cryptoAllocMem(sizeof(HmacContext));
+   hmacContext = cryptoAllocMem(sizeof(HmacContext));
    //Failed to allocate memory?
-   if(hashContext == NULL)
+   if(hmacContext == NULL)
       return ERROR_OUT_OF_MEMORY;
+#endif
 
    //For each block of the derived key apply the function F
    for(i = 1; dkLen > 0; i++)
@@ -161,10 +175,10 @@ error_t pbkdf2(const HashAlgo *hash, const uint8_t *p, size_t pLen,
       STORE32BE(i, a);
 
       //Compute U1 = PRF(P, S || INT(i))
-      hmacInit(hashContext, hash, p, pLen);
-      hmacUpdate(hashContext, s, sLen);
-      hmacUpdate(hashContext, a, 4);
-      hmacFinal(hashContext, u);
+      hmacInit(hmacContext, hash, p, pLen);
+      hmacUpdate(hmacContext, s, sLen);
+      hmacUpdate(hmacContext, a, 4);
+      hmacFinal(hmacContext, u);
 
       //Save the resulting HMAC value
       osMemcpy(t, u, hash->digestSize);
@@ -173,9 +187,9 @@ error_t pbkdf2(const HashAlgo *hash, const uint8_t *p, size_t pLen,
       for(j = 1; j < c; j++)
       {
          //Compute U(j) = PRF(P, U(j-1))
-         hmacInit(hashContext, hash, p, pLen);
-         hmacUpdate(hashContext, u, hash->digestSize);
-         hmacFinal(hashContext, u);
+         hmacInit(hmacContext, hash, p, pLen);
+         hmacUpdate(hmacContext, u, hash->digestSize);
+         hmacFinal(hmacContext, u);
 
          //Compute T = U(1) xor U(2) xor ... xor U(c)
          for(k = 0; k < hash->digestSize; k++)
@@ -194,8 +208,10 @@ error_t pbkdf2(const HashAlgo *hash, const uint8_t *p, size_t pLen,
       dkLen -= k;
    }
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Free previously allocated memory
-   cryptoFreeMem(hashContext);
+   cryptoFreeMem(hmacContext);
+#endif
 
    //Successful processing
    return NO_ERROR;

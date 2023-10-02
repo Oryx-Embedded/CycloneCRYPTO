@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -371,7 +371,11 @@ error_t pemDecryptMessage(const PemHeader *header, const char_t *password,
    uint8_t dk[32];
    uint8_t iv[16];
    const CipherAlgo *cipherAlgo;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    CipherContext *cipherContext;
+#else
+   CipherContext cipherContext[1];
+#endif
 
    //Check parameters
    if(header == NULL || password == NULL || ciphertext == NULL ||
@@ -416,35 +420,34 @@ error_t pemDecryptMessage(const PemHeader *header, const char_t *password,
    if(error)
       return error;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the cipher context
    cipherContext = cryptoAllocMem(cipherAlgo->contextSize);
+   //Failed to allocate memory?
+   if(cipherContext == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(cipherContext != NULL)
+   //Load encryption key DK
+   error = cipherAlgo->init(cipherContext, dk, dkLen);
+
+   //Check status code
+   if(!error)
    {
-      //Load encryption key DK
-      error = cipherAlgo->init(cipherContext, dk, dkLen);
-
-      //Check status code
-      if(!error)
-      {
-         //Decrypt the ciphertext C with the underlying block cipher in CBC
-         //mode under the encryption key K with initialization vector IV to
-         //recover an encoded message EM
-         error = cbcDecrypt(cipherAlgo, cipherContext, iv, ciphertext,
-            plaintext, ciphertextLen);
-      }
-
-      //Erase cipher context
-      cipherAlgo->deinit(cipherContext);
-      //Release previously allocated memory
-      cryptoFreeMem(cipherContext);
+      //Decrypt the ciphertext C with the underlying block cipher in CBC
+      //mode under the encryption key K with initialization vector IV to
+      //recover an encoded message EM
+      error = cbcDecrypt(cipherAlgo, cipherContext, iv, ciphertext,
+         plaintext, ciphertextLen);
    }
-   else
-   {
-      //Report an error
-      error = ERROR_OUT_OF_MEMORY;
-   }
+
+   //Erase cipher context
+   cipherAlgo->deinit(cipherContext);
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Release previously allocated memory
+   cryptoFreeMem(cipherContext);
+#endif
 
    //Any error to report?
    if(error)
@@ -546,26 +549,46 @@ error_t pemKdf(const char_t *p, size_t pLen, const uint8_t *s, size_t sLen,
    uint8_t *dk, size_t dkLen)
 {
 #if (PEM_ENCRYPTED_KEY_SUPPORT == ENABLED && MD5_SUPPORT == ENABLED)
-   error_t error;
    size_t n;
-   Md5Context *md5Context;
    uint8_t t[MD5_DIGEST_SIZE];
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   Md5Context *md5Context;
+#else
+   Md5Context md5Context[1];
+#endif
 
    //Check parameters
    if(p == NULL || s == NULL || dk == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //Initialize status code
-   error = NO_ERROR;
-
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the MD5 context
    md5Context = cryptoAllocMem(sizeof(Md5Context));
+   //Failed to allocate memory?
+   if(md5Context == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(md5Context != NULL)
+   //Apply the hash function to generate the first block
+   md5Init(md5Context);
+   md5Update(md5Context, p, pLen);
+   md5Update(md5Context, s, sLen);
+   md5Final(md5Context, t);
+
+   //Save the resulting block
+   n = MIN(dkLen, MD5_DIGEST_SIZE);
+   osMemcpy(dk, t, n);
+
+   //Point to the next block
+   dk += n;
+   dkLen -= n;
+
+   //Generate subsequent blocks
+   while(dkLen > 0)
    {
-      //Apply the hash function to generate the first block
+      //Apply the hash function to generate a new block
       md5Init(md5Context);
+      md5Update(md5Context, t, MD5_DIGEST_SIZE);
       md5Update(md5Context, p, pLen);
       md5Update(md5Context, s, sLen);
       md5Final(md5Context, t);
@@ -577,37 +600,15 @@ error_t pemKdf(const char_t *p, size_t pLen, const uint8_t *s, size_t sLen,
       //Point to the next block
       dk += n;
       dkLen -= n;
-
-      //Generate subsequent blocks
-      while(dkLen > 0)
-      {
-         //Apply the hash function to generate a new block
-         md5Init(md5Context);
-         md5Update(md5Context, t, MD5_DIGEST_SIZE);
-         md5Update(md5Context, p, pLen);
-         md5Update(md5Context, s, sLen);
-         md5Final(md5Context, t);
-
-         //Save the resulting block
-         n = MIN(dkLen, MD5_DIGEST_SIZE);
-         osMemcpy(dk, t, n);
-
-         //Point to the next block
-         dk += n;
-         dkLen -= n;
-      }
-
-      //Free previously allocated memory
-      cryptoFreeMem(md5Context);
-   }
-   else
-   {
-      //Report an error
-      error = ERROR_OUT_OF_MEMORY;
    }
 
-   //Return status code
-   return error;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Free previously allocated memory
+   cryptoFreeMem(md5Context);
+#endif
+
+   //Successful processing
+   return NO_ERROR;
 #else
    //Encrypted private keys are not supported
    return ERROR_NOT_IMPLEMENTED;

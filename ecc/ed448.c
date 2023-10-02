@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -155,17 +155,23 @@ error_t ed448GeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
 error_t ed448GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey)
 {
    uint8_t s[57];
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    Ed448State *state;
+#else
+   Ed448State state[1];
+#endif
 
    //Check parameters
    if(privateKey == NULL || publicKey == NULL)
       return ERROR_INVALID_PARAMETER;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate working state
    state = cryptoAllocMem(sizeof(Ed448State));
    //Failed to allocate memory?
    if(state == NULL)
       return ERROR_OUT_OF_MEMORY;
+#endif
 
    //Hash the 57-byte private key using SHAKE256(x, 57)
    shakeInit(&state->shakeContext, 256);
@@ -190,8 +196,11 @@ error_t ed448GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey)
 
    //Erase working state
    osMemset(state, 0, sizeof(Ed448State));
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
    cryptoFreeMem(state);
+#endif
 
    //Successful processing
    return NO_ERROR;
@@ -252,7 +261,11 @@ error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
 {
    uint_t i;
    uint8_t c;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    Ed448State *state;
+#else
+   Ed448State state[1];
+#endif
 
    //Check parameters
    if(privateKey == NULL || signature == NULL)
@@ -262,11 +275,13 @@ error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
    if(context == NULL && contextLen != 0)
       return ERROR_INVALID_PARAMETER;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate working state
    state = cryptoAllocMem(sizeof(Ed448State));
    //Failed to allocate memory?
    if(state == NULL)
       return ERROR_OUT_OF_MEMORY;
+#endif
 
    //Hash the private key, 57 octets, using SHAKE256(x, 114). Let h denote
    //the resulting digest
@@ -363,8 +378,11 @@ error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
 
    //Erase working state
    osMemset(state, 0, sizeof(Ed448State));
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
    cryptoFreeMem(state);
+#endif
 
    //Successful processing
    return NO_ERROR;
@@ -423,7 +441,11 @@ error_t ed448VerifySignatureEx(const uint8_t *publicKey,
 {
    uint_t i;
    uint32_t ret;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    Ed448State *state;
+#else
+   Ed448State state[1];
+#endif
 
    //Check parameters
    if(publicKey == NULL || signature == NULL)
@@ -433,11 +455,13 @@ error_t ed448VerifySignatureEx(const uint8_t *publicKey,
    if(context == NULL && contextLen != 0)
       return ERROR_INVALID_PARAMETER;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate working state
    state = cryptoAllocMem(sizeof(Ed448State));
    //Failed to allocate memory?
    if(state == NULL)
       return ERROR_OUT_OF_MEMORY;
+#endif
 
    //First split the signature into two 32-octet halves. Decode the first
    //half as a point R
@@ -496,8 +520,11 @@ error_t ed448VerifySignatureEx(const uint8_t *publicKey,
 
    //Erase working state
    osMemset(state, 0, sizeof(Ed448State));
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
    cryptoFreeMem(state);
+#endif
 
    //Return status code
    return (ret == 0) ? NO_ERROR : ERROR_INVALID_SIGNATURE;

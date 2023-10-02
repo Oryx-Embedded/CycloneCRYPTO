@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 #ifndef _KMAC_H
@@ -71,6 +71,7 @@ error_t kmacInit(KmacContext *context, uint_t strength, const void *key,
 
 void kmacUpdate(KmacContext *context, const void *data, size_t dataLen);
 error_t kmacFinal(KmacContext *context, uint8_t *mac, size_t macLen);
+void kmacDeinit(KmacContext *context);
 
 void kmacRightEncode(size_t value, uint8_t *buffer, size_t *length);
 

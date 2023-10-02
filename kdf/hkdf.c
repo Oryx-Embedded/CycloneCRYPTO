@@ -31,7 +31,7 @@
  * more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -97,7 +97,11 @@ error_t hkdf(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
 error_t hkdfExtract(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
    const uint8_t *salt, size_t saltLen, uint8_t *prk)
 {
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    HmacContext *hmacContext;
+#else
+   HmacContext hmacContext[1];
+#endif
 
    //Check parameters
    if(hash == NULL || ikm == NULL || prk == NULL)
@@ -107,11 +111,13 @@ error_t hkdfExtract(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
    if(salt == NULL && saltLen != 0)
       return ERROR_INVALID_PARAMETER;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the HMAC context
    hmacContext = cryptoAllocMem(sizeof(HmacContext));
    //Failed to allocate memory?
    if(hmacContext == NULL)
       return ERROR_OUT_OF_MEMORY;
+#endif
 
    //The salt parameter is optional
    if(salt == NULL)
@@ -127,8 +133,10 @@ error_t hkdfExtract(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
    hmacUpdate(hmacContext, ikm, ikmLen);
    hmacFinal(hmacContext, prk);
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Free previously allocated memory
    cryptoFreeMem(hmacContext);
+#endif
 
    //Successful processing
    return NO_ERROR;
@@ -152,8 +160,12 @@ error_t hkdfExpand(const HashAlgo *hash, const uint8_t *prk, size_t prkLen,
 {
    uint8_t i;
    size_t tLen;
-   HmacContext *hmacContext;
    uint8_t t[MAX_HASH_DIGEST_SIZE];
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   HmacContext *hmacContext;
+#else
+   HmacContext hmacContext[1];
+#endif
 
    //Check parameters
    if(hash == NULL || prk == NULL || okm == NULL)
@@ -171,11 +183,13 @@ error_t hkdfExpand(const HashAlgo *hash, const uint8_t *prk, size_t prkLen,
    if(okmLen > (255 * hash->digestSize))
       return ERROR_INVALID_LENGTH;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the HMAC context
    hmacContext = cryptoAllocMem(sizeof(HmacContext));
    //Failed to allocate memory?
    if(hmacContext == NULL)
       return ERROR_OUT_OF_MEMORY;
+#endif
 
    //T(0) is an empty string (zero length)
    tLen = 0;
@@ -200,8 +214,10 @@ error_t hkdfExpand(const HashAlgo *hash, const uint8_t *prk, size_t prkLen,
       okmLen -= tLen;
    }
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Free previously allocated memory
    cryptoFreeMem(hmacContext);
+#endif
 
    //Successful processing
    return NO_ERROR;

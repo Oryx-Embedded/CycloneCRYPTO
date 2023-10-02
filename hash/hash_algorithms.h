@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 #ifndef _HASH_ALGORITHMS_H
@@ -154,6 +154,11 @@
    #include "hash/blake2s256.h"
 #endif
 
+//SM3 hash support?
+#if (SM3_SUPPORT == ENABLED)
+   #include "hash/sm3.h"
+#endif
+
 //Tiger hash support?
 #if (TIGER_SUPPORT == ENABLED)
    #include "hash/tiger.h"
@@ -203,6 +208,8 @@
    #define MAX_HASH_BLOCK_SIZE SHA224_BLOCK_SIZE
 #elif (SHA1_SUPPORT == ENABLED)
    #define MAX_HASH_BLOCK_SIZE SHA1_BLOCK_SIZE
+#elif (SM3_SUPPORT == ENABLED)
+   #define MAX_HASH_BLOCK_SIZE SM3_BLOCK_SIZE
 #elif (WHIRLPOOL_SUPPORT == ENABLED)
    #define MAX_HASH_BLOCK_SIZE WHIRLPOOL_BLOCK_SIZE
 #elif (TIGER_SUPPORT == ENABLED)
@@ -244,6 +251,8 @@
    #define MAX_HASH_DIGEST_SIZE SHA512_256_DIGEST_SIZE
 #elif (SHA256_SUPPORT == ENABLED)
    #define MAX_HASH_DIGEST_SIZE SHA256_DIGEST_SIZE
+#elif (SM3_SUPPORT == ENABLED)
+   #define MAX_HASH_DIGEST_SIZE SM3_DIGEST_SIZE
 #elif (BLAKE2S224_SUPPORT == ENABLED)
    #define MAX_HASH_DIGEST_SIZE BLAKE2S224_DIGEST_SIZE
 #elif (SHA3_224_SUPPORT == ENABLED)
@@ -358,6 +367,9 @@ typedef union
 #endif
 #if (BLAKE2S256_SUPPORT == ENABLED)
    Blake2s256Context blake2s256Context;
+#endif
+#if (SM3_SUPPORT == ENABLED)
+   Sm3Context sm3Context;
 #endif
 #if (TIGER_SUPPORT == ENABLED)
    TigerContext tigerContext;

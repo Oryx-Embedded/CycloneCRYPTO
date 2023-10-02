@@ -31,7 +31,7 @@
  * supports 256 bits of security strength. Refer to FIPS 202 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -65,36 +65,45 @@ error_t shakeCompute(uint_t strength, const void *input, size_t inputLen,
    uint8_t *output, size_t outputLen)
 {
    error_t error;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    ShakeContext *context;
+#else
+   ShakeContext context[1];
+#endif
 
+   //Check parameters
+   if(input == NULL && inputLen != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if(output == NULL && outputLen != 0)
+      return ERROR_INVALID_PARAMETER;
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the SHAKE context
    context = cryptoAllocMem(sizeof(ShakeContext));
+   //Failed to allocate memory?
+   if(context == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(context != NULL)
+   //Initialize the SHAKE context
+   error = shakeInit(context, strength);
+
+   //Check status code
+   if(!error)
    {
-      //Initialize the SHAKE context
-      error = shakeInit(context, strength);
-
-      //Check status code
-      if(!error)
-      {
-         //Absorb input data
-         shakeAbsorb(context, input, inputLen);
-         //Finish absorbing phase
-         shakeFinal(context);
-         //Extract data from the squeezing phase
-         shakeSqueeze(context, output, outputLen);
-      }
-
-      //Free previously allocated memory
-      cryptoFreeMem(context);
+      //Absorb input data
+      shakeAbsorb(context, input, inputLen);
+      //Finish absorbing phase
+      shakeFinal(context);
+      //Extract data from the squeezing phase
+      shakeSqueeze(context, output, outputLen);
    }
-   else
-   {
-      //Failed to allocate memory
-      error = ERROR_OUT_OF_MEMORY;
-   }
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Free previously allocated memory
+   cryptoFreeMem(context);
+#endif
 
    //Return status code
    return error;

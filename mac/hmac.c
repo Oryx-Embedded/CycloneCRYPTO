@@ -32,7 +32,7 @@
  * key. Refer to RFC 2104 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -65,14 +65,16 @@ const uint8_t HMAC_WITH_SHA512_OID[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x0
 const uint8_t HMAC_WITH_SHA512_224_OID[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x0C};
 //HMAC with SHA-512/256 OID (1.2.840.113549.2.13)
 const uint8_t HMAC_WITH_SHA512_256_OID[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x0D};
-//HMAC with SHA-3-224 object identifier (2.16.840.1.101.3.4.2.13)
+//HMAC with SHA-3-224 OID (2.16.840.1.101.3.4.2.13)
 const uint8_t HMAC_WITH_SHA3_224_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0D};
-//HMAC with SHA-3-256 object identifier (2.16.840.1.101.3.4.2.14)
+//HMAC with SHA-3-256 OID (2.16.840.1.101.3.4.2.14)
 const uint8_t HMAC_WITH_SHA3_256_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0E};
-//HMAC with SHA-3-384 object identifier (2.16.840.1.101.3.4.2.15)
+//HMAC with SHA-3-384 OID (2.16.840.1.101.3.4.2.15)
 const uint8_t HMAC_WITH_SHA3_384_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0F};
-//HMAC with SHA-3-512 object identifier (2.16.840.1.101.3.4.2.16)
+//HMAC with SHA-3-512 OID (2.16.840.1.101.3.4.2.16)
 const uint8_t HMAC_WITH_SHA3_512_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x10};
+//HMAC with SM3 OID (1.2.156.10197.1.401.3.1)
+const uint8_t HMAC_WITH_SM3_OID[10] = {0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x82, 0x91, 0x03, 0x01};
 
 
 /**
@@ -90,34 +92,36 @@ __weak_func error_t hmacCompute(const HashAlgo *hash, const void *key, size_t ke
    const void *data, size_t dataLen, uint8_t *digest)
 {
    error_t error;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    HmacContext *context;
+#else
+   HmacContext context[1];
+#endif
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the HMAC context
    context = cryptoAllocMem(sizeof(HmacContext));
+   //Failed to allocate memory?
+   if(context == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(context != NULL)
+   //Initialize the HMAC context
+   error = hmacInit(context, hash, key, keyLen);
+
+   //Check status code
+   if(!error)
    {
-      //Initialize the HMAC context
-      error = hmacInit(context, hash, key, keyLen);
-
-      //Check status code
-      if(!error)
-      {
-         //Digest the message
-         hmacUpdate(context, data, dataLen);
-         //Finalize the HMAC computation
-         hmacFinal(context, digest);
-      }
-
-      //Free previously allocated memory
-      cryptoFreeMem(context);
+      //Digest the message
+      hmacUpdate(context, data, dataLen);
+      //Finalize the HMAC computation
+      hmacFinal(context, digest);
    }
-   else
-   {
-      //Failed to allocate memory
-      error = ERROR_OUT_OF_MEMORY;
-   }
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Free previously allocated memory
+   cryptoFreeMem(context);
+#endif
 
    //Return status code
    return error;
@@ -240,6 +244,22 @@ __weak_func void hmacFinal(HmacContext *context, uint8_t *digest)
    if(digest != NULL)
    {
       osMemcpy(digest, context->digest, hash->digestSize);
+   }
+}
+
+
+/**
+ * @brief Release HMAC context
+ * @param[in] context Pointer to the HMAC context
+ **/
+
+void hmacDeinit(HmacContext *context)
+{
+   //Make sure the HMAC context is valid
+   if(context != NULL)
+   {
+      //Clear HMAC context
+      osMemset(context, 0, sizeof(HmacContext));
    }
 }
 

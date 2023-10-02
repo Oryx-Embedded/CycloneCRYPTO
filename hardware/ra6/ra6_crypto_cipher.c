@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -714,6 +714,10 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
 error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
    void *cipherContext)
 {
+   //Check parameters
+   if(context == NULL || cipherContext == NULL)
+      return ERROR_INVALID_PARAMETER;
+
    //The SCE module only supports AES cipher algorithm
    if(cipherAlgo != AES_CIPHER_ALGO)
       return ERROR_INVALID_PARAMETER;
@@ -906,12 +910,13 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
          osMemcpy(block, p + i, length - i);
       }
 
-      //Append the 64-bit representation of the length of the AAD and the
-      //ciphertext
-      m = aLen * 8;
+      //64-bit representation of the length of the payload data
+      m = length * 8;
       temp[0] = htobe32(m >> 32);
       temp[1] = htobe32(m);
-      m = length * 8;
+
+      //64-bit representation of the length of the additional data
+      m = aLen * 8;
       temp[2] = htobe32(m >> 32);
       temp[3] = htobe32(m);
 
@@ -1133,37 +1138,38 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
          osMemcpy(block, c + i, length - i);
       }
 
-      //Append the 64-bit representation of the length of the AAD and the
-      //ciphertext
-      m = aLen * 8;
+      //64-bit representation of the length of the payload data
+      m = length * 8;
       temp[0] = htobe32(m >> 32);
       temp[1] = htobe32(m);
-      m = length * 8;
+
+      //64-bit representation of the length of the additional data
+      m = aLen * 8;
       temp[2] = htobe32(m >> 32);
       temp[3] = htobe32(m);
+
+      //32-bit representation of the length of the authentication tag
+      temp[4] = htobe32(tLen);
 
       //Pad the authentication tag
       osMemset(authTag, 0, sizeof(authTag));
       osMemcpy(authTag, t, tLen);
 
-      //Set the length of the authentication tag
-      temp[4] = htobe32(tLen);
-
       //Verify authentication tag
       if(aesContext->nr == 10)
       {
-         status = HW_SCE_Aes128GcmDecryptFinalSub(block, authTag, temp,
-            temp + 2, temp + 4, block);
+         status = HW_SCE_Aes128GcmDecryptFinalSub(block, temp, temp + 2,
+            authTag, temp + 4, block);
       }
       else if(aesContext->nr == 12)
       {
-         status = HW_SCE_Aes192GcmDecryptFinalSub(block, authTag, temp,
-            temp + 2, temp + 4, block);
+         status = HW_SCE_Aes192GcmDecryptFinalSub(block, temp, temp + 2,
+            authTag, temp + 4, block);
       }
       else if(aesContext->nr == 14)
       {
-         status = HW_SCE_Aes256GcmDecryptFinalSub(block, authTag, temp,
-            temp + 2, temp + 4, block);
+         status = HW_SCE_Aes256GcmDecryptFinalSub(block, temp, temp + 2,
+            authTag, temp + 4, block);
       }
       else
       {
@@ -1176,6 +1182,388 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    {
       //Copy the partial output block
       osMemcpy(p + i, block, length - i);
+   }
+
+   //Release exclusive access to the SCE module
+   osReleaseMutex(&ra6CryptoMutex);
+
+   //Return status code
+   return (status == FSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
+}
+
+#endif
+#if (CCM_SUPPORT == ENABLED)
+
+/**
+ * @brief Authenticated encryption using CCM
+ * @param[in] cipher Cipher algorithm
+ * @param[in] context Cipher algorithm context
+ * @param[in] n Nonce
+ * @param[in] nLen Length of the nonce
+ * @param[in] a Additional authenticated data
+ * @param[in] aLen Length of the additional data
+ * @param[in] p Plaintext to be encrypted
+ * @param[out] c Ciphertext resulting from the encryption
+ * @param[in] length Total number of data bytes to be encrypted
+ * @param[out] t MAC resulting from the encryption process
+ * @param[in] tLen Length of the MAC
+ * @return Error code
+ **/
+
+error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
+   size_t nLen, const uint8_t *a, size_t aLen, const uint8_t *p, uint8_t *c,
+   size_t length, uint8_t *t, size_t tLen)
+{
+   error_t error;
+   fsp_err_t status;
+   size_t m;
+   uint32_t keyType;
+   uint32_t dataType;
+   uint32_t command;
+   uint32_t textLen;
+   uint32_t headerLen;
+   uint32_t seqNum;
+   uint32_t block[4];
+   uint32_t authTag[4];
+   uint8_t header[64];
+   AesContext *aesContext;
+
+   //The SCE module only supports AES cipher algorithm
+   if(cipher != AES_CIPHER_ALGO)
+      return ERROR_INVALID_PARAMETER;
+
+   //Make sure the cipher context is valid
+   if(context == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Check the length of the additional data
+   if(aLen > (sizeof(header) - 18))
+      return ERROR_INVALID_LENGTH;
+
+   //Point to the AES context
+   aesContext = (AesContext *) context;
+
+   //Initialize parameters
+   keyType = 0;
+   dataType = 0;
+   command = 0;
+   textLen = htobe32(length);
+   seqNum = 0;
+
+   //Clear header
+   osMemset(header, 0, sizeof(header));
+
+   //Format first block B(0)
+   error = ccmFormatBlock0(length, n, nLen, aLen, tLen, header);
+   //Invalid parameters?
+   if(error)
+      return error;
+
+   //Size of the first block (B0)
+   headerLen = AES_BLOCK_SIZE;
+
+   //Any additional data?
+   if(aLen > 0)
+   {
+      //The length is encoded as 2 octets
+      STORE16BE(aLen, header + headerLen);
+      //Concatenate the associated data A
+      osMemcpy(header + headerLen + 2, a, aLen);
+      //Adjust the size of the header
+      headerLen += 2 + aLen;
+   }
+
+   //Format initial counter value CTR(0)
+   ccmFormatCounter0(n, nLen, (uint8_t *) block);
+
+   //Acquire exclusive access to the SCE module
+   osAcquireMutex(&ra6CryptoMutex);
+
+   //Initialize CCM encryption
+   if(aesContext->nr == 10)
+   {
+      status = HW_SCE_Aes128CcmEncryptInitSubGeneral(&keyType, &dataType,
+         &command, &textLen, aesContext->ek, block, (uint32_t *) header,
+         &seqNum, (headerLen + 3) / 4);
+   }
+   else if(aesContext->nr == 12)
+   {
+      status = HW_SCE_Aes192CcmEncryptInitSubGeneral(&keyType, &dataType,
+         &command, &textLen, aesContext->ek, block, (uint32_t *) header,
+         &seqNum, (headerLen + 3) / 4);
+   }
+   else if(aesContext->nr == 14)
+   {
+      status = HW_SCE_Aes256CcmEncryptInitSubGeneral(&keyType, &dataType,
+         &command, &textLen, aesContext->ek, block, (uint32_t *) header,
+         &seqNum, (headerLen + 3) / 4);
+   }
+   else
+   {
+      status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
+   }
+
+   //Check status code
+   if(status == FSP_SUCCESS)
+   {
+      //Process payload data
+      if(length >= AES_BLOCK_SIZE)
+      {
+         //Process complete blocks only
+         m = length - (length % AES_BLOCK_SIZE);
+
+         //Encrypt complete blocks
+         if(aesContext->nr == 10)
+         {
+            HW_SCE_Aes128CcmEncryptUpdateSub((uint32_t *) p, (uint32_t *) c,
+               m / 4);
+         }
+         else if(aesContext->nr == 12)
+         {
+            HW_SCE_Aes192CcmEncryptUpdateSub((uint32_t *) p, (uint32_t *) c,
+               m / 4);
+         }
+         else
+         {
+            HW_SCE_Aes256CcmEncryptUpdateSub((uint32_t *) p, (uint32_t *) c,
+               m / 4);
+         }
+
+         //Advance data pointer
+         length -= m;
+         p += m;
+         c += m;
+      }
+
+      //Process final block of payload data
+      if(length > 0)
+      {
+         //Copy the partial input block
+         osMemset(block, 0, AES_BLOCK_SIZE);
+         osMemcpy(block, p, length);
+      }
+
+      //Generate authentication tag
+      if(aesContext->nr == 10)
+      {
+         status = HW_SCE_Aes128CcmEncryptFinalSubGeneral(&textLen, block,
+            block, authTag);
+      }
+      else if(aesContext->nr == 12)
+      {
+         status = HW_SCE_Aes192CcmEncryptFinalSub(&textLen, block, block,
+            authTag);
+      }
+      else if(aesContext->nr == 14)
+      {
+         status = HW_SCE_Aes256CcmEncryptFinalSub(&textLen, block, block,
+            authTag);
+      }
+      else
+      {
+         status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
+      }
+   }
+
+   //Check status code
+   if(status == FSP_SUCCESS)
+   {
+      //Copy the partial output block
+      osMemcpy(c, block, length);
+      //Copy the resulting authentication tag
+      osMemcpy(t, authTag, tLen);
+   }
+
+   //Release exclusive access to the SCE module
+   osReleaseMutex(&ra6CryptoMutex);
+
+   //Return status code
+   return (status == FSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
+}
+
+
+/**
+ * @brief Authenticated decryption using CCM
+ * @param[in] cipher Cipher algorithm
+ * @param[in] context Cipher algorithm context
+ * @param[in] n Nonce
+ * @param[in] nLen Length of the nonce
+ * @param[in] a Additional authenticated data
+ * @param[in] aLen Length of the additional data
+ * @param[in] c Ciphertext to be decrypted
+ * @param[out] p Plaintext resulting from the decryption
+ * @param[in] length Total number of data bytes to be decrypted
+ * @param[in] t MAC to be verified
+ * @param[in] tLen Length of the MAC
+ * @return Error code
+ **/
+
+error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
+   size_t nLen, const uint8_t *a, size_t aLen, const uint8_t *c, uint8_t *p,
+   size_t length, const uint8_t *t, size_t tLen)
+{
+   error_t error;
+   fsp_err_t status;
+   size_t m;
+   uint32_t keyType;
+   uint32_t dataType;
+   uint32_t command;
+   uint32_t textLen;
+   uint32_t authTagLen;
+   uint32_t headerLen;
+   uint32_t seqNum;
+   uint32_t block[4];
+   uint32_t authTag[4];
+   uint8_t header[64];
+   AesContext *aesContext;
+
+   //The SCE module only supports AES cipher algorithm
+   if(cipher != AES_CIPHER_ALGO)
+      return ERROR_INVALID_PARAMETER;
+
+   //Make sure the cipher context is valid
+   if(context == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Check the length of the additional data
+   if(aLen > (sizeof(header) - 18))
+      return ERROR_INVALID_LENGTH;
+
+   //Point to the AES context
+   aesContext = (AesContext *) context;
+
+   //Initialize parameters
+   keyType = 0;
+   dataType = 0;
+   command = 0;
+   textLen = htobe32(length);
+   authTagLen = htobe32(tLen);
+   seqNum = 0;
+
+   //Clear header
+   osMemset(header, 0, sizeof(header));
+
+   //Format first block B(0)
+   error = ccmFormatBlock0(length, n, nLen, aLen, tLen, header);
+   //Invalid parameters?
+   if(error)
+      return error;
+
+   //Size of the first block (B0)
+   headerLen = AES_BLOCK_SIZE;
+
+   //Any additional data?
+   if(aLen > 0)
+   {
+      //The length is encoded as 2 octets
+      STORE16BE(aLen, header + headerLen);
+      //Concatenate the associated data A
+      osMemcpy(header + headerLen + 2, a, aLen);
+      //Adjust the size of the header
+      headerLen += 2 + aLen;
+   }
+
+   //Format initial counter value CTR(0)
+   ccmFormatCounter0(n, nLen, (uint8_t *) block);
+
+   //Acquire exclusive access to the SCE module
+   osAcquireMutex(&ra6CryptoMutex);
+
+   //Initialize CCM decryption
+   if(aesContext->nr == 10)
+   {
+      status = HW_SCE_Aes128CcmDecryptInitSubGeneral(&keyType, &dataType,
+         &command, &textLen, &authTagLen, aesContext->ek, block,
+         (uint32_t *) header, &seqNum, (headerLen + 3) / 4);
+   }
+   else if(aesContext->nr == 12)
+   {
+      status = HW_SCE_Aes192CcmDecryptInitSubGeneral(&keyType, &dataType,
+         &command, &textLen, &authTagLen, aesContext->ek, block,
+         (uint32_t *) header, &seqNum, (headerLen + 3) / 4);
+   }
+   else if(aesContext->nr == 14)
+   {
+      status = HW_SCE_Aes256CcmDecryptInitSubGeneral(&keyType, &dataType,
+         &command, &textLen, &authTagLen, aesContext->ek, block,
+         (uint32_t *) header, &seqNum, (headerLen + 3) / 4);
+   }
+   else
+   {
+      status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
+   }
+
+   //Check status code
+   if(status == FSP_SUCCESS)
+   {
+      //Process payload data
+      if(length >= AES_BLOCK_SIZE)
+      {
+         //Process complete blocks only
+         m = length - (length % AES_BLOCK_SIZE);
+
+         //Decrypt complete blocks
+         if(aesContext->nr == 10)
+         {
+            HW_SCE_Aes128CcmDecryptUpdateSub((uint32_t *) c, (uint32_t *) p,
+               m / 4);
+         }
+         else if(aesContext->nr == 12)
+         {
+            HW_SCE_Aes192CcmDecryptUpdateSub((uint32_t *) c, (uint32_t *) p,
+               m / 4);
+         }
+         else
+         {
+            HW_SCE_Aes256CcmDecryptUpdateSub((uint32_t *) c, (uint32_t *) p,
+               m / 4);
+         }
+
+         //Advance data pointer
+         length -= m;
+         c += m;
+         p += m;
+      }
+
+      //Process final block of payload data
+      if(length > 0)
+      {
+         //Copy the partial input block
+         osMemset(block, 0, AES_BLOCK_SIZE);
+         osMemcpy(block, c, length);
+      }
+
+      //Pad the authentication tag
+      osMemset(authTag, 0, sizeof(authTag));
+      osMemcpy(authTag, t, tLen);
+
+      //Verify authentication tag
+      if(aesContext->nr == 10)
+      {
+         status = HW_SCE_Aes128CcmDecryptFinalSubGeneral(block, &textLen,
+            authTag, &authTagLen, block);
+      }
+      else if(aesContext->nr == 12)
+      {
+         status = HW_SCE_Aes192CcmDecryptFinalSub(block, &textLen,
+            authTag, &authTagLen, block);
+      }
+      else if(aesContext->nr == 14)
+      {
+         status = HW_SCE_Aes256CcmDecryptFinalSub(block, &textLen,
+            authTag, &authTagLen, block);
+      }
+      else
+      {
+         status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
+      }
+   }
+
+   //Check status code
+   if(status == FSP_SUCCESS)
+   {
+      //Copy the partial output block
+      osMemcpy(p, block, length);
    }
 
    //Release exclusive access to the SCE module

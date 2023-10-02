@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -119,7 +119,11 @@ error_t pkcs5DecryptPbes1(const X509AlgoId *encryptionAlgoId,
    Pkcs5Pbes1Params pbes1Params;
    const HashAlgo *hashAlgo;
    const CipherAlgo *cipherAlgo;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    CipherContext *cipherContext;
+#else
+   CipherContext cipherContext[1];
+#endif
 
    //Check the length of the encrypted data
    if(ciphertextLen == 0)
@@ -169,35 +173,34 @@ error_t pkcs5DecryptPbes1(const X509AlgoId *encryptionAlgoId,
    k = dk;
    iv = dk + 8;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the cipher context
    cipherContext = cryptoAllocMem(cipherAlgo->contextSize);
+   //Failed to allocate memory?
+   if(cipherContext == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(cipherContext != NULL)
+   //Load encryption key K
+   error = cipherAlgo->init(cipherContext, k, 8);
+
+   //Check status code
+   if(!error)
    {
-      //Load encryption key K
-      error = cipherAlgo->init(cipherContext, k, 8);
-
-      //Check status code
-      if(!error)
-      {
-         //Decrypt the ciphertext C with the underlying block cipher (DES or
-         //RC2) in CBC mode under the encryption key K with initialization
-         //vector IV to recover an encoded message EM
-         error = cbcDecrypt(cipherAlgo, cipherContext, iv, ciphertext,
-            plaintext, ciphertextLen);
-      }
-
-      //Erase cipher context
-      cipherAlgo->deinit(cipherContext);
-      //Release previously allocated memory
-      cryptoFreeMem(cipherContext);
+      //Decrypt the ciphertext C with the underlying block cipher (DES or
+      //RC2) in CBC mode under the encryption key K with initialization
+      //vector IV to recover an encoded message EM
+      error = cbcDecrypt(cipherAlgo, cipherContext, iv, ciphertext,
+         plaintext, ciphertextLen);
    }
-   else
-   {
-      //Report an error
-      error = ERROR_OUT_OF_MEMORY;
-   }
+
+   //Erase cipher context
+   cipherAlgo->deinit(cipherContext);
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Release previously allocated memory
+   cryptoFreeMem(cipherContext);
+#endif
 
    //Any error to report?
    if(error)
@@ -255,7 +258,11 @@ error_t pkcs5DecryptPbes2(const X509AlgoId *encryptionAlgoId,
    Pkcs5Pbes2Params pbes2Params;
    const HashAlgo *hashAlgo;
    const CipherAlgo *cipherAlgo;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    CipherContext *cipherContext;
+#else
+   CipherContext cipherContext[1];
+#endif
 
    //Check the length of the encrypted data
    if(ciphertextLen == 0)
@@ -316,34 +323,33 @@ error_t pkcs5DecryptPbes2(const X509AlgoId *encryptionAlgoId,
    if(error)
       return error;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the cipher context
    cipherContext = cryptoAllocMem(cipherAlgo->contextSize);
+   //Failed to allocate memory?
+   if(cipherContext == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(cipherContext != NULL)
+   //Load encryption key DK
+   error = cipherAlgo->init(cipherContext, dk, dkLen);
+
+   //Check status code
+   if(!error)
    {
-      //Load encryption key DK
-      error = cipherAlgo->init(cipherContext, dk, dkLen);
-
-      //Check status code
-      if(!error)
-      {
-         //Decrypt the ciphertext C with the underlying encryption scheme
-         //under the derived key DK to recover a message M
-         error = cbcDecrypt(cipherAlgo, cipherContext, iv, ciphertext,
-            plaintext, ciphertextLen);
-      }
-
-      //Erase cipher context
-      cipherAlgo->deinit(cipherContext);
-      //Release previously allocated memory
-      cryptoFreeMem(cipherContext);
+      //Decrypt the ciphertext C with the underlying encryption scheme
+      //under the derived key DK to recover a message M
+      error = cbcDecrypt(cipherAlgo, cipherContext, iv, ciphertext,
+         plaintext, ciphertextLen);
    }
-   else
-   {
-      //Report an error
-      error = ERROR_OUT_OF_MEMORY;
-   }
+
+   //Erase cipher context
+   cipherAlgo->deinit(cipherContext);
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Release previously allocated memory
+   cryptoFreeMem(cipherContext);
+#endif
 
    //Any error to report?
    if(error)

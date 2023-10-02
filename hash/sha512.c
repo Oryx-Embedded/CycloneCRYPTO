@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -45,7 +45,7 @@
    SHA512_224_SUPPORT == ENABLED || SHA512_256_SUPPORT == ENABLED)
 
 //Macro to access the workspace as a circular buffer
-#define W(t) w[(t) & 0x0F]
+#define W(n) w[(n) & 0x0F]
 
 //SHA-512 auxiliary functions
 #define CH(x, y, z) (((x) & (y)) | (~(x) & (z)))
@@ -125,36 +125,41 @@ const HashAlgo sha512HashAlgo =
 
 __weak_func error_t sha512Compute(const void *data, size_t length, uint8_t *digest)
 {
-   error_t error;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    Sha512Context *context;
+#else
+   Sha512Context context[1];
+#endif
 
+   //Check parameters
+   if(data == NULL && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if(digest == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the SHA-512 context
    context = cryptoAllocMem(sizeof(Sha512Context));
+   //Failed to allocate memory?
+   if(context == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(context != NULL)
-   {
-      //Initialize the SHA-512 context
-      sha512Init(context);
-      //Digest the message
-      sha512Update(context, data, length);
-      //Finalize the SHA-512 message digest
-      sha512Final(context, digest);
+   //Initialize the SHA-512 context
+   sha512Init(context);
+   //Digest the message
+   sha512Update(context, data, length);
+   //Finalize the SHA-512 message digest
+   sha512Final(context, digest);
 
-      //Free previously allocated memory
-      cryptoFreeMem(context);
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Free previously allocated memory
+   cryptoFreeMem(context);
+#endif
 
-      //Successful processing
-      error = NO_ERROR;
-   }
-   else
-   {
-      //Failed to allocate memory
-      error = ERROR_OUT_OF_MEMORY;
-   }
-
-   //Return status code
-   return error;
+   //Successful processing
+   return NO_ERROR;
 }
 
 
@@ -278,7 +283,7 @@ __weak_func void sha512Final(Sha512Context *context, uint8_t *digest)
 
 __weak_func void sha512ProcessBlock(Sha512Context *context)
 {
-   uint_t t;
+   uint_t i;
    uint64_t temp1;
    uint64_t temp2;
 
@@ -296,25 +301,25 @@ __weak_func void sha512ProcessBlock(Sha512Context *context)
    uint64_t *w = context->w;
 
    //Convert from big-endian byte order to host byte order
-   for(t = 0; t < 16; t++)
+   for(i = 0; i < 16; i++)
    {
-      w[t] = betoh64(w[t]);
+      w[i] = betoh64(w[i]);
    }
 
    //SHA-512 hash computation (alternate method)
-   for(t = 0; t < 80; t++)
+   for(i = 0; i < 80; i++)
    {
       //Prepare the message schedule
-      if(t >= 16)
+      if(i >= 16)
       {
-         W(t) += SIGMA4(W(t + 14)) + W(t + 9) + SIGMA3(W(t + 1));
+         W(i) += SIGMA4(W(i + 14)) + W(i + 9) + SIGMA3(W(i + 1));
       }
 
       //Calculate T1 and T2
-      temp1 = h + SIGMA2(e) + CH(e, f, g) + k[t] + W(t);
+      temp1 = h + SIGMA2(e) + CH(e, f, g) + k[i] + W(i);
       temp2 = SIGMA1(a) + MAJ(a, b, c);
 
-      //Update the working registers
+      //Update working registers
       h = g;
       g = f;
       f = e;

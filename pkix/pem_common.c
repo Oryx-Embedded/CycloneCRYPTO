@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -528,7 +528,7 @@ const CipherAlgo *pemGetCipherAlgo(const PemString *algo)
    const CipherAlgo *cipherAlgo;
 
 #if (PEM_DES_SUPPORT == ENABLED && DES_SUPPORT == ENABLED)
-   //DES-CBC encryption algorithm?
+   //DES-CBC algorithm identifier?
    if(pemCompareString(algo, "DES-CBC"))
    {
       cipherAlgo = DES_CIPHER_ALGO;
@@ -536,7 +536,7 @@ const CipherAlgo *pemGetCipherAlgo(const PemString *algo)
    else
 #endif
 #if (PEM_3DES_SUPPORT == ENABLED && DES3_SUPPORT == ENABLED)
-   //DES-EDE3-CBC encryption algorithm?
+   //DES-EDE3-CBC algorithm identifier?
    if(pemCompareString(algo, "DES-EDE3-CBC"))
    {
       cipherAlgo = DES3_CIPHER_ALGO;
@@ -544,24 +544,68 @@ const CipherAlgo *pemGetCipherAlgo(const PemString *algo)
    else
 #endif
 #if (PEM_AES_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
-   //AES-128-CBC encryption algorithm?
+   //AES-128-CBC algorithm identifier?
    if(pemCompareString(algo, "AES-128-CBC"))
    {
       cipherAlgo = AES_CIPHER_ALGO;
    }
-   //AES-192-CBC-encryption algorithm?
+   //AES-192-CBC algorithm identifier?
    else if(pemCompareString(algo, "AES-192-CBC"))
    {
       cipherAlgo = AES_CIPHER_ALGO;
    }
-   //AES-256-CBC encryption algorithm?
+   //AES-256-CBC algorithm identifier?
    else if(pemCompareString(algo, "AES-256-CBC"))
    {
       cipherAlgo = AES_CIPHER_ALGO;
    }
    else
 #endif
-   //Unknown encryption algorithm identifier?
+#if (PEM_CAMELLIA_SUPPORT == ENABLED && CAMELLIA_SUPPORT == ENABLED)
+   //Camellia-128-CBC algorithm identifier?
+   if(pemCompareString(algo, "CAMELLIA-128-CBC"))
+   {
+      cipherAlgo = CAMELLIA_CIPHER_ALGO;
+   }
+   //Camellia-192-CBC algorithm identifier?
+   else if(pemCompareString(algo, "CAMELLIA-192-CBC"))
+   {
+      cipherAlgo = CAMELLIA_CIPHER_ALGO;
+   }
+   //Camellia-256-CBC algorithm identifier?
+   else if(pemCompareString(algo, "CAMELLIA-256-CBC"))
+   {
+      cipherAlgo = CAMELLIA_CIPHER_ALGO;
+   }
+   else
+#endif
+#if (PEM_ARIA_SUPPORT == ENABLED && ARIA_SUPPORT == ENABLED)
+   //ARIA-128-CBC algorithm identifier?
+   if(pemCompareString(algo, "ARIA-128-CBC"))
+   {
+      cipherAlgo = ARIA_CIPHER_ALGO;
+   }
+   //ARIA-192-CBC algorithm identifier?
+   else if(pemCompareString(algo, "ARIA-192-CBC"))
+   {
+      cipherAlgo = ARIA_CIPHER_ALGO;
+   }
+   //ARIA-256-CBC algorithm identifier?
+   else if(pemCompareString(algo, "ARIA-256-CBC"))
+   {
+      cipherAlgo = ARIA_CIPHER_ALGO;
+   }
+   else
+#endif
+#if (PEM_SM4_SUPPORT == ENABLED && SM4_SUPPORT == ENABLED)
+   //SM4-CBC algorithm identifier?
+   if(pemCompareString(algo, "SM4-CBC"))
+   {
+      cipherAlgo = SM4_CIPHER_ALGO;
+   }
+   else
+#endif
+   //Unknown algorithm identifier?
    {
       cipherAlgo = NULL;
    }
@@ -582,7 +626,7 @@ uint_t pemGetKeyLength(const PemString *algo)
    uint_t keyLen;
 
 #if (PEM_DES_SUPPORT == ENABLED && DES_SUPPORT == ENABLED)
-   //DES-CBC encryption algorithm?
+   //DES-CBC algorithm algorithm?
    if(pemCompareString(algo, "DES-CBC"))
    {
       keyLen = 8;
@@ -590,7 +634,7 @@ uint_t pemGetKeyLength(const PemString *algo)
    else
 #endif
 #if (PEM_3DES_SUPPORT == ENABLED && DES3_SUPPORT == ENABLED)
-   //DES-EDE3-CBC encryption algorithm?
+   //DES-EDE3-CBC algorithm algorithm?
    if(pemCompareString(algo, "DES-EDE3-CBC"))
    {
       keyLen = 24;
@@ -598,24 +642,68 @@ uint_t pemGetKeyLength(const PemString *algo)
    else
 #endif
 #if (PEM_AES_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
-   //AES-128-CBC encryption algorithm?
+   //AES-128-CBC algorithm algorithm?
    if(pemCompareString(algo, "AES-128-CBC"))
    {
       keyLen = 16;
    }
-   //AES-192-CBC-encryption algorithm?
+   //AES-192-CBC algorithm algorithm?
    else if(pemCompareString(algo, "AES-192-CBC"))
    {
       keyLen = 24;
    }
-   //AES-256-CBC encryption algorithm?
+   //AES-256-CBC algorithm algorithm?
    else if(pemCompareString(algo, "AES-256-CBC"))
    {
       keyLen = 32;
    }
    else
 #endif
-   //Unknown encryption algorithm identifier?
+#if (PEM_CAMELLIA_SUPPORT == ENABLED && CAMELLIA_SUPPORT == ENABLED)
+   //Camellia-128-CBC algorithm identifier?
+   if(pemCompareString(algo, "CAMELLIA-128-CBC"))
+   {
+      keyLen = 16;
+   }
+   //Camellia-192-CBC algorithm identifier?
+   else if(pemCompareString(algo, "CAMELLIA-192-CBC"))
+   {
+      keyLen = 24;
+   }
+   //Camellia-256-CBC algorithm identifier?
+   else if(pemCompareString(algo, "CAMELLIA-256-CBC"))
+   {
+      keyLen = 32;
+   }
+   else
+#endif
+#if (PEM_ARIA_SUPPORT == ENABLED && ARIA_SUPPORT == ENABLED)
+   //ARIA-128-CBC algorithm identifier?
+   if(pemCompareString(algo, "ARIA-128-CBC"))
+   {
+      keyLen = 16;
+   }
+   //ARIA-192-CBC algorithm identifier?
+   else if(pemCompareString(algo, "ARIA-192-CBC"))
+   {
+      keyLen = 24;
+   }
+   //ARIA-256-CBC algorithm identifier?
+   else if(pemCompareString(algo, "ARIA-256-CBC"))
+   {
+      keyLen = 32;
+   }
+   else
+#endif
+#if (PEM_SM4_SUPPORT == ENABLED && SM4_SUPPORT == ENABLED)
+   //SM4-CBC algorithm identifier?
+   if(pemCompareString(algo, "SM4-CBC"))
+   {
+      keyLen = 16;
+   }
+   else
+#endif
+   //Unknown algorithm identifier?
    {
       keyLen = 0;
    }

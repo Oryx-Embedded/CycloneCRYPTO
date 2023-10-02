@@ -31,7 +31,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -103,6 +103,10 @@ __weak_func error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
    uint_t j;
    uint32_t c;
    uint32_t h[4];
+
+   //Check parameters
+   if(context == NULL || cipherAlgo == NULL || cipherContext == NULL)
+      return ERROR_INVALID_PARAMETER;
 
    //GCM supports only symmetric block ciphers whose block size is 128 bits
    if(cipherAlgo->type != CIPHER_ALGO_TYPE_BLOCK || cipherAlgo->blockSize != 16)
@@ -604,23 +608,23 @@ void gcmXorBlock(uint8_t *x, const uint8_t *a, const uint8_t *b, size_t n)
 
 /**
  * @brief Increment counter block
- * @param[in,out] x Pointer to the counter block
+ * @param[in,out] ctr Pointer to the counter block
  **/
 
-void gcmIncCounter(uint8_t *x)
+void gcmIncCounter(uint8_t *ctr)
 {
    uint16_t temp;
 
    //The function increments the right-most 32 bits of the block. The remaining
    //left-most 96 bits remain unchanged
-   temp = x[15] + 1;
-   x[15] = temp & 0xFF;
-   temp = (temp >> 8) + x[14];
-   x[14] = temp & 0xFF;
-   temp = (temp >> 8) + x[13];
-   x[13] = temp & 0xFF;
-   temp = (temp >> 8) + x[12];
-   x[12] = temp & 0xFF;
+   temp = ctr[15] + 1;
+   ctr[15] = temp & 0xFF;
+   temp = (temp >> 8) + ctr[14];
+   ctr[14] = temp & 0xFF;
+   temp = (temp >> 8) + ctr[13];
+   ctr[13] = temp & 0xFF;
+   temp = (temp >> 8) + ctr[12];
+   ctr[12] = temp & 0xFF;
 }
 
 #endif

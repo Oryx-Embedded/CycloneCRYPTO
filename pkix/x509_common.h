@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 #ifndef _X509_COMMON_H
@@ -142,6 +142,13 @@
    #define X509_SHA3_512_SUPPORT DISABLED
 #elif (X509_SHA3_512_SUPPORT != ENABLED && X509_SHA3_512_SUPPORT != DISABLED)
    #error X509_SHA3_512_SUPPORT parameter is not valid
+#endif
+
+//SM3 hash support
+#ifndef X509_SM3_SUPPORT
+   #define X509_SM3_SUPPORT DISABLED
+#elif (X509_SM3_SUPPORT != ENABLED && X509_SM3_SUPPORT != DISABLED)
+   #error X509_SM3_SUPPORT parameter is not valid
 #endif
 
 //secp112r1 elliptic curve support (weak)
@@ -296,6 +303,13 @@
    #define X509_BRAINPOOLP512R1_SUPPORT DISABLED
 #elif (X509_BRAINPOOLP512R1_SUPPORT != ENABLED && X509_BRAINPOOLP512R1_SUPPORT != DISABLED)
    #error X509_BRAINPOOLP512R1_SUPPORT parameter is not valid
+#endif
+
+//SM2 elliptic curve support
+#ifndef X509_SM2_SUPPORT
+   #define X509_SM2_SUPPORT DISABLED
+#elif (X509_SM2_SUPPORT != ENABLED && X509_SM2_SUPPORT != DISABLED)
+   #error X509_SM2_SUPPORT parameter is not valid
 #endif
 
 //Ed25519 elliptic curve support
@@ -566,10 +580,11 @@ typedef enum
    X509_KEY_TYPE_RSA_PSS = 2,
    X509_KEY_TYPE_DSA     = 3,
    X509_KEY_TYPE_EC      = 4,
-   X509_KEY_TYPE_X25519  = 5,
-   X509_KEY_TYPE_ED25519 = 6,
-   X509_KEY_TYPE_X448    = 7,
-   X509_KEY_TYPE_ED448   = 8
+   X509_KEY_TYPE_SM2     = 5,
+   X509_KEY_TYPE_X25519  = 6,
+   X509_KEY_TYPE_ED25519 = 7,
+   X509_KEY_TYPE_X448    = 8,
+   X509_KEY_TYPE_ED448   = 9
 } X509KeyType;
 
 
@@ -584,8 +599,9 @@ typedef enum
    X509_SIGN_ALGO_RSA_PSS = 2,
    X509_SIGN_ALGO_DSA     = 3,
    X509_SIGN_ALGO_ECDSA   = 4,
-   X509_SIGN_ALGO_ED25519 = 5,
-   X509_SIGN_ALGO_ED448   = 6
+   X509_SIGN_ALGO_SM2     = 5,
+   X509_SIGN_ALGO_ED25519 = 6,
+   X509_SIGN_ALGO_ED448   = 7
 } X509SignatureAlgo;
 
 
@@ -605,7 +621,8 @@ typedef enum
    X509_HASH_ALGO_SHA3_224 = 7,
    X509_HASH_ALGO_SHA3_256 = 8,
    X509_HASH_ALGO_SHA3_384 = 9,
-   X509_HASH_ALGO_SHA3_512 = 10
+   X509_HASH_ALGO_SHA3_512 = 10,
+   X509_HASH_ALGO_SM3      = 11
 } X509HashAlgo;
 
 

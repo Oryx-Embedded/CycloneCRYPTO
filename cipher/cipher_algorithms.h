@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 #ifndef _CIPHER_ALGORITHMS_H
@@ -114,6 +114,11 @@
    #include "cipher/seed.h"
 #endif
 
+//SM4 cipher support?
+#if (SM4_SUPPORT == ENABLED)
+   #include "cipher/sm4.h"
+#endif
+
 //PRESENT cipher support?
 #if (PRESENT_SUPPORT == ENABLED)
    #include "cipher/present.h"
@@ -163,6 +168,8 @@
    #define MAX_CIPHER_BLOCK_SIZE ARIA_BLOCK_SIZE
 #elif (SEED_SUPPORT == ENABLED)
    #define MAX_CIPHER_BLOCK_SIZE SEED_BLOCK_SIZE
+#elif (SM4_SUPPORT == ENABLED)
+   #define MAX_CIPHER_BLOCK_SIZE SM4_BLOCK_SIZE
 #elif (RC2_SUPPORT == ENABLED)
    #define MAX_CIPHER_BLOCK_SIZE RC2_BLOCK_SIZE
 #elif (CAST128_SUPPORT == ENABLED)
@@ -242,6 +249,9 @@ typedef union
 #endif
 #if (SEED_SUPPORT == ENABLED)
    SeedContext seedContext;
+#endif
+#if (SM4_SUPPORT == ENABLED)
+   Sm4Context sm4Context;
 #endif
 #if (PRESENT_SUPPORT == ENABLED)
    PresentContext presentContext;

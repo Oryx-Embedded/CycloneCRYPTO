@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -161,49 +161,46 @@ error_t bcrypt(uint_t cost, const uint8_t *salt, const char_t *password,
    uint_t i;
    size_t n;
    size_t length;
-   BlowfishContext *context;
    uint8_t buffer[24];
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   BlowfishContext *context;
+#else
+   BlowfishContext context[1];
+#endif
 
    //Check parameters
    if(salt == NULL || password == NULL || hash == NULL)
       return ERROR_INVALID_PARAMETER;
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the Blowfish context
    context = cryptoAllocMem(sizeof(BlowfishContext));
+   //Failed to allocate memory?
+   if(context == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(context != NULL)
+   //Calculate the length of the password (including the NULL-terminator byte)
+   length = osStrlen(password) + 1;
+
+   //The key setup begins with a modified form of the standard Blowfish key
+   //setup, in which both the salt and password are used to set all subkeys
+   error = eksBlowfishSetup(context, cost, salt, 16, password, length);
+
+   //Check status code
+   if(!error)
    {
-      //Calculate the length of the password (including the NULL-terminator byte)
-      length = osStrlen(password) + 1;
+      //Initialize plaintext
+      osMemcpy(buffer, "OrpheanBeholderScryDoubt", 24);
 
-      //The key setup begins with a modified form of the standard Blowfish key
-      //setup, in which both the salt and password are used to set all subkeys
-      error = eksBlowfishSetup(context, cost, salt, 16, password, length);
-
-      //Check status code
-      if(!error)
+      //Repeatedly encrypt the text "OrpheanBeholderScryDoubt" 64 times
+      for(i = 0; i < 64; i++)
       {
-         //Initialize plaintext
-         osMemcpy(buffer, "OrpheanBeholderScryDoubt", 24);
-
-         //Repeatedly encrypt the text "OrpheanBeholderScryDoubt" 64 times
-         for(i = 0; i < 64; i++)
-         {
-            //Perform encryption using Blowfish in ECB mode
-            blowfishEncryptBlock(context, buffer, buffer);
-            blowfishEncryptBlock(context, buffer + 8, buffer + 8);
-            blowfishEncryptBlock(context, buffer + 16, buffer + 16);
-         }
+         //Perform encryption using Blowfish in ECB mode
+         blowfishEncryptBlock(context, buffer, buffer);
+         blowfishEncryptBlock(context, buffer + 8, buffer + 8);
+         blowfishEncryptBlock(context, buffer + 16, buffer + 16);
       }
-
-      //Release Blowfish context
-      cryptoFreeMem(context);
-   }
-   else
-   {
-      //Failed to allocate memory
-      error = ERROR_OUT_OF_MEMORY;
    }
 
    //Check status code
@@ -224,6 +221,11 @@ error_t bcrypt(uint_t cost, const uint8_t *salt, const char_t *password,
          *hashLen = length;
       }
    }
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Release Blowfish context
+   cryptoFreeMem(context);
+#endif
 
    //Return status code
    return error;

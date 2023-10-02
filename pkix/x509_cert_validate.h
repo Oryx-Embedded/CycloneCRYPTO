@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 #ifndef _X509_CERT_VALIDATE_H
@@ -53,11 +53,17 @@ error_t x509CheckNameConstraints(const char_t *subjectName,
 bool_t x509CompareName(const uint8_t *name1, size_t nameLen1,
    const uint8_t *name2, size_t nameLen2);
 
-bool_t x509CompareSubjectName(const char_t *subjectName,
-   size_t subjectNameLen, const char_t *fqdn);
+bool_t x509CompareSubjectName(const char_t *subjectName, size_t subjectNameLen,
+   const char_t *fqdn);
 
-bool_t x509CompareSubtree(const char_t *subjectName,
-   const char_t *subtree, size_t subtreeLen);
+bool_t x509CompareSubtree(const char_t *subjectName, const char_t *subtree,
+   size_t subtreeLen);
+
+bool_t x509CompareIpAddr(const uint8_t *ipAddr, size_t ipAddrLen,
+   const char_t *str);
+
+error_t x509ParseIpv4Addr(const char_t *str, uint8_t *ipAddr);
+error_t x509ParseIpv6Addr(const char_t *str, uint8_t *ipAddr);
 
 //C++ guard
 #ifdef __cplusplus

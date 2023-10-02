@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -50,7 +50,9 @@ void mpiInit(Mpi *r)
    //Initialize structure
    r->sign = 1;
    r->size = 0;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    r->data = NULL;
+#endif
 }
 
 
@@ -61,17 +63,24 @@ void mpiInit(Mpi *r)
 
 void mpiFree(Mpi *r)
 {
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Any memory previously allocated?
    if(r->data != NULL)
    {
-      //Erase contents before releasing memory
+      //Erase contents
       osMemset(r->data, 0, r->size * MPI_INT_SIZE);
-      cryptoFreeMem(r->data);
-   }
 
-   //Set size to zero
+      //Release memory buffer
+      cryptoFreeMem(r->data);
+      r->data = NULL;
+   }
+#else
+   //Erase contents
+   osMemset(r->data, 0, r->size * MPI_INT_SIZE);
+#endif
+
+   //Reset size to zero
    r->size = 0;
-   r->data = NULL;
 }
 
 
@@ -84,39 +93,69 @@ void mpiFree(Mpi *r)
 
 error_t mpiGrow(Mpi *r, uint_t size)
 {
+   error_t error;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    uint_t *data;
+#endif
+
+   //Initialize status code
+   error = NO_ERROR;
 
    //Ensure the parameter is valid
    size = MAX(size, 1);
 
-   //Check the current size
-   if(r->size >= size)
-      return NO_ERROR;
-
-   //Allocate a memory buffer
-   data = cryptoAllocMem(size * MPI_INT_SIZE);
-   //Failed to allocate memory?
-   if(data == NULL)
-      return ERROR_OUT_OF_MEMORY;
-
-   //Clear buffer contents
-   osMemset(data, 0, size * MPI_INT_SIZE);
-
-   //Any data to copy?
-   if(r->size > 0)
+   //Check whether the size of the multiple precision integer must be increased
+   if(size > r->size)
    {
-      //Copy original data
-      osMemcpy(data, r->data, r->size * MPI_INT_SIZE);
-      //Free previously allocated memory
-      cryptoFreeMem(r->data);
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+      //Allocate a new memory buffer
+      data = cryptoAllocMem(size * MPI_INT_SIZE);
+
+      //Successful memory allocation?
+      if(data != NULL)
+      {
+         //Any data to copy?
+         if(r->size > 0)
+         {
+            //Copy original data
+            osMemcpy(data, r->data, r->size * MPI_INT_SIZE);
+
+            //Release old memory buffer
+            osMemset(r->data, 0, r->size * MPI_INT_SIZE);
+            cryptoFreeMem(r->data);
+         }
+
+         //Clear upper words
+         osMemset(data + r->size, 0, (size - r->size) * MPI_INT_SIZE);
+         //Attach new memory buffer
+         r->data = data;
+         //Update the size of the multiple precision integer
+         r->size = size;
+      }
+      else
+      {
+         //Failed to allocate memory
+         error = ERROR_OUT_OF_MEMORY;
+      }
+#else
+      //Check parameter
+      if(size <= MPI_MAX_INT_SIZE)
+      {
+         //Clear upper words
+         osMemset(r->data + r->size, 0, (size - r->size) * MPI_INT_SIZE);
+         //Update the size of the multiple precision integer
+         r->size = size;
+      }
+      else
+      {
+         //Report an error
+         error = ERROR_BUFFER_OVERFLOW;
+      }
+#endif
    }
 
-   //Update the size of the multiple precision integer
-   r->size = size;
-   r->data = data;
-
-   //Successful operation
-   return NO_ERROR;
+   //Return status code
+   return error;
 }
 
 
@@ -251,9 +290,13 @@ error_t mpiSetBitValue(Mpi *r, uint_t index, uint_t value)
 
    //Set bit value
    if(value)
+   {
       r->data[n1] |= (1 << n2);
+   }
    else
+   {
       r->data[n1] &= ~(1 << n2);
+   }
 
    //No error to report
    return NO_ERROR;
@@ -345,7 +388,11 @@ int_t mpiCompInt(const Mpi *a, int_t b)
    value = (b >= 0) ? b : -b;
    t.sign = (b >= 0) ? 1 : -1;
    t.size = 1;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    t.data = &value;
+#else
+   t.data[0] = value;
+#endif
 
    //Return comparison result
    return mpiComp(a, &t);
@@ -795,7 +842,11 @@ error_t mpiAddInt(Mpi *r, const Mpi *a, int_t b)
    value = (b >= 0) ? b : -b;
    t.sign = (b >= 0) ? 1 : -1;
    t.size = 1;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    t.data = &value;
+#else
+   t.data[0] = value;
+#endif
 
    //Perform addition
    return mpiAdd(r, a, &t);
@@ -868,7 +919,11 @@ error_t mpiSubInt(Mpi *r, const Mpi *a, int_t b)
    value = (b >= 0) ? b : -b;
    t.sign = (b >= 0) ? 1 : -1;
    t.size = 1;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    t.data = &value;
+#else
+   t.data[0] = value;
+#endif
 
    //Perform subtraction
    return mpiSub(r, a, &t);
@@ -1057,18 +1112,24 @@ error_t mpiShiftLeft(Mpi *r, uint_t n)
 {
    error_t error;
    uint_t i;
-
-   //Number of 32-bit words to shift
-   uint_t n1 = n / (MPI_INT_SIZE * 8);
-   //Number of bits to shift
-   uint_t n2 = n % (MPI_INT_SIZE * 8);
+   uint_t k;
+   uint_t n1;
+   uint_t n2;
 
    //Check parameters
-   if(!r->size || !n)
+   if(r->size == 0 || n == 0)
       return NO_ERROR;
 
+   //Determine the actual length of r
+   k = mpiGetBitLength(r);
+
+   //Number of 32-bit words to shift
+   n1 = n / (MPI_INT_SIZE * 8);
+   //Number of bits to shift
+   n2 = n % (MPI_INT_SIZE * 8);
+
    //Increase the size of the multiple-precision number
-   error = mpiGrow(r, r->size + (n + 31) / 32);
+   error = mpiGrow(r, (k + n + 31) / 32);
    //Check return code
    if(error)
       return error;
@@ -1259,7 +1320,11 @@ error_t mpiMulInt(Mpi *r, const Mpi *a, int_t b)
    value = (b >= 0) ? b : -b;
    t.sign = (b >= 0) ? 1 : -1;
    t.size = 1;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    t.data = &value;
+#else
+   t.data[0] = value;
+#endif
 
    //Perform multiplication
    return mpiMul(r, a, &t);
@@ -1301,7 +1366,9 @@ error_t mpiDiv(Mpi *q, Mpi *r, const Mpi *a, const Mpi *b)
    n = mpiGetBitLength(&d);
 
    if(m > n)
+   {
       MPI_CHECK(mpiShiftLeft(&d, m - n));
+   }
 
    while(n++ <= m)
    {
@@ -1317,10 +1384,14 @@ error_t mpiDiv(Mpi *q, Mpi *r, const Mpi *a, const Mpi *b)
    }
 
    if(q != NULL)
+   {
       MPI_CHECK(mpiCopy(q, &e));
+   }
 
    if(r != NULL)
+   {
       MPI_CHECK(mpiCopy(r, &c));
+   }
 
 end:
    //Release previously allocated memory
@@ -1351,7 +1422,11 @@ error_t mpiDivInt(Mpi *q, Mpi *r, const Mpi *a, int_t b)
    value = (b >= 0) ? b : -b;
    t.sign = (b >= 0) ? 1 : -1;
    t.size = 1;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    t.data = &value;
+#else
+   t.data[0] = value;
+#endif
 
    //Perform division
    return mpiDiv(q, r, a, &t);
@@ -1881,7 +1956,11 @@ error_t mpiMontgomeryRed(Mpi *r, const Mpi *a, uint_t k, const Mpi *p, Mpi *t)
    value = 1;
    b.sign = 1;
    b.size = 1;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    b.data = &value;
+#else
+   b.data[0] = value;
+#endif
 
    //Compute R = A / 2^k mod P
    return mpiMontgomeryMul(r, a, &b, k, p, t);

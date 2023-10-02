@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -983,6 +983,10 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
 error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
    void *cipherContext)
 {
+   //Check parameters
+   if(context == NULL || cipherContext == NULL)
+      return ERROR_INVALID_PARAMETER;
+
    //The CRYP module only supports AES cipher algorithm
    if(cipherAlgo != AES_CIPHER_ALGO)
       return ERROR_INVALID_PARAMETER;
@@ -1404,52 +1408,23 @@ error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
    size_t nLen, const uint8_t *a, size_t aLen, const uint8_t *p, uint8_t *c,
    size_t length, uint8_t *t, size_t tLen)
 {
-   size_t i;
-   size_t q;
-   size_t qLen;
+   error_t error;
    uint8_t b0[16];
    uint8_t authTag[16];
-
-   //Check parameters
-   if(cipher == NULL || context == NULL)
-      return ERROR_INVALID_PARAMETER;
 
    //The CRYP module only supports AES cipher algorithm
    if(cipher != AES_CIPHER_ALGO)
       return ERROR_INVALID_PARAMETER;
 
-   //Check the length of the nonce
-   if(nLen < 7 || nLen > 13)
-      return ERROR_INVALID_LENGTH;
+   //Make sure the cipher context is valid
+   if(context == NULL)
+      return ERROR_INVALID_PARAMETER;
 
-   //Check the length of the MAC
-   if(tLen < 4 || tLen > 16 || (tLen % 2) != 0)
-      return ERROR_INVALID_LENGTH;
-
-   //Q is the bit string representation of the octet length of P
-   q = length;
-   //Compute the octet length of Q
-   qLen = 15 - nLen;
-
-   //Format the leading octet of the first block (B0)
-   b0[0] = (aLen > 0) ? 0x40 : 0x00;
-   //Encode the octet length of T
-   b0[0] |= ((tLen - 2) / 2) << 3;
-   //Encode the octet length of Q
-   b0[0] |= qLen - 1;
-
-   //Copy the nonce
-   osMemcpy(b0 + 1, n, nLen);
-
-   //Encode the length field Q
-   for(i = 0; i < qLen; i++, q >>= 8)
-   {
-      b0[15 - i] = q & 0xFF;
-   }
-
-   //Invalid length?
-   if(q != 0)
-      return ERROR_INVALID_LENGTH;
+   //Format first block B(0)
+   error = ccmFormatBlock0(length, n, nLen, aLen, tLen, b0);
+   //Invalid parameters?
+   if(error)
+      return error;
 
    //Perform AES-CCM encryption
    ccmProcessData(context, b0, a, aLen, p, c, length, authTag,
@@ -1483,53 +1458,25 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
    size_t nLen, const uint8_t *a, size_t aLen, const uint8_t *c, uint8_t *p,
    size_t length, const uint8_t *t, size_t tLen)
 {
+   error_t error;
    size_t i;
-   size_t q;
-   size_t qLen;
    uint8_t mask;
    uint8_t b0[16];
    uint8_t authTag[16];
-
-   //Check parameters
-   if(cipher == NULL || context == NULL)
-      return ERROR_INVALID_PARAMETER;
 
    //The CRYP module only supports AES cipher algorithm
    if(cipher != AES_CIPHER_ALGO)
       return ERROR_INVALID_PARAMETER;
 
-   //Check the length of the nonce
-   if(nLen < 7 || nLen > 13)
-      return ERROR_INVALID_LENGTH;
+   //Make sure the cipher context is valid
+   if(context == NULL)
+      return ERROR_INVALID_PARAMETER;
 
-   //Check the length of the MAC
-   if(tLen < 4 || tLen > 16 || (tLen % 2) != 0)
-      return ERROR_INVALID_LENGTH;
-
-   //Q is the bit string representation of the octet length of C
-   q = length;
-   //Compute the octet length of Q
-   qLen = 15 - nLen;
-
-   //Format the leading octet of the first block (B0)
-   b0[0] = (aLen > 0) ? 0x40 : 0x00;
-   //Encode the octet length of T
-   b0[0] |= ((tLen - 2) / 2) << 3;
-   //Encode the octet length of Q
-   b0[0] |= qLen - 1;
-
-   //Copy the nonce
-   osMemcpy(b0 + 1, n, nLen);
-
-   //Encode the length field Q
-   for(i = 0; i < qLen; i++, q >>= 8)
-   {
-      b0[15 - i] = q & 0xFF;
-   }
-
-   //Invalid length?
-   if(q != 0)
-      return ERROR_INVALID_LENGTH;
+   //Format first block B(0)
+   error = ccmFormatBlock0(length, n, nLen, aLen, tLen, b0);
+   //Invalid parameters?
+   if(error)
+      return error;
 
    //Perform AES-CCM decryption
    ccmProcessData(context, b0, a, aLen, c, p, length, authTag,

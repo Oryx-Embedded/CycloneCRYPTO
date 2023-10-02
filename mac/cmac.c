@@ -29,7 +29,7 @@
  * CMAC is a block cipher-based MAC algorithm specified in NIST SP 800-38B
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -59,34 +59,36 @@ error_t cmacCompute(const CipherAlgo *cipher, const void *key, size_t keyLen,
    const void *data, size_t dataLen, uint8_t *mac, size_t macLen)
 {
    error_t error;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    CmacContext *context;
+#else
+   CmacContext context[1];
+#endif
 
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the CMAC context
    context = cryptoAllocMem(sizeof(CmacContext));
+   //Failed to allocate memory?
+   if(context == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(context != NULL)
+   //Initialize the CMAC context
+   error = cmacInit(context, cipher, key, keyLen);
+
+   //Check status code
+   if(!error)
    {
-      //Initialize the CMAC context
-      error = cmacInit(context, cipher, key, keyLen);
-
-      //Check status code
-      if(!error)
-      {
-         //Digest the message
-         cmacUpdate(context, data, dataLen);
-         //Finalize the CMAC computation
-         error = cmacFinal(context, mac, macLen);
-      }
-
-      //Free previously allocated memory
-      cryptoFreeMem(context);
+      //Digest the message
+      cmacUpdate(context, data, dataLen);
+      //Finalize the CMAC computation
+      error = cmacFinal(context, mac, macLen);
    }
-   else
-   {
-      //Failed to allocate memory
-      error = ERROR_OUT_OF_MEMORY;
-   }
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Free previously allocated memory
+   cryptoFreeMem(context);
+#endif
 
    //Return status code
    return error;
@@ -283,6 +285,25 @@ error_t cmacFinal(CmacContext *context, uint8_t *mac, size_t macLen)
 
    //Successful processing
    return NO_ERROR;
+}
+
+
+/**
+ * @brief Release CMAC context
+ * @param[in] context Pointer to the CMAC context
+ **/
+
+void cmacDeinit(CmacContext *context)
+{
+   //Make sure the CMAC context is valid
+   if(context != NULL)
+   {
+      //Release cipher context
+      context->cipher->deinit(&context->cipherContext);
+
+      //Clear CMAC context
+      osMemset(context, 0, sizeof(CmacContext));
+   }
 }
 
 

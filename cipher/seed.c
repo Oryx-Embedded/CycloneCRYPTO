@@ -29,7 +29,7 @@
  * SEED is a 128-bit symmetric key block cipher. Refer to RFC 4269
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level

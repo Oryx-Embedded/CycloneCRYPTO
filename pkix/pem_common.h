@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 #ifndef _PEM_COMMON_H
@@ -60,6 +60,27 @@
    #define PEM_AES_SUPPORT ENABLED
 #elif (PEM_AES_SUPPORT != ENABLED && PEM_AES_SUPPORT != DISABLED)
    #error PEM_AES_SUPPORT parameter is not valid
+#endif
+
+//Camellia cipher support?
+#ifndef PEM_CAMELLIA_SUPPORT
+   #define PEM_CAMELLIA_SUPPORT DISABLED
+#elif (PEM_CAMELLIA_SUPPORT != ENABLED && PEM_CAMELLIA_SUPPORT != DISABLED)
+   #error PEM_CAMELLIA_SUPPORT parameter is not valid
+#endif
+
+//ARIA cipher support?
+#ifndef PEM_ARIA_SUPPORT
+   #define PEM_ARIA_SUPPORT DISABLED
+#elif (PEM_ARIA_SUPPORT != ENABLED && PEM_ARIA_SUPPORT != DISABLED)
+   #error PEM_ARIA_SUPPORT parameter is not valid
+#endif
+
+//SM4 encryption support
+#ifndef PEM_SM4_SUPPORT
+   #define PEM_SM4_SUPPORT DISABLED
+#elif (PEM_SM4_SUPPORT != ENABLED && PEM_SM4_SUPPORT != DISABLED)
+   #error PEM_SM4_SUPPORT parameter is not valid
 #endif
 
 //C++ guard

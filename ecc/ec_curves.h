@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 #ifndef _EC_CURVES_H
@@ -187,6 +187,13 @@
    #define BRAINPOOLP512R1_SUPPORT DISABLED
 #elif (BRAINPOOLP512R1_SUPPORT != ENABLED && BRAINPOOLP512R1_SUPPORT != DISABLED)
    #error BRAINPOOLP512R1_SUPPORT parameter is not valid
+#endif
+
+//SM2 elliptic curve support
+#ifndef SM2_SUPPORT
+   #define SM2_SUPPORT DISABLED
+#elif (SM2_SUPPORT != ENABLED && SM2_SUPPORT != DISABLED)
+   #error SM2_SUPPORT parameter is not valid
 #endif
 
 //Curve25519 elliptic curve support

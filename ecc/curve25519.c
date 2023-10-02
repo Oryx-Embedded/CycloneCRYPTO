@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -410,10 +410,10 @@ void curve25519Inv(uint32_t *r, const uint32_t *a)
    curve25519Mul(u, u, v); //A^(2^250 - 1)
    curve25519Sqr(u, u);
    curve25519Sqr(u, u);
-   curve25519Mul(u, u, a);
+   curve25519Mul(u, u, a); //A^(2^252 - 3)
    curve25519Sqr(u, u);
    curve25519Sqr(u, u);
-   curve25519Mul(u, u, a);
+   curve25519Mul(u, u, a); //A^(2^254 - 11)
    curve25519Sqr(u, u);
    curve25519Mul(r, u, a); //A^(2^255 - 21)
 }

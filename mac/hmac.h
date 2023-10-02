@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 #ifndef _HMAC_H
@@ -80,6 +80,7 @@ extern const uint8_t HMAC_WITH_SHA3_224_OID[9];
 extern const uint8_t HMAC_WITH_SHA3_256_OID[9];
 extern const uint8_t HMAC_WITH_SHA3_384_OID[9];
 extern const uint8_t HMAC_WITH_SHA3_512_OID[9];
+extern const uint8_t HMAC_WITH_SM3_OID[10];
 
 //HMAC related functions
 error_t hmacCompute(const HashAlgo *hash, const void *key, size_t keyLen,
@@ -91,6 +92,7 @@ error_t hmacInit(HmacContext *context, const HashAlgo *hash,
 void hmacUpdate(HmacContext *context, const void *data, size_t length);
 void hmacFinal(HmacContext *context, uint8_t *digest);
 void hmacFinalRaw(HmacContext *context, uint8_t *digest);
+void hmacDeinit(HmacContext *context);
 
 //C++ guard
 #ifdef __cplusplus

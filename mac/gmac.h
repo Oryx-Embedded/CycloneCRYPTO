@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 #ifndef _GMAC_H
@@ -91,10 +91,11 @@ error_t gmacInit(GmacContext *context, const CipherAlgo *cipher,
 error_t gmacReset(GmacContext *context, const uint8_t *iv, size_t ivLen);
 void gmacUpdate(GmacContext *context, const void *data, size_t dataLen);
 error_t gmacFinal(GmacContext *context, uint8_t *mac, size_t macLen);
+void gmacDeinit(GmacContext *context);
 
 void gmacMul(GmacContext *context, uint8_t *x);
 void gmacXorBlock(uint8_t *x, const uint8_t *a, const uint8_t *b, size_t n);
-void gmacIncCounter(uint8_t *x);
+void gmacIncCounter(uint8_t *ctr);
 
 //C++ guard
 #ifdef __cplusplus

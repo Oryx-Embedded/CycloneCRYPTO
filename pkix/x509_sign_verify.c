@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -90,7 +90,7 @@ error_t x509VerifySignature(const X509OctetString *tbsData,
    {
       //Invoke user-defined callback
       error = x509SignVerifyCallback(tbsData, signAlgoId, publicKeyInfo,
-         signatureValue);
+         signature);
    }
    else
 #endif

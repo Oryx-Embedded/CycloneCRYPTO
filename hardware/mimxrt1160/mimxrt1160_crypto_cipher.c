@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -1312,6 +1312,10 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
 error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
    void *cipherContext)
 {
+   //Check parameters
+   if(context == NULL || cipherContext == NULL)
+      return ERROR_INVALID_PARAMETER;
+
    //The CRYP module only supports AES cipher algorithm
    if(cipherAlgo != AES_CIPHER_ALGO)
       return ERROR_INVALID_PARAMETER;

@@ -31,7 +31,7 @@
  * for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -99,34 +99,43 @@ error_t blake2sCompute(const void *key, size_t keyLen, const void *data,
    size_t dataLen, uint8_t *digest, size_t digestLen)
 {
    error_t error;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    Blake2sContext *context;
+#else
+   Blake2sContext context[1];
+#endif
 
+   //Check parameters
+   if(data == NULL && dataLen != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if(digest == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the BLAKE2s context
    context = cryptoAllocMem(sizeof(Blake2sContext));
+   //Failed to allocate memory?
+   if(context == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(context != NULL)
+   //Initialize the hashing context
+   error = blake2sInit(context, key, keyLen, digestLen);
+
+   //Check status code
+   if(!error)
    {
-      //Initialize the hashing context
-      error = blake2sInit(context, key, keyLen, digestLen);
-
-      //Check status code
-      if(!error)
-      {
-         //Digest the message
-         blake2sUpdate(context, data, dataLen);
-         //Finalize the BLAKE2s message digest
-         blake2sFinal(context, digest);
-      }
-
-      //Free previously allocated memory
-      cryptoFreeMem(context);
+      //Digest the message
+      blake2sUpdate(context, data, dataLen);
+      //Finalize the BLAKE2s message digest
+      blake2sFinal(context, digest);
    }
-   else
-   {
-      //Failed to allocate memory
-      error = ERROR_OUT_OF_MEMORY;
-   }
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Free previously allocated memory
+   cryptoFreeMem(context);
+#endif
 
    //Return status code
    return error;
@@ -146,6 +155,13 @@ error_t blake2sInit(Blake2sContext *context, const void *key,
    size_t keyLen, size_t digestLen)
 {
    size_t i;
+
+   //Check parameters
+   if(context == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if(key == NULL && keyLen != 0)
+      return ERROR_INVALID_PARAMETER;
 
    //Check the length of the key
    if(keyLen > 32)

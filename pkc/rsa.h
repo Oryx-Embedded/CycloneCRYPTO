@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 #ifndef _RSA_H
@@ -35,6 +35,13 @@
 #include "core/crypto.h"
 #include "hash/hash_algorithms.h"
 #include "mpi/mpi.h"
+
+//Maximum acceptable size for RSA modulus
+#ifndef RSA_MAX_MODULUS_SIZE
+   #define RSA_MAX_MODULUS_SIZE 4096
+#elif (RSA_MAX_MODULUS_SIZE < 0)
+   #error RSA_MAX_MODULUS_SIZE parameter is not valid
+#endif
 
 //C++ guard
 #ifdef __cplusplus

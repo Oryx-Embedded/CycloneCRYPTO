@@ -30,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1320
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 //Switch to the appropriate trace level
@@ -93,36 +93,41 @@ const HashAlgo md4HashAlgo =
 
 error_t md4Compute(const void *data, size_t length, uint8_t *digest)
 {
-   error_t error;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    Md4Context *context;
+#else
+   Md4Context context[1];
+#endif
 
+   //Check parameters
+   if(data == NULL && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if(digest == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the MD4 context
    context = cryptoAllocMem(sizeof(Md4Context));
+   //Failed to allocate memory?
+   if(context == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
 
-   //Successful memory allocation?
-   if(context != NULL)
-   {
-      //Initialize the MD4 context
-      md4Init(context);
-      //Digest the message
-      md4Update(context, data, length);
-      //Finalize the MD4 message digest
-      md4Final(context, digest);
+   //Initialize the MD4 context
+   md4Init(context);
+   //Digest the message
+   md4Update(context, data, length);
+   //Finalize the MD4 message digest
+   md4Final(context, digest);
 
-      //Free previously allocated memory
-      cryptoFreeMem(context);
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Free previously allocated memory
+   cryptoFreeMem(context);
+#endif
 
-      //Successful processing
-      error = NO_ERROR;
-   }
-   else
-   {
-      //Failed to allocate memory
-      error = ERROR_OUT_OF_MEMORY;
-   }
-
-   //Return status code
-   return error;
+   //Successful operation
+   return NO_ERROR;
 }
 
 

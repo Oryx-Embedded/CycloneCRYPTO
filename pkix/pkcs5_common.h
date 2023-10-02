@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.0
+ * @version 2.3.2
  **/
 
 #ifndef _PKCS5_COMMON_H
@@ -60,6 +60,27 @@
    #define PKCS5_AES_SUPPORT ENABLED
 #elif (PKCS5_AES_SUPPORT != ENABLED && PKCS5_AES_SUPPORT != DISABLED)
    #error PKCS5_AES_SUPPORT parameter is not valid
+#endif
+
+//Camellia encryption support
+#ifndef PKCS5_CAMELLIA_SUPPORT
+   #define PKCS5_CAMELLIA_SUPPORT DISABLED
+#elif (PKCS5_CAMELLIA_SUPPORT != ENABLED && PKCS5_CAMELLIA_SUPPORT != DISABLED)
+   #error PKCS5_CAMELLIA_SUPPORT parameter is not valid
+#endif
+
+//ARIA encryption support
+#ifndef PKCS5_ARIA_SUPPORT
+   #define PKCS5_ARIA_SUPPORT DISABLED
+#elif (PKCS5_ARIA_SUPPORT != ENABLED && PKCS5_ARIA_SUPPORT != DISABLED)
+   #error PKCS5_ARIA_SUPPORT parameter is not valid
+#endif
+
+//SM4 encryption support
+#ifndef PKCS5_SM4_SUPPORT
+   #define PKCS5_SM4_SUPPORT DISABLED
+#elif (PKCS5_SM4_SUPPORT != ENABLED && PKCS5_SM4_SUPPORT != DISABLED)
+   #error PKCS5_SM4_SUPPORT parameter is not valid
 #endif
 
 //MD2 hash support (insecure)
@@ -123,6 +144,13 @@
    #define PKCS5_SHA512_256_SUPPORT DISABLED
 #elif (PKCS5_SHA512_256_SUPPORT != ENABLED && PKCS5_SHA512_256_SUPPORT != DISABLED)
    #error PKCS5_SHA512_256_SUPPORT parameter is not valid
+#endif
+
+//SM3 hash support
+#ifndef PKCS5_SM3_SUPPORT
+   #define PKCS5_SM3_SUPPORT DISABLED
+#elif (PKCS5_SM3_SUPPORT != ENABLED && PKCS5_SM3_SUPPORT != DISABLED)
+   #error PKCS5_SM3_SUPPORT parameter is not valid
 #endif
 
 //C++ guard
@@ -199,11 +227,18 @@ extern const uint8_t PBE_WITH_SHA1_AND_RC2_CBC_OID[9];
 
 extern const uint8_t PBES2_OID[9];
 
-extern const uint8_t DES_CBC_PAD_OID[5];
-extern const uint8_t DES_EDE3_CBC_PAD_OID[8];
-extern const uint8_t AES128_CBC_PAD_OID[9];
-extern const uint8_t AES192_CBC_PAD_OID[9];
-extern const uint8_t AES256_CBC_PAD_OID[9];
+extern const uint8_t DES_CBC_OID[5];
+extern const uint8_t DES_EDE3_CBC_OID[8];
+extern const uint8_t AES128_CBC_OID[9];
+extern const uint8_t AES192_CBC_OID[9];
+extern const uint8_t AES256_CBC_OID[9];
+extern const uint8_t CAMELLIA128_CBC_OID[11];
+extern const uint8_t CAMELLIA192_CBC_OID[11];
+extern const uint8_t CAMELLIA256_CBC_OID[11];
+extern const uint8_t ARIA128_CBC_OID[9];
+extern const uint8_t ARIA192_CBC_OID[9];
+extern const uint8_t ARIA256_CBC_OID[9];
+extern const uint8_t SM4_CBC_OID[8];
 
 //PKCS #5 related functions
 const HashAlgo *pkcs5GetPbes1HashAlgo(const uint8_t *oid, size_t length);
