@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -1346,17 +1346,17 @@ error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
       //Generate authentication tag
       if(aesContext->nr == 10)
       {
-         status = HW_SCE_Aes128CcmEncryptFinalSubGeneral(&textLen, block,
+         status = HW_SCE_Aes128CcmEncryptFinalSubGeneral(block, &textLen,
             block, authTag);
       }
       else if(aesContext->nr == 12)
       {
-         status = HW_SCE_Aes192CcmEncryptFinalSub(&textLen, block, block,
+         status = HW_SCE_Aes192CcmEncryptFinalSub(block, &textLen, block,
             authTag);
       }
       else if(aesContext->nr == 14)
       {
-         status = HW_SCE_Aes256CcmEncryptFinalSub(&textLen, block, block,
+         status = HW_SCE_Aes256CcmEncryptFinalSub(block, &textLen, block,
             authTag);
       }
       else

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _MD2_H
@@ -40,8 +40,6 @@
 #define MD2_DIGEST_SIZE 16
 //Minimum length of the padding string
 #define MD2_MIN_PAD_SIZE 1
-//MD2 algorithm object identifier
-#define MD2_OID md2Oid
 //Common interface for hash algorithms
 #define MD2_HASH_ALGO (&md2HashAlgo)
 
@@ -70,7 +68,7 @@ typedef struct
 
 
 //MD2 related constants
-extern const uint8_t md2Oid[8];
+extern const uint8_t MD2_OID[8];
 extern const HashAlgo md2HashAlgo;
 
 //MD2 related functions

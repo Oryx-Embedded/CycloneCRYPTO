@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -421,7 +421,7 @@ __weak_func error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngC
    //Initialize EC point
    ecInit(&r1);
 
-   //Generate a random number k such as 0 < k < q - 1
+   //Generate a random number k such as 0 < k < q
    MPI_CHECK(mpiRandRange(&k, &params->q, prngAlgo, prngContext));
 
    //Debug message

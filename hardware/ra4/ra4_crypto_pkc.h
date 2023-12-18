@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _RA4_CRYPTO_PKC_H
@@ -54,13 +54,10 @@ extern "C" {
 
 typedef struct
 {
-   uint32_t n[128];
-   uint32_t d[128];
-   uint32_t e[1];
    uint32_t m[128];
    uint32_t c[128];
-   uint32_t key[160];
-   uint32_t wrappedKey[256];
+   uint32_t key[256];
+   uint32_t wrappedKey[300];
 } Ra4RsaArgs;
 
 
@@ -70,13 +67,12 @@ typedef struct
 
 typedef struct
 {
-   uint32_t params[48];
    uint32_t g[24];
    uint32_t d[12];
    uint32_t q[24];
    uint32_t digest[12];
    uint32_t signature[24];
-   uint32_t wrappedKey[32];
+   uint32_t wrappedKey[100];
 } Ra4EcArgs;
 
 

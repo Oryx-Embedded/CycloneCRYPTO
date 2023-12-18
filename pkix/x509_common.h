@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _X509_COMMON_H
@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "pkc/sign_algorithms.h"
 #include "pkc/rsa.h"
 #include "pkc/dsa.h"
 #include "ecc/ecdsa.h"
@@ -681,6 +682,7 @@ typedef struct
    X509String generationQualifier;
    X509String dnQualifier;
    X509String pseudonym;
+   X509String emailAddress;
    uint_t numDomainComponents;
    X509String domainComponents[X509_MAX_DOMAIN_COMPONENTS];
 } X509Name;
@@ -1329,12 +1331,14 @@ extern const uint8_t X509_KP_DOC_SIGNING_OID[8];
 extern const uint8_t X509_AD_CA_ISSUERS[8];
 extern const uint8_t X509_AD_OCSP[8];
 
+extern const uint8_t X509_EMAIL_ADDRESS_OID[9];
 extern const uint8_t X509_CHALLENGE_PASSWORD_OID[9];
 extern const uint8_t X509_EXTENSION_REQUEST_OID[9];
 
 //X.509 related functions
 bool_t x509IsSignAlgoSupported(X509SignatureAlgo signAlgo);
 bool_t x509IsHashAlgoSupported(X509HashAlgo hashAlgo);
+bool_t x509IsCurveSupported(const uint8_t *oid, size_t length);
 
 error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
    X509SignatureAlgo *signAlgo, const HashAlgo **hashAlgo);

@@ -1,6 +1,6 @@
 /**
- * @file sam9x60_crypto_trng.c
- * @brief SAM9X60 true random number generator
+ * @file sam9x7_crypto_trng.c
+ * @brief SAM9X70/72/75 true random number generator
  *
  * @section License
  *
@@ -25,21 +25,21 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
-#include "sam9x60.h"
+#include "sam.h"
 #include "core/crypto.h"
-#include "hardware/sam9x60/sam9x60_crypto.h"
-#include "hardware/sam9x60/sam9x60_crypto_trng.h"
+#include "hardware/sam9x7/sam9x7_crypto.h"
+#include "hardware/sam9x7/sam9x7_crypto_trng.h"
 #include "debug.h"
 
 //Check crypto library configuration
-#if (SAM9X60_CRYPTO_TRNG_SUPPORT == ENABLED)
+#if (SAM9X7_CRYPTO_TRNG_SUPPORT == ENABLED)
 
 
 /**
@@ -52,12 +52,12 @@ error_t trngInit(void)
    uint32_t temp;
 
    //Enable TRNG peripheral clock
-   PMC->PMC_PCR = PMC_PCR_PID(ID_TRNG);
-   temp = PMC->PMC_PCR;
-   PMC->PMC_PCR = temp | PMC_PCR_CMD | PMC_PCR_EN;
+   PMC_REGS->PMC_PCR = PMC_PCR_PID(ID_TRNG);
+   temp = PMC_REGS->PMC_PCR;
+   PMC_REGS->PMC_PCR = temp | PMC_PCR_CMD_Msk | PMC_PCR_EN_Msk;
 
    //Enable TRNG
-   TRNG->TRNG_CR = TRNG_CR_KEY(0x524E47) | TRNG_CR_ENABLE;
+   TRNG_REGS->TRNG_CR = TRNG_CR_KEY(0x524E47) | TRNG_CR_ENABLE_Msk;
 
    //Successful initialization
    return NO_ERROR;
@@ -79,7 +79,7 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
    value = 0;
 
    //Acquire exclusive access to the TRNG module
-   osAcquireMutex(&sam9x60CryptoMutex);
+   osAcquireMutex(&sam9x7CryptoMutex);
 
    //Generate random data
    for(i = 0; i < length; i++)
@@ -88,12 +88,12 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
       if((i % 4) == 0)
       {
          //Wait for the TRNG to contain a valid data
-         while((TRNG->TRNG_ISR & TRNG_ISR_DATRDY) == 0)
+         while((TRNG_REGS->TRNG_ISR & TRNG_ISR_DATRDY_Msk) == 0)
          {
          }
 
          //Get the 32-bit random value
-         value = TRNG->TRNG_ODATA;
+         value = TRNG_REGS->TRNG_ODATA;
       }
 
       //Copy random byte
@@ -103,7 +103,7 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
    }
 
    //Release exclusive access to the TRNG module
-   osReleaseMutex(&sam9x60CryptoMutex);
+   osReleaseMutex(&sam9x7CryptoMutex);
 
    //Successful processing
    return NO_ERROR;

@@ -1,5 +1,5 @@
 /**
- * @file sam9x60_crypto_hash.c
+ * @file sam9x6_crypto_hash.c
  * @brief SAM9X60 hash hardware accelerator
  *
  * @section License
@@ -25,22 +25,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
-#include "sam9x60.h"
+#include "sam.h"
 #include "core/crypto.h"
-#include "hardware/sam9x60/sam9x60_crypto.h"
-#include "hardware/sam9x60/sam9x60_crypto_hash.h"
+#include "hardware/sam9x6/sam9x6_crypto.h"
+#include "hardware/sam9x6/sam9x6_crypto_hash.h"
 #include "hash/hash_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
-#if (SAM9X60_CRYPTO_HASH_SUPPORT == ENABLED)
+#if (SAM9X6_CRYPTO_HASH_SUPPORT == ENABLED)
 
 //Padding string
 static const uint8_t padding[128] =
@@ -73,96 +73,96 @@ void hashProcessData(uint32_t algo, const uint8_t *data, size_t length,
    blockSize = (algo == SHA_MR_ALGO_SHA512) ? 128 : 64;
 
    //Acquire exclusive access to the SHA module
-   osAcquireMutex(&sam9x60CryptoMutex);
+   osAcquireMutex(&sam9x6CryptoMutex);
 
    //Perform software reset
-   SHA->SHA_CR = SHA_CR_SWRST;
+   SHA_REGS->SHA_CR = SHA_CR_SWRST_Msk;
 
    //Select the relevant hash algorithm
-   SHA->SHA_MR = SHA_MR_UIHV | SHA_MR_SMOD_MANUAL_START | algo;
+   SHA_REGS->SHA_MR = SHA_MR_UIHV_Msk | SHA_MR_SMOD_MANUAL_START | algo;
 
    //Set the WUIHV bit before loading the initial hash value
-   SHA->SHA_CR = SHA_CR_WUIHV;
+   SHA_REGS->SHA_CR = SHA_CR_WUIHV_Msk;
 
    //Restore initial hash value
-   SHA->SHA_IDATAR[0] = h[0];
-   SHA->SHA_IDATAR[1] = h[1];
-   SHA->SHA_IDATAR[2] = h[2];
-   SHA->SHA_IDATAR[3] = h[3];
-   SHA->SHA_IDATAR[4] = h[4];
+   SHA_REGS->SHA_IDATAR[0] = h[0];
+   SHA_REGS->SHA_IDATAR[1] = h[1];
+   SHA_REGS->SHA_IDATAR[2] = h[2];
+   SHA_REGS->SHA_IDATAR[3] = h[3];
+   SHA_REGS->SHA_IDATAR[4] = h[4];
 
    //SHA-256 or SHA-512 algorithm?
    if(algo == SHA_MR_ALGO_SHA256 || algo == SHA_MR_ALGO_SHA512)
    {
-      SHA->SHA_IDATAR[5] = h[5];
-      SHA->SHA_IDATAR[6] = h[6];
-      SHA->SHA_IDATAR[7] = h[7];
+      SHA_REGS->SHA_IDATAR[5] = h[5];
+      SHA_REGS->SHA_IDATAR[6] = h[6];
+      SHA_REGS->SHA_IDATAR[7] = h[7];
    }
 
    //SHA-512 algorithm?
    if(algo == SHA_MR_ALGO_SHA512)
    {
-      SHA->SHA_IDATAR[8] = h[8];
-      SHA->SHA_IDATAR[9] = h[9];
-      SHA->SHA_IDATAR[10] = h[10];
-      SHA->SHA_IDATAR[11] = h[11];
-      SHA->SHA_IDATAR[12] = h[12];
-      SHA->SHA_IDATAR[13] = h[13];
-      SHA->SHA_IDATAR[14] = h[14];
-      SHA->SHA_IDATAR[15] = h[15];
+      SHA_REGS->SHA_IDATAR[8] = h[8];
+      SHA_REGS->SHA_IDATAR[9] = h[9];
+      SHA_REGS->SHA_IDATAR[10] = h[10];
+      SHA_REGS->SHA_IDATAR[11] = h[11];
+      SHA_REGS->SHA_IDATAR[12] = h[12];
+      SHA_REGS->SHA_IDATAR[13] = h[13];
+      SHA_REGS->SHA_IDATAR[14] = h[14];
+      SHA_REGS->SHA_IDATAR[15] = h[15];
    }
 
    //The FIRST bit indicates that the next block to process is the first one
    //of the message
-   SHA->SHA_CR = SHA_CR_FIRST;
+   SHA_REGS->SHA_CR = SHA_CR_FIRST_Msk;
 
    //Input data are processed in a block-by-block fashion
    while(length >= blockSize)
    {
       //Write the block to be processed in the input data registers
-      SHA->SHA_IDATAR[0] = LOAD32LE(data);
-      SHA->SHA_IDATAR[1] = LOAD32LE(data + 4);
-      SHA->SHA_IDATAR[2] = LOAD32LE(data + 8);
-      SHA->SHA_IDATAR[3] = LOAD32LE(data + 12);
-      SHA->SHA_IDATAR[4] = LOAD32LE(data + 16);
-      SHA->SHA_IDATAR[5] = LOAD32LE(data + 20);
-      SHA->SHA_IDATAR[6] = LOAD32LE(data + 24);
-      SHA->SHA_IDATAR[7] = LOAD32LE(data + 28);
-      SHA->SHA_IDATAR[8] = LOAD32LE(data + 32);
-      SHA->SHA_IDATAR[9] = LOAD32LE(data + 36);
-      SHA->SHA_IDATAR[10] = LOAD32LE(data + 40);
-      SHA->SHA_IDATAR[11] = LOAD32LE(data + 44);
-      SHA->SHA_IDATAR[12] = LOAD32LE(data + 48);
-      SHA->SHA_IDATAR[13] = LOAD32LE(data + 52);
-      SHA->SHA_IDATAR[14] = LOAD32LE(data + 56);
-      SHA->SHA_IDATAR[15] = LOAD32LE(data + 60);
+      SHA_REGS->SHA_IDATAR[0] = LOAD32LE(data);
+      SHA_REGS->SHA_IDATAR[1] = LOAD32LE(data + 4);
+      SHA_REGS->SHA_IDATAR[2] = LOAD32LE(data + 8);
+      SHA_REGS->SHA_IDATAR[3] = LOAD32LE(data + 12);
+      SHA_REGS->SHA_IDATAR[4] = LOAD32LE(data + 16);
+      SHA_REGS->SHA_IDATAR[5] = LOAD32LE(data + 20);
+      SHA_REGS->SHA_IDATAR[6] = LOAD32LE(data + 24);
+      SHA_REGS->SHA_IDATAR[7] = LOAD32LE(data + 28);
+      SHA_REGS->SHA_IDATAR[8] = LOAD32LE(data + 32);
+      SHA_REGS->SHA_IDATAR[9] = LOAD32LE(data + 36);
+      SHA_REGS->SHA_IDATAR[10] = LOAD32LE(data + 40);
+      SHA_REGS->SHA_IDATAR[11] = LOAD32LE(data + 44);
+      SHA_REGS->SHA_IDATAR[12] = LOAD32LE(data + 48);
+      SHA_REGS->SHA_IDATAR[13] = LOAD32LE(data + 52);
+      SHA_REGS->SHA_IDATAR[14] = LOAD32LE(data + 56);
+      SHA_REGS->SHA_IDATAR[15] = LOAD32LE(data + 60);
 
       //SHA-512 algorithm?
       if(algo == SHA_MR_ALGO_SHA512)
       {
-         SHA->SHA_IODATAR[0] = LOAD32LE(data + 64);
-         SHA->SHA_IODATAR[1] = LOAD32LE(data + 68);
-         SHA->SHA_IODATAR[2] = LOAD32LE(data + 72);
-         SHA->SHA_IODATAR[3] = LOAD32LE(data + 76);
-         SHA->SHA_IODATAR[4] = LOAD32LE(data + 80);
-         SHA->SHA_IODATAR[5] = LOAD32LE(data + 84);
-         SHA->SHA_IODATAR[6] = LOAD32LE(data + 88);
-         SHA->SHA_IODATAR[7] = LOAD32LE(data + 92);
-         SHA->SHA_IODATAR[8] = LOAD32LE(data + 96);
-         SHA->SHA_IODATAR[9] = LOAD32LE(data + 100);
-         SHA->SHA_IODATAR[10] = LOAD32LE(data + 104);
-         SHA->SHA_IODATAR[11] = LOAD32LE(data + 108);
-         SHA->SHA_IODATAR[12] = LOAD32LE(data + 112);
-         SHA->SHA_IODATAR[13] = LOAD32LE(data + 116);
-         SHA->SHA_IODATAR[14] = LOAD32LE(data + 120);
-         SHA->SHA_IODATAR[15] = LOAD32LE(data + 124);
+         SHA_REGS->SHA_IODATAR[0] = LOAD32LE(data + 64);
+         SHA_REGS->SHA_IODATAR[1] = LOAD32LE(data + 68);
+         SHA_REGS->SHA_IODATAR[2] = LOAD32LE(data + 72);
+         SHA_REGS->SHA_IODATAR[3] = LOAD32LE(data + 76);
+         SHA_REGS->SHA_IODATAR[4] = LOAD32LE(data + 80);
+         SHA_REGS->SHA_IODATAR[5] = LOAD32LE(data + 84);
+         SHA_REGS->SHA_IODATAR[6] = LOAD32LE(data + 88);
+         SHA_REGS->SHA_IODATAR[7] = LOAD32LE(data + 92);
+         SHA_REGS->SHA_IODATAR[8] = LOAD32LE(data + 96);
+         SHA_REGS->SHA_IODATAR[9] = LOAD32LE(data + 100);
+         SHA_REGS->SHA_IODATAR[10] = LOAD32LE(data + 104);
+         SHA_REGS->SHA_IODATAR[11] = LOAD32LE(data + 108);
+         SHA_REGS->SHA_IODATAR[12] = LOAD32LE(data + 112);
+         SHA_REGS->SHA_IODATAR[13] = LOAD32LE(data + 116);
+         SHA_REGS->SHA_IODATAR[14] = LOAD32LE(data + 120);
+         SHA_REGS->SHA_IODATAR[15] = LOAD32LE(data + 124);
       }
 
       //Set the START bit to begin the processing
-      SHA->SHA_CR = SHA_CR_START;
+      SHA_REGS->SHA_CR = SHA_CR_START_Msk;
 
       //When processing completes, the DATRDY flag is raised
-      while((SHA->SHA_ISR & SHA_ISR_DATRDY) == 0)
+      while((SHA_REGS->SHA_ISR & SHA_ISR_DATRDY_Msk) == 0)
       {
       }
 
@@ -172,35 +172,35 @@ void hashProcessData(uint32_t algo, const uint8_t *data, size_t length,
    }
 
    //Save intermediate hash value
-   h[0] = SHA->SHA_IODATAR[0];
-   h[1] = SHA->SHA_IODATAR[1];
-   h[2] = SHA->SHA_IODATAR[2];
-   h[3] = SHA->SHA_IODATAR[3];
-   h[4] = SHA->SHA_IODATAR[4];
+   h[0] = SHA_REGS->SHA_IODATAR[0];
+   h[1] = SHA_REGS->SHA_IODATAR[1];
+   h[2] = SHA_REGS->SHA_IODATAR[2];
+   h[3] = SHA_REGS->SHA_IODATAR[3];
+   h[4] = SHA_REGS->SHA_IODATAR[4];
 
    //SHA-256 or SHA-512 algorithm?
    if(algo == SHA_MR_ALGO_SHA256 || algo == SHA_MR_ALGO_SHA512)
    {
-      h[5] = SHA->SHA_IODATAR[5];
-      h[6] = SHA->SHA_IODATAR[6];
-      h[7] = SHA->SHA_IODATAR[7];
+      h[5] = SHA_REGS->SHA_IODATAR[5];
+      h[6] = SHA_REGS->SHA_IODATAR[6];
+      h[7] = SHA_REGS->SHA_IODATAR[7];
    }
 
    //SHA-512 algorithm?
    if(algo == SHA_MR_ALGO_SHA512)
    {
-      h[8] = SHA->SHA_IODATAR[8];
-      h[9] = SHA->SHA_IODATAR[9];
-      h[10] = SHA->SHA_IODATAR[10];
-      h[11] = SHA->SHA_IODATAR[11];
-      h[12] = SHA->SHA_IODATAR[12];
-      h[13] = SHA->SHA_IODATAR[13];
-      h[14] = SHA->SHA_IODATAR[14];
-      h[15] = SHA->SHA_IODATAR[15];
+      h[8] = SHA_REGS->SHA_IODATAR[8];
+      h[9] = SHA_REGS->SHA_IODATAR[9];
+      h[10] = SHA_REGS->SHA_IODATAR[10];
+      h[11] = SHA_REGS->SHA_IODATAR[11];
+      h[12] = SHA_REGS->SHA_IODATAR[12];
+      h[13] = SHA_REGS->SHA_IODATAR[13];
+      h[14] = SHA_REGS->SHA_IODATAR[14];
+      h[15] = SHA_REGS->SHA_IODATAR[15];
    }
 
    //Release exclusive access to the SHA module
-   osReleaseMutex(&sam9x60CryptoMutex);
+   osReleaseMutex(&sam9x6CryptoMutex);
 }
 
 

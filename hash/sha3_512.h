@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _SHA3_512_H
@@ -41,8 +41,6 @@
 #define SHA3_512_DIGEST_SIZE 64
 //Minimum length of the padding string
 #define SHA3_512_MIN_PAD_SIZE 1
-//SHA3-512 algorithm object identifier
-#define SHA3_512_OID sha3_512Oid
 //Common interface for hash algorithms
 #define SHA3_512_HASH_ALGO (&sha3_512HashAlgo)
 
@@ -60,7 +58,7 @@ typedef KeccakContext Sha3_512Context;
 
 
 //SHA3-512 related constants
-extern const uint8_t sha3_512Oid[9];
+extern const uint8_t SHA3_512_OID[9];
 extern const HashAlgo sha3_512HashAlgo;
 
 //SHA3-512 related functions

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -258,8 +258,8 @@ error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
 void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 {
    //Perform AES encryption
-   aesProcessData(context, NULL, input, output, AES_BLOCK_SIZE, AES_MR_CIPHER_Msk |
-      AES_MR_OPMOD_ECB);
+   aesProcessData(context, NULL, input, output, AES_BLOCK_SIZE,
+      AES_MR_CIPHER_Msk | AES_MR_OPMOD_ECB);
 }
 
 

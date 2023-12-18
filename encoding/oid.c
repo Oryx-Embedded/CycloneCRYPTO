@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -264,7 +264,7 @@ bool_t oidMatch(const uint8_t *oid, size_t oidLen, const uint8_t *subtree,
       //The bit mask is extended with 1's to be the required length
       if((i / 8) < maskLen)
       {
-         flag = mask[i / 8] & (1 << (7 - (i % 8)));
+         flag = mask[i / 8] & (1U << (7 - (i % 8)));
       }
       else
       {
@@ -772,11 +772,11 @@ error_t maskFromString(const char_t *str, uint8_t *mask, size_t maxMaskLen,
          //Update bit mask
          if(*str == '1')
          {
-            mask[i] |= (1 << (j - 1));
+            mask[i] |= (1U << (j - 1));
          }
          else
          {
-            mask[i] &= ~(1 << (j - 1));
+            mask[i] &= ~(1U << (j - 1));
          }
 
          //Next bit
@@ -812,7 +812,7 @@ error_t maskFromString(const char_t *str, uint8_t *mask, size_t maxMaskLen,
       if(j < 8)
       {
          //The bit mask is extended with 1's to be the required length
-         mask[i] |= (1 << j) - 1;
+         mask[i] |= (1U << j) - 1;
          //Save the length of the resulting mask
          *maskLen = i + 1;
       }

@@ -30,7 +30,7 @@
  * of 64 bits under control of a 192-bit key. Refer to FIPS 46-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -43,6 +43,9 @@
 
 //Check crypto library configuration
 #if (DES3_SUPPORT == ENABLED)
+
+//DES-EDE3-CBC OID (1.2.840.113549.3.7)
+const uint8_t DES_EDE3_CBC_OID[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x03, 0x07};
 
 //Common interface for encryption algorithms
 const CipherAlgo des3CipherAlgo =

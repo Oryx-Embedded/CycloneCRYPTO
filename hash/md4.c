@@ -30,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1320
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -62,14 +62,14 @@ static const uint8_t padding[64] =
 };
 
 //MD4 object identifier (1.2.840.113549.2.4)
-const uint8_t md4Oid[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x04};
+const uint8_t MD4_OID[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x04};
 
 //Common interface for hash algorithms
 const HashAlgo md4HashAlgo =
 {
    "MD4",
-   md4Oid,
-   sizeof(md4Oid),
+   MD4_OID,
+   sizeof(MD4_OID),
    sizeof(Md4Context),
    MD4_BLOCK_SIZE,
    MD4_DIGEST_SIZE,

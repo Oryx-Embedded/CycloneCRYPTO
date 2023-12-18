@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -681,6 +681,13 @@ error_t x509ParseName(const uint8_t *data, size_t length,
          //Save Pseudonym attribute
          name->pseudonym.value = nameAttribute.data.value;
          name->pseudonym.length = nameAttribute.data.length;
+      }
+      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_EMAIL_ADDRESS_OID, sizeof(X509_EMAIL_ADDRESS_OID)))
+      {
+         //Save E-mail Address attribute
+         name->emailAddress.value = nameAttribute.data.value;
+         name->emailAddress.length = nameAttribute.data.length;
       }
       else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
          X509_DOMAIN_COMPONENT_OID, sizeof(X509_DOMAIN_COMPONENT_OID)))

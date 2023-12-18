@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _WHIRLPOOL_H
@@ -40,8 +40,6 @@
 #define WHIRLPOOL_DIGEST_SIZE 64
 //Minimum length of the padding string
 #define WHIRLPOOL_MIN_PAD_SIZE 33
-//Whirlpool algorithm object identifier
-#define WHIRLPOOL_OID whirlpoolOid
 //Common interface for hash algorithms
 #define WHIRLPOOL_HASH_ALGO (&whirlpoolHashAlgo)
 
@@ -78,7 +76,7 @@ typedef struct
 
 
 //Whirlpool related constants
-extern const uint8_t whirlpoolOid[6];
+extern const uint8_t WHIRLPOOL_OID[6];
 extern const HashAlgo whirlpoolHashAlgo;
 
 //Whirlpool related functions

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _SM4_H
@@ -63,6 +63,15 @@ typedef struct
 
 
 //SM4 related constants
+extern const uint8_t SM4_CBC_OID[8];
+extern const uint8_t SM4_ECB_OID[8];
+extern const uint8_t SM4_CBC_OID[8];
+extern const uint8_t SM4_OFB_OID[8];
+extern const uint8_t SM4_CFB_OID[8];
+extern const uint8_t SM4_CTR_OID[8];
+extern const uint8_t SM4_GCM_OID[8];
+extern const uint8_t SM4_CCM_OID[8];
+extern const uint8_t SM4_XTS_OID[8];
 extern const CipherAlgo sm4CipherAlgo;
 
 //SM4 related functions

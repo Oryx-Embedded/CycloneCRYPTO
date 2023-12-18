@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _BLAKE2B256_H
@@ -41,8 +41,6 @@
 #define BLAKE2B256_DIGEST_SIZE 32
 //Minimum length of the padding string
 #define BLAKE2B256_MIN_PAD_SIZE 0
-//BLAKE2b-256 algorithm object identifier
-#define BLAKE2B256_OID blake2b256Oid
 //Common interface for hash algorithms
 #define BLAKE2B256_HASH_ALGO (&blake2b256HashAlgo)
 
@@ -60,7 +58,7 @@ typedef Blake2bContext Blake2b256Context;
 
 
 //BLAKE2b-256 related constants
-extern const uint8_t blake2b256Oid[11];
+extern const uint8_t BLAKE2B256_OID[11];
 extern const HashAlgo blake2b256HashAlgo;
 
 //BLAKE2b-256 related functions

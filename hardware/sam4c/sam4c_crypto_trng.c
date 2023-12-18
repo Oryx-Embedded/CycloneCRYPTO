@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -49,7 +49,7 @@
 error_t trngInit(void)
 {
    //Enable TRNG peripheral clock
-   PMC->PMC_PCER1 = (1 << (ID_TRNG - 32));
+   PMC->PMC_PCER1 = (1U << (ID_TRNG - 32));
    //Enable TRNG
    TRNG->TRNG_CR = TRNG_CR_KEY(0x524E47) | TRNG_CR_ENABLE;
 

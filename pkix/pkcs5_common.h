@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _PKCS5_COMMON_H
@@ -224,21 +224,7 @@ extern const uint8_t PBE_WITH_MD2_AND_RC2_CBC_OID[9];
 extern const uint8_t PBE_WITH_MD5_AND_RC2_CBC_OID[9];
 extern const uint8_t PBE_WITH_SHA1_AND_DES_CBC_OID[9];
 extern const uint8_t PBE_WITH_SHA1_AND_RC2_CBC_OID[9];
-
 extern const uint8_t PBES2_OID[9];
-
-extern const uint8_t DES_CBC_OID[5];
-extern const uint8_t DES_EDE3_CBC_OID[8];
-extern const uint8_t AES128_CBC_OID[9];
-extern const uint8_t AES192_CBC_OID[9];
-extern const uint8_t AES256_CBC_OID[9];
-extern const uint8_t CAMELLIA128_CBC_OID[11];
-extern const uint8_t CAMELLIA192_CBC_OID[11];
-extern const uint8_t CAMELLIA256_CBC_OID[11];
-extern const uint8_t ARIA128_CBC_OID[9];
-extern const uint8_t ARIA192_CBC_OID[9];
-extern const uint8_t ARIA256_CBC_OID[9];
-extern const uint8_t SM4_CBC_OID[8];
 
 //PKCS #5 related functions
 const HashAlgo *pkcs5GetPbes1HashAlgo(const uint8_t *oid, size_t length);

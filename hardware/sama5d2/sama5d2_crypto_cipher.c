@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -183,8 +183,8 @@ error_t desInit(DesContext *context, const uint8_t *key, size_t keyLen)
 void desEncryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
 {
    //Perform DES encryption
-   desProcessData(context, NULL, input, output, DES_BLOCK_SIZE, TDES_MR_CIPHER |
-      TDES_MR_OPMOD_ECB);
+   desProcessData(context, NULL, input, output, DES_BLOCK_SIZE,
+      TDES_MR_CIPHER | TDES_MR_OPMOD_ECB);
 }
 
 
@@ -340,8 +340,8 @@ error_t des3Init(Des3Context *context, const uint8_t *key, size_t keyLen)
 void des3EncryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output)
 {
    //Perform Triple DES encryption
-   des3ProcessData(context, NULL, input, output, DES3_BLOCK_SIZE, TDES_MR_CIPHER |
-      TDES_MR_OPMOD_ECB);
+   des3ProcessData(context, NULL, input, output, DES3_BLOCK_SIZE,
+      TDES_MR_CIPHER | TDES_MR_OPMOD_ECB);
 }
 
 
@@ -356,6 +356,169 @@ void des3DecryptBlock(Des3Context *context, const uint8_t *input, uint8_t *outpu
 {
    //Perform Triple DES decryption
    des3ProcessData(context, NULL, input, output, DES3_BLOCK_SIZE,
+      TDES_MR_OPMOD_ECB);
+}
+
+#endif
+#if (XTEA_SUPPORT == ENABLED)
+
+/**
+ * @brief Encrypt/decrypt a 16-byte block using XTEA algorithm
+ * @param[in] input Input block to be encrypted/decrypted
+ * @param[out] output Resulting block
+ **/
+
+void xteaProcessDataBlock(const uint8_t *input, uint8_t *output)
+{
+   uint32_t *p;
+
+   //Write input block
+   p = (uint32_t *) input;
+   TDES->TDES_IDATAR[1] = p[0];
+   TDES->TDES_IDATAR[0] = p[1];
+
+   //Start encryption/decryption
+   TDES->TDES_CR = TDES_CR_START;
+
+   //When processing completes, the DATRDY flag is raised
+   while((TDES->TDES_ISR & TDES_ISR_DATRDY) == 0)
+   {
+   }
+
+   //Read output block
+   p = (uint32_t *) output;
+   p[0] = TDES->TDES_ODATAR[1];
+   p[1] = TDES->TDES_ODATAR[0];
+}
+
+
+/**
+ * @brief Perform XTEA encryption or decryption
+ * @param[in] context XTEA algorithm context
+ * @param[in,out] iv Initialization vector
+ * @param[in] input Data to be encrypted/decrypted
+ * @param[out] output Data resulting from the encryption/decryption process
+ * @param[in] length Total number of data bytes to be processed
+ * @param[in] mode Operation mode
+ **/
+
+void xteaProcessData(XteaContext *context, uint8_t *iv, const uint8_t *input,
+   uint8_t *output, size_t length, uint32_t mode)
+{
+   uint32_t *p;
+
+   //Acquire exclusive access to the TDES module
+   osAcquireMutex(&sama5d2CryptoMutex);
+
+   //Perform software reset
+   TDES->TDES_CR = TDES_CR_SWRST;
+
+   //Set operation mode
+   TDES->TDES_MR = TDES_MR_SMOD_MANUAL_START | TDES_MR_TDESMOD(2) | mode;
+
+   //The number of rounds of XTEA is defined in the TDES_XTEA_RNDR register
+   TDES->TDES_XTEA_RNDR = XTEA_NB_ROUNDS - 1;
+
+   //Set encryption key
+   TDES->TDES_KEY2WR[1] = context->k[0];
+   TDES->TDES_KEY2WR[0] = context->k[1];
+   TDES->TDES_KEY1WR[1] = context->k[2];
+   TDES->TDES_KEY1WR[0] = context->k[3];
+
+   //Valid initialization vector?
+   if(iv != NULL)
+   {
+      //Set initialization vector
+      p = (uint32_t *) iv;
+      TDES->TDES_IVR[1] = p[0];
+      TDES->TDES_IVR[0] = p[1];
+   }
+
+   //Process data
+   while(length >= XTEA_BLOCK_SIZE)
+   {
+      //The data is encrypted block by block
+      xteaProcessDataBlock(input, output);
+
+      //Next block
+      input += XTEA_BLOCK_SIZE;
+      output += XTEA_BLOCK_SIZE;
+      length -= XTEA_BLOCK_SIZE;
+   }
+
+   //Process final block of data
+   if(length > 0)
+   {
+      uint8_t buffer[XTEA_BLOCK_SIZE];
+
+      //Copy input data
+      osMemset(buffer, 0, XTEA_BLOCK_SIZE);
+      osMemcpy(buffer, input, length);
+
+      //Encrypt the final block of data
+      xteaProcessDataBlock(buffer, buffer);
+
+      //Copy output data
+      osMemcpy(output, buffer, length);
+   }
+
+   //Release exclusive access to the TDES module
+   osReleaseMutex(&sama5d2CryptoMutex);
+}
+
+
+/**
+ * @brief Initialize a XTEA context using the supplied key
+ * @param[in] context Pointer to the XTEA context to initialize
+ * @param[in] key Pointer to the key
+ * @param[in] keyLen Length of the key (must be set to 16)
+ * @return Error code
+ **/
+
+error_t xteaInit(XteaContext *context, const uint8_t *key, size_t keyLen)
+{
+   //Check parameters
+   if(context == NULL || key == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Invalid key length?
+   if(keyLen != 16)
+      return ERROR_INVALID_KEY_LENGTH;
+
+   //Copy the key
+   osMemcpy(context->k, key, keyLen);
+
+   //No error to report
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Encrypt a 8-byte block using XTEA algorithm
+ * @param[in] context Pointer to the XTEA context
+ * @param[in] input Plaintext block to encrypt
+ * @param[out] output Ciphertext block resulting from encryption
+ **/
+
+void xteaEncryptBlock(XteaContext *context, const uint8_t *input, uint8_t *output)
+{
+   //Perform XTEA encryption
+   xteaProcessData(context, NULL, input, output, XTEA_BLOCK_SIZE,
+      TDES_MR_CIPHER | TDES_MR_OPMOD_ECB);
+}
+
+
+/**
+ * @brief Decrypt a 8-byte block using XTEA algorithm
+ * @param[in] context Pointer to the XTEA context
+ * @param[in] input Ciphertext block to decrypt
+ * @param[out] output Plaintext block resulting from decryption
+ **/
+
+void xteaDecryptBlock(XteaContext *context, const uint8_t *input, uint8_t *output)
+{
+   //Perform XTEA decryption
+   xteaProcessData(context, NULL, input, output, XTEA_BLOCK_SIZE,
       TDES_MR_OPMOD_ECB);
 }
 
@@ -661,6 +824,29 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
    }
    else
 #endif
+#if (XTEA_SUPPORT == ENABLED)
+   //XTEA cipher algorithm?
+   if(cipher == XTEA_CIPHER_ALGO)
+   {
+      //Check the length of the payload
+      if(length == 0)
+      {
+         //No data to process
+      }
+      else if((length % XTEA_BLOCK_SIZE) == 0)
+      {
+         //Encrypt payload data
+         xteaProcessData(context, NULL, p, c, length, TDES_MR_CIPHER |
+            TDES_MR_OPMOD_ECB);
+      }
+      else
+      {
+         //The length of the payload must be a multiple of the block size
+         error = ERROR_INVALID_LENGTH;
+      }
+   }
+   else
+#endif
 #if (AES_SUPPORT == ENABLED)
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -763,6 +949,28 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
       {
          //Decrypt payload data
          des3ProcessData(context, NULL, c, p, length, TDES_MR_OPMOD_ECB);
+      }
+      else
+      {
+         //The length of the payload must be a multiple of the block size
+         error = ERROR_INVALID_LENGTH;
+      }
+   }
+   else
+#endif
+#if (XTEA_SUPPORT == ENABLED)
+   //XTEA cipher algorithm?
+   if(cipher == XTEA_CIPHER_ALGO)
+   {
+      //Check the length of the payload
+      if(length == 0)
+      {
+         //No data to process
+      }
+      else if((length % XTEA_BLOCK_SIZE) == 0)
+      {
+         //Decrypt payload data
+         xteaProcessData(context, NULL, c, p, length, TDES_MR_OPMOD_ECB);
       }
       else
       {
@@ -884,6 +1092,32 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
 
          //Update the value of the initialization vector
          osMemcpy(iv, c + length - DES3_BLOCK_SIZE, DES3_BLOCK_SIZE);
+      }
+      else
+      {
+         //The length of the payload must be a multiple of the block size
+         error = ERROR_INVALID_LENGTH;
+      }
+   }
+   else
+#endif
+#if (XTEA_SUPPORT == ENABLED)
+   //XTEA cipher algorithm?
+   if(cipher == XTEA_CIPHER_ALGO)
+   {
+      //Check the length of the payload
+      if(length == 0)
+      {
+         //No data to process
+      }
+      else if((length % XTEA_BLOCK_SIZE) == 0)
+      {
+         //Encrypt payload data
+         xteaProcessData(context, iv, p, c, length, TDES_MR_CIPHER |
+            TDES_MR_OPMOD_CBC);
+
+         //Update the value of the initialization vector
+         osMemcpy(iv, c + length - XTEA_BLOCK_SIZE, XTEA_BLOCK_SIZE);
       }
       else
       {
@@ -1036,6 +1270,36 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
    }
    else
 #endif
+#if (XTEA_SUPPORT == ENABLED)
+   //XTEA cipher algorithm?
+   if(cipher == XTEA_CIPHER_ALGO)
+   {
+      //Check the length of the payload
+      if(length == 0)
+      {
+         //No data to process
+      }
+      else if((length % XTEA_BLOCK_SIZE) == 0)
+      {
+         uint8_t block[XTEA_BLOCK_SIZE];
+
+         //Save the last input block
+         osMemcpy(block, c + length - XTEA_BLOCK_SIZE, XTEA_BLOCK_SIZE);
+
+         //Decrypt payload data
+         xteaProcessData(context, iv, c, p, length, TDES_MR_OPMOD_CBC);
+
+         //Update the value of the initialization vector
+         osMemcpy(iv, block, XTEA_BLOCK_SIZE);
+      }
+      else
+      {
+         //The length of the payload must be a multiple of the block size
+         error = ERROR_INVALID_LENGTH;
+      }
+   }
+   else
+#endif
 #if (AES_SUPPORT == ENABLED)
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -1168,6 +1432,33 @@ error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
          {
             //Encrypt payload data
             des3ProcessData(context, iv, p, c, length, TDES_MR_CIPHER |
+               TDES_MR_OPMOD_CFB | TDES_MR_CFBS_SIZE_64BIT);
+         }
+         else
+         {
+            //No data to process
+         }
+      }
+      else
+      {
+         //The value of the parameter is not valid
+         error = ERROR_INVALID_PARAMETER;
+      }
+   }
+   else
+#endif
+#if (XTEA_SUPPORT == ENABLED)
+   //XTEA cipher algorithm?
+   if(cipher == XTEA_CIPHER_ALGO)
+   {
+      //Check the value of the parameter
+      if(s == (XTEA_BLOCK_SIZE * 8))
+      {
+         //Check the length of the payload
+         if(length > 0)
+         {
+            //Encrypt payload data
+            xteaProcessData(context, iv, p, c, length, TDES_MR_CIPHER |
                TDES_MR_OPMOD_CFB | TDES_MR_CFBS_SIZE_64BIT);
          }
          else
@@ -1333,6 +1624,33 @@ error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
    }
    else
 #endif
+#if (XTEA_SUPPORT == ENABLED)
+   //XTEA cipher algorithm?
+   if(cipher == XTEA_CIPHER_ALGO)
+   {
+      //Check the value of the parameter
+      if(s == (XTEA_BLOCK_SIZE * 8))
+      {
+         //Check the length of the payload
+         if(length > 0)
+         {
+            //Decrypt payload data
+            xteaProcessData(context, iv, c, p, length, TDES_MR_OPMOD_CFB |
+               TDES_MR_CFBS_SIZE_64BIT);
+         }
+         else
+         {
+            //No data to process
+         }
+      }
+      else
+      {
+         //The value of the parameter is not valid
+         error = ERROR_INVALID_PARAMETER;
+      }
+   }
+   else
+#endif
 #if (AES_SUPPORT == ENABLED)
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -1470,6 +1788,33 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
          {
             //Encrypt payload data
             des3ProcessData(context, iv, p, c, length, TDES_MR_CIPHER |
+               TDES_MR_OPMOD_OFB);
+         }
+         else
+         {
+            //No data to process
+         }
+      }
+      else
+      {
+         //The value of the parameter is not valid
+         error = ERROR_INVALID_PARAMETER;
+      }
+   }
+   else
+#endif
+#if (XTEA_SUPPORT == ENABLED)
+   //XTEA cipher algorithm?
+   if(cipher == XTEA_CIPHER_ALGO)
+   {
+      //Check the value of the parameter
+      if(s == (XTEA_BLOCK_SIZE * 8))
+      {
+         //Check the length of the payload
+         if(length > 0)
+         {
+            //Encrypt payload data
+            xteaProcessData(context, iv, p, c, length, TDES_MR_CIPHER |
                TDES_MR_OPMOD_OFB);
          }
          else

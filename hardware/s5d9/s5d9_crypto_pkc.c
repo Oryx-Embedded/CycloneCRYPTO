@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -49,6 +49,174 @@
 //Global variables
 static Ra6RsaArgs rsaArgs;
 static Ra6EcArgs ecArgs;
+
+
+/**
+ * @brief Modular exponentiation (fast calculation)
+ * @param[out] r Resulting integer R = A ^ E mod P
+ * @param[in] a Pointer to a multiple precision integer
+ * @param[in] e Exponent
+ * @param[in] p Modulus
+ * @return Error code
+ **/
+
+error_t mpiExpModFast(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
+{
+   error_t error;
+   ssp_err_t status;
+   size_t n;
+   size_t aLen;
+   size_t eLen;
+   size_t pLen;
+
+   //Retrieve the length of the integer, in bytes
+   aLen = mpiGetByteLength(a);
+   //Retrieve the length of the exponent, in bytes
+   eLen = mpiGetByteLength(e);
+   //Retrieve the length of the modulus, in bytes
+   pLen = mpiGetByteLength(p);
+
+   //The accelerator supports operand lengths up to 2048 bits
+   if((aLen <= 128 && eLen <= 4 && pLen <= 128) ||
+      (aLen <= 256 && eLen <= 4 && pLen <= 256))
+   {
+      //Select appropriate scalar length
+      n = (pLen <= 128) ? 128 : 256;
+
+      //Acquire exclusive access to the SCE7 module
+      osAcquireMutex(&s5d9CryptoMutex);
+
+      //Format message representative
+      mpiWriteRaw(a, (uint8_t *) rsaArgs.m, n);
+
+      //Format public key
+      mpiWriteRaw(p, (uint8_t *) rsaArgs.n, n);
+      mpiWriteRaw(e, (uint8_t *) rsaArgs.e, 4);
+
+      //Perform RSA encryption
+      if(n == 128)
+      {
+         status = HW_SCE_RSA_1024PublicEncrypt(0, rsaArgs.m, rsaArgs.e,
+            rsaArgs.n, rsaArgs.c);
+      }
+      else if(n == 256)
+      {
+         status = HW_SCE_RSA_2048PublicEncrypt(0, rsaArgs.m, rsaArgs.e,
+            rsaArgs.n, rsaArgs.c);
+      }
+      else
+      {
+         status = SSP_ERR_CRYPTO_NOT_IMPLEMENTED;
+      }
+
+      //Check status code
+      if(status == SSP_SUCCESS)
+      {
+         //Copy the ciphertext representative
+         error = mpiReadRaw(r, (uint8_t *) rsaArgs.c, n);
+      }
+      else
+      {
+         //Report an error
+         error = ERROR_FAILURE;
+      }
+
+      //Release exclusive access to the SCE7 module
+      osReleaseMutex(&s5d9CryptoMutex);
+   }
+   else
+   {
+      //Perform modular exponentiation (r = a ^ e mod p)
+      error = mpiExpModRegular(r, a, e, p);
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Modular exponentiation (regular calculation)
+ * @param[out] r Resulting integer R = A ^ E mod P
+ * @param[in] a Pointer to a multiple precision integer
+ * @param[in] e Exponent
+ * @param[in] p Modulus
+ * @return Error code
+ **/
+
+error_t mpiExpModRegular(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
+{
+   error_t error;
+   ssp_err_t status;
+   size_t n;
+   size_t aLen;
+   size_t eLen;
+   size_t pLen;
+
+   //Retrieve the length of the integer, in bytes
+   aLen = mpiGetByteLength(a);
+   //Retrieve the length of the exponent, in bytes
+   eLen = mpiGetByteLength(e);
+   //Retrieve the length of the modulus, in bytes
+   pLen = mpiGetByteLength(p);
+
+   //The accelerator supports operand lengths up to 2048 bits
+   if((aLen <= 128 && eLen <= 128 && pLen <= 128) ||
+      (aLen <= 256 && eLen <= 256 && pLen <= 256))
+   {
+      //Select appropriate scalar length
+      n = (pLen <= 128) ? 128 : 256;
+
+      //Acquire exclusive access to the SCE7 module
+      osAcquireMutex(&s5d9CryptoMutex);
+
+      //Format ciphertext representative
+      mpiWriteRaw(a, (uint8_t *) rsaArgs.c, n);
+
+      //Format private key
+      mpiWriteRaw(p, (uint8_t *) rsaArgs.n, n);
+      mpiWriteRaw(e, (uint8_t *) rsaArgs.d, n);
+
+      //Perform RSA decryption
+      if(n == 128)
+      {
+         status = HW_SCE_RSA_1024PrivateKeyDecrypt(0, rsaArgs.c, rsaArgs.d,
+            rsaArgs.n, rsaArgs.m);
+      }
+      else if(n == 256)
+      {
+         status = HW_SCE_RSA_2048PrivateKeyDecrypt(0, rsaArgs.c, rsaArgs.d,
+            rsaArgs.n, rsaArgs.m);
+      }
+      else
+      {
+         status = SSP_ERR_CRYPTO_NOT_IMPLEMENTED;
+      }
+
+      //Check status code
+      if(status == SSP_SUCCESS)
+      {
+         //Copy the message representative
+         error = mpiReadRaw(r, (uint8_t *) rsaArgs.m, n);
+      }
+      else
+      {
+         //Report an error
+         error = ERROR_FAILURE;
+      }
+
+      //Release exclusive access to the SCE7 module
+      osReleaseMutex(&s5d9CryptoMutex);
+   }
+   else
+   {
+      //Perform modular exponentiation (r = a ^ e mod p)
+      error = mpiExpMod(r, a, e, p);
+   }
+
+   //Return status code
+   return error;
+}
 
 
 /**
@@ -174,96 +342,6 @@ error_t rsaGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
 
 
 /**
- * @brief RSA encryption primitive
- *
- * The RSA encryption primitive produces a ciphertext representative from
- * a message representative under the control of a public key
- *
- * @param[in] key RSA public key
- * @param[in] m Message representative
- * @param[out] c Ciphertext representative
- * @return Error code
- **/
-
-error_t rsaep(const RsaPublicKey *key, const Mpi *m, Mpi *c)
-{
-   error_t error;
-   ssp_err_t status;
-   size_t n;
-   size_t nLen;
-   size_t eLen;
-
-   //Retrieve the length of the public key
-   nLen = mpiGetByteLength(&key->n);
-   eLen = mpiGetByteLength(&key->e);
-
-   //Sanity check
-   if(nLen == 0 || eLen == 0)
-      return ERROR_INVALID_PARAMETER;
-
-   //The message representative m shall be between 0 and n - 1
-   if(mpiCompInt(m, 0) < 0 || mpiComp(m, &key->n) >= 0)
-      return ERROR_OUT_OF_RANGE;
-
-   //Check the length of the public key
-   if(nLen <= 256 && eLen <= 4)
-   {
-      //Select appropriate scalar length
-      n = (nLen <= 128) ? 128 : 256;
-
-      //Acquire exclusive access to the SCE7 module
-      osAcquireMutex(&s5d9CryptoMutex);
-
-      //Format message representative
-      mpiWriteRaw(m, (uint8_t *) rsaArgs.m, n);
-
-      //Format public key
-      mpiWriteRaw(&key->n, (uint8_t *) rsaArgs.n, n);
-      mpiWriteRaw(&key->e, (uint8_t *) rsaArgs.e, 4);
-
-      //Perform RSA encryption
-      if(n == 128)
-      {
-         status = HW_SCE_RSA_1024PublicEncrypt(0, rsaArgs.m, rsaArgs.e,
-            rsaArgs.n, rsaArgs.c);
-      }
-      else if(n == 256)
-      {
-         status = HW_SCE_RSA_2048PublicEncrypt(0, rsaArgs.m, rsaArgs.e,
-            rsaArgs.n, rsaArgs.c);
-      }
-      else
-      {
-         status = SSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-      }
-
-      //Check status code
-      if(status == SSP_SUCCESS)
-      {
-         //Copy the ciphertext representative
-         error = mpiReadRaw(c, (uint8_t *) rsaArgs.c, n);
-      }
-      else
-      {
-         //Report an error
-         error = ERROR_FAILURE;
-      }
-
-      //Release exclusive access to the SCE7 module
-      osReleaseMutex(&s5d9CryptoMutex);
-   }
-   else
-   {
-      //Perform modular exponentiation (c = m ^ e mod n)
-      error = mpiExpMod(c, m, &key->e, &key->n);
-   }
-
-   //Return status code
-   return error;
-}
-
-
-/**
  * @brief RSA decryption primitive
  *
  * The RSA decryption primitive recovers the message representative from
@@ -278,7 +356,6 @@ error_t rsaep(const RsaPublicKey *key, const Mpi *m, Mpi *c)
 error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
 {
    error_t error;
-   size_t n;
    size_t nLen;
    size_t dLen;
    size_t pLen;
@@ -304,54 +381,11 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    if(mpiCompInt(c, 0) < 0 || mpiComp(c, &key->n) >= 0)
       return ERROR_OUT_OF_RANGE;
 
-   //Check the length of the public key
-   if(nLen <= 256 && dLen <= 256)
+   //Check the length of the private key
+   if(nLen <= 128 && dLen <= 128)
    {
-      ssp_err_t status;
-
-      //Select appropriate scalar length
-      n = (nLen <= 128) ? 128 : 256;
-
-      //Acquire exclusive access to the SCE7 module
-      osAcquireMutex(&s5d9CryptoMutex);
-
-      //Format ciphertext representative
-      mpiWriteRaw(c, (uint8_t *) rsaArgs.c, n);
-
-      //Format private key
-      mpiWriteRaw(&key->n, (uint8_t *) rsaArgs.n, n);
-      mpiWriteRaw(&key->d, (uint8_t *) rsaArgs.d, n);
-
-      //Perform RSA decryption
-      if(n == 128)
-      {
-         status = HW_SCE_RSA_1024PrivateKeyDecrypt(0, rsaArgs.c, rsaArgs.d,
-            rsaArgs.n, rsaArgs.m);
-      }
-      else if(n == 256)
-      {
-         status = HW_SCE_RSA_2048PrivateKeyDecrypt(0, rsaArgs.c, rsaArgs.d,
-            rsaArgs.n, rsaArgs.m);
-      }
-      else
-      {
-         status = SSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-      }
-
-      //Check status code
-      if(status == SSP_SUCCESS)
-      {
-         //Copy the message representative
-         error = mpiReadRaw(m, (uint8_t *) rsaArgs.m, n);
-      }
-      else
-      {
-         //Report an error
-         error = ERROR_FAILURE;
-      }
-
-      //Release exclusive access to the SCE7 module
-      osReleaseMutex(&s5d9CryptoMutex);
+      //Let m = c ^ d mod n
+      error = mpiExpModRegular(m, c, &key->d, &key->n);
    }
    else if(nLen > 0 && pLen > 0 && qLen > 0 && dpLen > 0 && dqLen > 0 &&
       qinvLen > 0)
@@ -365,93 +399,23 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
       mpiInit(&m2);
       mpiInit(&h);
 
-      //Check the length of p, q, dp and dq
-      if(pLen <= 256 && qLen <= 256 && dpLen <= 256 && dqLen <= 256)
+      //Compute m1 = c ^ dP mod p
+      error = mpiMod(&m1, c, &key->p);
+
+      if(!error)
       {
-         ssp_err_t status;
-
-         //Reduce c first
-         error = mpiMod(&h, c, &key->p);
-
-         //Check status code
-         if(!error)
-         {
-            //Acquire exclusive access to the SCE7 module
-            osAcquireMutex(&s5d9CryptoMutex);
-
-            //Format ciphertext representative
-            mpiWriteRaw(&h, (uint8_t *) rsaArgs.c, 256);
-
-            //Format private key
-            mpiWriteRaw(&key->p, (uint8_t *) rsaArgs.n, 256);
-            mpiWriteRaw(&key->dp, (uint8_t *) rsaArgs.d, 256);
-
-            //Compute m1 = c ^ dP mod p
-            status = HW_SCE_RSA_2048PrivateKeyDecrypt(0, rsaArgs.c, rsaArgs.d,
-               rsaArgs.n, rsaArgs.m);
-
-            //Check status code
-            if(status == SSP_SUCCESS)
-            {
-               error = mpiReadRaw(&m1, (uint8_t *) rsaArgs.m, 256);
-            }
-            else
-            {
-               error = ERROR_FAILURE;
-            }
-
-            //Release exclusive access to the SCE7 module
-            osReleaseMutex(&s5d9CryptoMutex);
-         }
-
-         //Check status code
-         if(!error)
-         {
-            //Reduce c
-            error = mpiMod(&h, c, &key->q);
-         }
-
-         //Check status code
-         if(!error)
-         {
-            //Acquire exclusive access to the SCE7 module
-            osAcquireMutex(&s5d9CryptoMutex);
-
-            //Format ciphertext representative
-            mpiWriteRaw(&h, (uint8_t *) rsaArgs.c, 256);
-
-            //Format private key
-            mpiWriteRaw(&key->q, (uint8_t *) rsaArgs.n, 256);
-            mpiWriteRaw(&key->dq, (uint8_t *) rsaArgs.d, 256);
-
-            //Compute m2 = c ^ dQ mod q
-            status = HW_SCE_RSA_2048PrivateKeyDecrypt(0, rsaArgs.c, rsaArgs.d,
-               rsaArgs.n, rsaArgs.m);
-
-            //Check status code
-            if(status == SSP_SUCCESS)
-            {
-               error = mpiReadRaw(&m2, (uint8_t *) rsaArgs.m, 256);
-            }
-            else
-            {
-               error = ERROR_FAILURE;
-            }
-
-            //Release exclusive access to the SCE7 module
-            osReleaseMutex(&s5d9CryptoMutex);
-         }
+         error = mpiExpModRegular(&m1, &m1, &key->dp, &key->p);
       }
-      else
-      {
-         //Compute m1 = c ^ dP mod p
-         error = mpiExpMod(&m1, c, &key->dp, &key->p);
 
-         //Compute m2 = c ^ dQ mod q
-         if(!error)
-         {
-            error = mpiExpMod(&m2, c, &key->dq, &key->q);
-         }
+      //Compute m2 = c ^ dQ mod q
+      if(!error)
+      {
+         error = mpiMod(&m2, c, &key->q);
+      }
+
+      if(!error)
+      {
+         error = mpiExpModRegular(&m2, &m2, &key->dq, &key->q);
       }
 
       //Let h = (m1 - m2) * qInv mod p
@@ -484,7 +448,7 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    else if(nLen > 0 && dLen > 0)
    {
       //Let m = c ^ d mod n
-      error = mpiExpMod(m, c, &key->d, &key->n);
+      error = mpiExpModRegular(m, c, &key->d, &key->n);
    }
    else
    {

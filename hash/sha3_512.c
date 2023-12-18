@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 202 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -44,14 +44,14 @@
 #if (SHA3_512_SUPPORT == ENABLED)
 
 //SHA3-512 object identifier (2.16.840.1.101.3.4.2.10)
-const uint8_t sha3_512Oid[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0A};
+const uint8_t SHA3_512_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0A};
 
 //Common interface for hash algorithms
 const HashAlgo sha3_512HashAlgo =
 {
    "SHA3-512",
-   sha3_512Oid,
-   sizeof(sha3_512Oid),
+   SHA3_512_OID,
+   sizeof(SHA3_512_OID),
    sizeof(Sha3_512Context),
    SHA3_512_BLOCK_SIZE,
    SHA3_512_DIGEST_SIZE,

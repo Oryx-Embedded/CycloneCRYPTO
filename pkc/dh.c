@@ -31,7 +31,7 @@
  * PKCS #3 (Diffie-Hellman Key-Agreement Standard)
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level

@@ -30,7 +30,7 @@
  * 64 bits under control of a 64-bit key. Refer to FIPS 46-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -265,6 +265,9 @@ static const uint32_t sp8[64] =
    0x00000000, 0x10041040, 0x00040040, 0x10000040, 0x10040000, 0x10001000, 0x10001040, 0x00000000,
    0x10041040, 0x00041000, 0x00041000, 0x00001040, 0x00001040, 0x00040040, 0x10000000, 0x10041000
 };
+
+//DES-CBC OID (1.3.14.3.2.7)
+const uint8_t DES_CBC_OID[5] = {0x2B, 0x0E, 0x03, 0x02, 0x07};
 
 //Common interface for encryption algorithms
 const CipherAlgo desCipherAlgo =

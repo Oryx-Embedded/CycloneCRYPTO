@@ -1,5 +1,5 @@
 /**
- * @file sam9x60_crypto.c
+ * @file sam9x6_crypto.c
  * @brief SAM9X60 hardware cryptographic accelerator
  *
  * @section License
@@ -25,23 +25,23 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
-#include "sam9x60.h"
+#include "sam.h"
 #include "core/crypto.h"
-#include "hardware/sam9x60/sam9x60_crypto.h"
-#include "hardware/sam9x60/sam9x60_crypto_trng.h"
-#include "hardware/sam9x60/sam9x60_crypto_hash.h"
-#include "hardware/sam9x60/sam9x60_crypto_cipher.h"
+#include "hardware/sam9x6/sam9x6_crypto.h"
+#include "hardware/sam9x6/sam9x6_crypto_trng.h"
+#include "hardware/sam9x6/sam9x6_crypto_hash.h"
+#include "hardware/sam9x6/sam9x6_crypto_cipher.h"
 #include "debug.h"
 
 //Global variables
-OsMutex sam9x60CryptoMutex;
+OsMutex sam9x6CryptoMutex;
 
 
 /**
@@ -49,7 +49,7 @@ OsMutex sam9x60CryptoMutex;
  * @return Error code
  **/
 
-error_t sam9x60CryptoInit(void)
+error_t sam9x6CryptoInit(void)
 {
    error_t error;
 
@@ -58,13 +58,13 @@ error_t sam9x60CryptoInit(void)
 
    //Create a mutex to prevent simultaneous access to the hardware
    //cryptographic accelerator
-   if(!osCreateMutex(&sam9x60CryptoMutex))
+   if(!osCreateMutex(&sam9x6CryptoMutex))
    {
       //Failed to create mutex
       error = ERROR_OUT_OF_RESOURCES;
    }
 
-#if (SAM9X60_CRYPTO_TRNG_SUPPORT == ENABLED)
+#if (SAM9X6_CRYPTO_TRNG_SUPPORT == ENABLED)
    //Check status code
    if(!error)
    {
@@ -73,34 +73,34 @@ error_t sam9x60CryptoInit(void)
    }
 #endif
 
-#if (SAM9X60_CRYPTO_HASH_SUPPORT == ENABLED)
+#if (SAM9X6_CRYPTO_HASH_SUPPORT == ENABLED)
    //Check status code
    if(!error)
    {
       uint32_t temp;
 
       //Enable SHA peripheral clock
-      PMC->PMC_PCR = PMC_PCR_PID(ID_SHA);
-      temp = PMC->PMC_PCR;
-      PMC->PMC_PCR = temp | PMC_PCR_CMD | PMC_PCR_EN;
+      PMC_REGS->PMC_PCR = PMC_PCR_PID(ID_SHA);
+      temp = PMC_REGS->PMC_PCR;
+      PMC_REGS->PMC_PCR = temp | PMC_PCR_CMD_Msk | PMC_PCR_EN_Msk;
    }
 #endif
 
-#if (SAM9X60_CRYPTO_CIPHER_SUPPORT == ENABLED)
+#if (SAM9X6_CRYPTO_CIPHER_SUPPORT == ENABLED)
    //Check status code
    if(!error)
    {
       uint32_t temp;
 
       //Enable AES peripheral clock
-      PMC->PMC_PCR = PMC_PCR_PID(ID_AES);
-      temp = PMC->PMC_PCR;
-      PMC->PMC_PCR = temp | PMC_PCR_CMD | PMC_PCR_EN;
+      PMC_REGS->PMC_PCR = PMC_PCR_PID(ID_AES);
+      temp = PMC_REGS->PMC_PCR;
+      PMC_REGS->PMC_PCR = temp | PMC_PCR_CMD_Msk | PMC_PCR_EN_Msk;
 
       //Enable TDES peripheral clock
-      PMC->PMC_PCR = PMC_PCR_PID(ID_TDES);
-      temp = PMC->PMC_PCR;
-      PMC->PMC_PCR = temp | PMC_PCR_CMD | PMC_PCR_EN;
+      PMC_REGS->PMC_PCR = PMC_PCR_PID(ID_TDES);
+      temp = PMC_REGS->PMC_PCR;
+      PMC_REGS->PMC_PCR = temp | PMC_PCR_CMD_Msk | PMC_PCR_EN_Msk;
    }
 #endif
 

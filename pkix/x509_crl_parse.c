@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -315,7 +315,16 @@ error_t x509ParseRevokedCertificates(const uint8_t *data, size_t length,
    //Debug message
    TRACE_DEBUG("    Parsing RevokedCertificates...\r\n");
 
-   //The RevokedCertificates is optional
+   //No more data to process?
+   if(length == 0)
+   {
+      //The RevokedCertificates field is optional
+      *totalLength = 0;
+      //Exit immediately
+      return NO_ERROR;
+   }
+
+   //The RevokedCertificates field is encapsulated within a sequence
    error = asn1ReadTag(data, length, &tag);
    //Failed to decode ASN.1 tag?
    if(error)
@@ -327,7 +336,7 @@ error_t x509ParseRevokedCertificates(const uint8_t *data, size_t length,
    //The tag does not match the criteria?
    if(error)
    {
-      //Skip the current field
+      //The RevokedCertificates field is optional
       *totalLength = 0;
       //Exit immediately
       return NO_ERROR;

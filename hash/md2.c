@@ -30,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1319
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -65,14 +65,14 @@ static const uint8_t s[256] =
 };
 
 //MD2 object identifier (1.2.840.113549.2.2)
-const uint8_t md2Oid[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x02};
+const uint8_t MD2_OID[8] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x02, 0x02};
 
 //Common interface for hash algorithms
 const HashAlgo md2HashAlgo =
 {
    "MD2",
-   md2Oid,
-   sizeof(md2Oid),
+   MD2_OID,
+   sizeof(MD2_OID),
    sizeof(Md2Context),
    MD2_BLOCK_SIZE,
    MD2_DIGEST_SIZE,

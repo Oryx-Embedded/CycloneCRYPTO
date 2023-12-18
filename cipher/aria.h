@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _ARIA_H
@@ -59,6 +59,27 @@ typedef struct
 
 
 //ARIA related constants
+extern const uint8_t ARIA128_ECB_OID[9];
+extern const uint8_t ARIA128_CBC_OID[9];
+extern const uint8_t ARIA128_CFB_OID[9];
+extern const uint8_t ARIA128_OFB_OID[9];
+extern const uint8_t ARIA128_CTR_OID[9];
+extern const uint8_t ARIA192_ECB_OID[9];
+extern const uint8_t ARIA192_CBC_OID[9];
+extern const uint8_t ARIA192_CFB_OID[9];
+extern const uint8_t ARIA192_OFB_OID[9];
+extern const uint8_t ARIA192_CTR_OID[9];
+extern const uint8_t ARIA256_ECB_OID[9];
+extern const uint8_t ARIA256_CBC_OID[9];
+extern const uint8_t ARIA256_CFB_OID[9];
+extern const uint8_t ARIA256_OFB_OID[9];
+extern const uint8_t ARIA256_CTR_OID[9];
+extern const uint8_t ARIA128_GCM_OID[9];
+extern const uint8_t ARIA192_GCM_OID[9];
+extern const uint8_t ARIA256_GCM_OID[9];
+extern const uint8_t ARIA128_CCM_OID[9];
+extern const uint8_t ARIA192_CCM_OID[9];
+extern const uint8_t ARIA256_CCM_OID[9];
 extern const CipherAlgo ariaCipherAlgo;
 
 //ARIA related functions

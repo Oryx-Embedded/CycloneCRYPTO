@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -66,7 +66,8 @@ const CipherAlgo xteaCipherAlgo =
  * @return Error code
  **/
 
-error_t xteaInit(XteaContext *context, const uint8_t *key, size_t keyLen)
+__weak_func error_t xteaInit(XteaContext *context, const uint8_t *key,
+   size_t keyLen)
 {
    //Check parameters
    if(context == NULL || key == NULL)
@@ -94,7 +95,7 @@ error_t xteaInit(XteaContext *context, const uint8_t *key, size_t keyLen)
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-void xteaEncryptBlock(XteaContext *context, const uint8_t *input,
+__weak_func void xteaEncryptBlock(XteaContext *context, const uint8_t *input,
    uint8_t *output)
 {
    uint_t i;
@@ -110,7 +111,7 @@ void xteaEncryptBlock(XteaContext *context, const uint8_t *input,
    z = LOAD32BE(input + 4);
 
    //Apply 32 rounds
-   for(i = 0; i < 32; i++)
+   for(i = 0; i < XTEA_NB_ROUNDS; i++)
    {
       y += (((z << 4) ^ (z >> 5)) + z) ^ (sum + context->k[sum & 0x03]);
       sum += DELTA;
@@ -130,7 +131,7 @@ void xteaEncryptBlock(XteaContext *context, const uint8_t *input,
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-void xteaDecryptBlock(XteaContext *context, const uint8_t *input,
+__weak_func void xteaDecryptBlock(XteaContext *context, const uint8_t *input,
    uint8_t *output)
 {
    uint_t i;
@@ -139,14 +140,14 @@ void xteaDecryptBlock(XteaContext *context, const uint8_t *input,
    uint32_t sum;
 
    //Initialize variable
-   sum = DELTA << 5;
+   sum = (DELTA & 0x07FFFFFF) << 5;
 
    //The 8 bytes of ciphertext are split into 2 words
    y = LOAD32BE(input + 0);
    z = LOAD32BE(input + 4);
 
    //Apply 32 rounds
-   for(i = 0; i < 32; i++)
+   for(i = 0; i < XTEA_NB_ROUNDS; i++)
    {
       z -= (((y << 4) ^ (y >> 5)) + y) ^ (sum + context->k[(sum >> 11) & 0x03]);
       sum -= DELTA;
@@ -164,7 +165,7 @@ void xteaDecryptBlock(XteaContext *context, const uint8_t *input,
  * @param[in] context Pointer to the XTEA context
  **/
 
-void xteaDeinit(XteaContext *context)
+__weak_func void xteaDeinit(XteaContext *context)
 {
    //Clear XTEA context
    osMemset(context, 0, sizeof(XteaContext));

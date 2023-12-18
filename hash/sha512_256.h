@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _SHA512_256_H
@@ -41,8 +41,6 @@
 #define SHA512_256_DIGEST_SIZE 32
 //Minimum length of the padding string
 #define SHA512_256_MIN_PAD_SIZE 17
-//SHA-512/256 algorithm object identifier
-#define SHA512_256_OID sha512_256Oid
 //Common interface for hash algorithms
 #define SHA512_256_HASH_ALGO (&sha512_256HashAlgo)
 
@@ -60,7 +58,7 @@ typedef Sha512Context Sha512_256Context;
 
 
 //SHA-512/256 related constants
-extern const uint8_t sha512_256Oid[9];
+extern const uint8_t SHA512_256_OID[9];
 extern const HashAlgo sha512_256HashAlgo;
 
 //SHA-512/256 related functions

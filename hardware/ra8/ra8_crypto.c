@@ -1,6 +1,6 @@
 /**
- * @file sam9x60_crypto_hash.h
- * @brief SAM9X60 hash hardware accelerator
+ * @file ra8_crypto.c
+ * @brief RA8 hardware cryptographic accelerator (RSIP7)
  *
  * @section License
  *
@@ -25,30 +25,49 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
-#ifndef _SAM9X60_CRYPTO_HASH_H
-#define _SAM9X60_CRYPTO_HASH_H
+//Switch to the appropriate trace level
+#define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
+#include "hw_sce_private.h"
 #include "core/crypto.h"
+#include "hardware/ra8/ra8_crypto.h"
+#include "debug.h"
 
-//Hash hardware accelerator
-#ifndef SAM9X60_CRYPTO_HASH_SUPPORT
-   #define SAM9X60_CRYPTO_HASH_SUPPORT DISABLED
-#elif (SAM9X60_CRYPTO_HASH_SUPPORT != ENABLED && SAM9X60_CRYPTO_HASH_SUPPORT != DISABLED)
-   #error SAM9X60_CRYPTO_HASH_SUPPORT parameter is not valid
-#endif
+//Global variables
+OsMutex ra8CryptoMutex;
 
-//C++ guard
-#ifdef __cplusplus
-extern "C" {
-#endif
 
-//C++ guard
-#ifdef __cplusplus
+/**
+ * @brief Initialize hardware cryptographic accelerator
+ * @return Error code
+ **/
+
+error_t ra8CryptoInit(void)
+{
+   fsp_err_t status;
+
+   //Initialize status code
+   status = FSP_SUCCESS;
+
+   //Create a mutex to prevent simultaneous access to the hardware
+   //cryptographic accelerator
+   if(!osCreateMutex(&ra8CryptoMutex))
+   {
+      //Failed to create mutex
+      status = FSP_ERR_CRYPTO_NOT_OPEN;
+   }
+
+   //Check status code
+   if(status == FSP_SUCCESS)
+   {
+      //Initialize RSIP7 module
+      status = HW_SCE_McuSpecificInit();
+   }
+
+   //Return status code
+   return (status == FSP_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
 }
-#endif
-
-#endif

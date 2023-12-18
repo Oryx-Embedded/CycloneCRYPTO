@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _XTEA_H
@@ -41,6 +41,8 @@
 
 //XTEA block size
 #define XTEA_BLOCK_SIZE 8
+//XTEA number of rounds
+#define XTEA_NB_ROUNDS 32
 //Common interface for encryption algorithms
 #define XTEA_CIPHER_ALGO (&xteaCipherAlgo)
 

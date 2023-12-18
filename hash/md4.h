@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _MD4_H
@@ -40,8 +40,6 @@
 #define MD4_DIGEST_SIZE 16
 //Minimum length of the padding string
 #define MD4_MIN_PAD_SIZE 9
-//MD4 algorithm object identifier
-#define MD4_OID md4Oid
 //Common interface for hash algorithms
 #define MD4_HASH_ALGO (&md4HashAlgo)
 
@@ -73,7 +71,7 @@ typedef struct
 
 
 //MD4 related constants
-extern const uint8_t md4Oid[8];
+extern const uint8_t MD4_OID[8];
 extern const HashAlgo md4HashAlgo;
 
 //MD4 related functions

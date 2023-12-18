@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -151,6 +151,16 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
             //Generate ECDSA signature
             error = x509GenerateEcdsaSignature(prngAlgo, prngContext, tbsData,
                hashAlgo, publicKeyInfo, privateKey, output, written);
+         }
+         else
+#endif
+#if (X509_SM2_SUPPORT == ENABLED && SM2_SUPPORT == ENABLED)
+         //SM2 signature algorithm?
+         if(signAlgo == X509_SIGN_ALGO_SM2)
+         {
+            //Generate SM2 signature
+            error = x509GenerateSm2Signature(prngAlgo, prngContext, tbsData,
+               hashAlgo, privateKey, output, written);
          }
          else
 #endif
@@ -335,8 +345,8 @@ error_t x509GenerateDsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
 
 error_t x509GenerateEcdsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
    const X509OctetString *tbsData, const HashAlgo *hashAlgo,
-   const X509SubjectPublicKeyInfo *publicKeyInfo, const EcPrivateKey *privateKey,
-   uint8_t *output, size_t *written)
+   const X509SubjectPublicKeyInfo *publicKeyInfo,
+   const EcPrivateKey *privateKey, uint8_t *output, size_t *written)
 {
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
    error_t error;
@@ -391,6 +401,64 @@ error_t x509GenerateEcdsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
    //Release previously allocated resources
    ecFreeDomainParameters(&ecParams);
    ecdsaFreeSignature(&ecdsaSignature);
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief SM2 signature generation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[in] tbsData Pointer to the data to be signed
+ * @param[in] hashAlgo Underlying hash function
+ * @param[in] privateKey Signer's private key
+ * @param[out] output Resulting signature
+ * @param[out] written Length of the resulting signature
+ * @return Error code
+ **/
+
+error_t x509GenerateSm2Signature(const PrngAlgo *prngAlgo, void *prngContext,
+   const X509OctetString *tbsData, const HashAlgo *hashAlgo,
+   const EcPrivateKey *privateKey, uint8_t *output, size_t *written)
+{
+#if (X509_SM2_SUPPORT == ENABLED && SM2_SUPPORT == ENABLED)
+   error_t error;
+   EcDomainParameters ecParams;
+   EcdsaSignature sm2Signature;
+
+   //Initialize EC domain parameters
+   ecInitDomainParameters(&ecParams);
+   //Initialize SM2 signature
+   ecdsaInitSignature(&sm2Signature);
+
+   //Load EC domain parameters
+   error = ecLoadDomainParameters(&ecParams, SM2_CURVE);
+
+   //Check status code
+   if(!error)
+   {
+      //Generate SM2 signature
+      error = sm2GenerateSignature(prngAlgo, prngContext, &ecParams,
+         privateKey, hashAlgo, SM2_DEFAULT_ID, osStrlen(SM2_DEFAULT_ID),
+         tbsData->value, tbsData->length, &sm2Signature);
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Encode SM2 signature using ASN.1
+      error = ecdsaWriteSignature(&sm2Signature, output, written);
+   }
+
+   //Release previously allocated resources
+   ecFreeDomainParameters(&ecParams);
+   ecdsaFreeSignature(&sm2Signature);
 
    //Return status code
    return error;

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.3.2"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.3.4"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 3
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 2
+#define CYCLONE_CRYPTO_REV_NUMBER 4
 
 //Static memory allocation
 #ifndef CRYPTO_STATIC_MEM_SUPPORT
@@ -375,151 +375,158 @@
    #error XCBC_MAC_SUPPORT parameter is not valid
 #endif
 
-//RC2 encryption support
+//RC2 block cipher support
 #ifndef RC2_SUPPORT
    #define RC2_SUPPORT DISABLED
 #elif (RC2_SUPPORT != ENABLED && RC2_SUPPORT != DISABLED)
    #error RC2_SUPPORT parameter is not valid
 #endif
 
-//RC4 encryption support
+//RC4 stream cipher support
 #ifndef RC4_SUPPORT
    #define RC4_SUPPORT DISABLED
 #elif (RC4_SUPPORT != ENABLED && RC4_SUPPORT != DISABLED)
    #error RC4_SUPPORT parameter is not valid
 #endif
 
-//RC6 encryption support
+//RC6 block cipher support
 #ifndef RC6_SUPPORT
    #define RC6_SUPPORT DISABLED
 #elif (RC6_SUPPORT != ENABLED && RC6_SUPPORT != DISABLED)
    #error RC6_SUPPORT parameter is not valid
 #endif
 
-//CAST-128 encryption support
+//CAST-128 block cipher support
 #ifndef CAST128_SUPPORT
    #define CAST128_SUPPORT DISABLED
 #elif (CAST128_SUPPORT != ENABLED && CAST128_SUPPORT != DISABLED)
    #error CAST128_SUPPORT parameter is not valid
 #endif
 
-//CAST-256 encryption support
+//CAST-256 block cipher support
 #ifndef CAST256_SUPPORT
    #define CAST256_SUPPORT DISABLED
 #elif (CAST256_SUPPORT != ENABLED && CAST256_SUPPORT != DISABLED)
    #error CAST256_SUPPORT parameter is not valid
 #endif
 
-//IDEA encryption support
+//IDEA block cipher support
 #ifndef IDEA_SUPPORT
    #define IDEA_SUPPORT DISABLED
 #elif (IDEA_SUPPORT != ENABLED && IDEA_SUPPORT != DISABLED)
    #error IDEA_SUPPORT parameter is not valid
 #endif
 
-//DES encryption support
+//DES block cipher support
 #ifndef DES_SUPPORT
    #define DES_SUPPORT DISABLED
 #elif (DES_SUPPORT != ENABLED && DES_SUPPORT != DISABLED)
    #error DES_SUPPORT parameter is not valid
 #endif
 
-//Triple DES encryption support
+//Triple DES block cipher support
 #ifndef DES3_SUPPORT
    #define DES3_SUPPORT DISABLED
 #elif (DES3_SUPPORT != ENABLED && DES3_SUPPORT != DISABLED)
    #error DES3_SUPPORT parameter is not valid
 #endif
 
-//AES encryption support
+//AES block cipher support
 #ifndef AES_SUPPORT
    #define AES_SUPPORT ENABLED
 #elif (AES_SUPPORT != ENABLED && AES_SUPPORT != DISABLED)
    #error AES_SUPPORT parameter is not valid
 #endif
 
-//Blowfish encryption support
+//Blowfish block cipher support
 #ifndef BLOWFISH_SUPPORT
    #define BLOWFISH_SUPPORT DISABLED
 #elif (BLOWFISH_SUPPORT != ENABLED && BLOWFISH_SUPPORT != DISABLED)
    #error BLOWFISH_SUPPORT parameter is not valid
 #endif
 
-//Twofish encryption support
+//Twofish block cipher support
 #ifndef TWOFISH_SUPPORT
    #define TWOFISH_SUPPORT DISABLED
 #elif (TWOFISH_SUPPORT != ENABLED && TWOFISH_SUPPORT != DISABLED)
    #error TWOFISH_SUPPORT parameter is not valid
 #endif
 
-//MARS encryption support
+//MARS block cipher support
 #ifndef MARS_SUPPORT
    #define MARS_SUPPORT DISABLED
 #elif (MARS_SUPPORT != ENABLED && MARS_SUPPORT != DISABLED)
    #error MARS_SUPPORT parameter is not valid
 #endif
 
-//Serpent encryption support
+//Serpent block cipher support
 #ifndef SERPENT_SUPPORT
    #define SERPENT_SUPPORT DISABLED
 #elif (SERPENT_SUPPORT != ENABLED && SERPENT_SUPPORT != DISABLED)
    #error SERPENT_SUPPORT parameter is not valid
 #endif
 
-//Camellia encryption support
+//Camellia block cipher support
 #ifndef CAMELLIA_SUPPORT
    #define CAMELLIA_SUPPORT DISABLED
 #elif (CAMELLIA_SUPPORT != ENABLED && CAMELLIA_SUPPORT != DISABLED)
    #error CAMELLIA_SUPPORT parameter is not valid
 #endif
 
-//ARIA encryption support
+//ARIA block cipher support
 #ifndef ARIA_SUPPORT
    #define ARIA_SUPPORT DISABLED
 #elif (ARIA_SUPPORT != ENABLED && ARIA_SUPPORT != DISABLED)
    #error ARIA_SUPPORT parameter is not valid
 #endif
 
-//SEED encryption support
+//SEED block cipher support
 #ifndef SEED_SUPPORT
    #define SEED_SUPPORT DISABLED
 #elif (SEED_SUPPORT != ENABLED && SEED_SUPPORT != DISABLED)
    #error SEED_SUPPORT parameter is not valid
 #endif
 
-//SM4 encryption support
+//SM4 block cipher support
 #ifndef SM4_SUPPORT
    #define SM4_SUPPORT DISABLED
 #elif (SM4_SUPPORT != ENABLED && SM4_SUPPORT != DISABLED)
    #error SM4_SUPPORT parameter is not valid
 #endif
 
-//PRESENT encryption support
+//PRESENT block cipher support
 #ifndef PRESENT_SUPPORT
    #define PRESENT_SUPPORT DISABLED
 #elif (PRESENT_SUPPORT != ENABLED && PRESENT_SUPPORT != DISABLED)
    #error PRESENT_SUPPORT parameter is not valid
 #endif
 
-//TEA encryption support
+//TEA block cipher support
 #ifndef TEA_SUPPORT
    #define TEA_SUPPORT DISABLED
 #elif (TEA_SUPPORT != ENABLED && TEA_SUPPORT != DISABLED)
    #error TEA_SUPPORT parameter is not valid
 #endif
 
-//XTEA encryption support
+//XTEA block cipher support
 #ifndef XTEA_SUPPORT
    #define XTEA_SUPPORT DISABLED
 #elif (XTEA_SUPPORT != ENABLED && XTEA_SUPPORT != DISABLED)
    #error XTEA_SUPPORT parameter is not valid
 #endif
 
-//Trivium encryption support
+//Trivium stream cipher support
 #ifndef TRIVIUM_SUPPORT
    #define TRIVIUM_SUPPORT DISABLED
 #elif (TRIVIUM_SUPPORT != ENABLED && TRIVIUM_SUPPORT != DISABLED)
    #error TRIVIUM_SUPPORT parameter is not valid
+#endif
+
+//ZUC stream cipher support
+#ifndef ZUC_SUPPORT
+   #define ZUC_SUPPORT DISABLED
+#elif (ZUC_SUPPORT != ENABLED && ZUC_SUPPORT != DISABLED)
+   #error ZUC_SUPPORT parameter is not valid
 #endif
 
 //ECB mode support
@@ -578,14 +585,14 @@
    #error GCM_SUPPORT parameter is not valid
 #endif
 
-//Salsa20 support
+//Salsa20 stream cipher support
 #ifndef SALSA20_SUPPORT
    #define SALSA20_SUPPORT DISABLED
 #elif (SALSA20_SUPPORT != ENABLED && SALSA20_SUPPORT != DISABLED)
    #error SALSA20_SUPPORT parameter is not valid
 #endif
 
-//ChaCha support
+//ChaCha stream cipher support
 #ifndef CHACHA_SUPPORT
    #define CHACHA_SUPPORT DISABLED
 #elif (CHACHA_SUPPORT != ENABLED && CHACHA_SUPPORT != DISABLED)

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -182,8 +182,8 @@ error_t desInit(DesContext *context, const uint8_t *key, size_t keyLen)
 void desEncryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
 {
    //Perform DES encryption
-   desProcessData(context, NULL, input, output, DES_BLOCK_SIZE, TDES_MR_CIPHER |
-      TDES_MR_OPMOD_ECB);
+   desProcessData(context, NULL, input, output, DES_BLOCK_SIZE,
+      TDES_MR_CIPHER | TDES_MR_OPMOD_ECB);
 }
 
 
@@ -339,8 +339,8 @@ error_t des3Init(Des3Context *context, const uint8_t *key, size_t keyLen)
 void des3EncryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output)
 {
    //Perform Triple DES encryption
-   des3ProcessData(context, NULL, input, output, DES3_BLOCK_SIZE, TDES_MR_CIPHER |
-      TDES_MR_OPMOD_ECB);
+   des3ProcessData(context, NULL, input, output, DES3_BLOCK_SIZE,
+      TDES_MR_CIPHER | TDES_MR_OPMOD_ECB);
 }
 
 

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _KECCAK_H
@@ -44,7 +44,7 @@
    //Base type that represents a lane
    typedef uint8_t keccak_lane_t;
    //Rotate left operation
-   #define KECCAK_ROL(a, n) ROL8(a, n)
+   #define KECCAK_ROL(a, n) ROL8(a, (n) % 8)
    //Host byte order to little-endian byte order
    #define KECCAK_HTOLE(a) (a)
    //Little-endian byte order to host byte order
@@ -53,7 +53,7 @@
    //Base type that represents a lane
    #define keccak_lane_t uint16_t
    //Rotate left operation
-   #define KECCAK_ROL(a, n) ROL16(a, n)
+   #define KECCAK_ROL(a, n) ROL16(a, (n) % 16)
    //Host byte order to little-endian byte order
    #define KECCAK_HTOLE(a) htole16(a)
    //Little-endian byte order to host byte order
@@ -62,7 +62,7 @@
    //Base type that represents a lane
    #define keccak_lane_t uint32_t
    //Rotate left operation
-   #define KECCAK_ROL(a, n) ROL32(a, n)
+   #define KECCAK_ROL(a, n) ROL32(a, (n) % 32)
    //Host byte order to little-endian byte order
    #define KECCAK_HTOLE(a) htole32(a)
    //Little-endian byte order to host byte order
@@ -71,7 +71,7 @@
    //Base type that represents a lane
    #define keccak_lane_t uint64_t
    //Rotate left operation
-   #define KECCAK_ROL(a, n) ROL64(a, n)
+   #define KECCAK_ROL(a, n) ROL64(a, (n) % 64)
    //Host byte order to little-endian byte order
    #define KECCAK_HTOLE(a) htole64(a)
    //Little-endian byte order to host byte order

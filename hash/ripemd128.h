@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _RIPEMD128_H
@@ -40,8 +40,6 @@
 #define RIPEMD128_DIGEST_SIZE 16
 //Minimum length of the padding string
 #define RIPEMD128_MIN_PAD_SIZE 9
-//RIPEMD-128 algorithm object identifier
-#define RIPEMD128_OID ripemd128Oid
 //Common interface for hash algorithms
 #define RIPEMD128_HASH_ALGO (&ripemd128HashAlgo)
 
@@ -73,7 +71,7 @@ typedef struct
 
 
 //RIPEMD-128 related constants
-extern const uint8_t ripemd128Oid[5];
+extern const uint8_t RIPEMD128_OID[5];
 extern const HashAlgo ripemd128HashAlgo;
 
 //RIPEMD-128 related functions

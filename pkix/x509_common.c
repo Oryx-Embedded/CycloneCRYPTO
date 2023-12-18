@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -158,6 +158,8 @@ const uint8_t X509_AD_CA_ISSUERS[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30,
 //Access Description OCSP (1.3.6.1.5.5.7.48.2)
 const uint8_t X509_AD_OCSP[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x02};
 
+//PKCS #9 e-mail address OID (1.2.840.113549.1.9.1)
+const uint8_t X509_EMAIL_ADDRESS_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x01};
 //PKCS #9 Challenge Password OID (1.2.840.113549.1.9.7)
 const uint8_t X509_CHALLENGE_PASSWORD_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x07};
 //PKCS #9 Extension Request OID (1.2.840.113549.1.9.14)
@@ -203,6 +205,13 @@ bool_t x509IsSignAlgoSupported(X509SignatureAlgo signAlgo)
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
    //ECDSA signature algorithm?
    else if(signAlgo == X509_SIGN_ALGO_ECDSA)
+   {
+      acceptable = TRUE;
+   }
+#endif
+#if (X509_SM2_SUPPORT == ENABLED && SM2_SUPPORT == ENABLED)
+   //SM2 signature algorithm?
+   else if(signAlgo == X509_SIGN_ALGO_SM2)
    {
       acceptable = TRUE;
    }
@@ -317,6 +326,13 @@ bool_t x509IsHashAlgoSupported(X509HashAlgo hashAlgo)
       acceptable = TRUE;
    }
 #endif
+#if (X509_SM3_SUPPORT == ENABLED && SM3_SUPPORT == ENABLED)
+   //SM3 hash algorithm?
+   else if(hashAlgo == X509_HASH_ALGO_SM3)
+   {
+      acceptable = TRUE;
+   }
+#endif
    //Invalid hash algorithm?
    else
    {
@@ -325,6 +341,27 @@ bool_t x509IsHashAlgoSupported(X509HashAlgo hashAlgo)
 
    //Return TRUE is the hash algorithm is supported
    return acceptable;
+}
+
+
+/**
+ * @brief Check whether a given elliptic curve is supported
+ * @param[in] oid Object identifier
+ * @param[in] length Length of the OID, in bytes
+ * @return TRUE is the elliptic curve is supported, else FALSE
+ **/
+
+bool_t x509IsCurveSupported(const uint8_t *oid, size_t length)
+{
+   //Return TRUE is the elliptic curve is supported
+   if(x509GetCurveInfo(oid, length) != NULL)
+   {
+      return TRUE;
+   }
+   else
+   {
+      return FALSE;
+   }
 }
 
 
@@ -744,6 +781,16 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
    else
 #endif
 #endif
+#if (X509_SM2_SUPPORT == ENABLED && SM2_SUPPORT == ENABLED && \
+   X509_SM3_SUPPORT == ENABLED && SM3_SUPPORT == ENABLED)
+   //SM2 with SM3 signature algorithm?
+   if(!oidComp(oid, oidLen, SM2_WITH_SM3_OID, sizeof(SM2_WITH_SM3_OID)))
+   {
+      *signAlgo = X509_SIGN_ALGO_SM2;
+      *hashAlgo = SM3_HASH_ALGO;
+   }
+   else
+#endif
 #if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
    //Ed25519 signature algorithm?
    if(!oidComp(oid, oidLen, ED25519_OID, sizeof(ED25519_OID)))
@@ -856,7 +903,7 @@ X509KeyType x509GetPublicKeyType(const uint8_t *oid, size_t length)
 /**
  * @brief Get the elliptic curve that matches the specified OID
  * @param[in] oid Object identifier
- * @param[in] length OID length
+ * @param[in] length Length of the OID, in bytes
  * @return Elliptic curve domain parameters
  **/
 
@@ -1023,6 +1070,13 @@ const EcCurveInfo *x509GetCurveInfo(const uint8_t *oid, size_t length)
 #if (X509_BRAINPOOLP512R1_SUPPORT == ENABLED)
    //brainpoolP512r1 elliptic curve?
    else if(!oidComp(oid, length, BRAINPOOLP512R1_OID, sizeof(BRAINPOOLP512R1_OID)))
+   {
+      curveInfo = ecGetCurveInfo(oid, length);
+   }
+#endif
+#if (X509_SM2_SUPPORT == ENABLED)
+   //SM2 elliptic curve?
+   else if(!oidComp(oid, length, SM2_OID, sizeof(SM2_OID)))
    {
       curveInfo = ecGetCurveInfo(oid, length);
    }

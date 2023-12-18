@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -70,14 +70,14 @@ static const uint32_t k[4] =
 };
 
 //SHA-1 object identifier (1.3.14.3.2.26)
-const uint8_t sha1Oid[5] = {0x2B, 0x0E, 0x03, 0x02, 0x1A};
+const uint8_t SHA1_OID[5] = {0x2B, 0x0E, 0x03, 0x02, 0x1A};
 
 //Common interface for hash algorithms
 const HashAlgo sha1HashAlgo =
 {
    "SHA-1",
-   sha1Oid,
-   sizeof(sha1Oid),
+   SHA1_OID,
+   sizeof(SHA1_OID),
    sizeof(Sha1Context),
    SHA1_BLOCK_SIZE,
    SHA1_DIGEST_SIZE,

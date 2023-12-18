@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -88,6 +88,8 @@ const uint8_t BRAINPOOLP320R1_OID[9] = {0x2B, 0x24, 0x03, 0x03, 0x02, 0x08, 0x01
 const uint8_t BRAINPOOLP384R1_OID[9] = {0x2B, 0x24, 0x03, 0x03, 0x02, 0x08, 0x01, 0x01, 0x0B};
 //brainpoolP512r1 OID (1.3.36.3.3.2.8.1.1.13)
 const uint8_t BRAINPOOLP512R1_OID[9] = {0x2B, 0x24, 0x03, 0x03, 0x02, 0x08, 0x01, 0x01, 0x0D};
+//SM2 OID (1.2.156.10197.1.301)
+const uint8_t SM2_OID[8] = {0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x82, 0x2D};
 //X25519 OID (1.3.101.110)
 const uint8_t X25519_OID[3] = {0x2B, 0x65, 0x6E};
 //X448 OID (1.3.101.111)
@@ -1134,6 +1136,52 @@ const EcCurveInfo brainpoolP512r1Curve =
 };
 
 #endif
+#if (SM2_SUPPORT == ENABLED)
+
+/**
+ * @brief SM2 elliptic curve
+ **/
+
+const EcCurveInfo sm2Curve =
+{
+   //Curve name
+   "curveSM2",
+   //Object identifier
+   SM2_OID,
+   sizeof(SM2_OID),
+   //Curve type
+   EC_CURVE_TYPE_SECP_R1,
+   //Prime modulus p
+   {0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+   32,
+   //Curve parameter a
+   {0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC},
+   32,
+   //Curve parameter b
+   {0x28, 0xE9, 0xFA, 0x9E, 0x9D, 0x9F, 0x5E, 0x34, 0x4D, 0x5A, 0x9E, 0x4B, 0xCF, 0x65, 0x09, 0xA7,
+    0xF3, 0x97, 0x89, 0xF5, 0x15, 0xAB, 0x8F, 0x92, 0xDD, 0xBC, 0xBD, 0x41, 0x4D, 0x94, 0x0E, 0x93},
+   32,
+   //x-coordinate of the base point G
+   {0x32, 0xC4, 0xAE, 0x2C, 0x1F, 0x19, 0x81, 0x19, 0x5F, 0x99, 0x04, 0x46, 0x6A, 0x39, 0xC9, 0x94,
+    0x8F, 0xE3, 0x0B, 0xBF, 0xF2, 0x66, 0x0B, 0xE1, 0x71, 0x5A, 0x45, 0x89, 0x33, 0x4C, 0x74, 0xC7},
+   32,
+   //y-coordinate of the base point G
+   {0xBC, 0x37, 0x36, 0xA2, 0xF4, 0xF6, 0x77, 0x9C, 0x59, 0xBD, 0xCE, 0xE3, 0x6B, 0x69, 0x21, 0x53,
+    0xD0, 0xA9, 0x87, 0x7C, 0xC6, 0x2A, 0x47, 0x40, 0x02, 0xDF, 0x32, 0xE5, 0x21, 0x39, 0xF0, 0xA0},
+   32,
+   //Base point order q
+   {0xFF, 0xFF, 0xFF, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0x72, 0x03, 0xDF, 0x6B, 0x21, 0xC6, 0x05, 0x2B, 0x53, 0xBB, 0xF4, 0x09, 0x39, 0xD5, 0x41, 0x23},
+   32,
+   //Cofactor
+   1,
+   //Fast modular reduction
+   sm2Mod
+};
+
+#endif
 #if (X25519_SUPPORT == ENABLED)
 
 /**
@@ -1143,7 +1191,7 @@ const EcCurveInfo brainpoolP512r1Curve =
 const EcCurveInfo x25519Curve =
 {
    //Curve name
-   "Curve22519",
+   "curve25519",
    //Object identifier
    X25519_OID,
    sizeof(X25519_OID),
@@ -1189,7 +1237,7 @@ const EcCurveInfo x25519Curve =
 const EcCurveInfo x448Curve =
 {
    //Curve name
-   "Curve448",
+   "curve448",
    //Object identifier
    X448_OID,
    sizeof(X448_OID),
@@ -1247,7 +1295,7 @@ const EcCurveInfo x448Curve =
 const EcCurveInfo ed25519Curve =
 {
    //Curve name
-   "Ed22519",
+   "Ed25519",
    //Object identifier
    ED25519_OID,
    sizeof(ED25519_OID),
@@ -2160,7 +2208,161 @@ end:
 }
 
 #endif
+#if (SM2_SUPPORT == ENABLED)
 
+/**
+ * @brief Fast modular reduction (SM2 curve)
+ * @param[in,out] a This function accept an integer less than p^2 as
+ *   input and return (a mod p) as output
+ * @param[in] p Prime modulus
+ **/
+
+error_t sm2Mod(Mpi *a, const Mpi *p)
+{
+   error_t error;
+   Mpi s;
+   Mpi t;
+   Mpi b;
+
+   //Initialize multiple precision integers
+   mpiInit(&s);
+   mpiInit(&t);
+   mpiInit(&b);
+
+   //Ajust the size of the integers
+   MPI_CHECK(mpiGrow(a, 64 / MPI_INT_SIZE));
+   MPI_CHECK(mpiGrow(&s, 32 / MPI_INT_SIZE));
+   MPI_CHECK(mpiGrow(&t, 32 / MPI_INT_SIZE));
+
+   //Compute T = A7 | A6 | A5 | A4 | A3 | A2 | A1 | A0
+   COPY_WORD32(&t, 0, a, 0, 8);
+
+   //Compute S1 = A15 | A14 | A13 | A12 | A11 | 0 | A9 | A8
+   COPY_WORD32(&s, 0, a, 8, 2);
+   CLEAR_WORD32(&s, 2, 1);
+   COPY_WORD32(&s, 3, a, 11, 5);
+   //Compute T = T + S1
+   MPI_CHECK(mpiAdd(&t, &t, &s));
+
+   //Compute S2 = A8 | A15 | A14 | A13 | A12 | 0 | A10 | A9
+   COPY_WORD32(&s, 0, a, 9, 2);
+   CLEAR_WORD32(&s, 2, 1);
+   COPY_WORD32(&s, 3, a, 12, 4);
+   COPY_WORD32(&s, 7, a, 8, 1);
+   //Compute T = T + S2
+   MPI_CHECK(mpiAdd(&t, &t, &s));
+
+   //Compute S3 = A9 | A11 | A10 | A9 | A8 | 0 | A11 | A10
+   COPY_WORD32(&s, 0, a, 10, 2);
+   CLEAR_WORD32(&s, 2, 1);
+   COPY_WORD32(&s, 3, a, 8, 4);
+   COPY_WORD32(&s, 7, a, 9, 1);
+   //Compute T = T + S3
+   MPI_CHECK(mpiAdd(&t, &t, &s));
+
+   //Compute S4 = A10 | 0 | 0 | A15 | A14 | 0 | A12 | A11
+   COPY_WORD32(&s, 0, a, 11, 2);
+   CLEAR_WORD32(&s, 2, 1);
+   COPY_WORD32(&s, 3, a, 14, 2);
+   CLEAR_WORD32(&s, 5, 2);
+   COPY_WORD32(&s, 7, a, 10, 1);
+   //Compute T = T + S4
+   MPI_CHECK(mpiAdd(&t, &t, &s));
+
+   //Compute S5 = A11 | 0 | 0 | 0 | A15 | 0 | A13 | A12
+   COPY_WORD32(&s, 0, a, 12, 2);
+   CLEAR_WORD32(&s, 2, 1);
+   COPY_WORD32(&s, 3, a, 15, 1);
+   CLEAR_WORD32(&s, 4, 3);
+   COPY_WORD32(&s, 7, a, 11, 1);
+   //Compute T = T + S5
+   MPI_CHECK(mpiAdd(&t, &t, &s));
+
+   //Compute S6 = A12 | 0 | A15 | A14 | A13 | 0 | A14 | A13
+   COPY_WORD32(&s, 0, a, 13, 2);
+   CLEAR_WORD32(&s, 2, 1);
+   COPY_WORD32(&s, 3, a, 13, 3);
+   CLEAR_WORD32(&s, 6, 1);
+   COPY_WORD32(&s, 7, a, 12, 1);
+   //Compute T = T + 2*S6
+   MPI_CHECK(mpiAdd(&t, &t, &s));
+   MPI_CHECK(mpiAdd(&t, &t, &s));
+
+   //Compute S7 = A13 | 0 | 0 | 0 | 0 | 0 | A15 | A14
+   COPY_WORD32(&s, 0, a, 14, 2);
+   CLEAR_WORD32(&s, 2, 5);
+   COPY_WORD32(&s, 7, a, 13, 1);
+   //Compute T = T + 2*S7
+   MPI_CHECK(mpiAdd(&t, &t, &s));
+   MPI_CHECK(mpiAdd(&t, &t, &s));
+
+   //Compute S8 = A14 | 0 | 0 | 0 | 0 | 0 | 0 | A15
+   COPY_WORD32(&s, 0, a, 15, 1);
+   CLEAR_WORD32(&s, 1, 6);
+   COPY_WORD32(&s, 7, a, 14, 1);
+   //Compute T = T + 2*S8
+   MPI_CHECK(mpiAdd(&t, &t, &s));
+   MPI_CHECK(mpiAdd(&t, &t, &s));
+
+   //Compute S9 = A15 | 0 | 0 | 0 | 0 | 0 | 0 | 0
+   CLEAR_WORD32(&s, 0, 7);
+   COPY_WORD32(&s, 7, a, 15, 1);
+   //Compute T = T + 2*S9
+   MPI_CHECK(mpiAdd(&t, &t, &s));
+   MPI_CHECK(mpiAdd(&t, &t, &s));
+
+   //Compute D1 = 0 | 0 | 0 | 0 | 0 | A8 | 0 | 0
+   CLEAR_WORD32(&s, 0, 2);
+   COPY_WORD32(&s, 2, a, 8, 1);
+   CLEAR_WORD32(&s, 3, 5);
+   //Compute T = T - D1
+   MPI_CHECK(mpiSub(&t, &t, &s));
+
+   //Compute D2 = 0 | 0 | 0 | 0 | 0 | A9 | 0 | 0
+   CLEAR_WORD32(&s, 0, 2);
+   COPY_WORD32(&s, 2, a, 9, 1);
+   CLEAR_WORD32(&s, 3, 5);
+   //Compute T = T - D2
+   MPI_CHECK(mpiSub(&t, &t, &s));
+
+   //Compute D3 = 0 | 0 | 0 | 0 | 0 | A13 | 0 | 0
+   CLEAR_WORD32(&s, 0, 2);
+   COPY_WORD32(&s, 2, a, 13, 1);
+   CLEAR_WORD32(&s, 3, 5);
+   //Compute T = T - D3
+   MPI_CHECK(mpiSub(&t, &t, &s));
+
+   //Compute D4 = 0 | 0 | 0 | 0 | 0 | A14 | 0 | 0
+   CLEAR_WORD32(&s, 0, 2);
+   COPY_WORD32(&s, 2, a, 14, 1);
+   CLEAR_WORD32(&s, 3, 5);
+   //Compute T = T - D4
+   MPI_CHECK(mpiSub(&t, &t, &s));
+
+   //Compute (T + S1 + S2 + S3 + S4 + S5 + 2*S6 + 2*S7 + 2*S8 + 2*S9 - D1 - D2 - D3 - D4) mod p
+   while(mpiComp(&t, p) >= 0)
+   {
+      MPI_CHECK(mpiSub(&t, &t, p));
+   }
+
+   while(mpiCompInt(&t, 0) < 0)
+   {
+      MPI_CHECK(mpiAdd(&t, &t, p));
+   }
+
+   //Save result
+   MPI_CHECK(mpiCopy(a, &t));
+
+end:
+   //Release multiple precision integers
+   mpiFree(&s);
+   mpiFree(&t);
+
+   //Return status code
+   return error;
+}
+
+#endif
 
 /**
  * @brief Get the elliptic curve that matches the specified OID
@@ -2330,6 +2532,13 @@ const EcCurveInfo *ecGetCurveInfo(const uint8_t *oid, size_t length)
    else if(!oidComp(oid, length, BRAINPOOLP512R1_OID, sizeof(BRAINPOOLP512R1_OID)))
    {
       curveInfo = BRAINPOOLP512R1_CURVE;
+   }
+#endif
+#if (SM2_SUPPORT == ENABLED)
+   //SM2 elliptic curve?
+   else if(!oidComp(oid, length, SM2_OID, sizeof(SM2_OID)))
+   {
+      curveInfo = SM2_CURVE;
    }
 #endif
 #if (X25519_SUPPORT == ENABLED)

@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -94,14 +94,14 @@ static const uint64_t k[80] =
 };
 
 //SHA-512 object identifier (2.16.840.1.101.3.4.2.3)
-const uint8_t sha512Oid[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03};
+const uint8_t SHA512_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03};
 
 //Common interface for hash algorithms
 const HashAlgo sha512HashAlgo =
 {
    "SHA-512",
-   sha512Oid,
-   sizeof(sha512Oid),
+   SHA512_OID,
+   sizeof(SHA512_OID),
    sizeof(Sha512Context),
    SHA512_BLOCK_SIZE,
    SHA512_DIGEST_SIZE,

@@ -24,14 +24,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
- * @section Description
- *
- * SM4 is an encryption standard based on Rijndael algorithm, a symmetric block
- * cipher that can process data blocks of 128 bits, using cipher keys with
- * lengths of 128, 192, and 256 bits. Refer to FIPS 197 for more details
- *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -45,34 +39,32 @@
 #if (SM4_SUPPORT == ENABLED)
 
 //Nonlinear transformation tau
-#define TAU(a) ((uint32_t) s[a & 0xFF] | \
-   (uint32_t) s[(a >> 8) & 0xFF] << 8 | \
-   (uint32_t) s[(a >> 16) & 0xFF] << 16 | \
-   (uint32_t) s[(a >> 24) & 0xFF] << 24)
+#define TAU(a) ((uint32_t) s[(a) & 0xFF] | \
+   ((uint32_t) s[((a) >> 8) & 0xFF] << 8) | \
+   ((uint32_t) s[((a) >> 16) & 0xFF] << 16) | \
+   ((uint32_t) s[((a) >> 24) & 0xFF] << 24))
 
-//Linear transformation L
-#define L(b) (b ^ ROL32(b, 2) ^ ROL32(b, 10) ^ ROL32(b, 18) ^ ROL32(b, 24))
-
-//Linear transformation L'
-#define LP(b) (b ^ ROL32(b, 13) ^ ROL32(b, 23))
+//Linear transformations L and L'
+#define L(b) ((b) ^ ROL32(b, 2) ^ ROL32(b, 10) ^ ROL32(b, 18) ^ ROL32(b, 24))
+#define LP(b) ((b) ^ ROL32(b, 13) ^ ROL32(b, 23))
 
 //Round function F
 #define F(x0, x1, x2, x3, rk) \
 { \
    uint32_t temp; \
-   temp = x1 ^ x2 ^ x3 ^ rk; \
+   temp = (x1) ^ (x2) ^ (x3) ^ (rk); \
    temp = TAU(temp); \
    x0 ^= L(temp); \
 }
 
 //Family key FK
-static uint32_t fk[4] =
+static const uint32_t fk[4] =
 {
    0xA3B1BAC6, 0x56AA3350, 0x677D9197, 0xB27022DC
 };
 
 //Constant key CK
-static uint32_t ck[32] =
+static const uint32_t ck[32] =
 {
    0x00070E15, 0x1C232A31, 0x383F464D, 0x545B6269, 0x70777E85, 0x8C939AA1, 0xA8AFB6BD, 0xC4CBD2D9,
    0xE0E7EEF5, 0xFC030A11, 0x181F262D, 0x343B4249, 0x50575E65, 0x6C737A81, 0x888F969D, 0xA4ABB2B9,
@@ -81,7 +73,7 @@ static uint32_t ck[32] =
 };
 
 //S-box S
-static uint8_t s[256] =
+static const uint8_t s[256] =
 {
    0xD6, 0x90, 0xE9, 0xFE, 0xCC, 0xE1, 0x3D, 0xB7, 0x16, 0xB6, 0x14, 0xC2, 0x28, 0xFB, 0x2C, 0x05,
    0x2B, 0x67, 0x9A, 0x76, 0x2A, 0xBE, 0x04, 0xC3, 0xAA, 0x44, 0x13, 0x26, 0x49, 0x86, 0x06, 0x99,
@@ -100,6 +92,23 @@ static uint8_t s[256] =
    0x89, 0x69, 0x97, 0x4A, 0x0C, 0x96, 0x77, 0x7E, 0x65, 0xB9, 0xF1, 0x09, 0xC5, 0x6E, 0xC6, 0x84,
    0x18, 0xF0, 0x7D, 0xEC, 0x3A, 0xDC, 0x4D, 0x20, 0x79, 0xEE, 0x5F, 0x3E, 0xD7, 0xCB, 0x39, 0x48
 };
+
+//SM4-ECB OID (1.2.156.10197.1.104.1)
+const uint8_t SM4_ECB_OID[8] = {0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x68, 0x01};
+//SM4-CBC OID (1.2.156.10197.1.104.2)
+const uint8_t SM4_CBC_OID[8] = {0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x68, 0x02};
+//SM4-OFB OID (1.2.156.10197.1.104.3)
+const uint8_t SM4_OFB_OID[8] = {0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x68, 0x03};
+//SM4-CFB OID (1.2.156.10197.1.104.4)
+const uint8_t SM4_CFB_OID[8] = {0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x68, 0x04};
+//SM4-CTR OID (1.2.156.10197.1.104.7)
+const uint8_t SM4_CTR_OID[8] = {0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x68, 0x07};
+//SM4-GCM OID (1.2.156.10197.1.104.8)
+const uint8_t SM4_GCM_OID[8] = {0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x68, 0x08};
+//SM4-CCM OID (1.2.156.10197.1.104.9)
+const uint8_t SM4_CCM_OID[8] = {0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x68, 0x09};
+//SM4-XTS OID (1.2.156.10197.1.104.10)
+const uint8_t SM4_XTS_OID[8] = {0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x68, 0x0A};
 
 //Common interface for encryption algorithms
 const CipherAlgo sm4CipherAlgo =
@@ -125,7 +134,7 @@ const CipherAlgo sm4CipherAlgo =
  * @return Error code
  **/
 
-error_t sm4Init(Sm4Context *context, const uint8_t *key,
+__weak_func error_t sm4Init(Sm4Context *context, const uint8_t *key,
    size_t keyLen)
 {
    uint_t i;
@@ -146,7 +155,7 @@ error_t sm4Init(Sm4Context *context, const uint8_t *key,
    k[2] = LOAD32BE(key + 8) ^ fk[2];
    k[3] = LOAD32BE(key + 12) ^ fk[3];
 
-   //Calculate round keys
+   //Generate round keys
    for(i = 0; i < 32; i++)
    {
       temp = k[(i + 1) % 4] ^ k[(i + 2) % 4] ^ k[(i + 3) % 4] ^ ck[i];
@@ -167,7 +176,7 @@ error_t sm4Init(Sm4Context *context, const uint8_t *key,
  * @param[out] output Ciphertext block resulting from encryption
  **/
 
-void sm4EncryptBlock(Sm4Context *context, const uint8_t *input,
+__weak_func void sm4EncryptBlock(Sm4Context *context, const uint8_t *input,
    uint8_t *output)
 {
    uint_t i;
@@ -206,7 +215,7 @@ void sm4EncryptBlock(Sm4Context *context, const uint8_t *input,
  * @param[out] output Plaintext block resulting from decryption
  **/
 
-void sm4DecryptBlock(Sm4Context *context, const uint8_t *input,
+__weak_func void sm4DecryptBlock(Sm4Context *context, const uint8_t *input,
    uint8_t *output)
 {
    uint_t i;
@@ -244,7 +253,7 @@ void sm4DecryptBlock(Sm4Context *context, const uint8_t *input,
  * @param[in] context Pointer to the SM4 context
  **/
 
-void sm4Deinit(Sm4Context *context)
+__weak_func void sm4Deinit(Sm4Context *context)
 {
    //Clear SM4 context
    osMemset(context, 0, sizeof(Sm4Context));

@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 202 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -44,14 +44,14 @@
 #if (SHA3_384_SUPPORT == ENABLED)
 
 //SHA3-384 object identifier (2.16.840.1.101.3.4.2.9)
-const uint8_t sha3_384Oid[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x09};
+const uint8_t SHA3_384_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x09};
 
 //Common interface for hash algorithms
 const HashAlgo sha3_384HashAlgo =
 {
    "SHA3-384",
-   sha3_384Oid,
-   sizeof(sha3_384Oid),
+   SHA3_384_OID,
+   sizeof(SHA3_384_OID),
    sizeof(Sha3_384Context),
    SHA3_384_BLOCK_SIZE,
    SHA3_384_DIGEST_SIZE,

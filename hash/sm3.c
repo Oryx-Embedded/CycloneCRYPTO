@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -49,6 +49,10 @@
 #define P0(x) ((x) ^ ROL32(x, 9) ^ ROL32(x, 17))
 #define P1(x) ((x) ^ ROL32(x, 15) ^ ROL32(x, 23))
 
+//Constants T_j
+#define TJ1 0x79CC4519
+#define TJ2 0x7A879D8A
+
 //SM3 padding
 static const uint8_t padding[64] =
 {
@@ -59,14 +63,14 @@ static const uint8_t padding[64] =
 };
 
 //SM3 object identifier (1.0.10118.3.0.65)
-const uint8_t sm3Oid[6] = {0x28, 0xCF, 0x06, 0x03, 0x00, 0x41};
+const uint8_t SM3_OID[6] = {0x28, 0xCF, 0x06, 0x03, 0x00, 0x41};
 
 //Common interface for hash algorithms
 const HashAlgo sm3HashAlgo =
 {
    "SM3",
-   sm3Oid,
-   sizeof(sm3Oid),
+   SM3_OID,
+   sizeof(SM3_OID),
    sizeof(Sm3Context),
    SM3_BLOCK_SIZE,
    SM3_DIGEST_SIZE,
@@ -314,7 +318,7 @@ void sm3ProcessBlock(Sm3Context *context)
       //Calculate TT1 and TT2
       if(i < 16)
       {
-         temp = ROL32(a, 12) + e + ROL32(0x79CC4519, i);
+         temp = ROL32(a, 12) + e + ROL32(TJ1, i);
          ss1 = ROL32(temp, 7);
          ss2 = ss1 ^ ROL32(a, 12);
          tt1 = FF1(a, b, c) + d + ss2 + (W(i) ^ W(i + 4));
@@ -322,7 +326,7 @@ void sm3ProcessBlock(Sm3Context *context)
       }
       else
       {
-         temp = ROL32(a, 12) + e + ROL32(0x7A879D8A, i % 32);
+         temp = ROL32(a, 12) + e + ROL32(TJ2, i % 32);
          ss1 = ROL32(temp, 7);
          ss2 = ss1 ^ ROL32(a, 12);
          tt1 = FF2(a, b, c) + d + ss2 + (W(i) ^ W(i + 4));

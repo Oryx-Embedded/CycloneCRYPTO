@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _TEA_H
@@ -41,6 +41,8 @@
 
 //TEA block size
 #define TEA_BLOCK_SIZE 8
+//TEA number of rounds
+#define TEA_NB_ROUNDS 32
 //Common interface for encryption algorithms
 #define TEA_CIPHER_ALGO (&teaCipherAlgo)
 

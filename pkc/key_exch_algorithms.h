@@ -1,6 +1,6 @@
 /**
- * @file sam9x60_crypto_cipher.h
- * @brief SAM9X60 cipher hardware accelerator
+ * @file key_exch_algorithms.h
+ * @brief Collection of key exchange algorithms
  *
  * @section License
  *
@@ -25,30 +25,28 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
-#ifndef _SAM9X60_CRYPTO_CIPHER_H
-#define _SAM9X60_CRYPTO_CIPHER_H
+#ifndef _KEY_EXCH_ALGORITHMS_H
+#define _KEY_EXCH_ALGORITHMS_H
 
 //Dependencies
 #include "core/crypto.h"
 
-//Cipher hardware accelerator
-#ifndef SAM9X60_CRYPTO_CIPHER_SUPPORT
-   #define SAM9X60_CRYPTO_CIPHER_SUPPORT DISABLED
-#elif (SAM9X60_CRYPTO_CIPHER_SUPPORT != ENABLED && SAM9X60_CRYPTO_CIPHER_SUPPORT != DISABLED)
-   #error SAM9X60_CRYPTO_CIPHER_SUPPORT parameter is not valid
+//Diffie-Hellman support?
+#if (DH_SUPPORT == ENABLED)
+   #include "pkc/dh.h"
 #endif
 
-//C++ guard
-#ifdef __cplusplus
-extern "C" {
+//ECDH support?
+#if (ECDH_SUPPORT == ENABLED)
+   #include "ecc/ecdh.h"
 #endif
 
-//C++ guard
-#ifdef __cplusplus
-}
+//KEM support?
+#if (KEM_SUPPORT == ENABLED)
+   #include "pqc/kem.h"
 #endif
 
 #endif

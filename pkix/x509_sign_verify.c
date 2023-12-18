@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -144,6 +144,16 @@ error_t x509VerifySignature(const X509OctetString *tbsData,
          {
             //Verify ECDSA signature
             error = x509VerifyEcdsaSignature(tbsData, hashAlgo, publicKeyInfo,
+               signature);
+         }
+         else
+#endif
+#if (X509_SM2_SUPPORT == ENABLED && SM2_SUPPORT == ENABLED)
+         //SM2 signature algorithm?
+         if(signAlgo == X509_SIGN_ALGO_SM2)
+         {
+            //Verify SM2 signature
+            error = x509VerifySm2Signature(tbsData, hashAlgo, publicKeyInfo,
                signature);
          }
          else
@@ -473,6 +483,75 @@ error_t x509VerifyEcdsaSignature(const X509OctetString *tbsData,
    ecFreeDomainParameters(&ecParams);
    ecFreePublicKey(&ecPublicKey);
    ecdsaFreeSignature(&ecdsaSignature);
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief SM2 signature verification
+ * @param[in] tbsData Data whose signature is to be verified
+ * @param[in] hashAlgo Underlying hash function
+ * @param[in] publicKeyInfo Issuer's public key
+ * @param[in] signature Signature to be verified
+ * @return Error code
+ **/
+
+error_t x509VerifySm2Signature(const X509OctetString *tbsData,
+   const HashAlgo *hashAlgo, const X509SubjectPublicKeyInfo *publicKeyInfo,
+   const X509OctetString *signature)
+{
+#if (X509_SM2_SUPPORT == ENABLED && SM2_SUPPORT == ENABLED)
+   error_t error;
+   EcDomainParameters ecParams;
+   EcPublicKey ecPublicKey;
+   EcdsaSignature sm2Signature;
+
+   //Initialize EC domain parameters
+   ecInitDomainParameters(&ecParams);
+   //Initialize EC public key
+   ecInitPublicKey(&ecPublicKey);
+   //Initialize SM2 signature
+   ecdsaInitSignature(&sm2Signature);
+
+   //Load EC domain parameters
+   error = ecLoadDomainParameters(&ecParams, SM2_CURVE);
+
+   //Check status code
+   if(!error)
+   {
+      //Retrieve the EC public key
+      error = ecImport(&ecParams, &ecPublicKey.q,
+         publicKeyInfo->ecPublicKey.q.value,
+         publicKeyInfo->ecPublicKey.q.length);
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Read the ASN.1 encoded signature
+      error = ecdsaReadSignature(signature->value, signature->length,
+         &sm2Signature);
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Verify SM2 signature
+      error = sm2VerifySignature(&ecParams, &ecPublicKey, hashAlgo,
+         SM2_DEFAULT_ID, osStrlen(SM2_DEFAULT_ID), tbsData->value,
+         tbsData->length, &sm2Signature);
+   }
+
+   //Release previously allocated resources
+   ecFreeDomainParameters(&ecParams);
+   ecFreePublicKey(&ecPublicKey);
+   ecdsaFreeSignature(&sm2Signature);
 
    //Return status code
    return error;

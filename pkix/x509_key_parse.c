@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -145,7 +145,7 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
    }
    else
 #endif
-#if (ECDSA_SUPPORT == ENABLED)
+#if (EC_SUPPORT == ENABLED)
    //EC public key identifier?
    if(!oidComp(oid, oidLen, EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
    {
@@ -252,18 +252,16 @@ error_t x509ParseAlgoId(const uint8_t *data, size_t length,
    if(!asn1CheckOid(&tag, DSA_OID, sizeof(DSA_OID)))
    {
       //Read DsaParameters structure
-      error = x509ParseDsaParameters(data, length,
-         &publicKeyInfo->dsaParams);
+      error = x509ParseDsaParameters(data, length, &publicKeyInfo->dsaParams);
    }
    else
 #endif
-#if (ECDSA_SUPPORT == ENABLED)
+#if (EC_SUPPORT == ENABLED)
    //EC public key identifier?
    if(!asn1CheckOid(&tag, EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
    {
       //Read ECParameters structure
-      error = x509ParseEcParameters(data, length,
-         &publicKeyInfo->ecParams);
+      error = x509ParseEcParameters(data, length, &publicKeyInfo->ecParams);
    }
    else
 #endif

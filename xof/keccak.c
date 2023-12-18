@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -139,34 +139,34 @@ static void rho(keccak_lane_t a[5][5])
 {
    //The effect of the rho transformation is to rotate the bits of each lane by
    //an offset, which depends on the fixed x and y coordinates of the lane
-   a[0][1] = KECCAK_ROL(a[0][1], 1   % KECCAK_W);
-   a[0][2] = KECCAK_ROL(a[0][2], 190 % KECCAK_W);
-   a[0][3] = KECCAK_ROL(a[0][3], 28  % KECCAK_W);
-   a[0][4] = KECCAK_ROL(a[0][4], 91  % KECCAK_W);
+   a[0][1] = KECCAK_ROL(a[0][1], 1);
+   a[0][2] = KECCAK_ROL(a[0][2], 190);
+   a[0][3] = KECCAK_ROL(a[0][3], 28);
+   a[0][4] = KECCAK_ROL(a[0][4], 91);
 
-   a[1][0] = KECCAK_ROL(a[1][0], 36  % KECCAK_W);
-   a[1][1] = KECCAK_ROL(a[1][1], 300 % KECCAK_W);
-   a[1][2] = KECCAK_ROL(a[1][2], 6   % KECCAK_W);
-   a[1][3] = KECCAK_ROL(a[1][3], 55  % KECCAK_W);
-   a[1][4] = KECCAK_ROL(a[1][4], 276 % KECCAK_W);
+   a[1][0] = KECCAK_ROL(a[1][0], 36);
+   a[1][1] = KECCAK_ROL(a[1][1], 300);
+   a[1][2] = KECCAK_ROL(a[1][2], 6);
+   a[1][3] = KECCAK_ROL(a[1][3], 55);
+   a[1][4] = KECCAK_ROL(a[1][4], 276);
 
-   a[2][0] = KECCAK_ROL(a[2][0], 3   % KECCAK_W);
-   a[2][1] = KECCAK_ROL(a[2][1], 10  % KECCAK_W);
-   a[2][2] = KECCAK_ROL(a[2][2], 171 % KECCAK_W);
-   a[2][3] = KECCAK_ROL(a[2][3], 153 % KECCAK_W);
-   a[2][4] = KECCAK_ROL(a[2][4], 231 % KECCAK_W);
+   a[2][0] = KECCAK_ROL(a[2][0], 3);
+   a[2][1] = KECCAK_ROL(a[2][1], 10);
+   a[2][2] = KECCAK_ROL(a[2][2], 171);
+   a[2][3] = KECCAK_ROL(a[2][3], 153);
+   a[2][4] = KECCAK_ROL(a[2][4], 231);
 
-   a[3][0] = KECCAK_ROL(a[3][0], 105 % KECCAK_W);
-   a[3][1] = KECCAK_ROL(a[3][1], 45  % KECCAK_W);
-   a[3][2] = KECCAK_ROL(a[3][2], 15  % KECCAK_W);
-   a[3][3] = KECCAK_ROL(a[3][3], 21  % KECCAK_W);
-   a[3][4] = KECCAK_ROL(a[3][4], 136 % KECCAK_W);
+   a[3][0] = KECCAK_ROL(a[3][0], 105);
+   a[3][1] = KECCAK_ROL(a[3][1], 45);
+   a[3][2] = KECCAK_ROL(a[3][2], 15);
+   a[3][3] = KECCAK_ROL(a[3][3], 21);
+   a[3][4] = KECCAK_ROL(a[3][4], 136);
 
-   a[4][0] = KECCAK_ROL(a[4][0], 210 % KECCAK_W);
-   a[4][1] = KECCAK_ROL(a[4][1], 66  % KECCAK_W);
-   a[4][2] = KECCAK_ROL(a[4][2], 253 % KECCAK_W);
-   a[4][3] = KECCAK_ROL(a[4][3], 120 % KECCAK_W);
-   a[4][4] = KECCAK_ROL(a[4][4], 78  % KECCAK_W);
+   a[4][0] = KECCAK_ROL(a[4][0], 210);
+   a[4][1] = KECCAK_ROL(a[4][1], 66);
+   a[4][2] = KECCAK_ROL(a[4][2], 253);
+   a[4][3] = KECCAK_ROL(a[4][3], 120);
+   a[4][4] = KECCAK_ROL(a[4][4], 78);
 }
 
 

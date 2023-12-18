@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _CIPHER_ALGORITHMS_H
@@ -137,6 +137,11 @@
 //Trivium cipher support?
 #if (TRIVIUM_SUPPORT == ENABLED)
    #include "cipher/trivium.h"
+#endif
+
+//ZUC cipher support?
+#if (ZUC_SUPPORT == ENABLED)
+   #include "cipher/zuc.h"
 #endif
 
 //Salsa20 cipher support?
@@ -264,6 +269,9 @@ typedef union
 #endif
 #if (TRIVIUM_SUPPORT == ENABLED)
    TriviumContext triviumContext;
+#endif
+#if (ZUC_SUPPORT == ENABLED)
+   ZucContext zucContext;
 #endif
 } CipherContext;
 

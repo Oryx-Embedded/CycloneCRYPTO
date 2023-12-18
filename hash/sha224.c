@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -44,14 +44,14 @@
 #if (SHA224_SUPPORT == ENABLED)
 
 //SHA-224 object identifier (2.16.840.1.101.3.4.2.4)
-const uint8_t sha224Oid[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04};
+const uint8_t SHA224_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x04};
 
 //Common interface for hash algorithms
 const HashAlgo sha224HashAlgo =
 {
    "SHA-224",
-   sha224Oid,
-   sizeof(sha224Oid),
+   SHA224_OID,
+   sizeof(SHA224_OID),
    sizeof(Sha224Context),
    SHA224_BLOCK_SIZE,
    SHA224_DIGEST_SIZE,

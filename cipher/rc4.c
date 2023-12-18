@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -102,8 +102,8 @@ error_t rc4Init(Rc4Context *context, const uint8_t *key, size_t length)
 /**
  * @brief Encrypt/decrypt data with the RC4 algorithm
  * @param[in] context Pointer to the RC4 context
- * @param[in] input Pointer to the data to encrypt/decrypt
- * @param[in] output Pointer to the resulting data
+ * @param[in] input Pointer to the data to encrypt/decrypt (optional)
+ * @param[in] output Pointer to the resulting data (optional)
  * @param[in] length Length of the input data
  **/
 

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -291,11 +291,11 @@ error_t mpiSetBitValue(Mpi *r, uint_t index, uint_t value)
    //Set bit value
    if(value)
    {
-      r->data[n1] |= (1 << n2);
+      r->data[n1] |= (1U << n2);
    }
    else
    {
-      r->data[n1] &= ~(1 << n2);
+      r->data[n1] &= ~(1U << n2);
    }
 
    //No error to report
@@ -544,7 +544,7 @@ error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo,
    //Remove the meaningless bits in the most significant word
    if(n > 0 && m > 0)
    {
-      r->data[n - 1] &= (1 << m) - 1;
+      r->data[n - 1] &= (1U << m) - 1;
    }
 
    //Successful operation
@@ -1682,10 +1682,10 @@ __weak_func error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    //Even modulus?
    if(mpiIsEven(p))
    {
-      //Let B = A^2
-      MPI_CHECK(mpiMulMod(&b, a, a, p));
       //Let S[0] = A
-      MPI_CHECK(mpiCopy(&s[0], a));
+      MPI_CHECK(mpiMod(&s[0], a, p));
+      //Let B = A^2
+      MPI_CHECK(mpiMulMod(&b, &s[0], &s[0], p));
 
       //Precompute S[i] = A^(2 * i + 1)
       for(i = 1; i < (1 << (d - 1)); i++)

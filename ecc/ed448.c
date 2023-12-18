@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -534,7 +534,7 @@ error_t ed448VerifySignatureEx(const uint8_t *publicKey,
 /**
  * @brief Scalar multiplication on Ed448 curve
  * @param[in] state Pointer to the working state
- * @param[out] r Resulting point R = d * S
+ * @param[out] r Resulting point R = k * P
  * @param[in] k Input scalar
  * @param[in] p Input point
  **/

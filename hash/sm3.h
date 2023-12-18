@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _SM3_H
@@ -45,8 +45,6 @@
 #define SM3_DIGEST_SIZE 32
 //Minimum length of the padding string
 #define SM3_MIN_PAD_SIZE 9
-//SM3 algorithm object identifier
-#define SM3_OID sm3Oid
 //Common interface for hash algorithms
 #define SM3_HASH_ALGO (&sm3HashAlgo)
 
@@ -79,7 +77,7 @@ typedef struct
 
 
 //SM3 related constants
-extern const uint8_t sm3Oid[6];
+extern const uint8_t SM3_OID[6];
 extern const HashAlgo sm3HashAlgo;
 
 //SM3 related functions

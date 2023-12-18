@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -522,7 +522,7 @@ error_t x509FormatKeyUsage(const X509KeyUsage *keyUsage, uint8_t *output,
       //Calculate the length, in bits, of the KeyUsage value
       for(k = 16; k > 0; k--)
       {
-         if(keyUsage->bitmap & (1 << (k - 1)))
+         if(keyUsage->bitmap & (1U << (k - 1)))
             break;
       }
 
@@ -974,7 +974,7 @@ error_t x509FormatNsCertType(const X509NsCertType *nsCertType,
       //Calculate the length, in bits, of the NetscapeCertType value
       for(k = 8; k > 0; k--)
       {
-         if(nsCertType->bitmap & (1 << (k - 1)))
+         if(nsCertType->bitmap & (1U << (k - 1)))
             break;
       }
 

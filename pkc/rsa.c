@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -1251,9 +1251,11 @@ __weak_func error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
       mpiGetLength(&key->dq) > 0 && mpiGetLength(&key->qinv) > 0)
    {
       //Compute m1 = c ^ dP mod p
-      MPI_CHECK(mpiExpModRegular(&m1, c, &key->dp, &key->p));
+      MPI_CHECK(mpiMod(&m1, c, &key->p));
+      MPI_CHECK(mpiExpModRegular(&m1, &m1, &key->dp, &key->p));
       //Compute m2 = c ^ dQ mod q
-      MPI_CHECK(mpiExpModRegular(&m2, c, &key->dq, &key->q));
+      MPI_CHECK(mpiMod(&m2, c, &key->q));
+      MPI_CHECK(mpiExpModRegular(&m2, &m2, &key->dq, &key->q));
       //Let h = (m1 - m2) * qInv mod p
       MPI_CHECK(mpiSub(&h, &m1, &m2));
       MPI_CHECK(mpiMulMod(&h, &h, &key->qinv, &key->p));

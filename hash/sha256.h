@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _SHA256_H
@@ -45,8 +45,6 @@
 #define SHA256_DIGEST_SIZE 32
 //Minimum length of the padding string
 #define SHA256_MIN_PAD_SIZE 9
-//SHA-256 algorithm object identifier
-#define SHA256_OID sha256Oid
 //Common interface for hash algorithms
 #define SHA256_HASH_ALGO (&sha256HashAlgo)
 
@@ -79,7 +77,7 @@ typedef struct
 
 
 //SHA-256 related constants
-extern const uint8_t sha256Oid[9];
+extern const uint8_t SHA256_OID[9];
 extern const HashAlgo sha256HashAlgo;
 
 //SHA-256 related functions

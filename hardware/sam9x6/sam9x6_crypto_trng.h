@@ -1,5 +1,5 @@
 /**
- * @file sam9x60_crypto_trng.h
+ * @file sam9x6_crypto_trng.h
  * @brief SAM9X60 true random number generator
  *
  * @section License
@@ -25,20 +25,20 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
-#ifndef _SAM9X60_CRYPTO_TRNG_H
-#define _SAM9X60_CRYPTO_TRNG_H
+#ifndef _SAM9X6_CRYPTO_TRNG_H
+#define _SAM9X6_CRYPTO_TRNG_H
 
 //Dependencies
 #include "core/crypto.h"
 
 //True random number generator
-#ifndef SAM9X60_CRYPTO_TRNG_SUPPORT
-   #define SAM9X60_CRYPTO_TRNG_SUPPORT ENABLED
-#elif (SAM9X60_CRYPTO_TRNG_SUPPORT != ENABLED && SAM9X60_CRYPTO_TRNG_SUPPORT != DISABLED)
-   #error SAM9X60_CRYPTO_TRNG_SUPPORT parameter is not valid
+#ifndef SAM9X6_CRYPTO_TRNG_SUPPORT
+   #define SAM9X6_CRYPTO_TRNG_SUPPORT ENABLED
+#elif (SAM9X6_CRYPTO_TRNG_SUPPORT != ENABLED && SAM9X6_CRYPTO_TRNG_SUPPORT != DISABLED)
+   #error SAM9X6_CRYPTO_TRNG_SUPPORT parameter is not valid
 #endif
 
 //C++ guard

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _DES_H
@@ -62,6 +62,7 @@ typedef struct
 
 
 //DES related constants
+extern const uint8_t DES_CBC_OID[5];
 extern const CipherAlgo desCipherAlgo;
 
 //DES related functions

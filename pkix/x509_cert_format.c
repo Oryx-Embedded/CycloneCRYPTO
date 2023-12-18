@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -444,6 +444,27 @@ error_t x509FormatName(const X509Name *name, uint8_t *output, size_t *written)
          nameAttribute.type = ASN1_TYPE_UTF8_STRING;
          nameAttribute.data.value = name->commonName.value;
          nameAttribute.data.length = name->commonName.length;
+
+         //Encode the attribute to ASN.1 format
+         error = x509FormatNameAttribute(&nameAttribute, p, &n);
+         //Any error to report?
+         if(error)
+            return error;
+
+         //Advance data pointer
+         p += n;
+         length += n;
+      }
+
+      //Valid E-mail Address attribute?
+      if(name->emailAddress.value != NULL && name->emailAddress.length > 0)
+      {
+         //Set attribute type and value
+         nameAttribute.oid.value = X509_EMAIL_ADDRESS_OID;
+         nameAttribute.oid.length = sizeof(X509_EMAIL_ADDRESS_OID);
+         nameAttribute.type = ASN1_TYPE_IA5_STRING;
+         nameAttribute.data.value = name->emailAddress.value;
+         nameAttribute.data.length = name->emailAddress.length;
 
          //Encode the attribute to ASN.1 format
          error = x509FormatNameAttribute(&nameAttribute, p, &n);

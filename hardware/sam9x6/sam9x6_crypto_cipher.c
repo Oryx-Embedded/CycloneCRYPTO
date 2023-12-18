@@ -1,5 +1,5 @@
 /**
- * @file sam9x60_crypto_cipher.c
+ * @file sam9x6_crypto_cipher.c
  * @brief SAM9X60 cipher hardware accelerator
  *
  * @section License
@@ -25,24 +25,24 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
-#include "sam9x60.h"
+#include "sam.h"
 #include "core/crypto.h"
-#include "hardware/sam9x60/sam9x60_crypto.h"
-#include "hardware/sam9x60/sam9x60_crypto_cipher.h"
+#include "hardware/sam9x6/sam9x6_crypto.h"
+#include "hardware/sam9x6/sam9x6_crypto_cipher.h"
 #include "cipher/cipher_algorithms.h"
 #include "cipher_modes/cipher_modes.h"
 #include "aead/aead_algorithms.h"
 #include "debug.h"
 
 //Check crypto library configuration
-#if (SAM9X60_CRYPTO_CIPHER_SUPPORT == ENABLED)
+#if (SAM9X6_CRYPTO_CIPHER_SUPPORT == ENABLED)
 
 
 /**
@@ -56,21 +56,21 @@ void desProcessDataBlock(const uint8_t *input, uint8_t *output)
    uint32_t temp;
 
    //Write input block
-   TDES->TDES_IDATAR[0] = LOAD32LE(input);
-   TDES->TDES_IDATAR[1] = LOAD32LE(input + 4);
+   TDES_REGS->TDES_IDATAR[0] = LOAD32LE(input);
+   TDES_REGS->TDES_IDATAR[1] = LOAD32LE(input + 4);
 
    //Start encryption/decryption
-   TDES->TDES_CR = TDES_CR_START;
+   TDES_REGS->TDES_CR = TDES_CR_START_Msk;
 
    //When processing completes, the DATRDY flag is raised
-   while((TDES->TDES_ISR & TDES_ISR_DATRDY) == 0)
+   while((TDES_REGS->TDES_ISR & TDES_ISR_DATRDY_Msk) == 0)
    {
    }
 
    //Read output block
-   temp = TDES->TDES_ODATAR[0];
+   temp = TDES_REGS->TDES_ODATAR[0];
    STORE32LE(temp, output);
-   temp = TDES->TDES_ODATAR[1];
+   temp = TDES_REGS->TDES_ODATAR[1];
    STORE32LE(temp, output + 4);
 }
 
@@ -91,24 +91,25 @@ void desProcessData(DesContext *context, uint8_t *iv, const uint8_t *input,
    uint8_t *output, size_t length, uint32_t mode)
 {
    //Acquire exclusive access to the TDES module
-   osAcquireMutex(&sam9x60CryptoMutex);
+   osAcquireMutex(&sam9x6CryptoMutex);
 
    //Perform software reset
-   TDES->TDES_CR = TDES_CR_SWRST;
+   TDES_REGS->TDES_CR = TDES_CR_SWRST_Msk;
 
    //Set operation mode
-   TDES->TDES_MR = TDES_MR_SMOD_MANUAL_START | TDES_MR_TDESMOD(0) | mode;
+   TDES_REGS->TDES_MR = TDES_MR_SMOD_MANUAL_START |
+      TDES_MR_TDESMOD_SINGLE_DES | mode;
 
    //Set encryption key
-   TDES->TDES_KEY1WR[0] = context->ks[0];
-   TDES->TDES_KEY1WR[1] = context->ks[1];
+   TDES_REGS->TDES_KEY1WR[0] = context->ks[0];
+   TDES_REGS->TDES_KEY1WR[1] = context->ks[1];
 
    //Valid initialization vector?
    if(iv != NULL)
    {
       //Set initialization vector
-      TDES->TDES_IVR[0] = LOAD32LE(iv);
-      TDES->TDES_IVR[1] = LOAD32LE(iv + 4);
+      TDES_REGS->TDES_IVR[0] = LOAD32LE(iv);
+      TDES_REGS->TDES_IVR[1] = LOAD32LE(iv + 4);
    }
 
    //Process data
@@ -140,7 +141,7 @@ void desProcessData(DesContext *context, uint8_t *iv, const uint8_t *input,
    }
 
    //Release exclusive access to the TDES module
-   osReleaseMutex(&sam9x60CryptoMutex);
+   osReleaseMutex(&sam9x6CryptoMutex);
 }
 
 
@@ -180,8 +181,8 @@ error_t desInit(DesContext *context, const uint8_t *key, size_t keyLen)
 void desEncryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
 {
    //Perform DES encryption
-   desProcessData(context, NULL, input, output, DES_BLOCK_SIZE, TDES_MR_CIPHER |
-      TDES_MR_OPMOD_ECB);
+   desProcessData(context, NULL, input, output, DES_BLOCK_SIZE,
+      TDES_MR_CIPHER_Msk | TDES_MR_OPMOD_ECB);
 }
 
 
@@ -216,28 +217,29 @@ void des3ProcessData(Des3Context *context, uint8_t *iv, const uint8_t *input,
    uint8_t *output, size_t length, uint32_t mode)
 {
    //Acquire exclusive access to the TDES module
-   osAcquireMutex(&sam9x60CryptoMutex);
+   osAcquireMutex(&sam9x6CryptoMutex);
 
    //Perform software reset
-   TDES->TDES_CR = TDES_CR_SWRST;
+   TDES_REGS->TDES_CR = TDES_CR_SWRST_Msk;
 
    //Set operation mode
-   TDES->TDES_MR = TDES_MR_SMOD_MANUAL_START | TDES_MR_TDESMOD(1) | mode;
+   TDES_REGS->TDES_MR = TDES_MR_SMOD_MANUAL_START |
+      TDES_MR_TDESMOD_TRIPLE_DES | mode;
 
    //Set encryption key
-   TDES->TDES_KEY1WR[0] = context->k1.ks[0];
-   TDES->TDES_KEY1WR[1] = context->k1.ks[1];
-   TDES->TDES_KEY2WR[0] = context->k2.ks[0];
-   TDES->TDES_KEY2WR[1] = context->k2.ks[1];
-   TDES->TDES_KEY3WR[0] = context->k3.ks[0];
-   TDES->TDES_KEY3WR[1] = context->k3.ks[1];
+   TDES_REGS->TDES_KEY1WR[0] = context->k1.ks[0];
+   TDES_REGS->TDES_KEY1WR[1] = context->k1.ks[1];
+   TDES_REGS->TDES_KEY2WR[0] = context->k2.ks[0];
+   TDES_REGS->TDES_KEY2WR[1] = context->k2.ks[1];
+   TDES_REGS->TDES_KEY3WR[0] = context->k3.ks[0];
+   TDES_REGS->TDES_KEY3WR[1] = context->k3.ks[1];
 
    //Valid initialization vector?
    if(iv != NULL)
    {
       //Set initialization vector
-      TDES->TDES_IVR[0] = LOAD32LE(iv);
-      TDES->TDES_IVR[1] = LOAD32LE(iv + 4);
+      TDES_REGS->TDES_IVR[0] = LOAD32LE(iv);
+      TDES_REGS->TDES_IVR[1] = LOAD32LE(iv + 4);
    }
 
    //Process data
@@ -269,7 +271,7 @@ void des3ProcessData(Des3Context *context, uint8_t *iv, const uint8_t *input,
    }
 
    //Release exclusive access to the TDES module
-   osReleaseMutex(&sam9x60CryptoMutex);
+   osReleaseMutex(&sam9x6CryptoMutex);
 }
 
 
@@ -334,8 +336,8 @@ error_t des3Init(Des3Context *context, const uint8_t *key, size_t keyLen)
 void des3EncryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output)
 {
    //Perform Triple DES encryption
-   des3ProcessData(context, NULL, input, output, DES3_BLOCK_SIZE, TDES_MR_CIPHER |
-      TDES_MR_OPMOD_ECB);
+   des3ProcessData(context, NULL, input, output, DES3_BLOCK_SIZE,
+      TDES_MR_CIPHER_Msk | TDES_MR_OPMOD_ECB);
 }
 
 
@@ -354,6 +356,167 @@ void des3DecryptBlock(Des3Context *context, const uint8_t *input, uint8_t *outpu
 }
 
 #endif
+#if (XTEA_SUPPORT == ENABLED)
+
+/**
+ * @brief Encrypt/decrypt a 16-byte block using XTEA algorithm
+ * @param[in] input Input block to be encrypted/decrypted
+ * @param[out] output Resulting block
+ **/
+
+void xteaProcessDataBlock(const uint8_t *input, uint8_t *output)
+{
+   uint32_t temp;
+
+   //Write input block
+   TDES_REGS->TDES_IDATAR[1] = LOAD32LE(input);
+   TDES_REGS->TDES_IDATAR[0] = LOAD32LE(input + 4);
+
+   //Start encryption/decryption
+   TDES_REGS->TDES_CR = TDES_CR_START_Msk;
+
+   //When processing completes, the DATRDY flag is raised
+   while((TDES_REGS->TDES_ISR & TDES_ISR_DATRDY_Msk) == 0)
+   {
+   }
+
+   //Read output block
+   temp = TDES_REGS->TDES_ODATAR[1];
+   STORE32LE(temp, output);
+   temp = TDES_REGS->TDES_ODATAR[0];
+   STORE32LE(temp, output + 4);
+}
+
+
+/**
+ * @brief Perform XTEA encryption or decryption
+ * @param[in] context XTEA algorithm context
+ * @param[in,out] iv Initialization vector
+ * @param[in] input Data to be encrypted/decrypted
+ * @param[out] output Data resulting from the encryption/decryption process
+ * @param[in] length Total number of data bytes to be processed
+ * @param[in] mode Operation mode
+ **/
+
+void xteaProcessData(XteaContext *context, uint8_t *iv, const uint8_t *input,
+   uint8_t *output, size_t length, uint32_t mode)
+{
+   //Acquire exclusive access to the TDES module
+   osAcquireMutex(&sam9x6CryptoMutex);
+
+   //Perform software reset
+   TDES_REGS->TDES_CR = TDES_CR_SWRST_Msk;
+
+   //Set operation mode
+   TDES_REGS->TDES_MR = TDES_MR_SMOD_MANUAL_START |
+      TDES_MR_TDESMOD_XTEA | mode;
+
+   //The number of rounds of XTEA is defined in the TDES_XTEA_RNDR register
+   TDES_REGS->TDES_XTEA_RNDR = XTEA_NB_ROUNDS - 1;
+
+   //Set encryption key
+   TDES_REGS->TDES_KEY2WR[1] = context->k[0];
+   TDES_REGS->TDES_KEY2WR[0] = context->k[1];
+   TDES_REGS->TDES_KEY1WR[1] = context->k[2];
+   TDES_REGS->TDES_KEY1WR[0] = context->k[3];
+
+   //Valid initialization vector?
+   if(iv != NULL)
+   {
+      //Set initialization vector
+      TDES_REGS->TDES_IVR[1] = LOAD32LE(iv);
+      TDES_REGS->TDES_IVR[0] = LOAD32LE(iv + 4);
+   }
+
+   //Process data
+   while(length >= XTEA_BLOCK_SIZE)
+   {
+      //The data is encrypted block by block
+      xteaProcessDataBlock(input, output);
+
+      //Next block
+      input += XTEA_BLOCK_SIZE;
+      output += XTEA_BLOCK_SIZE;
+      length -= XTEA_BLOCK_SIZE;
+   }
+
+   //Process final block of data
+   if(length > 0)
+   {
+      uint8_t buffer[XTEA_BLOCK_SIZE];
+
+      //Copy input data
+      osMemset(buffer, 0, XTEA_BLOCK_SIZE);
+      osMemcpy(buffer, input, length);
+
+      //Encrypt the final block of data
+      xteaProcessDataBlock(buffer, buffer);
+
+      //Copy output data
+      osMemcpy(output, buffer, length);
+   }
+
+   //Release exclusive access to the TDES module
+   osReleaseMutex(&sam9x6CryptoMutex);
+}
+
+
+/**
+ * @brief Initialize a XTEA context using the supplied key
+ * @param[in] context Pointer to the XTEA context to initialize
+ * @param[in] key Pointer to the key
+ * @param[in] keyLen Length of the key (must be set to 16)
+ * @return Error code
+ **/
+
+error_t xteaInit(XteaContext *context, const uint8_t *key, size_t keyLen)
+{
+   //Check parameters
+   if(context == NULL || key == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Invalid key length?
+   if(keyLen != 16)
+      return ERROR_INVALID_KEY_LENGTH;
+
+   //Copy the key
+   osMemcpy(context->k, key, keyLen);
+
+   //No error to report
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Encrypt a 8-byte block using XTEA algorithm
+ * @param[in] context Pointer to the XTEA context
+ * @param[in] input Plaintext block to encrypt
+ * @param[out] output Ciphertext block resulting from encryption
+ **/
+
+void xteaEncryptBlock(XteaContext *context, const uint8_t *input, uint8_t *output)
+{
+   //Perform XTEA encryption
+   xteaProcessData(context, NULL, input, output, XTEA_BLOCK_SIZE,
+      TDES_MR_CIPHER_Msk | TDES_MR_OPMOD_ECB);
+}
+
+
+/**
+ * @brief Decrypt a 8-byte block using XTEA algorithm
+ * @param[in] context Pointer to the XTEA context
+ * @param[in] input Ciphertext block to decrypt
+ * @param[out] output Plaintext block resulting from decryption
+ **/
+
+void xteaDecryptBlock(XteaContext *context, const uint8_t *input, uint8_t *output)
+{
+   //Perform XTEA decryption
+   xteaProcessData(context, NULL, input, output, XTEA_BLOCK_SIZE,
+      TDES_MR_OPMOD_ECB);
+}
+
+#endif
 #if (AES_SUPPORT == ENABLED)
 
 /**
@@ -366,47 +529,47 @@ void aesLoadKey(AesContext *context)
    uint32_t temp;
 
    //Read mode register
-   temp = AES->AES_MR & ~AES_MR_KEYSIZE_Msk;
+   temp = AES_REGS->AES_MR & ~AES_MR_KEYSIZE_Msk;
 
    //Check the length of the key
    if(context->nr == 10)
    {
       //10 rounds are required for 128-bit key
-      AES->AES_MR = temp | AES_MR_KEYSIZE_AES128;
+      AES_REGS->AES_MR = temp | AES_MR_KEYSIZE_AES128;
 
       //Set the 128-bit encryption key
-      AES->AES_KEYWR[0] = context->ek[0];
-      AES->AES_KEYWR[1] = context->ek[1];
-      AES->AES_KEYWR[2] = context->ek[2];
-      AES->AES_KEYWR[3] = context->ek[3];
+      AES_REGS->AES_KEYWR[0] = context->ek[0];
+      AES_REGS->AES_KEYWR[1] = context->ek[1];
+      AES_REGS->AES_KEYWR[2] = context->ek[2];
+      AES_REGS->AES_KEYWR[3] = context->ek[3];
    }
    else if(context->nr == 12)
    {
       //12 rounds are required for 192-bit key
-      AES->AES_MR = temp | AES_MR_KEYSIZE_AES192;
+      AES_REGS->AES_MR = temp | AES_MR_KEYSIZE_AES192;
 
       //Set the 192-bit encryption key
-      AES->AES_KEYWR[0] = context->ek[0];
-      AES->AES_KEYWR[1] = context->ek[1];
-      AES->AES_KEYWR[2] = context->ek[2];
-      AES->AES_KEYWR[3] = context->ek[3];
-      AES->AES_KEYWR[4] = context->ek[4];
-      AES->AES_KEYWR[5] = context->ek[5];
+      AES_REGS->AES_KEYWR[0] = context->ek[0];
+      AES_REGS->AES_KEYWR[1] = context->ek[1];
+      AES_REGS->AES_KEYWR[2] = context->ek[2];
+      AES_REGS->AES_KEYWR[3] = context->ek[3];
+      AES_REGS->AES_KEYWR[4] = context->ek[4];
+      AES_REGS->AES_KEYWR[5] = context->ek[5];
    }
    else
    {
       //14 rounds are required for 256-bit key
-      AES->AES_MR = temp | AES_MR_KEYSIZE_AES256;
+      AES_REGS->AES_MR = temp | AES_MR_KEYSIZE_AES256;
 
       //Set the 256-bit encryption key
-      AES->AES_KEYWR[0] = context->ek[0];
-      AES->AES_KEYWR[1] = context->ek[1];
-      AES->AES_KEYWR[2] = context->ek[2];
-      AES->AES_KEYWR[3] = context->ek[3];
-      AES->AES_KEYWR[4] = context->ek[4];
-      AES->AES_KEYWR[5] = context->ek[5];
-      AES->AES_KEYWR[6] = context->ek[6];
-      AES->AES_KEYWR[7] = context->ek[7];
+      AES_REGS->AES_KEYWR[0] = context->ek[0];
+      AES_REGS->AES_KEYWR[1] = context->ek[1];
+      AES_REGS->AES_KEYWR[2] = context->ek[2];
+      AES_REGS->AES_KEYWR[3] = context->ek[3];
+      AES_REGS->AES_KEYWR[4] = context->ek[4];
+      AES_REGS->AES_KEYWR[5] = context->ek[5];
+      AES_REGS->AES_KEYWR[6] = context->ek[6];
+      AES_REGS->AES_KEYWR[7] = context->ek[7];
    }
 }
 
@@ -422,27 +585,27 @@ void aesProcessDataBlock(const uint8_t *input, uint8_t *output)
    uint32_t temp;
 
    //Write input block
-   AES->AES_IDATAR[0] = LOAD32LE(input);
-   AES->AES_IDATAR[1] = LOAD32LE(input + 4);
-   AES->AES_IDATAR[2] = LOAD32LE(input + 8);
-   AES->AES_IDATAR[3] = LOAD32LE(input + 12);
+   AES_REGS->AES_IDATAR[0] = LOAD32LE(input);
+   AES_REGS->AES_IDATAR[1] = LOAD32LE(input + 4);
+   AES_REGS->AES_IDATAR[2] = LOAD32LE(input + 8);
+   AES_REGS->AES_IDATAR[3] = LOAD32LE(input + 12);
 
    //Start encryption/decryption
-   AES->AES_CR = AES_CR_START;
+   AES_REGS->AES_CR = AES_CR_START_Msk;
 
    //When processing completes, the DATRDY flag is raised
-   while((AES->AES_ISR & AES_ISR_DATRDY) == 0)
+   while((AES_REGS->AES_ISR & AES_ISR_DATRDY_Msk) == 0)
    {
    }
 
    //Read output block
-   temp = AES->AES_ODATAR[0];
+   temp = AES_REGS->AES_ODATAR[0];
    STORE32LE(temp, output);
-   temp = AES->AES_ODATAR[1];
+   temp = AES_REGS->AES_ODATAR[1];
    STORE32LE(temp, output + 4);
-   temp = AES->AES_ODATAR[2];
+   temp = AES_REGS->AES_ODATAR[2];
    STORE32LE(temp, output + 8);
-   temp = AES->AES_ODATAR[3];
+   temp = AES_REGS->AES_ODATAR[3];
    STORE32LE(temp, output + 12);
 }
 
@@ -461,13 +624,13 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
    uint8_t *output, size_t length, uint32_t mode)
 {
    //Acquire exclusive access to the AES module
-   osAcquireMutex(&sam9x60CryptoMutex);
+   osAcquireMutex(&sam9x6CryptoMutex);
 
    //Perform software reset
-   AES->AES_CR = AES_CR_SWRST;
+   AES_REGS->AES_CR = AES_CR_SWRST_Msk;
 
    //Set operation mode
-   AES->AES_MR = AES_MR_SMOD_MANUAL_START | mode;
+   AES_REGS->AES_MR = AES_MR_SMOD_MANUAL_START | mode;
    //Set encryption key
    aesLoadKey(context);
 
@@ -475,10 +638,10 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
    if(iv != NULL)
    {
       //Set initialization vector
-      AES->AES_IVR[0] = LOAD32LE(iv);
-      AES->AES_IVR[1] = LOAD32LE(iv + 4);
-      AES->AES_IVR[2] = LOAD32LE(iv + 8);
-      AES->AES_IVR[3] = LOAD32LE(iv + 12);
+      AES_REGS->AES_IVR[0] = LOAD32LE(iv);
+      AES_REGS->AES_IVR[1] = LOAD32LE(iv + 4);
+      AES_REGS->AES_IVR[2] = LOAD32LE(iv + 8);
+      AES_REGS->AES_IVR[3] = LOAD32LE(iv + 12);
    }
 
    //Process data
@@ -510,7 +673,7 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
    }
 
    //Release exclusive access to the AES module
-   osReleaseMutex(&sam9x60CryptoMutex);
+   osReleaseMutex(&sam9x6CryptoMutex);
 }
 
 
@@ -568,8 +731,8 @@ error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
 void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 {
    //Perform AES encryption
-   aesProcessData(context, NULL, input, output, AES_BLOCK_SIZE, AES_MR_CIPHER |
-      AES_MR_OPMOD_ECB);
+   aesProcessData(context, NULL, input, output, AES_BLOCK_SIZE,
+      AES_MR_CIPHER_Msk | AES_MR_OPMOD_ECB);
 }
 
 
@@ -620,7 +783,7 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
       else if((length % DES_BLOCK_SIZE) == 0)
       {
          //Encrypt payload data
-         desProcessData(context, NULL, p, c, length, TDES_MR_CIPHER |
+         desProcessData(context, NULL, p, c, length, TDES_MR_CIPHER_Msk |
             TDES_MR_OPMOD_ECB);
       }
       else
@@ -643,7 +806,30 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
       else if((length % DES3_BLOCK_SIZE) == 0)
       {
          //Encrypt payload data
-         des3ProcessData(context, NULL, p, c, length, TDES_MR_CIPHER |
+         des3ProcessData(context, NULL, p, c, length, TDES_MR_CIPHER_Msk |
+            TDES_MR_OPMOD_ECB);
+      }
+      else
+      {
+         //The length of the payload must be a multiple of the block size
+         error = ERROR_INVALID_LENGTH;
+      }
+   }
+   else
+#endif
+#if (XTEA_SUPPORT == ENABLED)
+   //XTEA cipher algorithm?
+   if(cipher == XTEA_CIPHER_ALGO)
+   {
+      //Check the length of the payload
+      if(length == 0)
+      {
+         //No data to process
+      }
+      else if((length % XTEA_BLOCK_SIZE) == 0)
+      {
+         //Encrypt payload data
+         xteaProcessData(context, NULL, p, c, length, TDES_MR_CIPHER_Msk |
             TDES_MR_OPMOD_ECB);
       }
       else
@@ -666,7 +852,7 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
       else if((length % AES_BLOCK_SIZE) == 0)
       {
          //Encrypt payload data
-         aesProcessData(context, NULL, p, c, length, AES_MR_CIPHER |
+         aesProcessData(context, NULL, p, c, length, AES_MR_CIPHER_Msk |
             AES_MR_OPMOD_ECB);
       }
       else
@@ -765,6 +951,28 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    }
    else
 #endif
+#if (XTEA_SUPPORT == ENABLED)
+   //XTEA cipher algorithm?
+   if(cipher == XTEA_CIPHER_ALGO)
+   {
+      //Check the length of the payload
+      if(length == 0)
+      {
+         //No data to process
+      }
+      else if((length % XTEA_BLOCK_SIZE) == 0)
+      {
+         //Decrypt payload data
+         xteaProcessData(context, NULL, c, p, length, TDES_MR_OPMOD_ECB);
+      }
+      else
+      {
+         //The length of the payload must be a multiple of the block size
+         error = ERROR_INVALID_LENGTH;
+      }
+   }
+   else
+#endif
 #if (AES_SUPPORT == ENABLED)
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -846,7 +1054,7 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
       else if((length % DES_BLOCK_SIZE) == 0)
       {
          //Encrypt payload data
-         desProcessData(context, iv, p, c, length, TDES_MR_CIPHER |
+         desProcessData(context, iv, p, c, length, TDES_MR_CIPHER_Msk |
             TDES_MR_OPMOD_CBC);
 
          //Update the value of the initialization vector
@@ -872,11 +1080,37 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
       else if((length % DES3_BLOCK_SIZE) == 0)
       {
          //Encrypt payload data
-         des3ProcessData(context, iv, p, c, length, TDES_MR_CIPHER |
+         des3ProcessData(context, iv, p, c, length, TDES_MR_CIPHER_Msk |
             TDES_MR_OPMOD_CBC);
 
          //Update the value of the initialization vector
          osMemcpy(iv, c + length - DES3_BLOCK_SIZE, DES3_BLOCK_SIZE);
+      }
+      else
+      {
+         //The length of the payload must be a multiple of the block size
+         error = ERROR_INVALID_LENGTH;
+      }
+   }
+   else
+#endif
+#if (XTEA_SUPPORT == ENABLED)
+   //XTEA cipher algorithm?
+   if(cipher == XTEA_CIPHER_ALGO)
+   {
+      //Check the length of the payload
+      if(length == 0)
+      {
+         //No data to process
+      }
+      else if((length % XTEA_BLOCK_SIZE) == 0)
+      {
+         //Encrypt payload data
+         xteaProcessData(context, iv, p, c, length, TDES_MR_CIPHER_Msk |
+            TDES_MR_OPMOD_CBC);
+
+         //Update the value of the initialization vector
+         osMemcpy(iv, c + length - XTEA_BLOCK_SIZE, XTEA_BLOCK_SIZE);
       }
       else
       {
@@ -898,7 +1132,7 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
       else if((length % AES_BLOCK_SIZE) == 0)
       {
          //Encrypt payload data
-         aesProcessData(context, iv, p, c, length, AES_MR_CIPHER |
+         aesProcessData(context, iv, p, c, length, AES_MR_CIPHER_Msk |
             AES_MR_OPMOD_CBC);
 
          //Update the value of the initialization vector
@@ -1029,6 +1263,36 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
    }
    else
 #endif
+#if (XTEA_SUPPORT == ENABLED)
+   //XTEA cipher algorithm?
+   if(cipher == XTEA_CIPHER_ALGO)
+   {
+      //Check the length of the payload
+      if(length == 0)
+      {
+         //No data to process
+      }
+      else if((length % XTEA_BLOCK_SIZE) == 0)
+      {
+         uint8_t block[XTEA_BLOCK_SIZE];
+
+         //Save the last input block
+         osMemcpy(block, c + length - XTEA_BLOCK_SIZE, XTEA_BLOCK_SIZE);
+
+         //Decrypt payload data
+         xteaProcessData(context, iv, c, p, length, TDES_MR_OPMOD_CBC);
+
+         //Update the value of the initialization vector
+         osMemcpy(iv, block, XTEA_BLOCK_SIZE);
+      }
+      else
+      {
+         //The length of the payload must be a multiple of the block size
+         error = ERROR_INVALID_LENGTH;
+      }
+   }
+   else
+#endif
 #if (AES_SUPPORT == ENABLED)
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -1133,7 +1397,7 @@ error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
          if(length > 0)
          {
             //Encrypt payload data
-            desProcessData(context, iv, p, c, length, TDES_MR_CIPHER |
+            desProcessData(context, iv, p, c, length, TDES_MR_CIPHER_Msk |
                TDES_MR_OPMOD_CFB | TDES_MR_CFBS_SIZE_64BIT);
          }
          else
@@ -1160,7 +1424,34 @@ error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
          if(length > 0)
          {
             //Encrypt payload data
-            des3ProcessData(context, iv, p, c, length, TDES_MR_CIPHER |
+            des3ProcessData(context, iv, p, c, length, TDES_MR_CIPHER_Msk |
+               TDES_MR_OPMOD_CFB | TDES_MR_CFBS_SIZE_64BIT);
+         }
+         else
+         {
+            //No data to process
+         }
+      }
+      else
+      {
+         //The value of the parameter is not valid
+         error = ERROR_INVALID_PARAMETER;
+      }
+   }
+   else
+#endif
+#if (XTEA_SUPPORT == ENABLED)
+   //XTEA cipher algorithm?
+   if(cipher == XTEA_CIPHER_ALGO)
+   {
+      //Check the value of the parameter
+      if(s == (XTEA_BLOCK_SIZE * 8))
+      {
+         //Check the length of the payload
+         if(length > 0)
+         {
+            //Encrypt payload data
+            xteaProcessData(context, iv, p, c, length, TDES_MR_CIPHER_Msk |
                TDES_MR_OPMOD_CFB | TDES_MR_CFBS_SIZE_64BIT);
          }
          else
@@ -1187,7 +1478,7 @@ error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
          if(length > 0)
          {
             //Encrypt payload data
-            aesProcessData(context, iv, p, c, length, AES_MR_CIPHER |
+            aesProcessData(context, iv, p, c, length, AES_MR_CIPHER_Msk |
                AES_MR_OPMOD_CFB | AES_MR_CFBS_SIZE_128BIT);
          }
          else
@@ -1326,6 +1617,33 @@ error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
    }
    else
 #endif
+#if (XTEA_SUPPORT == ENABLED)
+   //XTEA cipher algorithm?
+   if(cipher == XTEA_CIPHER_ALGO)
+   {
+      //Check the value of the parameter
+      if(s == (XTEA_BLOCK_SIZE * 8))
+      {
+         //Check the length of the payload
+         if(length > 0)
+         {
+            //Decrypt payload data
+            xteaProcessData(context, iv, c, p, length, TDES_MR_OPMOD_CFB |
+               TDES_MR_CFBS_SIZE_64BIT);
+         }
+         else
+         {
+            //No data to process
+         }
+      }
+      else
+      {
+         //The value of the parameter is not valid
+         error = ERROR_INVALID_PARAMETER;
+      }
+   }
+   else
+#endif
 #if (AES_SUPPORT == ENABLED)
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -1435,7 +1753,7 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
          if(length > 0)
          {
             //Encrypt payload data
-            desProcessData(context, iv, p, c, length, TDES_MR_CIPHER |
+            desProcessData(context, iv, p, c, length, TDES_MR_CIPHER_Msk |
                TDES_MR_OPMOD_OFB);
          }
          else
@@ -1462,7 +1780,34 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
          if(length > 0)
          {
             //Encrypt payload data
-            des3ProcessData(context, iv, p, c, length, TDES_MR_CIPHER |
+            des3ProcessData(context, iv, p, c, length, TDES_MR_CIPHER_Msk |
+               TDES_MR_OPMOD_OFB);
+         }
+         else
+         {
+            //No data to process
+         }
+      }
+      else
+      {
+         //The value of the parameter is not valid
+         error = ERROR_INVALID_PARAMETER;
+      }
+   }
+   else
+#endif
+#if (XTEA_SUPPORT == ENABLED)
+   //XTEA cipher algorithm?
+   if(cipher == XTEA_CIPHER_ALGO)
+   {
+      //Check the value of the parameter
+      if(s == (XTEA_BLOCK_SIZE * 8))
+      {
+         //Check the length of the payload
+         if(length > 0)
+         {
+            //Encrypt payload data
+            xteaProcessData(context, iv, p, c, length, TDES_MR_CIPHER_Msk |
                TDES_MR_OPMOD_OFB);
          }
          else
@@ -1489,7 +1834,7 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
          if(length > 0)
          {
             //Encrypt payload data
-            aesProcessData(context, iv, p, c, length, AES_MR_CIPHER |
+            aesProcessData(context, iv, p, c, length, AES_MR_CIPHER_Msk |
                AES_MR_OPMOD_OFB);
          }
          else
@@ -1564,17 +1909,17 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
 void gcmUpdateGhash(const uint8_t *data)
 {
    //Write data block
-   AES->AES_IDATAR[0] = LOAD32LE(data);
-   AES->AES_IDATAR[1] = LOAD32LE(data + 4);
-   AES->AES_IDATAR[2] = LOAD32LE(data + 8);
-   AES->AES_IDATAR[3] = LOAD32LE(data + 12);
+   AES_REGS->AES_IDATAR[0] = LOAD32LE(data);
+   AES_REGS->AES_IDATAR[1] = LOAD32LE(data + 4);
+   AES_REGS->AES_IDATAR[2] = LOAD32LE(data + 8);
+   AES_REGS->AES_IDATAR[3] = LOAD32LE(data + 12);
 
    //Process data
-   AES->AES_CR = AES_CR_START;
+   AES_REGS->AES_CR = AES_CR_START_Msk;
 
    //The DATRDY bit indicates when the data have been processed. However, no
    //output data are generated when processing AAD
-   while((AES->AES_ISR & AES_ISR_DATRDY) == 0)
+   while((AES_REGS->AES_ISR & AES_ISR_DATRDY_Msk) == 0)
    {
    }
 }
@@ -1601,17 +1946,17 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
    uint8_t buffer[16];
 
    //Acquire exclusive access to the AES module
-   osAcquireMutex(&sam9x60CryptoMutex);
+   osAcquireMutex(&sam9x6CryptoMutex);
 
    //Perform software reset
-   AES->AES_CR = AES_CR_SWRST;
+   AES_REGS->AES_CR = AES_CR_SWRST_Msk;
 
    //Check parameters
    if(aLen > 0 || length > 0)
    {
       //Select GCM operation mode
-      AES->AES_MR |= AES_MR_SMOD_MANUAL_START | AES_MR_OPMOD_GCM |
-         AES_MR_GTAGEN | mode;
+      AES_REGS->AES_MR |= AES_MR_SMOD_MANUAL_START | AES_MR_OPMOD_GCM |
+         AES_MR_GTAGEN_Msk | mode;
 
       //Whenever a new key is written to the hardware, the hash subkey is
       //automatically generated. The hash subkey generation must be complete
@@ -1620,20 +1965,20 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
 
       //The DATRDY bit of the AES_ISR indicates when the subkey generation is
       //complete
-      while((AES->AES_ISR & AES_ISR_DATRDY) == 0)
+      while((AES_REGS->AES_ISR & AES_ISR_DATRDY_Msk) == 0)
       {
       }
 
       //When the length of the IV is 96 bits, the padding string is appended to
       //the IV to form the pre-counter block
-      AES->AES_IVR[0] = LOAD32LE(iv);
-      AES->AES_IVR[1] = LOAD32LE(iv + 4);
-      AES->AES_IVR[2] = LOAD32LE(iv + 8);
-      AES->AES_IVR[3] = BETOH32(2);
+      AES_REGS->AES_IVR[0] = LOAD32LE(iv);
+      AES_REGS->AES_IVR[1] = LOAD32LE(iv + 4);
+      AES_REGS->AES_IVR[2] = LOAD32LE(iv + 8);
+      AES_REGS->AES_IVR[3] = BETOH32(2);
 
       //Set AADLEN field in AES_AADLENR and CLEN field in AES_CLENR
-      AES->AES_AADLENR = aLen;
-      AES->AES_CLENR = length;
+      AES_REGS->AES_AADLENR = aLen;
+      AES_REGS->AES_CLENR = length;
 
       //Process additional authenticated data
       while(aLen > 16)
@@ -1684,36 +2029,36 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
       }
 
       //Wait for TAGRDY to be set
-      while((AES->AES_ISR & AES_ISR_TAGRDY) == 0)
+      while((AES_REGS->AES_ISR & AES_ISR_TAGRDY_Msk) == 0)
       {
       }
 
       //Read the value from AES_TAGR registers to obtain the authentication tag
       //of the message
-      temp = AES->AES_TAGR[0];
+      temp = AES_REGS->AES_TAGR[0];
       STORE32LE(temp, t);
-      temp = AES->AES_TAGR[1];
+      temp = AES_REGS->AES_TAGR[1];
       STORE32LE(temp, t + 4);
-      temp = AES->AES_TAGR[2];
+      temp = AES_REGS->AES_TAGR[2];
       STORE32LE(temp, t + 8);
-      temp = AES->AES_TAGR[3];
+      temp = AES_REGS->AES_TAGR[3];
       STORE32LE(temp, t + 12);
    }
    else
    {
       //Select CTR operation mode
-      AES->AES_MR |= AES_MR_SMOD_MANUAL_START | AES_MR_OPMOD_CTR |
-         AES_MR_CIPHER;
+      AES_REGS->AES_MR |= AES_MR_SMOD_MANUAL_START | AES_MR_OPMOD_CTR |
+         AES_MR_CIPHER_Msk;
 
       //Set encryption key
       aesLoadKey(context);
 
       //When the length of the IV is 96 bits, the padding string is appended to
       //the IV to form the pre-counter block
-      AES->AES_IVR[0] = LOAD32LE(iv);
-      AES->AES_IVR[1] = LOAD32LE(iv + 4);
-      AES->AES_IVR[2] = LOAD32LE(iv + 8);
-      AES->AES_IVR[3] = BETOH32(1);
+      AES_REGS->AES_IVR[0] = LOAD32LE(iv);
+      AES_REGS->AES_IVR[1] = LOAD32LE(iv + 4);
+      AES_REGS->AES_IVR[2] = LOAD32LE(iv + 8);
+      AES_REGS->AES_IVR[3] = BETOH32(1);
 
       //Clear data block
       osMemset(buffer, 0, AES_BLOCK_SIZE);
@@ -1723,7 +2068,7 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
    }
 
    //Release exclusive access to the AES module
-   osReleaseMutex(&sam9x60CryptoMutex);
+   osReleaseMutex(&sam9x6CryptoMutex);
 }
 
 
@@ -1790,7 +2135,7 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
 
    //Perform AES-GCM encryption
    gcmProcessData(context->cipherContext, iv, a, aLen, p, c, length,
-      authTag, AES_MR_CIPHER);
+      authTag, AES_MR_CIPHER_Msk);
 
    //Copy the resulting authentication tag
    osMemcpy(t, authTag, tLen);

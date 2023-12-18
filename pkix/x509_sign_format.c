@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -133,6 +133,15 @@ error_t x509FormatSignatureAlgo(const X509SignAlgoId *signatureAlgo,
    {
       //For ECDSA signature algorithm, the encoding must omit the parameters
       //field (refer to RFC 3279, section 2.2.3)
+      n = 0;
+   }
+   else
+#endif
+#if (X509_SM2_SUPPORT == ENABLED && SM2_SUPPORT == ENABLED)
+   //SM2 signature algorithm?
+   if(signAlgo == X509_SIGN_ALGO_SM2)
+   {
+      //If the signature algorithm is SM2, no parameters are involved
       n = 0;
    }
    else

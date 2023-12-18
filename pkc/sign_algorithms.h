@@ -1,6 +1,6 @@
 /**
- * @file sam9x60_crypto.h
- * @brief SAM9X60 hardware cryptographic accelerator
+ * @file sign_algorithms.h
+ * @brief Collection of signature algorithms
  *
  * @section License
  *
@@ -25,29 +25,38 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
-#ifndef _SAM9X60_CRYPTO_H
-#define _SAM9X60_CRYPTO_H
+#ifndef _SIGN_ALGORITHMS_H
+#define _SIGN_ALGORITHMS_H
 
 //Dependencies
 #include "core/crypto.h"
 
-//C++ guard
-#ifdef __cplusplus
-extern "C" {
+//RSA support?
+#if (RSA_SUPPORT == ENABLED)
+   #include "pkc/rsa.h"
 #endif
 
-//Global variables
-extern OsMutex sam9x60CryptoMutex;
+//DSA support?
+#if (DSA_SUPPORT == ENABLED)
+   #include "pkc/dsa.h"
+#endif
 
-//SAM9X60 hardware cryptographic accelerator related functions
-error_t sam9x60CryptoInit(void);
+//ECDSA support?
+#if (ECDSA_SUPPORT == ENABLED)
+   #include "ecc/ecdsa.h"
+#endif
 
-//C++ guard
-#ifdef __cplusplus
-}
+//SM2 support?
+#if (SM2_SUPPORT == ENABLED)
+   #include "ecc/sm2.h"
+#endif
+
+//EdDSA support?
+#if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
+   #include "ecc/eddsa.h"
 #endif
 
 #endif

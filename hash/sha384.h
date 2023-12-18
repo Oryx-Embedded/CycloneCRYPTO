@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _SHA384_H
@@ -41,8 +41,6 @@
 #define SHA384_DIGEST_SIZE 48
 //Minimum length of the padding string
 #define SHA384_MIN_PAD_SIZE 17
-//SHA-384 algorithm object identifier
-#define SHA384_OID sha384Oid
 //Common interface for hash algorithms
 #define SHA384_HASH_ALGO (&sha384HashAlgo)
 
@@ -60,7 +58,7 @@ typedef Sha512Context Sha384Context;
 
 
 //SHA-384 related constants
-extern const uint8_t sha384Oid[9];
+extern const uint8_t SHA384_OID[9];
 extern const HashAlgo sha384HashAlgo;
 
 //SHA-384 related functions

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _X509_SIGN_GENERATE_H
@@ -74,8 +74,12 @@ error_t x509GenerateDsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
 
 error_t x509GenerateEcdsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
    const X509OctetString *tbsData, const HashAlgo *hashAlgo,
-   const X509SubjectPublicKeyInfo *publicKeyInfo, const EcPrivateKey *privateKey,
-   uint8_t *output, size_t *written);
+   const X509SubjectPublicKeyInfo *publicKeyInfo,
+   const EcPrivateKey *privateKey, uint8_t *output, size_t *written);
+
+error_t x509GenerateSm2Signature(const PrngAlgo *prngAlgo, void *prngContext,
+   const X509OctetString *tbsData, const HashAlgo *hashAlgo,
+   const EcPrivateKey *privateKey, uint8_t *output, size_t *written);
 
 error_t x509GenerateEd25519Signature(const X509OctetString *tbsData,
    const EddsaPrivateKey *privateKey, uint8_t *output, size_t *written);

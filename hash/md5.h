@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _MD5_H
@@ -45,8 +45,6 @@
 #define MD5_DIGEST_SIZE 16
 //Minimum length of the padding string
 #define MD5_MIN_PAD_SIZE 9
-//MD5 algorithm object identifier
-#define MD5_OID md5Oid
 //Common interface for hash algorithms
 #define MD5_HASH_ALGO (&md5HashAlgo)
 
@@ -79,7 +77,7 @@ typedef struct
 
 
 //MD5 related constants
-extern const uint8_t md5Oid[8];
+extern const uint8_t MD5_OID[8];
 extern const HashAlgo md5HashAlgo;
 
 //MD5 related functions

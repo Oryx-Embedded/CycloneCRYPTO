@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _EC_CURVES_H
@@ -224,7 +224,7 @@
    #error ED448_SUPPORT parameter is not valid
 #endif
 
-//SECG curves
+//Elliptic curves
 #define SECP112R1_CURVE (&secp112r1Curve)
 #define SECP112R2_CURVE (&secp112r2Curve)
 #define SECP128R1_CURVE (&secp128r1Curve)
@@ -240,8 +240,6 @@
 #define SECP256R1_CURVE (&secp256r1Curve)
 #define SECP384R1_CURVE (&secp384r1Curve)
 #define SECP521R1_CURVE (&secp521r1Curve)
-
-//Brainpool curves
 #define BRAINPOOLP160R1_CURVE (&brainpoolP160r1Curve)
 #define BRAINPOOLP192R1_CURVE (&brainpoolP192r1Curve)
 #define BRAINPOOLP224R1_CURVE (&brainpoolP224r1Curve)
@@ -249,12 +247,9 @@
 #define BRAINPOOLP320R1_CURVE (&brainpoolP320r1Curve)
 #define BRAINPOOLP384R1_CURVE (&brainpoolP384r1Curve)
 #define BRAINPOOLP512R1_CURVE (&brainpoolP512r1Curve)
-
-//Montgomery curves
+#define SM2_CURVE (&sm2Curve)
 #define X25519_CURVE (&x25519Curve)
 #define X448_CURVE (&x448Curve)
-
-//Edwards curves
 #define ED25519_CURVE (&ed25519Curve)
 #define ED448_CURVE (&ed448Curve)
 
@@ -342,6 +337,7 @@ extern const uint8_t BRAINPOOLP256R1_OID[9];
 extern const uint8_t BRAINPOOLP320R1_OID[9];
 extern const uint8_t BRAINPOOLP384R1_OID[9];
 extern const uint8_t BRAINPOOLP512R1_OID[9];
+extern const uint8_t SM2_OID[8];
 extern const uint8_t X25519_OID[3];
 extern const uint8_t X448_OID[3];
 extern const uint8_t ED25519_OID[3];
@@ -369,6 +365,7 @@ extern const EcCurveInfo brainpoolP256r1Curve;
 extern const EcCurveInfo brainpoolP320r1Curve;
 extern const EcCurveInfo brainpoolP384r1Curve;
 extern const EcCurveInfo brainpoolP512r1Curve;
+extern const EcCurveInfo sm2Curve;
 extern const EcCurveInfo x25519Curve;
 extern const EcCurveInfo x448Curve;
 extern const EcCurveInfo ed25519Curve;
@@ -388,6 +385,7 @@ error_t secp256k1Mod(Mpi *a, const Mpi *p);
 error_t secp256r1Mod(Mpi *a, const Mpi *p);
 error_t secp384r1Mod(Mpi *a, const Mpi *p);
 error_t secp521r1Mod(Mpi *a, const Mpi *p);
+error_t sm2Mod(Mpi *a, const Mpi *p);
 
 const EcCurveInfo *ecGetCurveInfo(const uint8_t *oid, size_t length);
 

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -39,6 +39,7 @@
 #include "pkix/pkcs8_key_parse.h"
 #include "pkix/x509_key_parse.h"
 #include "encoding/asn1.h"
+#include "encoding/oid.h"
 #include "mpi/mpi.h"
 #include "debug.h"
 
@@ -1653,6 +1654,19 @@ error_t pemGetPublicKeyType(const char_t *input, size_t length,
             *keyType = x509GetPublicKeyType(publicKeyInfo.oid.value,
                publicKeyInfo.oid.length);
 
+            //EC public key identifier?
+            if(*keyType == X509_KEY_TYPE_EC)
+            {
+               //SM2 elliptic curve?
+               if(!oidComp(publicKeyInfo.ecParams.namedCurve.value,
+                  publicKeyInfo.ecParams.namedCurve.length, SM2_OID,
+                  sizeof(SM2_OID)))
+               {
+                  //The PEM file contains an SM2 public key
+                  *keyType = X509_KEY_TYPE_SM2;
+               }
+            }
+
             //Unknown algorithm identifier?
             if(*keyType == X509_KEY_TYPE_UNKNOWN)
             {
@@ -1734,8 +1748,50 @@ error_t pemGetPrivateKeyType(const char_t *input, size_t length,
    if(pemDecodeFile(input, length, "EC PRIVATE KEY", NULL, &n, NULL,
       NULL) == NO_ERROR)
    {
-      //The PEM file contains an EC private key
-      *keyType = X509_KEY_TYPE_EC;
+      //Allocate a memory buffer to hold the ASN.1 data
+      buffer = cryptoAllocMem(n);
+
+      //Successful memory allocation?
+      if(buffer != NULL)
+      {
+         //Decode the content of the PEM container
+         error = pemDecodeFile(input, length, "EC PRIVATE KEY", buffer, &n,
+            NULL, NULL);
+
+         //Check status code
+         if(!error)
+         {
+            //Read ECPrivateKey structure
+            error = pkcs8ParseEcPrivateKey(buffer, n, &privateKeyInfo.ecParams,
+               &privateKeyInfo.ecPrivateKey);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //SM2 elliptic curve?
+            if(!oidComp(privateKeyInfo.ecParams.namedCurve.value,
+               privateKeyInfo.ecParams.namedCurve.length, SM2_OID,
+               sizeof(SM2_OID)))
+            {
+               //The PEM file contains an SM2 private key
+               *keyType = X509_KEY_TYPE_SM2;
+            }
+            else
+            {
+               //The PEM file contains an EC private key
+               *keyType = X509_KEY_TYPE_EC;
+            }
+         }
+
+         //Release previously allocated memory
+         cryptoFreeMem(buffer);
+      }
+      else
+      {
+         //Failed to allocate memory
+         error = ERROR_OUT_OF_MEMORY;
+      }
    }
    else
 #endif
@@ -1763,9 +1819,22 @@ error_t pemGetPrivateKeyType(const char_t *input, size_t length,
          //Check status code
          if(!error)
          {
-            //Check private key algorithm identifier
+            //Check public key algorithm identifier
             *keyType = x509GetPublicKeyType(privateKeyInfo.oid.value,
                privateKeyInfo.oid.length);
+
+            //EC public key identifier?
+            if(*keyType == X509_KEY_TYPE_EC)
+            {
+               //SM2 elliptic curve?
+               if(!oidComp(privateKeyInfo.ecParams.namedCurve.value,
+                  privateKeyInfo.ecParams.namedCurve.length, SM2_OID,
+                  sizeof(SM2_OID)))
+               {
+                  //The PEM file contains an SM2 private key
+                  *keyType = X509_KEY_TYPE_SM2;
+               }
+            }
 
             //Unknown algorithm identifier?
             if(*keyType == X509_KEY_TYPE_UNKNOWN)

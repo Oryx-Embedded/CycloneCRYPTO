@@ -33,7 +33,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -342,7 +342,6 @@ __weak_func error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const ui
 /**
  * @brief Format first block B(0)
  * @param[in] q Bit string representation of the octet length of P
- * @param[in] qLen Octet length of Q
  * @param[in] n Nonce
  * @param[in] nLen Length of the nonce
  * @param[in] aLen Length of the additional data

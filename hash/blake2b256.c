@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -39,14 +39,14 @@
 #if (BLAKE2B256_SUPPORT == ENABLED)
 
 //BLAKE2b-256 object identifier (1.3.6.1.4.1.1722.12.2.1.8)
-const uint8_t blake2b256Oid[11] = {0x43, 0x06, 0x01, 0x04, 0x01, 0x8D, 0x3A, 0x0C, 0x02, 0x01, 0x08};
+const uint8_t BLAKE2B256_OID[11] = {0x43, 0x06, 0x01, 0x04, 0x01, 0x8D, 0x3A, 0x0C, 0x02, 0x01, 0x08};
 
 //Common interface for hash algorithms
 const HashAlgo blake2b256HashAlgo =
 {
    "BLAKE2b-256",
-   blake2b256Oid,
-   sizeof(blake2b256Oid),
+   BLAKE2B256_OID,
+   sizeof(BLAKE2B256_OID),
    sizeof(Blake2b256Context),
    BLAKE2B256_BLOCK_SIZE,
    BLAKE2B256_DIGEST_SIZE,

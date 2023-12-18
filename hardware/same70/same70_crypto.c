@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -78,7 +78,7 @@ error_t same70CryptoInit(void)
    if(!error)
    {
       //Enable ICM peripheral clock
-      PMC_REGS->PMC_PCER1 = (1 << (ID_ICM - 32));
+      PMC_REGS->PMC_PCER1 = (1U << (ID_ICM - 32));
    }
 #endif
 
@@ -87,7 +87,7 @@ error_t same70CryptoInit(void)
    if(!error)
    {
       //Enable AES peripheral clock
-      PMC_REGS->PMC_PCER1 = (1 << (ID_AES - 32));
+      PMC_REGS->PMC_PCER1 = (1U << (ID_AES - 32));
    }
 #endif
 

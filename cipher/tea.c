@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -110,7 +110,7 @@ void teaEncryptBlock(TeaContext *context, const uint8_t *input,
    z = LOAD32BE(input + 4);
 
    //Apply 32 rounds
-   for(i = 0; i < 32; i++)
+   for(i = 0; i < TEA_NB_ROUNDS; i++)
    {
       sum += DELTA;
       y += ((z << 4) + context->k[0]) ^ (z + sum) ^ ((z >> 5) + context->k[1]);
@@ -139,14 +139,14 @@ void teaDecryptBlock(TeaContext *context, const uint8_t *input,
    uint32_t sum;
 
    //Initialize variable
-   sum = DELTA << 5;
+   sum = (DELTA & 0x07FFFFFF) << 5;
 
    //The 8 bytes of ciphertext are split into 2 words
    y = LOAD32BE(input + 0);
    z = LOAD32BE(input + 4);
 
    //Apply 32 rounds
-   for(i = 0; i < 32; i++)
+   for(i = 0; i < TEA_NB_ROUNDS; i++)
    {
       z -= ((y << 4) + context->k[2]) ^ (y + sum) ^ ((y >> 5) + context->k[3]);
       y -= ((z << 4) + context->k[0]) ^ (z + sum) ^ ((z >> 5) + context->k[1]);

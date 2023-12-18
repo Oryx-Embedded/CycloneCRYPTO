@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _TIGER_H
@@ -40,8 +40,6 @@
 #define TIGER_DIGEST_SIZE 24
 //Minimum length of the padding string
 #define TIGER_MIN_PAD_SIZE 9
-//Tiger algorithm object identifier
-#define TIGER_OID tigerOid
 //Common interface for hash algorithms
 #define TIGER_HASH_ALGO (&tigerHashAlgo)
 
@@ -73,7 +71,7 @@ typedef struct
 
 
 //Tiger related constants
-extern const uint8_t tigerOid[9];
+extern const uint8_t TIGER_OID[9];
 extern const HashAlgo tigerHashAlgo;
 
 //Tiger related functions

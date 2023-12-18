@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -78,7 +78,7 @@ error_t sama5d2CryptoInit(void)
    if(!error)
    {
       //Enable SHA peripheral clock
-      PMC->PMC_PCER0 = (1 << ID_SHA);
+      PMC->PMC_PCER0 = (1U << ID_SHA);
    }
 #endif
 
@@ -87,7 +87,7 @@ error_t sama5d2CryptoInit(void)
    if(!error)
    {
       //Enable AES and TDES peripheral clocks
-      PMC->PMC_PCER0 = (1 << ID_AES) | (1 << ID_TDES);
+      PMC->PMC_PCER0 = (1U << ID_AES) | (1U << ID_TDES);
    }
 #endif
 

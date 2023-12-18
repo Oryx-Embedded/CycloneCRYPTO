@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 //Switch to the appropriate trace level
@@ -66,9 +66,11 @@ error_t msp432e4CryptoInit(void)
    //Check status code
    if(!error)
    {
-      //Enable the CCM module
+      //Enable and reset CCM peripheral
       SysCtlPeripheralEnable(SYSCTL_PERIPH_CCM0);
-      //Wait for the CCM module to be ready
+      SysCtlPeripheralReset(SYSCTL_PERIPH_CCM0);
+
+      //Wait for the CCM peripheral to be ready
       while(!SysCtlPeripheralReady(SYSCTL_PERIPH_CCM0))
       {
       }

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.2
+ * @version 2.3.4
  **/
 
 #ifndef _CAMELLIA_H
@@ -71,6 +71,9 @@ typedef struct
 
 
 //Camellia related constants
+extern const uint8_t CAMELLIA128_CBC_OID[11];
+extern const uint8_t CAMELLIA192_CBC_OID[11];
+extern const uint8_t CAMELLIA256_CBC_OID[11];
 extern const CipherAlgo camelliaCipherAlgo;
 
 //Camellia related functions
