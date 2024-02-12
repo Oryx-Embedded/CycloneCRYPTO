@@ -1,12 +1,12 @@
 /**
- * @file lpc55xx_crypto_cipher.h
- * @brief LPC5500 cipher hardware accelerator
+ * @file stm32mp13xx_crypto_trng.h
+ * @brief STM32MP13 true random number generator
  *
  * @section License
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,26 +25,30 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.4
+ * @version 2.4.0
  **/
 
-#ifndef _LPC55XX_CRYPTO_CIPHER_H
-#define _LPC55XX_CRYPTO_CIPHER_H
+#ifndef _STM32MP13XX_CRYPTO_TRNG_H
+#define _STM32MP13XX_CRYPTO_TRNG_H
 
 //Dependencies
 #include "core/crypto.h"
 
-//Cipher hardware accelerator
-#ifndef LPC55XX_CRYPTO_CIPHER_SUPPORT
-   #define LPC55XX_CRYPTO_CIPHER_SUPPORT DISABLED
-#elif (LPC55XX_CRYPTO_CIPHER_SUPPORT != ENABLED && LPC55XX_CRYPTO_CIPHER_SUPPORT != DISABLED)
-   #error LPC55XX_CRYPTO_CIPHER_SUPPORT parameter is not valid
+//True random number generator
+#ifndef STM32MP13XX_CRYPTO_TRNG_SUPPORT
+   #define STM32MP13XX_CRYPTO_TRNG_SUPPORT ENABLED
+#elif (STM32MP13XX_CRYPTO_TRNG_SUPPORT != ENABLED && STM32MP13XX_CRYPTO_TRNG_SUPPORT != DISABLED)
+   #error STM32MP13XX_CRYPTO_TRNG_SUPPORT parameter is not valid
 #endif
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+//TRNG related functions
+error_t trngInit(void);
+error_t trngGetRandomData(uint8_t *data, size_t length);
 
 //C++ guard
 #ifdef __cplusplus

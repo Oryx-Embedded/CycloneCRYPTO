@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1321
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.4
+ * @version 2.4.0
  **/
 
 //Switch to the appropriate trace level

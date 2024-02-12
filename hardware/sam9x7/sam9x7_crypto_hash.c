@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.4
+ * @version 2.4.0
  **/
 
 //Switch to the appropriate trace level
@@ -119,7 +119,7 @@ void hashProcessData(uint32_t algo, const uint8_t *data, size_t length,
    //Input data are processed in a block-by-block fashion
    while(length >= blockSize)
    {
-      //Write the block to be processed in the input data registers
+      //Write the block to be processed to the input data registers
       SHA_REGS->SHA_IDATAR[0] = LOAD32LE(data);
       SHA_REGS->SHA_IDATAR[1] = LOAD32LE(data + 4);
       SHA_REGS->SHA_IDATAR[2] = LOAD32LE(data + 8);

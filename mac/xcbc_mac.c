@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -29,7 +29,7 @@
  * XCBC-MAC is a block cipher-based MAC algorithm specified in NIST SP 800-38B
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.4
+ * @version 2.4.0
  **/
 
 //Switch to the appropriate trace level
@@ -236,7 +236,7 @@ error_t xcbcMacFinal(XcbcMacContext *context, uint8_t *mac, size_t macLen)
    if(macLen < 1 || macLen > context->cipher->blockSize)
       return ERROR_INVALID_PARAMETER;
 
-   //Check whether the the block size of M[n] is 128 bits
+   //Check whether the block size of M[n] is 128 bits
    if(context->bufferLength >= context->cipher->blockSize)
    {
       //XOR M[n] with E[n-1] and key K2

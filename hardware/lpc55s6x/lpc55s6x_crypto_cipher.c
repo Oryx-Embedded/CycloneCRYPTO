@@ -1,12 +1,12 @@
 /**
- * @file lpc55xx_crypto_cipher.c
- * @brief LPC5500 cipher hardware accelerator
+ * @file lpc55s6x_crypto_cipher.c
+ * @brief LPC55S6x cipher hardware accelerator
  *
  * @section License
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.4
+ * @version 2.4.0
  **/
 
 //Switch to the appropriate trace level
@@ -35,13 +35,13 @@
 #include "fsl_device_registers.h"
 #include "fsl_hashcrypt.h"
 #include "core/crypto.h"
-#include "hardware/lpc55xx/lpc55xx_crypto.h"
-#include "hardware/lpc55xx/lpc55xx_crypto_cipher.h"
+#include "hardware/lpc55s6x/lpc55s6x_crypto.h"
+#include "hardware/lpc55s6x/lpc55s6x_crypto_cipher.h"
 #include "cipher/aes.h"
 #include "debug.h"
 
 //Check crypto library configuration
-#if (LPC55XX_CRYPTO_CIPHER_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
+#if (LPC55S6X_CRYPTO_CIPHER_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
 
 
 /**
@@ -109,7 +109,7 @@ void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
    hashcrypt_handle_t handle;
 
    //Acquire exclusive access to the HASHCRYPT module
-   osAcquireMutex(&lpc55xxCryptoMutex);
+   osAcquireMutex(&lpc55s6xCryptoMutex);
 
    //Load AES key
    aesLoadKey(context, &handle);
@@ -118,7 +118,7 @@ void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
    HASHCRYPT_AES_EncryptEcb(HASHCRYPT, &handle, input, output, AES_BLOCK_SIZE);
 
    //Release exclusive access to the HASHCRYPT module
-   osReleaseMutex(&lpc55xxCryptoMutex);
+   osReleaseMutex(&lpc55s6xCryptoMutex);
 }
 
 
@@ -134,7 +134,7 @@ void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
    hashcrypt_handle_t handle;
 
    //Acquire exclusive access to the HASHCRYPT module
-   osAcquireMutex(&lpc55xxCryptoMutex);
+   osAcquireMutex(&lpc55s6xCryptoMutex);
 
    //Load AES key
    aesLoadKey(context, &handle);
@@ -143,7 +143,7 @@ void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
    HASHCRYPT_AES_DecryptEcb(HASHCRYPT, &handle, input, output, AES_BLOCK_SIZE);
 
    //Release exclusive access to the HASHCRYPT module
-   osReleaseMutex(&lpc55xxCryptoMutex);
+   osReleaseMutex(&lpc55s6xCryptoMutex);
 }
 
 
@@ -184,7 +184,7 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
          aesContext = (AesContext *) context;
 
          //Acquire exclusive access to the HASHCRYPT module
-         osAcquireMutex(&lpc55xxCryptoMutex);
+         osAcquireMutex(&lpc55s6xCryptoMutex);
 
          //Load AES key
          status = aesLoadKey(context, &handle);
@@ -198,7 +198,7 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
          }
 
          //Release exclusive access to the HASHCRYPT module
-         osReleaseMutex(&lpc55xxCryptoMutex);
+         osReleaseMutex(&lpc55s6xCryptoMutex);
       }
       else
       {
@@ -267,7 +267,7 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
          aesContext = (AesContext *) context;
 
          //Acquire exclusive access to the HASHCRYPT module
-         osAcquireMutex(&lpc55xxCryptoMutex);
+         osAcquireMutex(&lpc55s6xCryptoMutex);
 
          //Load AES key
          status = aesLoadKey(context, &handle);
@@ -281,7 +281,7 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
          }
 
          //Release exclusive access to the HASHCRYPT module
-         osReleaseMutex(&lpc55xxCryptoMutex);
+         osReleaseMutex(&lpc55s6xCryptoMutex);
       }
       else
       {
@@ -353,7 +353,7 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
          aesContext = (AesContext *) context;
 
          //Acquire exclusive access to the HASHCRYPT module
-         osAcquireMutex(&lpc55xxCryptoMutex);
+         osAcquireMutex(&lpc55s6xCryptoMutex);
 
          //Load AES key
          status = aesLoadKey(context, &handle);
@@ -367,7 +367,7 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
          }
 
          //Release exclusive access to the HASHCRYPT module
-         osReleaseMutex(&lpc55xxCryptoMutex);
+         osReleaseMutex(&lpc55s6xCryptoMutex);
 
          //Check status code
          if(status == kStatus_Success)
@@ -460,7 +460,7 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
          osMemcpy(block, c + length - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
 
          //Acquire exclusive access to the HASHCRYPT module
-         osAcquireMutex(&lpc55xxCryptoMutex);
+         osAcquireMutex(&lpc55s6xCryptoMutex);
 
          //Load AES key
          status = aesLoadKey(context, &handle);
@@ -474,7 +474,7 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
          }
 
          //Release exclusive access to the HASHCRYPT module
-         osReleaseMutex(&lpc55xxCryptoMutex);
+         osReleaseMutex(&lpc55s6xCryptoMutex);
 
          //Check status code
          if(status == kStatus_Success)
@@ -572,7 +572,7 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             aesContext = (AesContext *) context;
 
             //Acquire exclusive access to the HASHCRYPT module
-            osAcquireMutex(&lpc55xxCryptoMutex);
+            osAcquireMutex(&lpc55s6xCryptoMutex);
 
             //Load AES key
             status = aesLoadKey(context, &handle);
@@ -586,7 +586,7 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             }
 
             //Release exclusive access to the HASHCRYPT module
-            osReleaseMutex(&lpc55xxCryptoMutex);
+            osReleaseMutex(&lpc55s6xCryptoMutex);
          }
          else
          {

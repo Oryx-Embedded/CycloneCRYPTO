@@ -1,12 +1,12 @@
 /**
- * @file lpc55xx_crypto_trng.c
- * @brief LPC5500 true random number generator
+ * @file lpc55s6x_crypto_trng.c
+ * @brief LPC55S6x true random number generator
  *
  * @section License
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.4
+ * @version 2.4.0
  **/
 
 //Switch to the appropriate trace level
@@ -35,12 +35,12 @@
 #include "fsl_device_registers.h"
 #include "fsl_rng.h"
 #include "core/crypto.h"
-#include "hardware/lpc55xx/lpc55xx_crypto.h"
-#include "hardware/lpc55xx/lpc55xx_crypto_trng.h"
+#include "hardware/lpc55s6x/lpc55s6x_crypto.h"
+#include "hardware/lpc55s6x/lpc55s6x_crypto_trng.h"
 #include "debug.h"
 
 //Check crypto library configuration
-#if (LPC55XX_CRYPTO_TRNG_SUPPORT == ENABLED)
+#if (LPC55S6X_CRYPTO_TRNG_SUPPORT == ENABLED)
 
 
 /**
@@ -69,13 +69,13 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
    status_t status;
 
    //Acquire exclusive access to the RNG module
-   osAcquireMutex(&lpc55xxCryptoMutex);
+   osAcquireMutex(&lpc55s6xCryptoMutex);
 
    //Generate random data
    status = RNG_GetRandomData(RNG, data, length);
 
    //Release exclusive access to the RNG module
-   osReleaseMutex(&lpc55xxCryptoMutex);
+   osReleaseMutex(&lpc55s6xCryptoMutex);
 
    //Return status code
    return (status == kStatus_Success) ? NO_ERROR : ERROR_FAILURE;

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -33,7 +33,7 @@
  * - RFC 8954: Online Certificate Status Protocol (OCSP) Nonce Extension
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.4
+ * @version 2.4.0
  **/
 
 //Switch to the appropriate trace level
@@ -788,8 +788,7 @@ OcspResponseStatus ocspClientGetResponseStatus(OcspClientContext *context)
       if(context->state == OCSP_CLIENT_STATE_VALIDATE_RESP ||
          context->state == OCSP_CLIENT_STATE_RESP_VALIDATED)
       {
-         //The response status indicates the the processing status of the
-         //request
+         //The response status indicates the processing status of the request
          responseStatus = context->ocspResponse.responseStatus;
       }
    }

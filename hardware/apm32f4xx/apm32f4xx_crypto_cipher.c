@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.4
+ * @version 2.4.0
  **/
 
 //Switch to the appropriate trace level
@@ -82,13 +82,12 @@ void desProcessData(DesContext *context, uint8_t *iv, const uint8_t *input,
 
    //Configure the data type
    CRYP->CTRL = CRYP_CTRL_DTSEL_8B;
+   //Configure the algorithm and chaining mode
+   CRYP->CTRL |= mode;
 
    //Set encryption key
    CRYP->K1L = context->ks[0];
    CRYP->K1R = context->ks[1];
-
-   //Configure the algorithm and chaining mode
-   CRYP->CTRL |= mode;
 
    //Valid initialization vector?
    if(iv != NULL)
@@ -229,6 +228,8 @@ void des3ProcessData(Des3Context *context, uint8_t *iv, const uint8_t *input,
 
    //Configure the data type
    CRYP->CTRL = CRYP_CTRL_DTSEL_8B;
+   //Configure the algorithm and chaining mode
+   CRYP->CTRL |= mode;
 
    //Set encryption key
    CRYP->K1L = context->k1.ks[0];
@@ -237,9 +238,6 @@ void des3ProcessData(Des3Context *context, uint8_t *iv, const uint8_t *input,
    CRYP->K2R = context->k2.ks[1];
    CRYP->K3L = context->k3.ks[0];
    CRYP->K3R = context->k3.ks[1];
-
-   //Configure the algorithm and chaining mode
-   CRYP->CTRL |= mode;
 
    //Valid initialization vector?
    if(iv != NULL)
@@ -469,14 +467,13 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
    //Configure the data type
    CRYP->CTRL = CRYP_CTRL_DTSEL_8B;
 
-   //Set encryption key
-   aesLoadKey(context);
-
    //AES-ECB or AES-CBC decryption?
    if((mode & CRYP_CTRL_ALGODIRSEL) != 0)
    {
       //Configure the key preparation mode by setting the ALGOMODE bits to '111'
       CRYP->CTRL |= CRYP_CTRL_ALGOMSEL_AES_KEY;
+      //Set encryption key
+      aesLoadKey(context);
       //Write the CRYPEN bit to 1
       CRYP->CTRL |= CRYP_CTRL_CRYPEN;
 
@@ -484,11 +481,18 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
       while((CRYP->STS & CRYP_STS_BUSY) != 0)
       {
       }
-   }
 
-   //The algorithm must be configured once the key has been prepared
-   temp = CRYP->CTRL & ~(CRYP_CTRL_ALGOMSEL | CRYP_CTRL_ALGODIRSEL);
-   CRYP->CTRL = temp | mode;
+      //The algorithm must be configured once the key has been prepared
+      temp = CRYP->CTRL & ~CRYP_CTRL_ALGOMSEL;
+      CRYP->CTRL = temp | mode;
+   }
+   else
+   {
+      //Configure the algorithm and chaining mode
+      CRYP->CTRL |= mode;
+      //Set encryption key
+      aesLoadKey(context);
+   }
 
    //Valid initialization vector?
    if(iv != NULL)

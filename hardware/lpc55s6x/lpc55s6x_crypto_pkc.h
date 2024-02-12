@@ -1,12 +1,12 @@
 /**
- * @file lpc55xx_crypto_hash.h
- * @brief LPC5500 hash hardware accelerator
+ * @file lpc55s6x_crypto_pkc.h
+ * @brief LPC55S6x public-key hardware accelerator
  *
  * @section License
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,26 +25,41 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.4
+ * @version 2.4.0
  **/
 
-#ifndef _LPC55XX_CRYPTO_HASH_H
-#define _LPC55XX_CRYPTO_HASH_H
+#ifndef _LPC55S6X_CRYPTO_PKC_H
+#define _LPC55S6X_CRYPTO_PKC_H
 
 //Dependencies
 #include "core/crypto.h"
 
-//Hash hardware accelerator
-#ifndef LPC55XX_CRYPTO_HASH_SUPPORT
-   #define LPC55XX_CRYPTO_HASH_SUPPORT DISABLED
-#elif (LPC55XX_CRYPTO_HASH_SUPPORT != ENABLED && LPC55XX_CRYPTO_HASH_SUPPORT != DISABLED)
-   #error LPC55XX_CRYPTO_HASH_SUPPORT parameter is not valid
+//Public-key hardware accelerator
+#ifndef LPC55S6X_CRYPTO_PKC_SUPPORT
+   #define LPC55S6X_CRYPTO_PKC_SUPPORT DISABLED
+#elif (LPC55S6X_CRYPTO_PKC_SUPPORT != ENABLED && LPC55S6X_CRYPTO_PKC_SUPPORT != DISABLED)
+   #error LPC55S6X_CRYPTO_PKC_SUPPORT parameter is not valid
 #endif
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+/**
+ * @brief EC primitive arguments
+ **/
+
+typedef struct
+{
+   uint32_t rx[18];
+   uint32_t ry[18];
+   uint32_t sx[18];
+   uint32_t sy[18];
+   uint32_t d[18];
+} Lpc55s6xEcArgs;
+
 
 //C++ guard
 #ifdef __cplusplus

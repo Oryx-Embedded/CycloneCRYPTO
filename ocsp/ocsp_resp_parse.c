@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.4
+ * @version 2.4.0
  **/
 
 //Switch to the appropriate trace level
@@ -151,7 +151,7 @@ error_t ocspParseResponseStatus(const uint8_t *data, size_t length,
    //Save the total length of the field
    *totalLength = tag.totalLength;
 
-   //The response status indicates the the processing status of the request
+   //The response status indicates the processing status of the request
    *status = (OcspResponseStatus) tag.value[0];
 
    //Successful processing
@@ -976,8 +976,8 @@ error_t ocspParseRevokedInfo(const uint8_t *data, size_t length,
       //Check whether the RevocationReason field is present
       if(!error)
       {
-         //Parse RevocationReason field indicates the the reason why the
-         //certificate was revoked
+         //Parse RevocationReason field indicates the reason why the certificate
+         //was revoked
          error = ocspParseRevocationReason(tag.value, tag.length,
             &revokedInfo->revocationReason);
          //Any error to report?
@@ -1022,7 +1022,7 @@ error_t ocspParseRevocationReason(const uint8_t *data, size_t length,
    if(tag.length != 1)
       return ERROR_INVALID_SYNTAX;
 
-   //Parse RevocationReason field indicates the the reason why the certificate
+   //Parse RevocationReason field indicates the reason why the certificate
    //was revoked
    *revocationReason = (X509CrlReasons) tag.value[0];
 

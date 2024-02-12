@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.4
+ * @version 2.4.0
  **/
 
 //Switch to the appropriate trace level
@@ -82,13 +82,12 @@ void desProcessData(DesContext *context, uint8_t *iv, const uint8_t *input,
 
    //Configure the data type
    CAU_CTL = CAU_SWAPPING_8BIT;
+   //Configure the algorithm and chaining mode
+   CAU_CTL |= mode;
 
    //Set encryption key
    CAU_KEY1H = context->ks[0];
    CAU_KEY1L = context->ks[1];
-
-   //Configure the algorithm and chaining mode
-   CAU_CTL |= mode;
 
    //Valid initialization vector?
    if(iv != NULL)
@@ -229,6 +228,8 @@ void des3ProcessData(Des3Context *context, uint8_t *iv, const uint8_t *input,
 
    //Configure the data type
    CAU_CTL = CAU_SWAPPING_8BIT;
+   //Configure the algorithm and chaining mode
+   CAU_CTL |= mode;
 
    //Set encryption key
    CAU_KEY1H = context->k1.ks[0];
@@ -237,9 +238,6 @@ void des3ProcessData(Des3Context *context, uint8_t *iv, const uint8_t *input,
    CAU_KEY2L = context->k2.ks[1];
    CAU_KEY3H = context->k3.ks[0];
    CAU_KEY3L = context->k3.ks[1];
-
-   //Configure the algorithm and chaining mode
-   CAU_CTL |= mode;
 
    //Valid initialization vector?
    if(iv != NULL)
@@ -469,14 +467,13 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
    //Configure the data type
    CAU_CTL = CAU_SWAPPING_8BIT;
 
-   //Set encryption key
-   aesLoadKey(context);
-
    //AES-ECB or AES-CBC decryption?
    if((mode & CAU_CTL_CAUDIR) != 0)
    {
       //Select key derivation mode by setting the ALGM bits to '111'
       CAU_CTL |= CAU_MODE_AES_KEY | CAU_CTL_CAUDIR;
+      //Set encryption key
+      aesLoadKey(context);
       //Write the CAUEN bit to 1
       CAU_CTL |= CAU_CTL_CAUEN;
 
@@ -484,11 +481,18 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
       while((CAU_STAT0 & CAU_STAT0_BUSY) != 0)
       {
       }
-   }
 
-   //The algorithm must be configured once the key has been prepared
-   temp = CAU_CTL & ~(CAU_CTL_ALGM | CAU_CTL_CAUDIR);
-   CAU_CTL = temp | mode;
+      //The algorithm must be configured once the key has been prepared
+      temp = CAU_CTL & ~CAU_CTL_ALGM;
+      CAU_CTL = temp | mode;
+   }
+   else
+   {
+      //Configure the algorithm and chaining mode
+      CAU_CTL |= mode;
+      //Set encryption key
+      aesLoadKey(context);
+   }
 
    //Valid initialization vector?
    if(iv != NULL)

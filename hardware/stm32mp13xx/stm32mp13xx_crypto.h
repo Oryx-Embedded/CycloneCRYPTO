@@ -1,12 +1,12 @@
 /**
- * @file lpc55xx_crypto.h
- * @brief LPC5500 hardware cryptographic accelerator
+ * @file stm32mp13xx_crypto.h
+ * @brief STM32MP13 hardware cryptographic accelerator
  *
  * @section License
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,11 +25,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.4
+ * @version 2.4.0
  **/
 
-#ifndef _LPC55XX_CRYPTO_H
-#define _LPC55XX_CRYPTO_H
+#ifndef _STM32MP13XX_CRYPTO_H
+#define _STM32MP13XX_CRYPTO_H
 
 //Dependencies
 #include "core/crypto.h"
@@ -40,10 +40,10 @@ extern "C" {
 #endif
 
 //Global variables
-extern OsMutex lpc55xxCryptoMutex;
+extern OsMutex stm32mp13xxCryptoMutex;
 
-//LPC5500 hardware cryptographic accelerator related functions
-error_t lpc55xxCryptoInit(void);
+//STM32MP13 hardware cryptographic accelerator related functions
+error_t stm32mp13xxCryptoInit(void);
 
 //C++ guard
 #ifdef __cplusplus

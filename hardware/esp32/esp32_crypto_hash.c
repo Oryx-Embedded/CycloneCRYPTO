@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2023 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.3.4
+ * @version 2.4.0
  **/
 
 //Switch to the appropriate trace level
@@ -102,7 +102,7 @@ void hashProcessDataBlock(uint32_t algo, const uint8_t *data, bool_t *first)
    temp = LOAD32BE(data + 60);
    DPORT_REG_WRITE(SHA_TEXT_BASE + 60, temp);
 
-   //128-bit data block?
+   //128-octet data block?
    if(algo == SHA2_384 || algo == SHA2_512)
    {
       temp = LOAD32BE(data + 64);
