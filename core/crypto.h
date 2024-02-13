@@ -340,6 +340,20 @@
    #error WHIRLPOOL_SUPPORT parameter is not valid
 #endif
 
+//Streebog-256 hash support
+#ifndef STREEBOG256_SUPPORT
+#define STREEBOG256_SUPPORT DISABLED
+#elif (STREEBOG256_SUPPORT != ENABLED && STREEBOG256_SUPPORT != DISABLED)
+#error STREEBOG256_SUPPORT parameter is not valid
+#endif
+
+//Streebog-512 hash support
+#ifndef STREEBOG512_SUPPORT
+#define STREEBOG512_SUPPORT DISABLED
+#elif (STREEBOG512_SUPPORT != ENABLED && STREEBOG512_SUPPORT != DISABLED)
+#error STREEBOG512_SUPPORT parameter is not valid
+#endif
+
 //CMAC support
 #ifndef CMAC_SUPPORT
    #define CMAC_SUPPORT DISABLED
