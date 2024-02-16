@@ -669,6 +669,13 @@
    #error ECDSA_SUPPORT parameter is not valid
 #endif
 
+//ECRDSA support
+#ifndef ECRDSA_SUPPORT
+#define ECRDSA_SUPPORT ENABLED
+#elif (ECRDSA_SUPPORT != ENABLED && ECRDSA_SUPPORT != DISABLED)
+#error ECRDSA_SUPPORT parameter is not valid
+#endif
+
 //Streamlined NTRU Prime 761 KEM support
 #ifndef SNTRUP761_SUPPORT
    #define SNTRUP761_SUPPORT DISABLED
