@@ -101,14 +101,14 @@ typedef struct
 
 //Streebog related constants
 #if (STREEBOG256_SUPPORT == ENABLED)
-extern const uint8_t STREEBOG256_OID[10];
+extern const uint8_t STREEBOG256_OID[8];
 extern const HashAlgo streebog256HashAlgo;
 
 error_t streebog256Compute(const void *data, size_t length, uint8_t *digest);
 void streebog256Init(StreebogContext *context);
 #endif
 #if (STREEBOG512_SUPPORT == ENABLED)
-extern const uint8_t STREEBOG512_OID[10];
+extern const uint8_t STREEBOG512_OID[8];
 extern const HashAlgo streebog512HashAlgo;
 
 error_t streebog512Compute(const void *data, size_t length, uint8_t *digest);

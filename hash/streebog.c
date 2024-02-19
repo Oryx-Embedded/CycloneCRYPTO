@@ -45,7 +45,7 @@
 
 #if (STREEBOG256_SUPPORT == ENABLED)
 //Streebog-256 object identifier (1.2.643.7.1.1.2.2) */  /* Generate by https://misc.daniel-marschall.de/asn.1/oid-converter/online.php */
-const uint8_t STREEBOG256_OID[10] = { 0x06, 0x08, 0x2A, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x02 };
+const uint8_t STREEBOG256_OID[8] = { 0x2A, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x02 };
 
 //Common interface for hash algorithms
 const HashAlgo streebog256HashAlgo =
@@ -68,7 +68,7 @@ const HashAlgo streebog256HashAlgo =
 
 #if (STREEBOG512_SUPPORT == ENABLED)
 //Streebog-256 object identifier (1.2.643.7.1.1.2.3) */  /* Generate by https://misc.daniel-marschall.de/asn.1/oid-converter/online.php */
-const uint8_t STREEBOG512_OID[10] = { 0x06, 0x08, 0x2A, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x03 };
+const uint8_t STREEBOG512_OID[8] = { 0x2A, 0x85, 0x03, 0x07, 0x01, 0x01, 0x02, 0x03 };
 
 //Common interface for hash algorithms
 const HashAlgo streebog512HashAlgo =
