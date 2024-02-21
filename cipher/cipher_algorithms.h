@@ -154,8 +154,16 @@
    #include "cipher/chacha.h"
 #endif
 
+//KUZNYECHIK cipher support?
+#if (KUZNYECHIK_SUPPORT == ENABLED)
+#include "cipher/kuznyechik.h"
+#endif
+
+
 //Maximum block size
-#if (RC6_SUPPORT == ENABLED)
+#if (KUZNYECHIK_SUPPORT ==ENABLED)
+#define MAX_CIPHER_BLOCK_SIZE KUZNYECHIK_BLOCK_SIZE
+#elif (RC6_SUPPORT == ENABLED)
    #define MAX_CIPHER_BLOCK_SIZE RC6_BLOCK_SIZE
 #elif (CAST256_SUPPORT == ENABLED)
    #define MAX_CIPHER_BLOCK_SIZE CAST256_BLOCK_SIZE
@@ -272,6 +280,9 @@ typedef union
 #endif
 #if (ZUC_SUPPORT == ENABLED)
    ZucContext zucContext;
+#endif
+#if (KUZNYECHIK_SUPPORT == ENABLED)
+   KuznyechikContext kuznyechikContext;
 #endif
 } CipherContext;
 

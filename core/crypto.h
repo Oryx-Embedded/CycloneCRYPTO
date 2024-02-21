@@ -522,6 +522,13 @@
    #error TEA_SUPPORT parameter is not valid
 #endif
 
+//KUZNYECHIK block cipher support
+#ifndef KUZNYECHIK_SUPPORT
+#define KUZNYECHIK_SUPPORT DISABLED
+#elif (KUZNYECHIK_SUPPORT != ENABLED && KUZNYECHIK_SUPPORT != DISABLED)
+#error KUZNYECHIK_SUPPORT parameter is not valid
+#endif
+
 //XTEA block cipher support
 #ifndef XTEA_SUPPORT
    #define XTEA_SUPPORT DISABLED
