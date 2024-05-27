@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -55,25 +55,21 @@ error_t msp432e4CryptoInit(void)
    //Initialize status code
    error = NO_ERROR;
 
+   //Enable and reset CCM peripheral
+   SysCtlPeripheralEnable(SYSCTL_PERIPH_CCM0);
+   SysCtlPeripheralReset(SYSCTL_PERIPH_CCM0);
+
+   //Wait for the CCM peripheral to be ready
+   while(!SysCtlPeripheralReady(SYSCTL_PERIPH_CCM0))
+   {
+   }
+
    //Create a mutex to prevent simultaneous access to the hardware
    //cryptographic accelerator
    if(!osCreateMutex(&msp432e4CryptoMutex))
    {
       //Failed to create mutex
       error = ERROR_OUT_OF_RESOURCES;
-   }
-
-   //Check status code
-   if(!error)
-   {
-      //Enable and reset CCM peripheral
-      SysCtlPeripheralEnable(SYSCTL_PERIPH_CCM0);
-      SysCtlPeripheralReset(SYSCTL_PERIPH_CCM0);
-
-      //Wait for the CCM peripheral to be ready
-      while(!SysCtlPeripheralReady(SYSCTL_PERIPH_CCM0))
-      {
-      }
    }
 
    //Return status code

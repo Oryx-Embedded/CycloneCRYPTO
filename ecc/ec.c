@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -900,6 +900,10 @@ error_t ecFullAdd(const EcDomainParameters *params, EcPoint *r,
    const EcPoint *s, const EcPoint *t)
 {
    error_t error;
+   EcPoint u;
+
+   //Initialize EC point
+   ecInit(&u);
 
    //Check whether Sz == 0
    if(mpiCompInt(&s->z, 0) == 0)
@@ -919,20 +923,28 @@ error_t ecFullAdd(const EcDomainParameters *params, EcPoint *r,
    }
    else
    {
-      //Compute R = S + T
-      EC_CHECK(ecAdd(params, r, s, t));
+      //Compute U = S + T
+      EC_CHECK(ecAdd(params, &u, s, t));
 
-      //Check whether R == (0, 0, 0)
-      if(mpiCompInt(&r->x, 0) == 0 &&
-         mpiCompInt(&r->y, 0) == 0 &&
-         mpiCompInt(&r->z, 0) == 0)
+      //Check whether U == (0, 0, 0)
+      if(mpiCompInt(&u.x, 0) == 0 &&
+         mpiCompInt(&u.y, 0) == 0 &&
+         mpiCompInt(&u.z, 0) == 0)
       {
          //Compute R = 2 * S
          EC_CHECK(ecDouble(params, r, s));
       }
+      else
+      {
+         //Set R = U
+         EC_CHECK(ecCopy(r, &u));
+      }
    }
 
 end:
+   //Release EC point
+   ecFree(&u);
+
    //Return status code
    return error;
 }
@@ -1132,7 +1144,7 @@ uint_t ecTwinMultF(uint_t t)
  * @return Error code
  **/
 
-error_t ecTwinMult(const EcDomainParameters *params, EcPoint *r,
+__weak_func error_t ecTwinMult(const EcDomainParameters *params, EcPoint *r,
    const Mpi *d0, const EcPoint *s, const Mpi *d1, const EcPoint *t)
 {
    error_t error;
@@ -1302,8 +1314,8 @@ end:
  * @return Error code
  **/
 
-error_t ecAddMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
-   const Mpi *b)
+__weak_func error_t ecAddMod(const EcDomainParameters *params, Mpi *r,
+   const Mpi *a, const Mpi *b)
 {
    error_t error;
 
@@ -1331,8 +1343,8 @@ end:
  * @return Error code
  **/
 
-error_t ecSubMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
-   const Mpi *b)
+__weak_func error_t ecSubMod(const EcDomainParameters *params, Mpi *r,
+   const Mpi *a, const Mpi *b)
 {
    error_t error;
 

@@ -1,6 +1,6 @@
 /**
- * @file m467_crypto_trng.c
- * @brief M467 true random number generator
+ * @file stm32mp2xx_crypto_trng.c
+ * @brief STM32MP2 true random number generator
  *
  * @section License
  *
@@ -25,21 +25,25 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
-#include "m460.h"
+#include "stm32mp2xx.h"
+#include "stm32mp2xx_hal.h"
 #include "core/crypto.h"
-#include "hardware/m467/m467_crypto.h"
-#include "hardware/m467/m467_crypto_trng.h"
+#include "hardware/stm32mp2xx/stm32mp2xx_crypto.h"
+#include "hardware/stm32mp2xx/stm32mp2xx_crypto_trng.h"
 #include "debug.h"
 
 //Check crypto library configuration
-#if (M467_CRYPTO_TRNG_SUPPORT == ENABLED)
+#if (STM32MP2XX_CRYPTO_TRNG_SUPPORT == ENABLED)
+
+//Global variable
+static RNG_HandleTypeDef RNG_Handle;
 
 
 /**
@@ -49,11 +53,27 @@
 
 error_t trngInit(void)
 {
-   //Initialize RNG module
-   RNG_Open();
+   HAL_StatusTypeDef status;
 
-   //Successful initialization
-   return NO_ERROR;
+   //Enable RNG peripheral clock
+   __HAL_RCC_RNG_CLK_ENABLE();
+
+   //Set instance
+   RNG_Handle.Instance = RNG;
+   RNG_Handle.Init.ClockErrorDetection = RNG_CED_DISABLE;
+
+   //Reset RNG module
+   status = HAL_RNG_DeInit(&RNG_Handle);
+
+   //Check status code
+   if(status == HAL_OK)
+   {
+      //Initialize RNG module
+      status = HAL_RNG_Init(&RNG_Handle);
+   }
+
+   //Return status code
+   return (status == HAL_OK) ? NO_ERROR : ERROR_FAILURE;
 }
 
 
@@ -67,12 +87,13 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
 {
    size_t i;
    uint32_t value;
+   HAL_StatusTypeDef status;
 
-   //Initialize variable
-   value = 0;
+   //Initialize status code
+   status = HAL_OK;
 
-   //Acquire exclusive access to the TRNG module
-   osAcquireMutex(&m467CryptoMutex);
+   //Acquire exclusive access to the RNG module
+   osAcquireMutex(&stm32mp2xxCryptoMutex);
 
    //Generate random data
    for(i = 0; i < length; i++)
@@ -81,7 +102,12 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
       if((i % 4) == 0)
       {
          //Get 32-bit random value
-         RNG_Random(&value, 1);
+         status = HAL_RNG_GenerateRandomNumber(&RNG_Handle, &value);
+         //Check status code
+         if(status != HAL_OK)
+         {
+            break;
+         }
       }
 
       //Copy random byte
@@ -90,11 +116,11 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
       value >>= 8;
    }
 
-   //Release exclusive access to the TRNG module
-   osReleaseMutex(&m467CryptoMutex);
+   //Release exclusive access to the RNG module
+   osReleaseMutex(&stm32mp2xxCryptoMutex);
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return (status == HAL_OK) ? NO_ERROR : ERROR_FAILURE;
 }
 
 #endif

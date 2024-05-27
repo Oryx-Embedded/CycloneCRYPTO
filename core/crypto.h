@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.4.0"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.4.2"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 4
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 0
+#define CYCLONE_CRYPTO_REV_NUMBER 2
 
 //Static memory allocation
 #ifndef CRYPTO_STATIC_MEM_SUPPORT
@@ -655,32 +655,32 @@
    #error ECDSA_SUPPORT parameter is not valid
 #endif
 
-//Streamlined NTRU Prime 761 KEM support
+//ML-KEM-512 key encapsulation mechanism support
+#ifndef MLKEM512_SUPPORT
+   #define MLKEM512_SUPPORT DISABLED
+#elif (MLKEM512_SUPPORT != ENABLED && MLKEM512_SUPPORT != DISABLED)
+   #error MLKEM512_SUPPORT parameter is not valid
+#endif
+
+//ML-KEM-768 key encapsulation mechanism support
+#ifndef MLKEM768_SUPPORT
+   #define MLKEM768_SUPPORT DISABLED
+#elif (MLKEM768_SUPPORT != ENABLED && MLKEM768_SUPPORT != DISABLED)
+   #error MLKEM768_SUPPORT parameter is not valid
+#endif
+
+//ML-KEM-1024 key encapsulation mechanism support
+#ifndef MLKEM1024_SUPPORT
+   #define MLKEM1024_SUPPORT DISABLED
+#elif (MLKEM1024_SUPPORT != ENABLED && MLKEM1024_SUPPORT != DISABLED)
+   #error MLKEM1024_SUPPORT parameter is not valid
+#endif
+
+//Streamlined NTRU Prime 761 key encapsulation mechanism support
 #ifndef SNTRUP761_SUPPORT
    #define SNTRUP761_SUPPORT DISABLED
 #elif (SNTRUP761_SUPPORT != ENABLED && SNTRUP761_SUPPORT != DISABLED)
    #error SNTRUP761_SUPPORT parameter is not valid
-#endif
-
-//Kyber-512 KEM support
-#ifndef KYBER512_SUPPORT
-   #define KYBER512_SUPPORT DISABLED
-#elif (KYBER512_SUPPORT != ENABLED && KYBER512_SUPPORT != DISABLED)
-   #error KYBER512_SUPPORT parameter is not valid
-#endif
-
-//Kyber-768 KEM support
-#ifndef KYBER768_SUPPORT
-   #define KYBER768_SUPPORT DISABLED
-#elif (KYBER768_SUPPORT != ENABLED && KYBER768_SUPPORT != DISABLED)
-   #error KYBER768_SUPPORT parameter is not valid
-#endif
-
-//Kyber-1024 KEM support
-#ifndef KYBER1024_SUPPORT
-   #define KYBER1024_SUPPORT DISABLED
-#elif (KYBER1024_SUPPORT != ENABLED && KYBER1024_SUPPORT != DISABLED)
-   #error KYBER1024_SUPPORT parameter is not valid
 #endif
 
 //HKDF support
@@ -716,6 +716,20 @@
    #define SCRYPT_SUPPORT DISABLED
 #elif (SCRYPT_SUPPORT != ENABLED && SCRYPT_SUPPORT != DISABLED)
    #error SCRYPT_SUPPORT parameter is not valid
+#endif
+
+//MD5-crypt support
+#ifndef MD5_CRYPT_SUPPORT
+   #define MD5_CRYPT_SUPPORT DISABLED
+#elif (MD5_CRYPT_SUPPORT != ENABLED && MD5_CRYPT_SUPPORT != DISABLED)
+   #error MD5_CRYPT_SUPPORT parameter is not valid
+#endif
+
+//SHA-crypt support
+#ifndef SHA_CRYPT_SUPPORT
+   #define SHA_CRYPT_SUPPORT DISABLED
+#elif (SHA_CRYPT_SUPPORT != ENABLED && SHA_CRYPT_SUPPORT != DISABLED)
+   #error SHA_CRYPT_SUPPORT parameter is not valid
 #endif
 
 //Yarrow PRNG support

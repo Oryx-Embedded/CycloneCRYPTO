@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 #ifndef _KEM_H
@@ -34,24 +34,24 @@
 //Dependencies
 #include "core/crypto.h"
 
+//ML-KEM-512 key encapsulation mechanism supported?
+#if (MLKEM512_SUPPORT == ENABLED)
+   #include "pqc/mlkem512.h"
+#endif
+
+//ML-KEM-768 key encapsulation mechanism supported?
+#if (MLKEM768_SUPPORT == ENABLED)
+   #include "pqc/mlkem768.h"
+#endif
+
+//ML-KEM-1024 key encapsulation mechanism supported?
+#if (MLKEM1024_SUPPORT == ENABLED)
+   #include "pqc/mlkem1024.h"
+#endif
+
 //Streamlined NTRU Prime 761 KEM supported?
 #if (SNTRUP761_SUPPORT == ENABLED)
    #include "pqc/sntrup761.h"
-#endif
-
-//Kyber-512 KEM supported?
-#if (KYBER512_SUPPORT == ENABLED)
-   #include "pqc/kyber512.h"
-#endif
-
-//Kyber-768 KEM supported?
-#if (KYBER768_SUPPORT == ENABLED)
-   #include "pqc/kyber768.h"
-#endif
-
-//Kyber-1024 KEM supported?
-#if (KYBER1024_SUPPORT == ENABLED)
-   #include "pqc/kyber1024.h"
 #endif
 
 //C++ guard

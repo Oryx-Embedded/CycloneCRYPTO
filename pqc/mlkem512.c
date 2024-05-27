@@ -1,6 +1,6 @@
 /**
- * @file kyber512.c
- * @brief Kyber-512 KEM
+ * @file mlkem512.c
+ * @brief ML-KEM-512 key encapsulation mechanism
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -33,25 +33,25 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "pqc/kyber512.h"
+#include "pqc/mlkem512.h"
 
 //Check crypto library configuration
-#if (KYBER512_SUPPORT == ENABLED)
+#if (MLKEM512_SUPPORT == ENABLED)
 
 //Dependencies (liboqs)
 #include <oqs/oqs.h>
 
 //Common interface for key encapsulation mechanisms (KEM)
-const KemAlgo kyber512KemAlgo =
+const KemAlgo mlkem512KemAlgo =
 {
-   "Kyber-512",
-   KYBER512_PUBLIC_KEY_LEN,
-   KYBER512_SECRET_KEY_LEN,
-   KYBER512_CIPHERTEXT_LEN,
-   KYBER512_SHARED_SECRET_LEN,
-   (KemAlgoGenerateKeyPair) kyber512GenerateKeyPair,
-   (KemAlgoEncapsulate) kyber512Encapsulate,
-   (KemAlgoDecapsulate) kyber512Decapsulate
+   "ML-KEM-512",
+   MLKEM512_PUBLIC_KEY_LEN,
+   MLKEM512_SECRET_KEY_LEN,
+   MLKEM512_CIPHERTEXT_LEN,
+   MLKEM512_SHARED_SECRET_LEN,
+   (KemAlgoGenerateKeyPair) mlkem512GenerateKeyPair,
+   (KemAlgoEncapsulate) mlkem512Encapsulate,
+   (KemAlgoDecapsulate) mlkem512Decapsulate
 };
 
 
@@ -64,7 +64,7 @@ const KemAlgo kyber512KemAlgo =
  * @return Error code
  **/
 
-error_t kyber512GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
+error_t mlkem512GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
    uint8_t *pk, uint8_t *sk)
 {
    OQS_STATUS status;
@@ -87,7 +87,7 @@ error_t kyber512GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t kyber512Encapsulate(const PrngAlgo *prngAlgo, void *prngContext,
+error_t mlkem512Encapsulate(const PrngAlgo *prngAlgo, void *prngContext,
    uint8_t *ct, uint8_t *ss, const uint8_t *pk)
 {
    OQS_STATUS status;
@@ -108,7 +108,7 @@ error_t kyber512Encapsulate(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t kyber512Decapsulate(uint8_t *ss, const uint8_t *ct, const uint8_t *sk)
+error_t mlkem512Decapsulate(uint8_t *ss, const uint8_t *ct, const uint8_t *sk)
 {
    OQS_STATUS status;
 

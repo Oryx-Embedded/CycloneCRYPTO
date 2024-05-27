@@ -1,6 +1,6 @@
 /**
- * @file kyber768.c
- * @brief Kyber-768 KEM
+ * @file mlkem768.c
+ * @brief ML-KEM-768 key encapsulation mechanism
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -33,25 +33,25 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "pqc/kyber768.h"
+#include "pqc/mlkem768.h"
 
 //Check crypto library configuration
-#if (KYBER768_SUPPORT == ENABLED)
+#if (MLKEM768_SUPPORT == ENABLED)
 
 //Dependencies (liboqs)
 #include <oqs/oqs.h>
 
 //Common interface for key encapsulation mechanisms (KEM)
-const KemAlgo kyber768KemAlgo =
+const KemAlgo mlkem768KemAlgo =
 {
-   "Kyber-768",
-   KYBER768_PUBLIC_KEY_LEN,
-   KYBER768_SECRET_KEY_LEN,
-   KYBER768_CIPHERTEXT_LEN,
-   KYBER768_SHARED_SECRET_LEN,
-   (KemAlgoGenerateKeyPair) kyber768GenerateKeyPair,
-   (KemAlgoEncapsulate) kyber768Encapsulate,
-   (KemAlgoDecapsulate) kyber768Decapsulate
+   "ML-KEM-768",
+   MLKEM768_PUBLIC_KEY_LEN,
+   MLKEM768_SECRET_KEY_LEN,
+   MLKEM768_CIPHERTEXT_LEN,
+   MLKEM768_SHARED_SECRET_LEN,
+   (KemAlgoGenerateKeyPair) mlkem768GenerateKeyPair,
+   (KemAlgoEncapsulate) mlkem768Encapsulate,
+   (KemAlgoDecapsulate) mlkem768Decapsulate
 };
 
 
@@ -64,7 +64,7 @@ const KemAlgo kyber768KemAlgo =
  * @return Error code
  **/
 
-error_t kyber768GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
+error_t mlkem768GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
    uint8_t *pk, uint8_t *sk)
 {
    OQS_STATUS status;
@@ -87,7 +87,7 @@ error_t kyber768GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t kyber768Encapsulate(const PrngAlgo *prngAlgo, void *prngContext,
+error_t mlkem768Encapsulate(const PrngAlgo *prngAlgo, void *prngContext,
    uint8_t *ct, uint8_t *ss, const uint8_t *pk)
 {
    OQS_STATUS status;
@@ -108,7 +108,7 @@ error_t kyber768Encapsulate(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t kyber768Decapsulate(uint8_t *ss, const uint8_t *ct, const uint8_t *sk)
+error_t mlkem768Decapsulate(uint8_t *ss, const uint8_t *ct, const uint8_t *sk)
 {
    OQS_STATUS status;
 

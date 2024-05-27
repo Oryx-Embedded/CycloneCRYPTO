@@ -30,7 +30,7 @@
  * SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -311,7 +311,7 @@ error_t gmacReset(GmacContext *context, const uint8_t *iv, size_t ivLen)
       //Process the initialization vector
       while(n > 0)
       {
-         //The IV processed in a block-by-block fashion
+         //The IV is processed in a block-by-block fashion
          k = MIN(n, 16);
 
          //Apply GHASH function

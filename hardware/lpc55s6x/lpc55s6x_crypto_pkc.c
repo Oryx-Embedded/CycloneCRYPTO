@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -145,6 +145,51 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
 
    //Release exclusive access to the CASPER module
    osReleaseMutex(&lpc55s6xCryptoMutex);
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Twin multiplication
+ * @param[in] params EC domain parameters
+ * @param[out] r Resulting point R = d0.S + d1.T
+ * @param[in] d0 An integer d such as 0 <= d0 < p
+ * @param[in] s EC point
+ * @param[in] d1 An integer d such as 0 <= d1 < p
+ * @param[in] t EC point
+ * @return Error code
+ **/
+
+error_t ecTwinMult(const EcDomainParameters *params, EcPoint *r,
+   const Mpi *d0, const EcPoint *s, const Mpi *d1, const EcPoint *t)
+{
+   error_t error;
+   EcPoint u;
+
+   //Initialize EC point
+   ecInit(&u);
+
+   //Compute d0.S
+   error = ecMult(params, r, d0, s);
+
+   //Check status code
+   if(!error)
+   {
+      //Compute d1.T
+      error = ecMult(params, &u, d1, t);
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Compute d0.S + d1.T
+      error = ecAdd(params, r, r, &u);
+   }
+
+   //Release EC point
+   ecFree(&u);
 
    //Return status code
    return error;

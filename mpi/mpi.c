@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -1031,7 +1031,7 @@ error_t mpiSubAbs(Mpi *r, const Mpi *a, const Mpi *b)
    if(mpiCompAbs(a, b) < 0)
    {
       //Swap A and B if necessary
-      const Mpi *t = b;
+      const Mpi *t = a;
       a = b;
       b = t;
    }

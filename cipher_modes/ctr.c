@@ -32,7 +32,7 @@
  * produce the ciphertext, and vice versa. Refer to SP 800-38A for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -64,7 +64,6 @@ __weak_func error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m
 {
    size_t i;
    size_t n;
-   uint16_t temp;
    uint8_t o[16];
 
    //The parameter must be a multiple of 8
@@ -95,13 +94,7 @@ __weak_func error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m
       }
 
       //Standard incrementing function
-      for(temp = 1, i = 1; i <= m; i++)
-      {
-         //Increment the current byte and propagate the carry
-         temp += t[cipher->blockSize - i];
-         t[cipher->blockSize - i] = temp & 0xFF;
-         temp >>= 8;
-      }
+      ctrIncBlock(t, 1, cipher->blockSize, m);
 
       //Next block
       p += n;
@@ -131,6 +124,31 @@ error_t ctrDecrypt(const CipherAlgo *cipher, void *context, uint_t m,
 {
    //Decryption is the same the as encryption with P and C interchanged
    return ctrEncrypt(cipher, context, m, t, c, p, length);
+}
+
+
+/**
+ * @brief Increment counter block
+ * @param[in,out] ctr Pointer to the counter block
+ * @param[in] inc Value of the increment
+ * @param[in] blockSize Size of the block, in bytes
+ * @param[in] m Size of the specific part of the block to be incremented
+ **/
+
+void ctrIncBlock(uint8_t *ctr, uint32_t inc, size_t blockSize, size_t m)
+{
+   size_t i;
+   uint32_t temp;
+
+   //The function increments the right-most bytes of the block. The remaining
+   //left-most bytes remain unchanged
+   for(temp = inc, i = 1; i <= m; i++)
+   {
+      //Increment the current byte and propagate the carry
+      temp += ctr[blockSize - i];
+      ctr[blockSize - i] = temp & 0xFF;
+      temp >>= 8;
+   }
 }
 
 #endif

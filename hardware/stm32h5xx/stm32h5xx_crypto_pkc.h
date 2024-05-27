@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 #ifndef _STM32H5XX_CRYPTO_PKC_H
@@ -47,27 +47,31 @@
 #define PKA_MAX_EOS 640
 
 //PKA operation modes
-#define PKA_CR_MODE_MODULAR_EXP           0x00
-#define PKA_CR_MODE_MONTGOMERY_PARAM      0x01
-#define PKA_CR_MODE_MODULAR_EXP_FAST      0x02
-#define PKA_CR_MODE_MODULAR_EXP_PROTECTED 0x03
-#define PKA_CR_MODE_RSA_CRT_EXP           0x07
-#define PKA_CR_MODE_MODULAR_INV           0x08
-#define PKA_CR_MODE_ARITHMETIC_ADD        0x09
-#define PKA_CR_MODE_ARITHMETIC_SUB        0x0A
-#define PKA_CR_MODE_ARITHMETIC_MUL        0x0B
-#define PKA_CR_MODE_COMPARISON            0x0C
-#define PKA_CR_MODE_MODULAR_RED           0x0D
-#define PKA_CR_MODE_MODULAR_ADD           0x0E
-#define PKA_CR_MODE_MODULAR_SUB           0x0F
-#define PKA_CR_MODE_MONTGOMERY_MUL        0x10
-#define PKA_CR_MODE_ECC_MUL               0x20
-#define PKA_CR_MODE_ECC_COMPLETE_ADD      0x23
-#define PKA_CR_MODE_ECDSA_SIGN            0x24
-#define PKA_CR_MODE_ECDSA_VERIFY          0x26
-#define PKA_CR_MODE_DOUBLE_BASE_LADDER    0x27
-#define PKA_CR_MODE_POINT_CHECK           0x28
-#define PKA_CR_MODE_ECC_PROJECTIVE_AFF    0x2F
+#if defined(STM32H523xx) || defined(STM32H562xx) || defined(STM32H563xx)
+   #define PKA_CR_MODE_ECDSA_VERIFY          0x26
+#else
+   #define PKA_CR_MODE_MODULAR_EXP           0x00
+   #define PKA_CR_MODE_MONTGOMERY_PARAM      0x01
+   #define PKA_CR_MODE_MODULAR_EXP_FAST      0x02
+   #define PKA_CR_MODE_MODULAR_EXP_PROTECTED 0x03
+   #define PKA_CR_MODE_RSA_CRT_EXP           0x07
+   #define PKA_CR_MODE_MODULAR_INV           0x08
+   #define PKA_CR_MODE_ARITHMETIC_ADD        0x09
+   #define PKA_CR_MODE_ARITHMETIC_SUB        0x0A
+   #define PKA_CR_MODE_ARITHMETIC_MUL        0x0B
+   #define PKA_CR_MODE_COMPARISON            0x0C
+   #define PKA_CR_MODE_MODULAR_RED           0x0D
+   #define PKA_CR_MODE_MODULAR_ADD           0x0E
+   #define PKA_CR_MODE_MODULAR_SUB           0x0F
+   #define PKA_CR_MODE_MONTGOMERY_MUL        0x10
+   #define PKA_CR_MODE_ECC_MUL               0x20
+   #define PKA_CR_MODE_ECC_COMPLETE_ADD      0x23
+   #define PKA_CR_MODE_ECDSA_SIGN            0x24
+   #define PKA_CR_MODE_ECDSA_VERIFY          0x26
+   #define PKA_CR_MODE_DOUBLE_BASE_LADDER    0x27
+   #define PKA_CR_MODE_POINT_CHECK           0x28
+   #define PKA_CR_MODE_ECC_PROJECTIVE_AFF    0x2F
+#endif
 
 //PKA status codes
 #define PKA_STATUS_SUCCESS 0xD60D

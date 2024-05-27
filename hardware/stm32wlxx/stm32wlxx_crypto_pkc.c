@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -1085,8 +1085,7 @@ void curve448Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
    {
       temp += u[i];
       temp += u[i + 7];
-      temp += u[i + 14];
-      temp += u[i + 14];
+      temp += (uint64_t) u[i + 14] << 1;
       u[i] = temp & 0xFFFFFFFF;
       temp >>= 32;
    }

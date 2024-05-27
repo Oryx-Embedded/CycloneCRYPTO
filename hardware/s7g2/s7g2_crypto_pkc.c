@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -356,7 +356,6 @@ error_t rsaGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
 error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
 {
    error_t error;
-   size_t n;
    size_t nLen;
    size_t dLen;
    size_t pLen;

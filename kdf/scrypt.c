@@ -32,7 +32,7 @@
  * hardware. Refer to RFC 7914 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -161,15 +161,21 @@ error_t scrypt(const char_t *password, const uint8_t *salt, size_t saltLen,
 
    //Release array B
    if(b != NULL)
+   {
       cryptoFreeMem(b);
+   }
 
    //Release working array V
    if(v != NULL)
+   {
       cryptoFreeMem(v);
+   }
 
    //Release working array Y
    if(y != NULL)
+   {
       cryptoFreeMem(y);
+   }
 
    //Return status code
    return error;

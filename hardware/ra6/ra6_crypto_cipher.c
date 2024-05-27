@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -604,60 +604,45 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    //Initialize status code
    error = NO_ERROR;
 
-   //AES cipher algorithm?
-   if(cipher == AES_CIPHER_ALGO)
+   //Check the value of the parameter
+   if((m % 8) == 0 && m <= (cipher->blockSize * 8))
    {
-      //Check the value of the parameter
-      if(m == (AES_BLOCK_SIZE * 8))
+      //Determine the size, in bytes, of the specific part of the block to be
+      //incremented
+      m = m / 8;
+
+      //AES cipher algorithm?
+      if(cipher == AES_CIPHER_ALGO)
       {
-         //Check the length of the payload
-         if(length > 0)
+         size_t k;
+         size_t n;
+
+         //Process plaintext
+         while(length > 0 && !error)
          {
-            size_t i;
-            size_t j;
-            uint16_t temp;
+            //Limit the number of blocks to process at a time
+            k = 256 - t[AES_BLOCK_SIZE - 1];
+            n = MIN(length, k * AES_BLOCK_SIZE);
+            k = (n + AES_BLOCK_SIZE - 1) / AES_BLOCK_SIZE;
 
             //Encrypt payload data
-            error = aesProcessData(context, t, p, c, length,
+            error = aesProcessData(context, t, p, c, n,
                SCE_AES_IN_DATA_CMD_CTR_ENCRYPTION_DECRYPTION);
 
-            //Update counter value
-            for(i = 0; i < length; i += AES_BLOCK_SIZE)
-            {
-               //Standard incrementing function
-               for(temp = 1, j = 1; j <= AES_BLOCK_SIZE; j++)
-               {
-                  //Increment the current byte and propagate the carry
-                  temp += t[AES_BLOCK_SIZE - j];
-                  t[AES_BLOCK_SIZE - j] = temp & 0xFF;
-                  temp >>= 8;
-               }
-            }
-         }
-         else
-         {
-            //No data to process
+            //Standard incrementing function
+            ctrIncBlock(t, k, AES_BLOCK_SIZE, m);
+
+            //Next block
+            p += n;
+            c += n;
+            length -= n;
          }
       }
       else
       {
-         //The value of the parameter is not valid
-         error = ERROR_INVALID_PARAMETER;
-      }
-   }
-   else
-   {
-      //Check the value of the parameter
-      if((m % 8) == 0 && m <= (cipher->blockSize * 8))
-      {
          size_t i;
          size_t n;
-         uint16_t temp;
          uint8_t o[16];
-
-         //Determine the size, in bytes, of the specific part of the block
-         //to be incremented
-         m = m / 8;
 
          //Process plaintext
          while(length > 0)
@@ -675,13 +660,7 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             }
 
             //Standard incrementing function
-            for(temp = 1, i = 1; i <= m; i++)
-            {
-               //Increment the current byte and propagate the carry
-               temp += t[cipher->blockSize - i];
-               t[cipher->blockSize - i] = temp & 0xFF;
-               temp >>= 8;
-            }
+            ctrIncBlock(t, 1, cipher->blockSize, m);
 
             //Next block
             p += n;
@@ -689,11 +668,11 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             length -= n;
          }
       }
-      else
-      {
-         //The value of the parameter is not valid
-         error = ERROR_INVALID_PARAMETER;
-      }
+   }
+   else
+   {
+      //The value of the parameter is not valid
+      error = ERROR_INVALID_PARAMETER;
    }
 
    //Return status code

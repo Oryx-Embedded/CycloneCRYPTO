@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -798,7 +798,7 @@ error_t x509ParseNameAttribute(const uint8_t *data, size_t length,
  * @param[in] length Length of the ASN.1 structure
  * @param[out] generalNames Array of GeneralName entries
  * @param[in] maxGeneralNames Maximum number of entries the array can hold
- * @param[out] numGeneralNames Actual number of entries in the array 
+ * @param[out] numGeneralNames Actual number of entries in the array
  * @return Error code
  **/
 

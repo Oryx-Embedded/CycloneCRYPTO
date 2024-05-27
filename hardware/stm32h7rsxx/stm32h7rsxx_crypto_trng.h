@@ -1,6 +1,6 @@
 /**
- * @file kyber1024.h
- * @brief Kyber-1024 KEM
+ * @file stm32h7rsxx_crypto_trng.h
+ * @brief STM32H7Rx/Sx true random number generator
  *
  * @section License
  *
@@ -25,43 +25,30 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
-#ifndef _KYBER1024_H
-#define _KYBER1024_H
+#ifndef _STM32H7RSXX_CRYPTO_TRNG_H
+#define _STM32H7RSXX_CRYPTO_TRNG_H
 
 //Dependencies
 #include "core/crypto.h"
 
-//Public key length
-#define KYBER1024_PUBLIC_KEY_LEN 1568
-//Secret key length
-#define KYBER1024_SECRET_KEY_LEN 3168
-//Ciphertext length
-#define KYBER1024_CIPHERTEXT_LEN 1568
-//Shared secret length
-#define KYBER1024_SHARED_SECRET_LEN 32
-
-//Common interface for key encapsulation mechanisms (KEM)
-#define KYBER1024_KEM_ALGO (&kyber1024KemAlgo)
+//True random number generator
+#ifndef STM32H7RSXX_CRYPTO_TRNG_SUPPORT
+   #define STM32H7RSXX_CRYPTO_TRNG_SUPPORT ENABLED
+#elif (STM32H7RSXX_CRYPTO_TRNG_SUPPORT != ENABLED && STM32H7RSXX_CRYPTO_TRNG_SUPPORT != DISABLED)
+   #error STM32H7RSXX_CRYPTO_TRNG_SUPPORT parameter is not valid
+#endif
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//Kyber-1024 related constants
-extern const KemAlgo kyber1024KemAlgo;
-
-//Kyber-1024 related functions
-error_t kyber1024GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
-   uint8_t *pk, uint8_t *sk);
-
-error_t kyber1024Encapsulate(const PrngAlgo *prngAlgo, void *prngContext,
-   uint8_t *ct, uint8_t *ss, const uint8_t *pk);
-
-error_t kyber1024Decapsulate(uint8_t *ss, const uint8_t *ct, const uint8_t *sk);
+//TRNG related functions
+error_t trngInit(void);
+error_t trngGetRandomData(uint8_t *data, size_t length);
 
 //C++ guard
 #ifdef __cplusplus
