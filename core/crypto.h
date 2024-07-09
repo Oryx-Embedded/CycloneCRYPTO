@@ -340,6 +340,20 @@
    #error WHIRLPOOL_SUPPORT parameter is not valid
 #endif
 
+//Streebog-256 hash support
+#ifndef STREEBOG256_SUPPORT
+#define STREEBOG256_SUPPORT DISABLED
+#elif (STREEBOG256_SUPPORT != ENABLED && STREEBOG256_SUPPORT != DISABLED)
+#error STREEBOG256_SUPPORT parameter is not valid
+#endif
+
+//Streebog-512 hash support
+#ifndef STREEBOG512_SUPPORT
+#define STREEBOG512_SUPPORT DISABLED
+#elif (STREEBOG512_SUPPORT != ENABLED && STREEBOG512_SUPPORT != DISABLED)
+#error STREEBOG512_SUPPORT parameter is not valid
+#endif
+
 //CMAC support
 #ifndef CMAC_SUPPORT
    #define CMAC_SUPPORT DISABLED
@@ -508,6 +522,13 @@
    #error TEA_SUPPORT parameter is not valid
 #endif
 
+//KUZNYECHIK block cipher support
+#ifndef KUZNYECHIK_SUPPORT
+#define KUZNYECHIK_SUPPORT DISABLED
+#elif (KUZNYECHIK_SUPPORT != ENABLED && KUZNYECHIK_SUPPORT != DISABLED)
+#error KUZNYECHIK_SUPPORT parameter is not valid
+#endif
+
 //XTEA block cipher support
 #ifndef XTEA_SUPPORT
    #define XTEA_SUPPORT DISABLED
@@ -653,6 +674,13 @@
    #define ECDSA_SUPPORT ENABLED
 #elif (ECDSA_SUPPORT != ENABLED && ECDSA_SUPPORT != DISABLED)
    #error ECDSA_SUPPORT parameter is not valid
+#endif
+
+//ECRDSA support
+#ifndef ECRDSA_SUPPORT
+#define ECRDSA_SUPPORT ENABLED
+#elif (ECRDSA_SUPPORT != ENABLED && ECRDSA_SUPPORT != DISABLED)
+#error ECRDSA_SUPPORT parameter is not valid
 #endif
 
 //ML-KEM-512 key encapsulation mechanism support

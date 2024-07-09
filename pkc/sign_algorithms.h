@@ -49,6 +49,11 @@
    #include "ecc/ecdsa.h"
 #endif
 
+//ECRDSA support?
+#if (ECRDSA_SUPPORT == ENABLED)
+#include "ecc/ecrdsa.h"
+#endif
+
 //SM2 support?
 #if (SM2_SUPPORT == ENABLED)
    #include "ecc/sm2.h"

@@ -7,6 +7,7 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
  * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (c) 2024 Valery Novikov <novikov.val@gmail.com>
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -224,6 +225,20 @@
    #error ED448_SUPPORT parameter is not valid
 #endif
 
+//tc26Sign512a elliptic curve support
+#ifndef TC26SIGN512A_SUPPORT
+#define TC26SIGN512A_SUPPORT DISABLED
+#elif (TC26SIGN512A_SUPPORT != ENABLED && TC26SIGN512A_SUPPORT != DISABLED)
+#error TC26SIGN512A_SUPPORT parameter is not valid
+#endif
+
+//tc26Sign512b elliptic curve support
+#ifndef TC26SIGN512B_SUPPORT
+#define TC26SIGN512B_SUPPORT DISABLED
+#elif (TC26SIGN512B_SUPPORT != ENABLED && TC26SIGN512B_SUPPORT != DISABLED)
+#error TC26SIGN512B_SUPPORT parameter is not valid
+#endif
+
 //Elliptic curves
 #define SECP112R1_CURVE (&secp112r1Curve)
 #define SECP112R2_CURVE (&secp112r2Curve)
@@ -252,6 +267,9 @@
 #define X448_CURVE (&x448Curve)
 #define ED25519_CURVE (&ed25519Curve)
 #define ED448_CURVE (&ed448Curve)
+// Russian Elliptic curves
+#define TC26SIGN512A_CURVE (&tc26Sign512aCurve)
+#define TC26SIGN512B_CURVE (&tc26Sign512bCurve)
 
 //C++ guard
 #ifdef __cplusplus
@@ -276,7 +294,9 @@ typedef enum
    EC_CURVE_TYPE_X25519        = 8,
    EC_CURVE_TYPE_X448          = 9,
    EC_CURVE_TYPE_ED25519       = 10,
-   EC_CURVE_TYPE_ED448         = 11
+   EC_CURVE_TYPE_ED448         = 11,
+   EC_CURVE_TYPE_TC26SIGN512A  = 12,
+   EC_CURVE_TYPE_TC26SIGN512B  = 13,
 } EcCurveType;
 
 
@@ -370,6 +390,9 @@ extern const EcCurveInfo x25519Curve;
 extern const EcCurveInfo x448Curve;
 extern const EcCurveInfo ed25519Curve;
 extern const EcCurveInfo ed448Curve;
+// Russian Elliptic curves
+extern const EcCurveInfo tc26Sign512aCurve;
+extern const EcCurveInfo tc26Sign512bCurve;
 
 //Fast modular reduction
 error_t secp128r1Mod(Mpi *a, const Mpi *p);
