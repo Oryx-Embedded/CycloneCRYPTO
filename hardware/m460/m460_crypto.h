@@ -1,6 +1,6 @@
 /**
- * @file m467_crypto.h
- * @brief M467 hardware cryptographic accelerator
+ * @file m460_crypto.h
+ * @brief M460 hardware cryptographic accelerator
  *
  * @section License
  *
@@ -25,11 +25,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
-#ifndef _M467_CRYPTO_H
-#define _M467_CRYPTO_H
+#ifndef _M460_CRYPTO_H
+#define _M460_CRYPTO_H
 
 //Dependencies
 #include "core/crypto.h"
@@ -40,10 +40,10 @@ extern "C" {
 #endif
 
 //Global variables
-extern OsMutex m467CryptoMutex;
+extern OsMutex m460CryptoMutex;
 
-//M467 hardware cryptographic accelerator related functions
-error_t m467CryptoInit(void);
+//M460 hardware cryptographic accelerator related functions
+error_t m460CryptoInit(void);
 
 //C++ guard
 #ifdef __cplusplus

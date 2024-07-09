@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -852,6 +852,104 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
          //The value of the parameter is not valid
          error = ERROR_INVALID_PARAMETER;
       }
+   }
+
+   //Return status code
+   return error;
+}
+
+#endif
+#if (CTR_SUPPORT == ENABLED)
+
+/**
+ * @brief CTR encryption
+ * @param[in] cipher Cipher algorithm
+ * @param[in] context Cipher algorithm context
+ * @param[in] m Size in bits of the specific part of the block to be incremented
+ * @param[in,out] t Initial counter block
+ * @param[in] p Plaintext to be encrypted
+ * @param[out] c Ciphertext resulting from the encryption
+ * @param[in] length Total number of data bytes to be encrypted
+ * @return Error code
+ **/
+
+error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
+   uint8_t *t, const uint8_t *p, uint8_t *c, size_t length)
+{
+   error_t error;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Check the value of the parameter
+   if((m % 8) == 0 && m <= (cipher->blockSize * 8))
+   {
+      //Determine the size, in bytes, of the specific part of the block to be
+      //incremented
+      m = m / 8;
+
+      //AES cipher algorithm?
+      if(cipher == AES_CIPHER_ALGO)
+      {
+         size_t k;
+         size_t n;
+
+         //Process plaintext
+         while(length > 0)
+         {
+            //Limit the number of blocks to process at a time
+            k = 256 - t[AES_BLOCK_SIZE - 1];
+            n = MIN(length, k * AES_BLOCK_SIZE);
+            k = (n + AES_BLOCK_SIZE - 1) / AES_BLOCK_SIZE;
+
+            //Encrypt payload data
+            aesProcessData(context, t, p, c, n, AES_MR_CIPHER_Msk |
+               AES_MR_OPMOD_CTR);
+
+            //Standard incrementing function
+            ctrIncBlock(t, k, AES_BLOCK_SIZE, m);
+
+            //Next block
+            p += n;
+            c += n;
+            length -= n;
+         }
+      }
+      else
+      {
+         size_t i;
+         size_t n;
+         uint8_t o[16];
+
+         //Process plaintext
+         while(length > 0)
+         {
+            //CTR mode operates in a block-by-block fashion
+            n = MIN(length, cipher->blockSize);
+
+            //Compute O(j) = CIPH(T(j))
+            cipher->encryptBlock(context, t, o);
+
+            //Compute C(j) = P(j) XOR T(j)
+            for(i = 0; i < n; i++)
+            {
+               c[i] = p[i] ^ o[i];
+            }
+
+            //Standard incrementing function
+            ctrIncBlock(t, 1, cipher->blockSize, m);
+
+            //Next block
+            p += n;
+            c += n;
+            length -= n;
+         }
+      }
+   }
+   else
+   {
+      //The value of the parameter is not valid
+      error = ERROR_INVALID_PARAMETER;
    }
 
    //Return status code

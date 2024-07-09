@@ -1,6 +1,6 @@
 /**
- * @file kyber1024.c
- * @brief Kyber-1024 KEM
+ * @file mlkem1024.c
+ * @brief ML-KEM-1024 key encapsulation mechanism
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -33,25 +33,25 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "pqc/kyber1024.h"
+#include "pqc/mlkem1024.h"
 
 //Check crypto library configuration
-#if (KYBER1024_SUPPORT == ENABLED)
+#if (MLKEM1024_SUPPORT == ENABLED)
 
 //Dependencies (liboqs)
 #include <oqs/oqs.h>
 
 //Common interface for key encapsulation mechanisms (KEM)
-const KemAlgo kyber1024KemAlgo =
+const KemAlgo mlkem1024KemAlgo =
 {
-   "Kyber-1024",
-   KYBER1024_PUBLIC_KEY_LEN,
-   KYBER1024_SECRET_KEY_LEN,
-   KYBER1024_CIPHERTEXT_LEN,
-   KYBER1024_SHARED_SECRET_LEN,
-   (KemAlgoGenerateKeyPair) kyber1024GenerateKeyPair,
-   (KemAlgoEncapsulate) kyber1024Encapsulate,
-   (KemAlgoDecapsulate) kyber1024Decapsulate
+   "ML-KEM-1024",
+   MLKEM1024_PUBLIC_KEY_LEN,
+   MLKEM1024_SECRET_KEY_LEN,
+   MLKEM1024_CIPHERTEXT_LEN,
+   MLKEM1024_SHARED_SECRET_LEN,
+   (KemAlgoGenerateKeyPair) mlkem1024GenerateKeyPair,
+   (KemAlgoEncapsulate) mlkem1024Encapsulate,
+   (KemAlgoDecapsulate) mlkem1024Decapsulate
 };
 
 
@@ -64,7 +64,7 @@ const KemAlgo kyber1024KemAlgo =
  * @return Error code
  **/
 
-error_t kyber1024GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
+error_t mlkem1024GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
    uint8_t *pk, uint8_t *sk)
 {
    OQS_STATUS status;
@@ -87,7 +87,7 @@ error_t kyber1024GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t kyber1024Encapsulate(const PrngAlgo *prngAlgo, void *prngContext,
+error_t mlkem1024Encapsulate(const PrngAlgo *prngAlgo, void *prngContext,
    uint8_t *ct, uint8_t *ss, const uint8_t *pk)
 {
    OQS_STATUS status;
@@ -108,7 +108,7 @@ error_t kyber1024Encapsulate(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t kyber1024Decapsulate(uint8_t *ss, const uint8_t *ct, const uint8_t *sk)
+error_t mlkem1024Decapsulate(uint8_t *ss, const uint8_t *ct, const uint8_t *sk)
 {
    OQS_STATUS status;
 

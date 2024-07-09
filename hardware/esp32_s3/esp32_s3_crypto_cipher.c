@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -1000,7 +1000,6 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
       {
          size_t i;
          size_t n;
-         uint16_t temp;
          uint8_t o[16];
 
          //Determine the size, in bytes, of the specific part of the block
@@ -1031,13 +1030,7 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             }
 
             //Standard incrementing function
-            for(temp = 1, i = 1; i <= m; i++)
-            {
-               //Increment the current byte and propagate the carry
-               temp += t[AES_BLOCK_SIZE - i];
-               t[AES_BLOCK_SIZE - i] = temp & 0xFF;
-               temp >>= 8;
-            }
+            ctrIncBlock(t, 1, AES_BLOCK_SIZE, m);
 
             //Next block
             p += n;
@@ -1063,7 +1056,6 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
       {
          size_t i;
          size_t n;
-         uint16_t temp;
          uint8_t o[16];
 
          //Determine the size, in bytes, of the specific part of the block
@@ -1086,13 +1078,7 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             }
 
             //Standard incrementing function
-            for(temp = 1, i = 1; i <= m; i++)
-            {
-               //Increment the current byte and propagate the carry
-               temp += t[cipher->blockSize - i];
-               t[cipher->blockSize - i] = temp & 0xFF;
-               temp >>= 8;
-            }
+            ctrIncBlock(t, 1, cipher->blockSize, m);
 
             //Next block
             p += n;

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -223,6 +223,8 @@ error_t pkaExportMpi(Mpi *r, uint_t length, uint_t offset)
 }
 
 
+#if (MPI_SUPPORT == ENABLED) && defined(PKA_CR_MODE_MODULAR_EXP)
+
 /**
  * @brief Modular exponentiation
  * @param[out] r Resulting integer R = A ^ E mod P
@@ -306,6 +308,8 @@ error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    return error;
 }
 
+#endif
+#if (RSA_SUPPORT == ENABLED) && defined(PKA_CR_MODE_RSA_CRT_EXP)
 
 /**
  * @brief Modular exponentiation with CRT
@@ -429,6 +433,8 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    return error;
 }
 
+#endif
+#if (EC_SUPPORT == ENABLED) && defined(PKA_CR_MODE_ECC_MUL)
 
 /**
  * @brief Scalar multiplication
@@ -551,6 +557,8 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    return error;
 }
 
+#endif
+#if (ECDSA_SUPPORT == ENABLED) && defined(PKA_CR_MODE_ECDSA_SIGN)
 
 /**
  * @brief ECDSA signature generation
@@ -684,6 +692,8 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    return error;
 }
 
+#endif
+#if (ECDSA_SUPPORT == ENABLED) && defined(PKA_CR_MODE_ECDSA_VERIFY)
 
 /**
  * @brief ECDSA signature verification
@@ -804,8 +814,9 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    return error;
 }
 
-
-#if (X25519_SUPPORT == ENABLED || ED25519_SUPPORT == ENABLED)
+#endif
+#if (X25519_SUPPORT == ENABLED || ED25519_SUPPORT == ENABLED) && \
+   defined(PKA_CR_MODE_ARITHMETIC_MUL)
 
 /**
  * @brief Modular multiplication
@@ -929,7 +940,8 @@ void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
 }
 
 #endif
-#if (X448_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
+#if (X448_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED) && \
+   defined(PKA_CR_MODE_ARITHMETIC_MUL)
 
 /**
  * @brief Modular multiplication
@@ -1058,8 +1070,7 @@ void curve448Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
    {
       temp += u[i];
       temp += u[i + 7];
-      temp += u[i + 14];
-      temp += u[i + 14];
+      temp += (uint64_t) u[i + 14] << 1;
       u[i] = temp & 0xFFFFFFFF;
       temp >>= 32;
    }

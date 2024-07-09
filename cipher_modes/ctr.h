@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 #ifndef _CTR_H
@@ -45,6 +45,8 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
 
 error_t ctrDecrypt(const CipherAlgo *cipher, void *context, uint_t m,
    uint8_t *t, const uint8_t *c, uint8_t *p, size_t length);
+
+void ctrIncBlock(uint8_t *ctr, uint32_t inc, size_t blockSize, size_t m);
 
 //C++ guard
 #ifdef __cplusplus

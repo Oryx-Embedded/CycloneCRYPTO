@@ -26,7 +26,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 #ifndef _EC_CURVES_H
@@ -408,6 +408,13 @@ error_t secp256k1Mod(Mpi *a, const Mpi *p);
 error_t secp256r1Mod(Mpi *a, const Mpi *p);
 error_t secp384r1Mod(Mpi *a, const Mpi *p);
 error_t secp521r1Mod(Mpi *a, const Mpi *p);
+error_t brainpoolP160r1Mod(Mpi *a, const Mpi *p);
+error_t brainpoolP192r1Mod(Mpi *a, const Mpi *p);
+error_t brainpoolP224r1Mod(Mpi *a, const Mpi *p);
+error_t brainpoolP256r1Mod(Mpi *a, const Mpi *p);
+error_t brainpoolP320r1Mod(Mpi *a, const Mpi *p);
+error_t brainpoolP384r1Mod(Mpi *a, const Mpi *p);
+error_t brainpoolP512r1Mod(Mpi *a, const Mpi *p);
 error_t sm2Mod(Mpi *a, const Mpi *p);
 
 const EcCurveInfo *ecGetCurveInfo(const uint8_t *oid, size_t length);

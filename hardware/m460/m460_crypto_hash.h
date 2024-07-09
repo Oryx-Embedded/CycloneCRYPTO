@@ -1,6 +1,6 @@
 /**
- * @file m467_crypto_trng.h
- * @brief M467 true random number generator
+ * @file m460_crypto_hash.h
+ * @brief M460 hash hardware accelerator
  *
  * @section License
  *
@@ -25,30 +25,39 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
-#ifndef _M467_CRYPTO_TRNG_H
-#define _M467_CRYPTO_TRNG_H
+#ifndef _M460_CRYPTO_HASH_H
+#define _M460_CRYPTO_HASH_H
 
 //Dependencies
 #include "core/crypto.h"
 
-//True random number generator
-#ifndef M467_CRYPTO_TRNG_SUPPORT
-   #define M467_CRYPTO_TRNG_SUPPORT ENABLED
-#elif (M467_CRYPTO_TRNG_SUPPORT != ENABLED && M467_CRYPTO_TRNG_SUPPORT != DISABLED)
-   #error M467_CRYPTO_TRNG_SUPPORT parameter is not valid
+//Hash hardware accelerator
+#ifndef M460_CRYPTO_HASH_SUPPORT
+   #define M460_CRYPTO_HASH_SUPPORT DISABLED
+#elif (M460_CRYPTO_HASH_SUPPORT != ENABLED && M460_CRYPTO_HASH_SUPPORT != DISABLED)
+   #error M460_CRYPTO_HASH_SUPPORT parameter is not valid
 #endif
+
+//OPMODE bitfield
+#define CRPT_HMAC_CTL_OPMODE_SHA1     0x00000000
+#define CRPT_HMAC_CTL_OPMODE_SHA256   0x00000400
+#define CRPT_HMAC_CTL_OPMODE_SHA224   0x00000500
+#define CRPT_HMAC_CTL_OPMODE_SHA512   0x00000600
+#define CRPT_HMAC_CTL_OPMODE_SHA384   0x00000700
+#define CRPT_HMAC_CTL_OPMODE_SHA3_256 0x00000400
+#define CRPT_HMAC_CTL_OPMODE_SHA3_224 0x00000500
+#define CRPT_HMAC_CTL_OPMODE_SHA3_512 0x00000600
+#define CRPT_HMAC_CTL_OPMODE_SHA3_384 0x00000700
+#define CRPT_HMAC_CTL_OPMODE_SHAKE128 0x00000000
+#define CRPT_HMAC_CTL_OPMODE_SHAKE256 0x00000100
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-//TRNG related functions
-error_t trngInit(void);
-error_t trngGetRandomData(uint8_t *data, size_t length);
 
 //C++ guard
 #ifdef __cplusplus

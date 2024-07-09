@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
 //Switch to the appropriate trace level
@@ -103,6 +103,136 @@ error_t desInit(DesContext *context, const uint8_t *key, size_t keyLen)
 
    //No error to report
    return NO_ERROR;
+}
+
+
+/**
+ * @brief Encrypt a 8-byte block using DES algorithm
+ * @param[in] context Pointer to the DES context
+ * @param[in] input Plaintext block to encrypt
+ * @param[out] output Ciphertext block resulting from encryption
+ **/
+
+void desEncryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
+{
+   caam_handle_t caamHandle;
+
+   //Set CAAM job ring
+   caamHandle.jobRing = kCAAM_JobRing0;
+   //Copy the plaintext to the buffer
+   osMemcpy(caamBufferIn, input, DES_BLOCK_SIZE);
+
+   //Acquire exclusive access to the CAAM module
+   osAcquireMutex(&mimxrt1160CryptoMutex);
+
+   //Perform DES encryption
+   CAAM_DES_EncryptEcb(CAAM, &caamHandle, caamBufferIn, caamBufferOut,
+      DES_BLOCK_SIZE, (const uint8_t *) context->ks);
+
+   //Copy the resulting ciphertext
+   osMemcpy(output, caamBufferOut, DES_BLOCK_SIZE);
+
+   //Release exclusive access to the CAAM module
+   osReleaseMutex(&mimxrt1160CryptoMutex);
+}
+
+
+/**
+ * @brief Decrypt a 8-byte block using DES algorithm
+ * @param[in] context Pointer to the DES context
+ * @param[in] input Ciphertext block to decrypt
+ * @param[out] output Plaintext block resulting from decryption
+ **/
+
+void desDecryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
+{
+   caam_handle_t caamHandle;
+
+   //Set CAAM job ring
+   caamHandle.jobRing = kCAAM_JobRing0;
+   //Copy the plaintext to the buffer
+   osMemcpy(caamBufferIn, input, DES_BLOCK_SIZE);
+
+   //Acquire exclusive access to the CAAM module
+   osAcquireMutex(&mimxrt1160CryptoMutex);
+
+   //Perform DES decryption
+   CAAM_DES_DecryptEcb(CAAM, &caamHandle, caamBufferIn, caamBufferOut,
+      DES_BLOCK_SIZE, (const uint8_t *) context->ks);
+
+   //Copy the resulting ciphertext
+   osMemcpy(output, caamBufferOut, DES_BLOCK_SIZE);
+
+   //Release exclusive access to the CAAM module
+   osReleaseMutex(&mimxrt1160CryptoMutex);
+}
+
+#endif
+#if (DES3_SUPPORT == ENABLED)
+
+/**
+ * @brief Encrypt a 8-byte block using Triple DES algorithm
+ * @param[in] context Pointer to the Triple DES context
+ * @param[in] input Plaintext block to encrypt
+ * @param[out] output Ciphertext block resulting from encryption
+ **/
+
+void des3EncryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output)
+{
+   caam_handle_t caamHandle;
+
+   //Set CAAM job ring
+   caamHandle.jobRing = kCAAM_JobRing0;
+   //Copy the plaintext to the buffer
+   osMemcpy(caamBufferIn, input, DES3_BLOCK_SIZE);
+
+   //Acquire exclusive access to the CAAM module
+   osAcquireMutex(&mimxrt1160CryptoMutex);
+
+   //Perform Triple DES encryption
+   CAAM_DES3_EncryptEcb(CAAM, &caamHandle, caamBufferIn, caamBufferOut,
+      DES3_BLOCK_SIZE, (const uint8_t *) context->k1.ks,
+      (const uint8_t *) context->k2.ks,
+      (const uint8_t *) context->k3.ks);
+
+   //Copy the resulting ciphertext
+   osMemcpy(output, caamBufferOut, DES3_BLOCK_SIZE);
+
+   //Release exclusive access to the CAAM module
+   osReleaseMutex(&mimxrt1160CryptoMutex);
+}
+
+
+/**
+ * @brief Decrypt a 8-byte block using Triple DES algorithm
+ * @param[in] context Pointer to the Triple DES context
+ * @param[in] input Ciphertext block to decrypt
+ * @param[out] output Plaintext block resulting from decryption
+ **/
+
+void des3DecryptBlock(Des3Context *context, const uint8_t *input, uint8_t *output)
+{
+   caam_handle_t caamHandle;
+
+   //Set CAAM job ring
+   caamHandle.jobRing = kCAAM_JobRing0;
+   //Copy the plaintext to the buffer
+   osMemcpy(caamBufferIn, input, DES3_BLOCK_SIZE);
+
+   //Acquire exclusive access to the CAAM module
+   osAcquireMutex(&mimxrt1160CryptoMutex);
+
+   //Perform Triple DES decryption
+   CAAM_DES3_DecryptEcb(CAAM, &caamHandle, caamBufferIn, caamBufferOut,
+      DES3_BLOCK_SIZE, (const uint8_t *) context->k1.ks,
+      (const uint8_t *) context->k2.ks,
+      (const uint8_t *) context->k3.ks);
+
+   //Copy the resulting ciphertext
+   osMemcpy(output, caamBufferOut, DES3_BLOCK_SIZE);
+
+   //Release exclusive access to the CAAM module
+   osReleaseMutex(&mimxrt1160CryptoMutex);
 }
 
 #endif
@@ -1146,116 +1276,100 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    //Initialize status code
    status = kStatus_Success;
 
-#if (AES_SUPPORT == ENABLED)
-   //AES cipher algorithm?
-   if(cipher == AES_CIPHER_ALGO)
+   //Check the value of the parameter
+   if((m % 8) == 0 && m <= (cipher->blockSize * 8))
    {
-      //Check the value of the parameter
-      if(m == (AES_BLOCK_SIZE * 8))
+      //Determine the size, in bytes, of the specific part of the block to be
+      //incremented
+      m = m / 8;
+
+#if (AES_SUPPORT == ENABLED)
+      //AES cipher algorithm?
+      if(cipher == AES_CIPHER_ALGO)
       {
-         //Check the length of the payload
-         if(length == 0)
+         size_t i;
+         size_t k;
+         size_t n;
+         size_t keySize;
+         AesContext *aesContext;
+         caam_handle_t caamHandle;
+
+         //Point to the AES context
+         aesContext = (AesContext *) context;
+
+         //Retrieve the length of the key
+         if(aesContext->nr == 10)
          {
-            //No data to process
+            //10 rounds are required for 128-bit key
+            keySize = 16;
          }
-         else if((length % AES_BLOCK_SIZE) == 0)
+         else if(aesContext->nr == 12)
          {
-            size_t i;
-            size_t n;
-            size_t keySize;
-            AesContext *aesContext;
-            caam_handle_t caamHandle;
-
-            //Point to the AES context
-            aesContext = (AesContext *) context;
-
-            //Retrieve the length of the key
-            if(aesContext->nr == 10)
-            {
-               //10 rounds are required for 128-bit key
-               keySize = 16;
-            }
-            else if(aesContext->nr == 12)
-            {
-               //12 rounds are required for 192-bit key
-               keySize = 24;
-            }
-            else if(aesContext->nr == 14)
-            {
-               //14 rounds are required for 256-bit key
-               keySize = 32;
-            }
-            else
-            {
-               //Invalid key length
-               status = kStatus_Fail;
-            }
-
-            //Check status code
-            if(status == kStatus_Success)
-            {
-               //Set CAAM job ring
-               caamHandle.jobRing = kCAAM_JobRing0;
-
-               //Acquire exclusive access to the CAAM module
-               osAcquireMutex(&mimxrt1160CryptoMutex);
-
-               //Perform AES-CTR encryption
-               for(i = 0; i < length && status == kStatus_Success; i += n)
-               {
-                  //Limit the number of data to process at a time
-                  n = MIN(length - i, MIMXRT1160_CAAM_BUFFER_SIZE);
-                  //Copy the plaintext to the buffer
-                  osMemcpy(caamBufferIn, p + i, n);
-                  //Copy the counter block
-                  osMemcpy(caamInitVector, t, AES_BLOCK_SIZE);
-
-                  //Encrypt data
-                  status = CAAM_AES_CryptCtr(CAAM, &caamHandle,
-                     caamBufferIn, caamBufferOut, n, caamInitVector,
-                     (const uint8_t *) aesContext->ek, keySize, NULL, NULL);
-
-                  //Check status code
-                  if(status == kStatus_Success)
-                  {
-                     //Copy the resulting ciphertext
-                     osMemcpy(c + i, caamBufferOut, n);
-                     //Update the value of the counter block
-                     osMemcpy(t, caamInitVector, AES_BLOCK_SIZE);
-                  }
-               }
-            }
-
-            //Release exclusive access to the CAAM module
-            osReleaseMutex(&mimxrt1160CryptoMutex);
+            //12 rounds are required for 192-bit key
+            keySize = 24;
+         }
+         else if(aesContext->nr == 14)
+         {
+            //14 rounds are required for 256-bit key
+            keySize = 32;
          }
          else
          {
-            //The length of the payload must be a multiple of the block size
-            status = kStatus_InvalidArgument;
+            //Invalid key length
+            status = kStatus_Fail;
          }
+
+         //Check status code
+         if(status == kStatus_Success)
+         {
+            //Set CAAM job ring
+            caamHandle.jobRing = kCAAM_JobRing0;
+
+            //Acquire exclusive access to the CAAM module
+            osAcquireMutex(&mimxrt1160CryptoMutex);
+
+            //Perform AES-CTR encryption
+            for(i = 0; i < length && status == kStatus_Success; i += n)
+            {
+               //Limit the number of data to process at a time
+               k = 256 - t[AES_BLOCK_SIZE - 1];
+               n = k * AES_BLOCK_SIZE;
+               n = MIN(n, length - i);
+               n = MIN(n, MIMXRT1160_CAAM_BUFFER_SIZE);
+               k = (n + AES_BLOCK_SIZE - 1) / AES_BLOCK_SIZE;
+
+               //Copy the plaintext to the buffer
+               osMemcpy(caamBufferIn, p + i, n);
+               //Copy the counter block
+               osMemcpy(caamInitVector, t, AES_BLOCK_SIZE);
+
+               //Encrypt data
+               status = CAAM_AES_CryptCtr(CAAM, &caamHandle,
+                  caamBufferIn, caamBufferOut, k * AES_BLOCK_SIZE,
+                  caamInitVector, (const uint8_t *) aesContext->ek, keySize,
+                  NULL, NULL);
+
+               //Check status code
+               if(status == kStatus_Success)
+               {
+                  //Copy the resulting ciphertext
+                  osMemcpy(c + i, caamBufferOut, n);
+                  //Update the value of the counter block
+                  ctrIncBlock(t, k, AES_BLOCK_SIZE, m);
+               }
+            }
+         }
+
+         //Release exclusive access to the CAAM module
+         osReleaseMutex(&mimxrt1160CryptoMutex);
       }
       else
-      {
-         //The value of the parameter is not valid
-         status = kStatus_InvalidArgument;
-      }
-   }
-   else
 #endif
-   //Unknown cipher algorithm?
-   {
-      //Check the value of the parameter
-      if((m % 8) == 0 && m <= (cipher->blockSize * 8))
+      //Unknown cipher algorithm?
       {
          size_t i;
          size_t n;
-         uint16_t temp;
          uint8_t o[16];
-
-         //Determine the size, in bytes, of the specific part of the block
-         //to be incremented
-         m = m / 8;
 
          //Process plaintext
          while(length > 0)
@@ -1273,13 +1387,7 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             }
 
             //Standard incrementing function
-            for(temp = 1, i = 1; i <= m; i++)
-            {
-               //Increment the current byte and propagate the carry
-               temp += t[cipher->blockSize - i];
-               t[cipher->blockSize - i] = temp & 0xFF;
-               temp >>= 8;
-            }
+            ctrIncBlock(t, 1, cipher->blockSize, m);
 
             //Next block
             p += n;
@@ -1287,11 +1395,11 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             length -= n;
          }
       }
-      else
-      {
-         //The value of the parameter is not valid
-         status = kStatus_InvalidArgument;
-      }
+   }
+   else
+   {
+      //The value of the parameter is not valid
+      status = kStatus_InvalidArgument;
    }
 
    //Return status code

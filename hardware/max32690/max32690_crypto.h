@@ -1,6 +1,6 @@
 /**
- * @file m467_crypto.c
- * @brief M467 hardware cryptographic accelerator
+ * @file max32690_crypto.h
+ * @brief MAX32690 hardware cryptographic accelerator
  *
  * @section License
  *
@@ -25,55 +25,29 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.4.2
  **/
 
-//Switch to the appropriate trace level
-#define TRACE_LEVEL CRYPTO_TRACE_LEVEL
+#ifndef _MAX32690_CRYPTO_H
+#define _MAX32690_CRYPTO_H
 
 //Dependencies
-#include "m460.h"
 #include "core/crypto.h"
-#include "hardware/m467/m467_crypto.h"
-#include "hardware/m467/m467_crypto_trng.h"
-#include "debug.h"
 
-//Global variables
-OsMutex m467CryptoMutex;
-
-
-/**
- * @brief Initialize hardware cryptographic accelerator
- * @return Error code
- **/
-
-error_t m467CryptoInit(void)
-{
-   error_t error;
-
-   //Initialize status code
-   error = NO_ERROR;
-
-   //Enable CRPT clock
-   CLK_EnableModuleClock(CRPT_MODULE);
-
-   //Create a mutex to prevent simultaneous access to the hardware
-   //cryptographic accelerator
-   if(!osCreateMutex(&m467CryptoMutex))
-   {
-      //Failed to create mutex
-      error = ERROR_OUT_OF_RESOURCES;
-   }
-
-#if (M467_CRYPTO_TRNG_SUPPORT == ENABLED)
-   //Check status code
-   if(!error)
-   {
-      //Initialize TRNG module
-      error = trngInit();
-   }
+//C++ guard
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-   //Return status code
-   return error;
+//Global variables
+extern OsMutex max32690CryptoMutex;
+
+//MAX32690 hardware cryptographic accelerator related functions
+error_t max32690CryptoInit(void);
+
+//C++ guard
+#ifdef __cplusplus
 }
+#endif
+
+#endif
