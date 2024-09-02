@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Switch to the appropriate trace level
@@ -426,35 +426,35 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    sce_oem_cmd_t oemCommand;
 
    //Check elliptic curve parameters
-   if(!osStrcmp(params->name, "secp256k1"))
+   if(osStrcmp(params->name, "secp256k1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_KOBLITZ;
       oemCommand = SCE_OEM_CMD_ECC_SECP256K1_PRIVATE;
       command = 0;
       n = 32;
    }
-   else if(!osStrcmp(params->name, "secp256r1"))
+   else if(osStrcmp(params->name, "secp256r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_NIST;
       oemCommand = SCE_OEM_CMD_ECC_P256_PRIVATE;
       command = 0;
       n = 32;
    }
-   else if(!osStrcmp(params->name, "secp384r1"))
+   else if(osStrcmp(params->name, "secp384r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_NIST;
       oemCommand = SCE_OEM_CMD_ECC_P384_PRIVATE;
       command = 0;
       n = 48;
    }
-   else if(!osStrcmp(params->name, "brainpoolP256r1"))
+   else if(osStrcmp(params->name, "brainpoolP256r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_BRAINPOOL;
       oemCommand = SCE_OEM_CMD_ECC_P256R1_PRIVATE;
       command = 0;
       n = 32;
    }
-   else if(!osStrcmp(params->name, "brainpoolP384r1"))
+   else if(osStrcmp(params->name, "brainpoolP384r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_BRAINPOOL;
       oemCommand = SCE_OEM_CMD_ECC_P384R1_PRIVATE;
@@ -566,35 +566,35 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    orderLen = mpiGetByteLength(&params->q);
 
    //Check elliptic curve parameters
-   if(!osStrcmp(params->name, "secp256k1"))
+   if(osStrcmp(params->name, "secp256k1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_KOBLITZ;
       oemCommand = SCE_OEM_CMD_ECC_SECP256K1_PRIVATE;
       command = 0;
       n = 32;
    }
-   else if(!osStrcmp(params->name, "secp256r1"))
+   else if(osStrcmp(params->name, "secp256r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_NIST;
       oemCommand = SCE_OEM_CMD_ECC_P256_PRIVATE;
       command = 0;
       n = 32;
    }
-   else if(!osStrcmp(params->name, "secp384r1"))
+   else if(osStrcmp(params->name, "secp384r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_NIST;
       oemCommand = SCE_OEM_CMD_ECC_P384_PRIVATE;
       command = 0;
       n = 48;
    }
-   else if(!osStrcmp(params->name, "brainpoolP256r1"))
+   else if(osStrcmp(params->name, "brainpoolP256r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_BRAINPOOL;
       oemCommand = SCE_OEM_CMD_ECC_P256R1_PRIVATE;
       command = 0;
       n = 32;
    }
-   else if(!osStrcmp(params->name, "brainpoolP384r1"))
+   else if(osStrcmp(params->name, "brainpoolP384r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_BRAINPOOL;
       oemCommand = SCE_OEM_CMD_ECC_P384R1_PRIVATE;
@@ -715,35 +715,35 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    orderLen = mpiGetByteLength(&params->q);
 
    //Check elliptic curve parameters
-   if(!osStrcmp(params->name, "secp256k1"))
+   if(osStrcmp(params->name, "secp256k1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_KOBLITZ;
       oemCommand = SCE_OEM_CMD_ECC_SECP256K1_PUBLIC;
       command = 0;
       n = 32;
    }
-   else if(!osStrcmp(params->name, "secp256r1"))
+   else if(osStrcmp(params->name, "secp256r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_NIST;
       oemCommand = SCE_OEM_CMD_ECC_P256_PUBLIC;
       command = 0;
       n = 32;
    }
-   else if(!osStrcmp(params->name, "secp384r1"))
+   else if(osStrcmp(params->name, "secp384r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_NIST;
       oemCommand = SCE_OEM_CMD_ECC_P384_PUBLIC;
       command = 0;
       n = 48;
    }
-   else if(!osStrcmp(params->name, "brainpoolP256r1"))
+   else if(osStrcmp(params->name, "brainpoolP256r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_BRAINPOOL;
       oemCommand = SCE_OEM_CMD_ECC_P256R1_PUBLIC;
       command = 0;
       n = 32;
    }
-   else if(!osStrcmp(params->name, "brainpoolP384r1"))
+   else if(osStrcmp(params->name, "brainpoolP384r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_BRAINPOOL;
       oemCommand = SCE_OEM_CMD_ECC_P384R1_PUBLIC;

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Switch to the appropriate trace level
@@ -267,7 +267,7 @@ error_t x509CheckNameConstraints(const char_t *subjectName,
    const X509Extensions *extensions;
    X509GeneralName subtree;
 
-   //Initialize error code
+   //Initialize status code
    error = NO_ERROR;
 
    //Point to the X.509 extensions of the CA certificate
@@ -768,7 +768,7 @@ error_t x509ParseIpv6Addr(const char_t *str, uint8_t *ipAddr)
          }
       }
       //"::" symbol found?
-      else if(!osStrncmp(str, "::", 2))
+      else if(osStrncmp(str, "::", 2) == 0)
       {
          //The "::" can only appear once in an IPv6 address
          if(j >= 0)

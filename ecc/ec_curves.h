@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 #ifndef _EC_CURVES_H
@@ -189,6 +189,13 @@
    #error BRAINPOOLP512R1_SUPPORT parameter is not valid
 #endif
 
+//FRP256v1 elliptic curve support
+#ifndef FRP256V1_SUPPORT
+   #define FRP256V1_SUPPORT DISABLED
+#elif (FRP256V1_SUPPORT != ENABLED && FRP256V1_SUPPORT != DISABLED)
+   #error FRP256V1_SUPPORT parameter is not valid
+#endif
+
 //SM2 elliptic curve support
 #ifndef SM2_SUPPORT
    #define SM2_SUPPORT DISABLED
@@ -337,6 +344,7 @@ extern const uint8_t BRAINPOOLP256R1_OID[9];
 extern const uint8_t BRAINPOOLP320R1_OID[9];
 extern const uint8_t BRAINPOOLP384R1_OID[9];
 extern const uint8_t BRAINPOOLP512R1_OID[9];
+extern const uint8_t FRP256V1_OID[10];
 extern const uint8_t SM2_OID[8];
 extern const uint8_t X25519_OID[3];
 extern const uint8_t X448_OID[3];
@@ -365,6 +373,7 @@ extern const EcCurveInfo brainpoolP256r1Curve;
 extern const EcCurveInfo brainpoolP320r1Curve;
 extern const EcCurveInfo brainpoolP384r1Curve;
 extern const EcCurveInfo brainpoolP512r1Curve;
+extern const EcCurveInfo frp256v1Curve;
 extern const EcCurveInfo sm2Curve;
 extern const EcCurveInfo x25519Curve;
 extern const EcCurveInfo x448Curve;
@@ -392,6 +401,7 @@ error_t brainpoolP256r1Mod(Mpi *a, const Mpi *p);
 error_t brainpoolP320r1Mod(Mpi *a, const Mpi *p);
 error_t brainpoolP384r1Mod(Mpi *a, const Mpi *p);
 error_t brainpoolP512r1Mod(Mpi *a, const Mpi *p);
+error_t frp256v1Mod(Mpi *a, const Mpi *p);
 error_t sm2Mod(Mpi *a, const Mpi *p);
 
 const EcCurveInfo *ecGetCurveInfo(const uint8_t *oid, size_t length);

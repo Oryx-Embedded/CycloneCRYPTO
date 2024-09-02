@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.4.2"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.4.4"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 4
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 2
+#define CYCLONE_CRYPTO_REV_NUMBER 4
 
 //Static memory allocation
 #ifndef CRYPTO_STATIC_MEM_SUPPORT
@@ -585,6 +585,13 @@
    #error GCM_SUPPORT parameter is not valid
 #endif
 
+//SIV mode support
+#ifndef SIV_SUPPORT
+   #define SIV_SUPPORT DISABLED
+#elif (SIV_SUPPORT != ENABLED && SIV_SUPPORT != DISABLED)
+   #error SIV_SUPPORT parameter is not valid
+#endif
+
 //Salsa20 stream cipher support
 #ifndef SALSA20_SUPPORT
    #define SALSA20_SUPPORT DISABLED
@@ -964,6 +971,17 @@ typedef enum
    CIPHER_MODE_GCM               = 8,
    CIPHER_MODE_CHACHA20_POLY1305 = 9,
 } CipherMode;
+
+
+/**
+ * @brief Data chunk descriptor
+ **/
+
+typedef struct
+{
+   const void *buffer;
+   size_t length;
+} DataChunk;
 
 
 //Common API for hash algorithms

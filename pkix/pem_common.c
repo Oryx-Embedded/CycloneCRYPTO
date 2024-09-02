@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Switch to the appropriate trace level
@@ -429,7 +429,7 @@ bool_t pemCompareString(const PemString *string, const char_t *value)
       if(string->value != NULL && string->length == n)
       {
          //Perform string comparison
-         if(!osStrncmp(string->value, value, n))
+         if(osStrncmp(string->value, value, n) == 0)
          {
             res = TRUE;
          }

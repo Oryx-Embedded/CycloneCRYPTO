@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Switch to the appropriate trace level
@@ -769,21 +769,21 @@ error_t x509ParseExtendedKeyUsage(bool_t critical, const uint8_t *data,
          //Email protection
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_EMAIL_PROTECTION;
       }
-      //id-kp-ipsecEndSystem ?
+      //id-kp-ipsecEndSystem?
       else if(!oidComp(tag.value, tag.length,
          X509_KP_IPSEC_END_SYSTEM_OID, sizeof(X509_KP_IPSEC_END_SYSTEM_OID)))
       {
          //IPsec end system
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_IPSEC_END_SYSTEM;
       }
-      //id-kp-ipsecTunnel ?
+      //id-kp-ipsecTunnel?
       else if(!oidComp(tag.value, tag.length,
          X509_KP_IPSEC_TUNNEL_OID, sizeof(X509_KP_IPSEC_TUNNEL_OID)))
       {
          //IPsec tunnel
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_IPSEC_TUNNEL;
       }
-      //id-kp-ipsecUser ?
+      //id-kp-ipsecUser?
       else if(!oidComp(tag.value, tag.length,
          X509_KP_IPSEC_USER_OID, sizeof(X509_KP_IPSEC_USER_OID)))
       {
@@ -804,7 +804,7 @@ error_t x509ParseExtendedKeyUsage(bool_t critical, const uint8_t *data,
          //Signing OCSP responses
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_OCSP_SIGNING;
       }
-      //id-kp-ipsecIKE ?
+      //id-kp-ipsecIKE?
       else if(!oidComp(tag.value, tag.length,
          X509_KP_IPSEC_IKE_OID, sizeof(X509_KP_IPSEC_IKE_OID)))
       {

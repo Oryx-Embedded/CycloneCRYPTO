@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Switch to the appropriate trace level
@@ -225,7 +225,7 @@ error_t ed448GenerateSignature(const uint8_t *privateKey,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature)
 {
    error_t error;
-   EddsaMessageChunk messageChunks[2];
+   DataChunk messageChunks[2];
 
    //The message fits in a single chunk
    messageChunks[0].buffer = message;
@@ -246,8 +246,8 @@ error_t ed448GenerateSignature(const uint8_t *privateKey,
  * @brief EdDSA signature generation
  * @param[in] privateKey Signer's EdDSA private key (57 bytes)
  * @param[in] publicKey Signer's EdDSA public key (57 bytes)
- * @param[in] messageChunks Collection of chunks representing the message to
- *   be signed
+ * @param[in] messageChunks Array of data chunks representing the message
+ *   to be signed
  * @param[in] context Constant string specified by the protocol using it
  * @param[in] contextLen Length of the context, in bytes
  * @param[in] flag Prehash flag for Ed448ph scheme
@@ -256,7 +256,7 @@ error_t ed448GenerateSignature(const uint8_t *privateKey,
  **/
 
 error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
-   const uint8_t *publicKey, const EddsaMessageChunk *messageChunks,
+   const uint8_t *publicKey, const DataChunk *messageChunks,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature)
 {
    uint_t i;
@@ -406,7 +406,7 @@ error_t ed448VerifySignature(const uint8_t *publicKey, const void *message,
    const uint8_t *signature)
 {
    error_t error;
-   EddsaMessageChunk messageChunks[2];
+   DataChunk messageChunks[2];
 
    //The message fits in a single chunk
    messageChunks[0].buffer = message;
@@ -426,7 +426,7 @@ error_t ed448VerifySignature(const uint8_t *publicKey, const void *message,
 /**
  * @brief EdDSA signature verification
  * @param[in] publicKey Signer's EdDSA public key (57 bytes)
- * @param[in] messageChunks Collection of chunks representing the message
+ * @param[in] messageChunks Array of data chunks representing the message
  *   whose signature is to be verified
  * @param[in] context Constant string specified by the protocol using it
  * @param[in] contextLen Length of the context, in bytes
@@ -436,7 +436,7 @@ error_t ed448VerifySignature(const uint8_t *publicKey, const void *message,
  **/
 
 error_t ed448VerifySignatureEx(const uint8_t *publicKey,
-   const EddsaMessageChunk *messageChunks, const void *context,
+   const DataChunk *messageChunks, const void *context,
    uint8_t contextLen, uint8_t flag, const uint8_t *signature)
 {
    uint_t i;

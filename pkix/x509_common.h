@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 #ifndef _X509_COMMON_H
@@ -304,6 +304,13 @@
    #define X509_BRAINPOOLP512R1_SUPPORT DISABLED
 #elif (X509_BRAINPOOLP512R1_SUPPORT != ENABLED && X509_BRAINPOOLP512R1_SUPPORT != DISABLED)
    #error X509_BRAINPOOLP512R1_SUPPORT parameter is not valid
+#endif
+
+//FRP256v1 elliptic curve support
+#ifndef X509_FRP256V1_SUPPORT
+   #define X509_FRP256V1_SUPPORT DISABLED
+#elif (X509_FRP256V1_SUPPORT != ENABLED && X509_FRP256V1_SUPPORT != DISABLED)
+   #error X509_FRP256V1_SUPPORT parameter is not valid
 #endif
 
 //SM2 elliptic curve support

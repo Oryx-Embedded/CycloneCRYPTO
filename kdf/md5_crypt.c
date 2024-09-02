@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Switch to the appropriate trace level
@@ -79,7 +79,7 @@ error_t md5Crypt(const char_t *password, const char_t *salt, char_t *output,
       return ERROR_INVALID_PARAMETER;
 
    //Skip the salt prefix, if any
-   if(!osStrncmp(salt, "$1$", 3))
+   if(osStrncmp(salt, "$1$", 3) == 0)
    {
       salt += 3;
    }

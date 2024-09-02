@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Switch to the appropriate trace level
@@ -465,6 +465,27 @@ error_t x509FormatName(const X509Name *name, uint8_t *output, size_t *written)
          nameAttribute.type = ASN1_TYPE_IA5_STRING;
          nameAttribute.data.value = name->emailAddress.value;
          nameAttribute.data.length = name->emailAddress.length;
+
+         //Encode the attribute to ASN.1 format
+         error = x509FormatNameAttribute(&nameAttribute, p, &n);
+         //Any error to report?
+         if(error)
+            return error;
+
+         //Advance data pointer
+         p += n;
+         length += n;
+      }
+
+      //Valid Serial Number attribute?
+      if(name->serialNumber.value != NULL && name->serialNumber.length > 0)
+      {
+         //Set attribute type and value
+         nameAttribute.oid.value = X509_SERIAL_NUMBER_OID;
+         nameAttribute.oid.length = sizeof(X509_SERIAL_NUMBER_OID);
+         nameAttribute.type = ASN1_TYPE_PRINTABLE_STRING;
+         nameAttribute.data.value = name->serialNumber.value;
+         nameAttribute.data.length = name->serialNumber.length;
 
          //Encode the attribute to ASN.1 format
          error = x509FormatNameAttribute(&nameAttribute, p, &n);

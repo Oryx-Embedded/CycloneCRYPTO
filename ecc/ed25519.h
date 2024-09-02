@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 #ifndef _ED25519_H
@@ -108,7 +108,7 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature);
 
 error_t ed25519GenerateSignatureEx(const uint8_t *privateKey,
-   const uint8_t *publicKey, const EddsaMessageChunk *messageChunks,
+   const uint8_t *publicKey, const DataChunk *messageChunks,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature);
 
 error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
@@ -116,7 +116,7 @@ error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
    const uint8_t *signature);
 
 error_t ed25519VerifySignatureEx(const uint8_t *publicKey,
-   const EddsaMessageChunk *messageChunks, const void *context,
+   const DataChunk *messageChunks, const void *context,
    uint8_t contextLen, uint8_t flag, const uint8_t *signature);
 
 void ed25519Mul(Ed25519State *state, Ed25519Point *r, const uint8_t *k,

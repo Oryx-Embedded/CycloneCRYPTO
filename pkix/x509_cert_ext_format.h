@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 #ifndef _X509_CERT_EXT_FORMAT_H
@@ -52,6 +52,12 @@ error_t x509FormatBasicConstraints(const X509BasicConstraints *basicConstraints,
    uint8_t *output, size_t *written);
 
 error_t x509FormatKeyUsage(const X509KeyUsage *keyUsage, uint8_t *output,
+   size_t *written);
+
+error_t x509FormatExtendedKeyUsage(const X509ExtendedKeyUsage *extKeyUsage,
+   uint8_t *output, size_t *written);
+
+error_t x509FormatKeyPurposes(uint16_t bitmap, uint8_t *output,
    size_t *written);
 
 error_t x509FormatSubjectAltName(const X509SubjectAltName *subjectAltName,

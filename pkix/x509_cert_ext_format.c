@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Switch to the appropriate trace level
@@ -90,6 +90,16 @@ error_t x509FormatExtensions(const X509Extensions *extensions,
 
    //Format KeyUsage extension
    error = x509FormatKeyUsage(&extensions->keyUsage, p, &n);
+   //Any error to report?
+   if(error)
+      return error;
+
+   //Advance data pointer
+   p += n;
+   length += n;
+
+   //Format ExtendedKeyUsage extension
+   error = x509FormatExtendedKeyUsage(&extensions->extKeyUsage, p, &n);
    //Any error to report?
    if(error)
       return error;
@@ -584,6 +594,301 @@ error_t x509FormatKeyUsage(const X509KeyUsage *keyUsage, uint8_t *output,
       if(error)
          return error;
    }
+
+   //Total number of bytes that have been written
+   *written = length;
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Format ExtendedKeyUsage extension
+ * @param[in] keyUsage Value of the extension
+ * @param[out] output Buffer where to format the ASN.1 structure
+ * @param[out] written Length of the resulting ASN.1 structure
+ * @return Error code
+ **/
+
+error_t x509FormatExtendedKeyUsage(const X509ExtendedKeyUsage *extKeyUsage,
+   uint8_t *output, size_t *written)
+{
+   error_t error;
+   size_t n;
+   size_t length;
+   uint8_t value;
+   uint8_t *p;
+   Asn1Tag tag;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Point to the buffer where to write the ASN.1 structure
+   p = output;
+   //Length of the ASN.1 structure
+   length = 0;
+
+   //This extension indicates one or more purposes for which the certified
+   //public key may be used
+   if(extKeyUsage->bitmap != 0)
+   {
+      //Format the extension identifier
+      tag.constructed = FALSE;
+      tag.objClass = ASN1_CLASS_UNIVERSAL;
+      tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
+      tag.length = sizeof(X509_EXTENDED_KEY_USAGE_OID);
+      tag.value = X509_EXTENDED_KEY_USAGE_OID;
+
+      //Write the corresponding ASN.1 tag
+      error = asn1WriteTag(&tag, FALSE, p, &n);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //Advance data pointer
+      p += n;
+      length += n;
+
+      //An extension includes the critical flag, with a default value of FALSE
+      if(extKeyUsage->critical)
+      {
+         //Mark the extension as critical
+         value = 0xFF;
+
+         //Format the critical field
+         tag.constructed = FALSE;
+         tag.objClass = ASN1_CLASS_UNIVERSAL;
+         tag.objType = ASN1_TYPE_BOOLEAN;
+         tag.length = 1;
+         tag.value = &value;
+
+         //Write the corresponding ASN.1 tag
+         error = asn1WriteTag(&tag, FALSE, p, &n);
+         //Any error to report?
+         if(error)
+            return error;
+
+         //Advance data pointer
+         p += n;
+         length += n;
+      }
+
+      //The extension contains a sequence of KeyPurposeId
+      error = x509FormatKeyPurposes(extKeyUsage->bitmap, p, &n);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //The extension value is encapsulated in an octet string
+      tag.constructed = FALSE;
+      tag.objClass = ASN1_CLASS_UNIVERSAL;
+      tag.objType = ASN1_TYPE_OCTET_STRING;
+      tag.length = n;
+      tag.value = p;
+
+      //Write the corresponding ASN.1 tag
+      error = asn1WriteTag(&tag, FALSE, p, &n);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //Adjust the length of the extension
+      length += n;
+
+      //The extension is encapsulated within a sequence
+      tag.constructed = TRUE;
+      tag.objClass = ASN1_CLASS_UNIVERSAL;
+      tag.objType = ASN1_TYPE_SEQUENCE;
+      tag.length = length;
+      tag.value = output;
+
+      //Write the corresponding ASN.1 tag
+      error = asn1WriteTag(&tag, FALSE, output, &length);
+      //Any error to report?
+      if(error)
+         return error;
+   }
+
+   //Total number of bytes that have been written
+   *written = length;
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Format the list of key purposes
+ * @param[in] bitmap Key purposes
+ * @param[out] output Buffer where to format the ASN.1 structure
+ * @param[out] written Length of the resulting ASN.1 structure
+ * @return Error code
+ **/
+
+error_t x509FormatKeyPurposes(uint16_t bitmap, uint8_t *output,
+   size_t *written)
+{
+   error_t error;
+   uint_t k;
+   size_t n;
+   size_t length;
+   uint8_t *p;
+   Asn1Tag tag;
+
+   //Point to the buffer where to write the ASN.1 structure
+   p = output;
+   //Length of the ASN.1 structure
+   length = 0;
+
+   //If a CA includes extended key usages to satisfy such applications, but
+   //does not wish to restrict usages of the key, the CA can include the
+   //special KeyPurposeId anyExtendedKeyUsage
+   if(bitmap == X509_EXT_KEY_USAGE_ANY)
+   {
+      //An object identifier is used to identify a given key purpose
+      tag.constructed = FALSE;
+      tag.objClass = ASN1_CLASS_UNIVERSAL;
+      tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
+      tag.length = sizeof(X509_ANY_EXT_KEY_USAGE_OID);
+      tag.value = X509_ANY_EXT_KEY_USAGE_OID;
+
+      //Write the corresponding ASN.1 tag
+      error = asn1WriteTag(&tag, FALSE, p, &n);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //Advance data pointer
+      p += n;
+      length += n;
+   }
+   else
+   {
+      //Format key purposes
+      for(k = 0; k < 16; k++)
+      {
+         //An object identifier is used to identify a given key purpose
+         tag.constructed = FALSE;
+         tag.objClass = ASN1_CLASS_UNIVERSAL;
+         tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
+
+         //Check key purpose
+         switch(bitmap & (1U << k))
+         {
+         //id-kp-serverAuth?
+         case X509_EXT_KEY_USAGE_SERVER_AUTH:
+            tag.value = X509_KP_SERVER_AUTH_OID;
+            tag.length = sizeof(X509_KP_SERVER_AUTH_OID);
+            break;
+
+         //id-kp-clientAuth?
+         case X509_EXT_KEY_USAGE_CLIENT_AUTH:
+            tag.value = X509_KP_CLIENT_AUTH_OID;
+            tag.length = sizeof(X509_KP_CLIENT_AUTH_OID);
+            break;
+
+         //id-kp-codeSigning?
+         case X509_EXT_KEY_USAGE_CODE_SIGNING:
+            tag.value = X509_KP_CODE_SIGNING_OID;
+            tag.length = sizeof(X509_KP_CODE_SIGNING_OID);
+            break;
+
+         //id-kp-emailProtection?
+         case X509_EXT_KEY_USAGE_EMAIL_PROTECTION:
+            tag.value = X509_KP_EMAIL_PROTECTION_OID;
+            tag.length = sizeof(X509_KP_EMAIL_PROTECTION_OID);
+            break;
+
+         //id-kp-ipsecEndSystem?
+         case X509_EXT_KEY_USAGE_IPSEC_END_SYSTEM:
+            tag.value = X509_KP_IPSEC_END_SYSTEM_OID;
+            tag.length = sizeof(X509_KP_IPSEC_END_SYSTEM_OID);
+            break;
+
+         //id-kp-ipsecTunnel?
+         case X509_EXT_KEY_USAGE_IPSEC_TUNNEL:
+            tag.value = X509_KP_IPSEC_TUNNEL_OID;
+            tag.length = sizeof(X509_KP_IPSEC_TUNNEL_OID);
+            break;
+
+         //id-kp-ipsecUser?
+         case X509_EXT_KEY_USAGE_IPSEC_USER:
+            tag.value = X509_KP_IPSEC_USER_OID;
+            tag.length = sizeof(X509_KP_IPSEC_USER_OID);
+            break;
+
+         //id-kp-timeStamping?
+         case X509_EXT_KEY_USAGE_TIME_STAMPING:
+            tag.value = X509_KP_TIME_STAMPING_OID;
+            tag.length = sizeof(X509_KP_TIME_STAMPING_OID);
+            break;
+
+         //id-kp-OCSPSigning?
+         case X509_EXT_KEY_USAGE_OCSP_SIGNING:
+            tag.value = X509_KP_OCSP_SIGNING_OID;
+            tag.length = sizeof(X509_KP_OCSP_SIGNING_OID);
+            break;
+
+         //id-kp-ipsecIKE?
+         case X509_EXT_KEY_USAGE_IPSEC_IKE:
+            tag.value = X509_KP_IPSEC_IKE_OID;
+            tag.length = sizeof(X509_KP_IPSEC_IKE_OID);
+            break;
+
+         //id-kp-secureShellClient?
+         case X509_EXT_KEY_USAGE_SSH_CLIENT:
+            tag.value = X509_KP_SSH_CLIENT_OID;
+            tag.length = sizeof(X509_KP_SSH_CLIENT_OID);
+            break;
+
+         //id-kp-secureShellServer?
+         case X509_EXT_KEY_USAGE_SSH_SERVER:
+            tag.value = X509_KP_SSH_SERVER_OID;
+            tag.length = sizeof(X509_KP_SSH_SERVER_OID);
+            break;
+
+         //id-kp-documentSigning?
+         case X509_EXT_KEY_USAGE_DOC_SIGNING:
+            tag.value = X509_KP_DOC_SIGNING_OID;
+            tag.length = sizeof(X509_KP_DOC_SIGNING_OID);
+            break;
+
+         //Unknown key purpose?
+         default:
+            tag.value = NULL;
+            tag.length = 0;
+            break;
+         }
+
+         //Valid object identifier?
+         if(tag.value != NULL && tag.length > 0)
+         {
+            //Write the corresponding ASN.1 tag
+            error = asn1WriteTag(&tag, FALSE, p, &n);
+            //Any error to report?
+            if(error)
+               return error;
+
+            //Advance data pointer
+            p += n;
+            length += n;
+         }
+      }
+   }
+
+   //The key purposes are encapsulated within a sequence
+   tag.constructed = TRUE;
+   tag.objClass = ASN1_CLASS_UNIVERSAL;
+   tag.objType = ASN1_TYPE_SEQUENCE;
+   tag.length = length;
+   tag.value = output;
+
+   //Write the corresponding ASN.1 tag
+   error = asn1WriteTag(&tag, FALSE, output, &length);
+   //Any error to report?
+   if(error)
+      return error;
 
    //Total number of bytes that have been written
    *written = length;

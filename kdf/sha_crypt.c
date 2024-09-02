@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Switch to the appropriate trace level
@@ -85,12 +85,12 @@ error_t shaCrypt(const HashAlgo *hashAlgo, const char_t *password,
       return ERROR_INVALID_PARAMETER;
 
    //SHA-crypt is specified for SHA-256 and SHA-512 only
-   if(!osStrcmp(hashAlgo->name, "SHA-256"))
+   if(osStrcmp(hashAlgo->name, "SHA-256") == 0)
    {
       //The magic prefix is $5$ for SHA-256
       prefix = "$5$";
    }
-   else if(!osStrcmp(hashAlgo->name, "SHA-512"))
+   else if(osStrcmp(hashAlgo->name, "SHA-512") == 0)
    {
       //The magic prefix is $6$ for SHA-256
       prefix = "$6$";
@@ -102,13 +102,13 @@ error_t shaCrypt(const HashAlgo *hashAlgo, const char_t *password,
    }
 
    //Skip the salt prefix, if any
-   if(!osStrncmp(salt, prefix, 3))
+   if(osStrncmp(salt, prefix, 3) == 0)
    {
       salt += 3;
    }
 
    //The rounds=<N> specification is optional
-   if(!osStrncmp(salt, "rounds=", 7))
+   if(osStrncmp(salt, "rounds=", 7) == 0)
    {
       //The rounds=<N> specification is present in the input salt
       flag = TRUE;

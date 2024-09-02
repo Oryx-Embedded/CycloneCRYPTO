@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Switch to the appropriate trace level
@@ -1070,6 +1070,13 @@ const EcCurveInfo *x509GetCurveInfo(const uint8_t *oid, size_t length)
 #if (X509_BRAINPOOLP512R1_SUPPORT == ENABLED)
    //brainpoolP512r1 elliptic curve?
    else if(!oidComp(oid, length, BRAINPOOLP512R1_OID, sizeof(BRAINPOOLP512R1_OID)))
+   {
+      curveInfo = ecGetCurveInfo(oid, length);
+   }
+#endif
+#if (X509_FRP256V1_SUPPORT == ENABLED)
+   //FRP256v1 elliptic curve?
+   else if(!oidComp(oid, length, FRP256V1_OID, sizeof(FRP256V1_OID)))
    {
       curveInfo = ecGetCurveInfo(oid, length);
    }

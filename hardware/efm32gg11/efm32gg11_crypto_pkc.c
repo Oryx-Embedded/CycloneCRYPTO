@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.2
+ * @version 2.4.4
  **/
 
 //Switch to the appropriate trace level
@@ -62,7 +62,7 @@ error_t ecMulMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
    uint32_t temp[8];
 
    //Check elliptic curve
-   if(!osStrcmp(params->name, "secp256r1"))
+   if(osStrcmp(params->name, "secp256r1") == 0)
    {
       //Acquire exclusive access to the CRYPTO module
       osAcquireMutex(&efm32gg11CryptoMutex);
@@ -173,7 +173,7 @@ error_t ecSqrMod(const EcDomainParameters *params, Mpi *r, const Mpi *a)
    uint32_t temp[8];
 
    //Check elliptic curve
-   if(!osStrcmp(params->name, "secp256r1"))
+   if(osStrcmp(params->name, "secp256r1") == 0)
    {
       //Acquire exclusive access to the CRYPTO module
       osAcquireMutex(&efm32gg11CryptoMutex);
