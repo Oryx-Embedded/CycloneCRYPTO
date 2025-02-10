@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,7 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "ecc/ec_curves.h"
+#include "ecc/ec.h"
 #include "ecc/curve25519.h"
 #include "debug.h"
 
@@ -41,20 +41,20 @@
 #if (X25519_SUPPORT == ENABLED || ED25519_SUPPORT == ENABLED)
 
 //Square root of -1 modulo p (constant)
-static const uint32_t CURVE25519_SQRT_MINUS_1[8] =
+static const int32_t CURVE25519_SQRT_MINUS_1[9] =
 {
-   0x4A0EA0B0, 0xC4EE1B27, 0xAD2FE478, 0x2F431806,
-   0x3DFBD7A7, 0x2B4D0099, 0x4FC1DF0B, 0x2B832480
+   0x0A0EA0B0, 0x0770D93A, 0x0BF91E31, 0x06300D5A, 0x1D7A72F4,
+   0x004C9EFD, 0x1C2CAD34, 0x1009F83B, 0x002B8324
 };
 
 
 /**
  * @brief Set integer value
  * @param[out] a Pointer to the integer to be initialized
- * @param[in] b Initial value
+ * @param[in] b An integer such as 0 <= B < (2^29 - 1)
  **/
 
-void curve25519SetInt(uint32_t *a, uint32_t b)
+void curve25519SetInt(int32_t *a, int32_t b)
 {
    uint_t i;
 
@@ -62,7 +62,7 @@ void curve25519SetInt(uint32_t *a, uint32_t b)
    a[0] = b;
 
    //Initialize the rest of the integer
-   for(i = 1; i < 8; i++)
+   for(i = 1; i < 9; i++)
    {
       a[i] = 0;
    }
@@ -76,22 +76,61 @@ void curve25519SetInt(uint32_t *a, uint32_t b)
  * @param[in] b An integer such as 0 <= B < p
  **/
 
-void curve25519Add(uint32_t *r, const uint32_t *a, const uint32_t *b)
+void curve25519Add(int32_t *r, const int32_t *a, const int32_t *b)
 {
+#if (CURVE25519_SPEED_OPTIMIZATION_LEVEL <= 1)
    uint_t i;
-   uint64_t temp;
+   int32_t temp;
 
    //Compute R = A + B
    for(temp = 0, i = 0; i < 8; i++)
    {
-      temp += a[i];
-      temp += b[i];
-      r[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
+      temp += a[i] + b[i];
+      r[i] = temp & 0x1FFFFFFF;
+      temp >>= 29;
    }
 
-   //Perform modular reduction
-   curve25519Red(r, r);
+   temp += a[8] + b[8];
+   r[8] = temp & 0x007FFFFF;
+   temp >>= 23;
+
+   //Perform modular reduction (2^255 = 19)
+   r[0] += temp * 19;
+#else
+   int32_t temp;
+
+   //Compute R = A + B
+   temp = a[0] + b[0];
+   r[0] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[1] + b[1];
+   r[1] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[2] + b[2];
+   r[2] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[3] + b[3];
+   r[3] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[4] + b[4];
+   r[4] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[5] + b[5];
+   r[5] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[6] + b[6];
+   r[6] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[7] + b[7];
+   r[7] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[8] + b[8];
+   r[8] = temp & 0x007FFFFF;
+   temp >>= 23;
+
+   //Perform modular reduction (2^255 = 19)
+   r[0] += temp * 19;
+#endif
 }
 
 
@@ -102,21 +141,25 @@ void curve25519Add(uint32_t *r, const uint32_t *a, const uint32_t *b)
  * @param[in] b An integer such as 0 <= B < (2^32 - 1)
  **/
 
-void curve25519AddInt(uint32_t *r, const uint32_t *a, uint32_t b)
+void curve25519AddInt(int32_t *r, const int32_t *a, int32_t b)
 {
    uint_t i;
-   uint64_t temp;
+   int32_t temp;
 
    //Compute R = A + B
    for(temp = b, i = 0; i < 8; i++)
    {
       temp += a[i];
-      r[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
+      r[i] = temp & 0x1FFFFFFF;
+      temp >>= 29;
    }
 
-   //Perform modular reduction
-   curve25519Red(r, r);
+   temp += a[8];
+   r[8] = temp & 0x007FFFFF;
+   temp >>= 23;
+
+   //Perform modular reduction (2^255 = 19)
+   r[0] += temp * 19;
 }
 
 
@@ -127,25 +170,61 @@ void curve25519AddInt(uint32_t *r, const uint32_t *a, uint32_t b)
  * @param[in] b An integer such as 0 <= B < p
  **/
 
-void curve25519Sub(uint32_t *r, const uint32_t *a, const uint32_t *b)
+void curve25519Sub(int32_t *r, const int32_t *a, const int32_t *b)
 {
+#if (CURVE25519_SPEED_OPTIMIZATION_LEVEL <= 1)
    uint_t i;
-   int64_t temp;
+   int32_t temp;
 
-   //Compute R = A - 19 - B
-   for(temp = -19, i = 0; i < 8; i++)
+   //Compute R = A - B
+   for(temp = 0, i = 0; i < 8; i++)
    {
-      temp += a[i];
-      temp -= b[i];
-      r[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
+      temp += a[i] - b[i];
+      r[i] = temp & 0x1FFFFFFF;
+      temp >>= 29;
    }
 
-   //Compute R = A + (2^255 - 19) - B
-   r[7] += 0x80000000;
+   temp += a[8] - b[8];
+   r[8] = temp & 0x007FFFFF;
+   temp >>= 23;
+
+   //Perform modular reduction (2^255 = 19)
+   r[0] += temp * 19;
+#else
+   int32_t temp;
+
+   //Compute R = A - B
+   temp = a[0] - b[0];
+   r[0] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[1] - b[1];
+   r[1] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[2] - b[2];
+   r[2] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[3] - b[3];
+   r[3] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[4] - b[4];
+   r[4] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[5] - b[5];
+   r[5] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[6] - b[6];
+   r[6] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[7] - b[7];
+   r[7] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += a[8] - b[8];
+   r[8] = temp & 0x007FFFFF;
+   temp >>= 23;
 
    //Perform modular reduction
-   curve25519Red(r, r);
+   r[0] += temp * 19;
+#endif
 }
 
 
@@ -156,28 +235,25 @@ void curve25519Sub(uint32_t *r, const uint32_t *a, const uint32_t *b)
  * @param[in] b An integer such as 0 <= B < (2^32 - 1)
  **/
 
-void curve25519SubInt(uint32_t *r, const uint32_t *a, uint32_t b)
+void curve25519SubInt(int32_t *r, const int32_t *a, int32_t b)
 {
    uint_t i;
-   int64_t temp;
+   int32_t temp;
 
-   //Set initial value
-   temp = -19;
-   temp -= b;
-
-   //Compute R = A - 19 - B
-   for(i = 0; i < 8; i++)
+   //Compute R = A - B
+   for(temp = -b, i = 0; i < 8; i++)
    {
       temp += a[i];
-      r[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
+      r[i] = temp & 0x1FFFFFFF;
+      temp >>= 29;
    }
 
-   //Compute R = A + (2^255 - 19) - B
-   r[7] += 0x80000000;
+   temp += a[8];
+   r[8] = temp & 0x007FFFFF;
+   temp >>= 23;
 
-   //Perform modular reduction
-   curve25519Red(r, r);
+   //Perform modular reduction (2^255 = 19)
+   r[0] += temp * 19;
 }
 
 
@@ -188,82 +264,228 @@ void curve25519SubInt(uint32_t *r, const uint32_t *a, uint32_t b)
  * @param[in] b An integer such as 0 <= B < p
  **/
 
-__weak_func void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
+__weak_func void curve25519Mul(int32_t *r, const int32_t *a, const int32_t *b)
 {
+#if (CURVE25519_SPEED_OPTIMIZATION_LEVEL == 0)
    uint_t i;
    uint_t j;
-   uint64_t c;
-   uint64_t temp;
-   uint32_t u[16];
-
-   //Initialize variables
-   temp = 0;
-   c = 0;
+   int64_t temp;
+   int32_t u[18];
 
    //Comba's method is used to perform multiplication
-   for(i = 0; i < 16; i++)
+   for(temp = 0, i = 0; i < 18; i++)
    {
       //The algorithm computes the products, column by column
-      if(i < 8)
+      if(i < 9)
       {
          //Inner loop
          for(j = 0; j <= i; j++)
          {
-            temp += (uint64_t) a[j] * b[i - j];
-            c += temp >> 32;
-            temp &= 0xFFFFFFFF;
+            temp += (int64_t) a[j] * b[i - j];
          }
       }
       else
       {
          //Inner loop
-         for(j = i - 7; j < 8; j++)
+         for(j = i - 8; j < 9; j++)
          {
-            temp += (uint64_t) a[j] * b[i - j];
-            c += temp >> 32;
-            temp &= 0xFFFFFFFF;
+            temp += (int64_t) a[j] * b[i - j];
          }
       }
 
       //At the bottom of each column, the final result is written to memory
-      u[i] = temp & 0xFFFFFFFF;
-
+      u[i] = temp & 0x1FFFFFFF;
       //Propagate the carry upwards
-      temp = c & 0xFFFFFFFF;
-      c >>= 32;
+      temp >>= 29;
    }
 
-   //Reduce bit 255 (2^255 = 19 mod p)
-   temp = (u[7] >> 31) * 19;
-   //Mask the most significant bit
-   u[7] &= 0x7FFFFFFF;
-
-   //Perform fast modular reduction (first pass)
-   for(i = 0; i < 8; i++)
+   //Perform modular reduction (first pass)
+   for(temp = 0, i = 0; i < 8; i++)
    {
       temp += u[i];
-      temp += (uint64_t) u[i + 8] * 38;
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
+      temp += (int64_t) u[i + 9] * 1216;
+      r[i] = temp & 0x1FFFFFFF;
+      temp >>= 29;
    }
 
-   //Reduce bit 256 (2^256 = 38 mod p)
-   temp *= 38;
-   //Reduce bit 255 (2^255 = 19 mod p)
-   temp += (u[7] >> 31) * 19;
-   //Mask the most significant bit
-   u[7] &= 0x7FFFFFFF;
+   temp += u[8];
+   temp += (int64_t) u[17] * 1216;
+   r[8] = temp & 0x007FFFFF;
+   temp >>= 23;
 
-   //Perform fast modular reduction (second pass)
-   for(i = 0; i < 8; i++)
-   {
-      temp += u[i];
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
-   }
+   //Perform modular reduction (second pass)
+   temp *= 19;
+   temp += r[0];
+   r[0] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   r[1] += temp & 0xFFFFFFFF;
+#else
+   int64_t temp;
+   int32_t u[18];
 
-   //Reduce non-canonical values
-   curve25519Red(r, u);
+   //Compute R = A * B
+   temp = (int64_t) a[0] * b[0];
+   u[0] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[0] * b[1];
+   temp += (int64_t) a[1] * b[0];
+   u[1] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[0] * b[2];
+   temp += (int64_t) a[1] * b[1];
+   temp += (int64_t) a[2] * b[0];
+   u[2] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[0] * b[3];
+   temp += (int64_t) a[1] * b[2];
+   temp += (int64_t) a[2] * b[1];
+   temp += (int64_t) a[3] * b[0];
+   u[3] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[0] * b[4];
+   temp += (int64_t) a[1] * b[3];
+   temp += (int64_t) a[2] * b[2];
+   temp += (int64_t) a[3] * b[1];
+   temp += (int64_t) a[4] * b[0];
+   u[4] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[0] * b[5];
+   temp += (int64_t) a[1] * b[4];
+   temp += (int64_t) a[2] * b[3];
+   temp += (int64_t) a[3] * b[2];
+   temp += (int64_t) a[4] * b[1];
+   temp += (int64_t) a[5] * b[0];
+   u[5] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[0] * b[6];
+   temp += (int64_t) a[1] * b[5];
+   temp += (int64_t) a[2] * b[4];
+   temp += (int64_t) a[3] * b[3];
+   temp += (int64_t) a[4] * b[2];
+   temp += (int64_t) a[5] * b[1];
+   temp += (int64_t) a[6] * b[0];
+   u[6] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[0] * b[7];
+   temp += (int64_t) a[1] * b[6];
+   temp += (int64_t) a[2] * b[5];
+   temp += (int64_t) a[3] * b[4];
+   temp += (int64_t) a[4] * b[3];
+   temp += (int64_t) a[5] * b[2];
+   temp += (int64_t) a[6] * b[1];
+   temp += (int64_t) a[7] * b[0];
+   u[7] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[0] * b[8];
+   temp += (int64_t) a[1] * b[7];
+   temp += (int64_t) a[2] * b[6];
+   temp += (int64_t) a[3] * b[5];
+   temp += (int64_t) a[4] * b[4];
+   temp += (int64_t) a[5] * b[3];
+   temp += (int64_t) a[6] * b[2];
+   temp += (int64_t) a[7] * b[1];
+   temp += (int64_t) a[8] * b[0];
+   u[8] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[1] * b[8];
+   temp += (int64_t) a[2] * b[7];
+   temp += (int64_t) a[3] * b[6];
+   temp += (int64_t) a[4] * b[5];
+   temp += (int64_t) a[5] * b[4];
+   temp += (int64_t) a[6] * b[3];
+   temp += (int64_t) a[7] * b[2];
+   temp += (int64_t) a[8] * b[1];
+   u[9] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[2] * b[8];
+   temp += (int64_t) a[3] * b[7];
+   temp += (int64_t) a[4] * b[6];
+   temp += (int64_t) a[5] * b[5];
+   temp += (int64_t) a[6] * b[4];
+   temp += (int64_t) a[7] * b[3];
+   temp += (int64_t) a[8] * b[2];
+   u[10] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[3] * b[8];
+   temp += (int64_t) a[4] * b[7];
+   temp += (int64_t) a[5] * b[6];
+   temp += (int64_t) a[6] * b[5];
+   temp += (int64_t) a[7] * b[4];
+   temp += (int64_t) a[8] * b[3];
+   u[11] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[4] * b[8];
+   temp += (int64_t) a[5] * b[7];
+   temp += (int64_t) a[6] * b[6];
+   temp += (int64_t) a[7] * b[5];
+   temp += (int64_t) a[8] * b[4];
+   u[12] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[5] * b[8];
+   temp += (int64_t) a[6] * b[7];
+   temp += (int64_t) a[7] * b[6];
+   temp += (int64_t) a[8] * b[5];
+   u[13] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[6] * b[8];
+   temp += (int64_t) a[7] * b[7];
+   temp += (int64_t) a[8] * b[6];
+   u[14] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[7] * b[8];
+   temp += (int64_t) a[8] * b[7];
+   u[15] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[8] * b[8];
+   u[16] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   u[17] = temp & 0xFFFFFFFF;
+
+   //Perform modular reduction (first pass)
+   temp = u[0];
+   temp += (int64_t) u[9] * 1216;
+   r[0] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += u[1];
+   temp += (int64_t) u[10] * 1216;
+   r[1] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += u[2];
+   temp += (int64_t) u[11] * 1216;
+   r[2] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += u[3];
+   temp += (int64_t) u[12] * 1216;
+   r[3] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += u[4];
+   temp += (int64_t) u[13] * 1216;
+   r[4] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += u[5];
+   temp += (int64_t) u[14] * 1216;
+   r[5] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += u[6];
+   temp += (int64_t) u[15] * 1216;
+   r[6] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += u[7];
+   temp += (int64_t) u[16] * 1216;
+   r[7] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += u[8];
+   temp += (int64_t) u[17] * 1216;
+   r[8] = temp & 0x007FFFFF;
+   temp >>= 23;
+
+   //Perform modular reduction (second pass)
+   temp *= 19;
+   temp += r[0];
+   r[0] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   r[1] += temp & 0xFFFFFFFF;
+#endif
 }
 
 
@@ -271,40 +493,72 @@ __weak_func void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b
  * @brief Modular multiplication
  * @param[out] r Resulting integer R = (A * B) mod p
  * @param[in] a An integer such as 0 <= A < p
- * @param[in] b An integer such as 0 <= B < (2^32 - 1)
+ * @param[in] b An integer such as 0 <= B < (2^29 - 1)
  **/
 
-void curve25519MulInt(uint32_t *r, const uint32_t *a, uint32_t b)
+void curve25519MulInt(int32_t *r, const int32_t *a, int32_t b)
 {
+#if (CURVE25519_SPEED_OPTIMIZATION_LEVEL == 0)
    int_t i;
-   uint64_t temp;
-   uint32_t u[8];
+   int64_t temp;
 
    //Compute R = A * B
    for(temp = 0, i = 0; i < 8; i++)
    {
-      temp += (uint64_t) a[i] * b;
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
+      temp += (int64_t) a[i] * b;
+      r[i] = temp & 0x1FFFFFFF;
+      temp >>= 29;
    }
 
-   //Reduce bit 256 (2^256 = 38 mod p)
-   temp *= 38;
-   //Reduce bit 255 (2^255 = 19 mod p)
-   temp += (u[7] >> 31) * 19;
-   //Mask the most significant bit
-   u[7] &= 0x7FFFFFFF;
+   temp += (int64_t) a[8] * b;
+   r[8] = temp & 0x007FFFFF;
+   temp >>= 23;
 
-   //Perform fast modular reduction
-   for(i = 0; i < 8; i++)
-   {
-      temp += u[i];
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
-   }
+   //Perform modular reduction (2^255 = 19)
+   temp *= 19;
+   temp += r[0];
+   r[0] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   r[1] += temp & 0xFFFFFFFF;
+#else
+   int64_t temp;
 
-   //Reduce non-canonical values
-   curve25519Red(r, u);
+   //Compute R = A * B
+   temp = (int64_t) a[0] * b;
+   r[0] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[1] * b;
+   r[1] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[2] * b;
+   r[2] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[3] * b;
+   r[3] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[4] * b;
+   r[4] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[5] * b;
+   r[5] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[6] * b;
+   r[6] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[7] * b;
+   r[7] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   temp += (int64_t) a[8] * b;
+   r[8] = temp & 0x007FFFFF;
+   temp >>= 23;
+
+   //Perform modular reduction (2^255 = 19)
+   temp *= 19;
+   temp += r[0];
+   r[0] = temp & 0x1FFFFFFF;
+   temp >>= 29;
+   r[1] += temp & 0xFFFFFFFF;
+#endif
 }
 
 
@@ -314,7 +568,7 @@ void curve25519MulInt(uint32_t *r, const uint32_t *a, uint32_t b)
  * @param[in] a An integer such as 0 <= A < p
  **/
 
-__weak_func void curve25519Sqr(uint32_t *r, const uint32_t *a)
+__weak_func void curve25519Sqr(int32_t *r, const int32_t *a)
 {
    //Compute R = (A ^ 2) mod p
    curve25519Mul(r, a, a);
@@ -328,7 +582,7 @@ __weak_func void curve25519Sqr(uint32_t *r, const uint32_t *a)
  * @param[in] n An integer such as n >= 1
  **/
 
-void curve25519Pwr2(uint32_t *r, const uint32_t *a, uint_t n)
+void curve25519Pwr2(int32_t *r, const int32_t *a, uint_t n)
 {
    uint_t i;
 
@@ -344,43 +598,15 @@ void curve25519Pwr2(uint32_t *r, const uint32_t *a, uint_t n)
 
 
 /**
- * @brief Modular reduction
- * @param[out] r Resulting integer R = A mod p
- * @param[in] a An integer such as 0 <= A < (2 * p)
- **/
-
-void curve25519Red(uint32_t *r, const uint32_t *a)
-{
-   uint_t i;
-   uint64_t temp;
-   uint32_t b[8];
-
-   //Compute B = A + 19
-   for(temp = 19, i = 0; i < 8; i++)
-   {
-      temp += a[i];
-      b[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
-   }
-
-   //Compute B = A - (2^255 - 19)
-   b[7] -= 0x80000000;
-
-   //If B < (2^255 - 19) then R = B, else R = A
-   curve25519Select(r, b, a, (b[7] & 0x80000000) >> 31);
-}
-
-
-/**
  * @brief Modular multiplicative inverse
  * @param[out] r Resulting integer R = A^-1 mod p
  * @param[in] a An integer such as 0 <= A < p
  **/
 
-void curve25519Inv(uint32_t *r, const uint32_t *a)
+void curve25519Inv(int32_t *r, const int32_t *a)
 {
-   uint32_t u[8];
-   uint32_t v[8];
+   int32_t u[9];
+   int32_t v[9];
 
    //Since GF(p) is a prime field, the Fermat's little theorem can be
    //used to find the multiplicative inverse of A modulo p
@@ -427,13 +653,14 @@ void curve25519Inv(uint32_t *r, const uint32_t *a)
  * @return The function returns 0 if the square root exists, else 1
  **/
 
-uint32_t curve25519Sqrt(uint32_t *r, const uint32_t *a, const uint32_t *b)
+uint32_t curve25519Sqrt(int32_t *r, const int32_t *a, const int32_t *b)
 {
    uint32_t res1;
    uint32_t res2;
-   uint32_t c[8];
-   uint32_t u[8];
-   uint32_t v[8];
+   int32_t c[9];
+   int32_t u[9];
+   int32_t v[9];
+   int32_t w[9];
 
    //Compute the candidate root (A / B)^((p + 3) / 8). This can be done
    //with the following trick, using a single modular powering for both the
@@ -480,23 +707,30 @@ uint32_t curve25519Sqrt(uint32_t *r, const uint32_t *a, const uint32_t *b)
    curve25519Sqr(v, b);
    curve25519Mul(v, v, b);
    curve25519Mul(u, u, v);
+   curve25519Canonicalize(u, u);
 
    //The second candidate root is V = U * sqrt(-1)
    curve25519Mul(v, u, CURVE25519_SQRT_MINUS_1);
+   curve25519Canonicalize(v, v);
+
+   //Reduce non-canonical values of A
+   curve25519Canonicalize(w, a);
 
    //Calculate C = B * U^2
    curve25519Sqr(c, u);
    curve25519Mul(c, c, b);
+   curve25519Canonicalize(c, c);
 
    //Check whether B * U^2 = A
-   res1 = curve25519Comp(c, a);
+   res1 = curve25519Comp(c, w);
 
    //Calculate C = B * V^2
    curve25519Sqr(c, v);
    curve25519Mul(c, c, b);
+   curve25519Canonicalize(c, c);
 
    //Check whether B * V^2 = A
-   res2 = curve25519Comp(c, a);
+   res2 = curve25519Comp(c, w);
 
    //Select the first or the second candidate root
    curve25519Select(r, u, v, res1);
@@ -507,17 +741,66 @@ uint32_t curve25519Sqrt(uint32_t *r, const uint32_t *a, const uint32_t *b)
 
 
 /**
+ * @brief Reduce non-canonical value
+ * @param[out] r Resulting integer R = A mod p
+ * @param[in] a An integer such as 0 <= A < (2^255 - 1)
+ **/
+
+void curve25519Canonicalize(int32_t *r, const int32_t *a)
+{
+   uint_t i;
+   int32_t temp;
+   int32_t b[9];
+
+   //Perform modular reduction (first pass)
+   for(temp = 0, i = 0; i < 8; i++)
+   {
+      temp += a[i];
+      r[i] = temp & 0x1FFFFFFF;
+      temp >>= 29;
+   }
+
+   temp += a[8];
+   r[8] = temp & 0x007FFFFF;
+   temp >>= 23;
+
+   //Perform modular reduction (second pass)
+   for(temp *= 19, i = 0; i < 9; i++)
+   {
+      temp += r[i];
+      r[i] = temp & 0x1FFFFFFF;
+      temp >>= 29;
+   }
+
+   //Compute B = A + 19
+   for(temp = 19, i = 0; i < 9; i++)
+   {
+      temp += r[i];
+      b[i] = temp & 0x1FFFFFFF;
+      temp >>= 29;
+   }
+
+   //Compute B = A - (2^255 - 19)
+   b[8] -= 0x00800000;
+   b[8] &= 0x00FFFFFF;
+
+   //If B < (2^255 - 19) then R = B, else R = A
+   curve25519Select(r, b, r, (b[8] & 0x00800000) >> 23);
+}
+
+
+/**
  * @brief Copy an integer
  * @param[out] a Pointer to the destination integer
  * @param[in] b Pointer to the source integer
  **/
 
-void curve25519Copy(uint32_t *a, const uint32_t *b)
+void curve25519Copy(int32_t *a, const int32_t *b)
 {
    uint_t i;
 
    //Copy the value of the integer
-   for(i = 0; i < 8; i++)
+   for(i = 0; i < 9; i++)
    {
       a[i] = b[i];
    }
@@ -531,7 +814,7 @@ void curve25519Copy(uint32_t *a, const uint32_t *b)
  * @param[in] c Condition variable
  **/
 
-void curve25519Swap(uint32_t *a, uint32_t *b, uint32_t c)
+void curve25519Swap(int32_t *a, int32_t *b, uint32_t c)
 {
    uint_t i;
    uint32_t mask;
@@ -541,7 +824,7 @@ void curve25519Swap(uint32_t *a, uint32_t *b, uint32_t c)
    mask = ~c + 1;
 
    //Conditional swap
-   for(i = 0; i < 8; i++)
+   for(i = 0; i < 9; i++)
    {
       //Constant time implementation
       dummy = mask & (a[i] ^ b[i]);
@@ -559,7 +842,7 @@ void curve25519Swap(uint32_t *a, uint32_t *b, uint32_t c)
  * @param[in] c Condition variable
  **/
 
-void curve25519Select(uint32_t *r, const uint32_t *a, const uint32_t *b,
+void curve25519Select(int32_t *r, const int32_t *a, const int32_t *b,
    uint32_t c)
 {
    uint_t i;
@@ -569,7 +852,7 @@ void curve25519Select(uint32_t *r, const uint32_t *a, const uint32_t *b,
    mask = c - 1;
 
    //Select between A and B
-   for(i = 0; i < 8; i++)
+   for(i = 0; i < 9; i++)
    {
       //Constant time implementation
       r[i] = (a[i] & mask) | (b[i] & ~mask);
@@ -584,7 +867,7 @@ void curve25519Select(uint32_t *r, const uint32_t *a, const uint32_t *b,
  * @return The function returns 0 if the A = B, else 1
  **/
 
-uint32_t curve25519Comp(const uint32_t *a, const uint32_t *b)
+uint32_t curve25519Comp(const int32_t *a, const int32_t *b)
 {
    uint_t i;
    uint32_t mask;
@@ -593,7 +876,7 @@ uint32_t curve25519Comp(const uint32_t *a, const uint32_t *b)
    mask = 0;
 
    //Compare A and B
-   for(i = 0; i < 8; i++)
+   for(i = 0; i < 9; i++)
    {
       //Constant time implementation
       mask |= a[i] ^ b[i];
@@ -610,17 +893,17 @@ uint32_t curve25519Comp(const uint32_t *a, const uint32_t *b)
  * @param[in] data Octet string to be converted
  **/
 
-void curve25519Import(uint32_t *a, const uint8_t *data)
+void curve25519Import(int32_t *a, const uint8_t *data)
 {
    uint_t i;
+   uint32_t temp;
 
-   //Import the octet string
-   osMemcpy(a, data, 32);
-
-   //Convert from little-endian byte order to host byte order
-   for(i = 0; i < 8; i++)
+   //Pack the octet string into 9 words of 29 bits
+   for(a[0] = 0, i = 0; i < 8; i++)
    {
-      a[i] = letoh32(a[i]);
+      temp = LOAD32LE(data + i * 4);
+      a[i] |= (temp << (i * 3)) & 0x1FFFFFFF;
+      a[i + 1] = temp >> (29 - i * 3);
    }
 }
 
@@ -631,18 +914,17 @@ void curve25519Import(uint32_t *a, const uint8_t *data)
  * @param[out] data Octet string resulting from the conversion
  **/
 
-void curve25519Export(uint32_t *a, uint8_t *data)
+void curve25519Export(int32_t *a, uint8_t *data)
 {
    uint_t i;
+   uint32_t temp;
 
-   //Convert from host byte order to little-endian byte order
+   //Unpack the 9 words of 29 bits
    for(i = 0; i < 8; i++)
    {
-      a[i] = htole32(a[i]);
+      temp = (a[i + 1] << (29 - i * 3)) | (a[i] >> (i * 3));
+      STORE32LE(temp, data + i * 4);
    }
-
-   //Export the octet string
-   osMemcpy(data, a, 32);
 }
 
 #endif

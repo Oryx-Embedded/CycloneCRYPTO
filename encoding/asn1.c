@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -419,7 +419,9 @@ error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data,
 
       //Primitive or constructed encoding?
       if(tag->constructed)
+      {
          data[0] |= ASN1_ENCODING_CONSTRUCTED;
+      }
 
       //Encode the tag number
       if(m == 0)
@@ -441,7 +443,9 @@ error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data,
             //Bit 8 of each octet shall be set to one unless it is the
             //last octet of the identifier octets
             if(i != 0)
+            {
                data[m - i] |= 0x80;
+            }
          }
       }
 
@@ -475,7 +479,153 @@ error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data,
 
       //Any data copied?
       if(tag->value != NULL)
+      {
          *written += tag->length;
+      }
+   }
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Write an ASN.1 tag header
+ * @param[in] tag Structure describing the ASN.1 tag
+ * @param[in] reverse Use reverse encoding
+ * @param[out] data Output stream where to write the tag (optional parameter)
+ * @param[out] written Number of bytes written to the output stream (optional parameter)
+ * @return Error code
+ **/
+
+
+error_t asn1WriteHeader(Asn1Tag *tag, bool_t reverse, uint8_t *data,
+   size_t *written)
+{
+   size_t i;
+   size_t m;
+   size_t n;
+
+   //Compute the number of octets that are necessary to encode the tag number
+   if(tag->objType < 31)
+   {
+      m = 0;
+   }
+   else if(tag->objType < 128)
+   {
+      m = 1;
+   }
+   else if(tag->objType < 16384)
+   {
+      m = 2;
+   }
+   else if(tag->objType < 2097152)
+   {
+      m = 3;
+   }
+   else if(tag->objType < 268435456)
+   {
+      m = 4;
+   }
+   else
+   {
+      m = 5;
+   }
+
+   //Compute the number of octets that are necessary to encode the length field
+   if(tag->length < 128)
+   {
+      n = 0;
+   }
+   else if(tag->length < 256)
+   {
+      n = 1;
+   }
+   else if(tag->length < 65536)
+   {
+      n = 2;
+   }
+   else if(tag->length < 16777216)
+   {
+      n = 3;
+   }
+   else
+   {
+      n = 4;
+   }
+
+   //Valid output stream?
+   if(data != NULL)
+   {
+      //Use reverse encoding?
+      if(reverse)
+      {
+         //Move backward
+         data -= m + n + 2;
+      }
+
+      //Save the class of the ASN.1 tag
+      data[0] = tag->objClass;
+
+      //Primitive or constructed encoding?
+      if(tag->constructed)
+      {
+         data[0] |= ASN1_ENCODING_CONSTRUCTED;
+      }
+
+      //Encode the tag number
+      if(m == 0)
+      {
+         //Tag number is in the range 0 to 30
+         data[0] |= tag->objType;
+      }
+      else
+      {
+         //The tag number is greater than or equal to 31
+         data[0] |= ASN1_TAG_NUMBER_MASK;
+
+         //The subsequent octets will encode the tag number
+         for(i = 0; i < m; i++)
+         {
+            //Bits 7 to 1 encode the tag number
+            data[m - i] = (tag->objType >> (i * 7)) & 0x7F;
+
+            //Bit 8 of each octet shall be set to one unless it is the
+            //last octet of the identifier octets
+            if(i != 0)
+            {
+               data[m - i] |= 0x80;
+            }
+         }
+      }
+
+      //Encode the length field
+      if(n == 0)
+      {
+         //Use short form encoding
+         data[1 + m] = tag->length & 0x7F;
+      }
+      else
+      {
+         //Bits 7 to 1 encode the number of octets in the length field
+         data[1 + m] = 0x80 | (n & 0x7F);
+
+         //The subsequent octets will encode the length field
+         for(i = 0; i < n; i++)
+         {
+            data[1 + m + n - i] = (tag->length >> (i * 8)) & 0xFF;
+         }
+      }
+   }
+
+   //Total length occupied by the ASN.1 tag
+   tag->totalLength = tag->length + m + n + 2;
+
+   //The last parameter is optional
+   if(written != NULL)
+   {
+      //Number of bytes written to the output stream
+      *written = m + n + 2;
    }
 
    //Successful processing

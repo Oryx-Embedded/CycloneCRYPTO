@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -70,9 +70,6 @@ void poly1305Init(Poly1305Context *context, const uint8_t *key)
    context->a[2] = 0;
    context->a[3] = 0;
    context->a[4] = 0;
-   context->a[5] = 0;
-   context->a[6] = 0;
-   context->a[7] = 0;
 
    //Number of bytes in the buffer
    context->size = 0;
@@ -126,55 +123,73 @@ void poly1305Update(Poly1305Context *context, const void *data, size_t length)
 
 void poly1305Final(Poly1305Context *context, uint8_t *tag)
 {
+   uint64_t temp;
    uint32_t mask;
-   uint32_t b[4];
+   uint32_t b[5];
 
    //Process the last block
    if(context->size != 0)
+   {
       poly1305ProcessBlock(context);
+   }
 
-   //Save the accumulator
-   b[0] = context->a[0] & 0xFFFFFFFF;
-   b[1] = context->a[1] & 0xFFFFFFFF;
-   b[2] = context->a[2] & 0xFFFFFFFF;
-   b[3] = context->a[3] & 0xFFFFFFFF;
+   //Perform modular reduction (2^130 = 5)
+   temp = context->a[4] & 0xFFFFFFFC;
+   temp += context->a[4] >> 2;
+   temp += context->a[0];
+   context->a[0] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += context->a[1];
+   context->a[1] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += context->a[2];
+   context->a[2] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += context->a[3];
+   context->a[3] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += context->a[4];
+   context->a[4] = temp & 0x00000003;
 
-   //Compute a + 5
-   context->a[0] += 5;
-
-   //Propagate the carry
-   context->a[1] += context->a[0] >> 32;
-   context->a[2] += context->a[1] >> 32;
-   context->a[3] += context->a[2] >> 32;
-   context->a[4] += context->a[3] >> 32;
+   //Compute b = a + 5
+   temp = 5;
+   temp += context->a[0];
+   b[0] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += context->a[1];
+   b[1] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += context->a[2];
+   b[2] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += context->a[3];
+   b[3] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += context->a[4];
+   b[4] = temp & 0xFFFFFFFF;
 
    //If (a + 5) >= 2^130, form a mask with the value 0x00000000. Else,
    //form a mask with the value 0xffffffff
-   mask = ((context->a[4] & 0x04) >> 2) - 1;
+   mask = ((b[4] & 0x04) >> 2) - 1;
 
-   //Select between ((a - (2^130 - 5)) % 2^128) and (a % 2^128)
-   context->a[0] = (context->a[0] & ~mask) | (b[0] & mask);
-   context->a[1] = (context->a[1] & ~mask) | (b[1] & mask);
-   context->a[2] = (context->a[2] & ~mask) | (b[2] & mask);
-   context->a[3] = (context->a[3] & ~mask) | (b[3] & mask);
+   //Select between (a % 2^128) and (b % 2^128)
+   context->a[0] = (context->a[0] & mask) | (b[0] & ~mask);
+   context->a[1] = (context->a[1] & mask) | (b[1] & ~mask);
+   context->a[2] = (context->a[2] & mask) | (b[2] & ~mask);
+   context->a[3] = (context->a[3] & mask) | (b[3] & ~mask);
 
    //Finally, the value of the secret key s is added to the accumulator
-   context->a[0] += context->s[0];
-   context->a[1] += context->s[1];
-   context->a[2] += context->s[2];
-   context->a[3] += context->s[3];
-
-   //Propagate the carry
-   context->a[1] += context->a[0] >> 32;
-   context->a[2] += context->a[1] >> 32;
-   context->a[3] += context->a[2] >> 32;
-   context->a[4] += context->a[3] >> 32;
-
-   //We only consider the least significant bits
-   b[0] = context->a[0] & 0xFFFFFFFF;
-   b[1] = context->a[1] & 0xFFFFFFFF;
-   b[2] = context->a[2] & 0xFFFFFFFF;
-   b[3] = context->a[3] & 0xFFFFFFFF;
+   temp = (uint64_t) context->a[0] + context->s[0];
+   b[0] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += (uint64_t) context->a[1] + context->s[1];
+   b[1] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += (uint64_t) context->a[2] + context->s[2];
+   b[2] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += (uint64_t) context->a[3] + context->s[3];
+   b[3] = temp & 0xFFFFFFFF;
 
    //The result is serialized as a little-endian number, producing
    //the 16 byte tag
@@ -189,9 +204,6 @@ void poly1305Final(Poly1305Context *context, uint8_t *tag)
    context->a[2] = 0;
    context->a[3] = 0;
    context->a[4] = 0;
-   context->a[5] = 0;
-   context->a[6] = 0;
-   context->a[7] = 0;
 
    //Clear r and s
    context->r[0] = 0;
@@ -212,9 +224,9 @@ void poly1305Final(Poly1305Context *context, uint8_t *tag)
 
 void poly1305ProcessBlock(Poly1305Context *context)
 {
-   uint32_t a[5];
-   uint32_t r[4];
    uint_t n;
+   uint64_t temp;
+   uint32_t u[8];
 
    //Retrieve the length of the last block
    n = context->size;
@@ -233,112 +245,88 @@ void poly1305ProcessBlock(Poly1305Context *context)
    }
 
    //Read the block as a little-endian number
-   a[0] = LOAD32LE(context->buffer);
-   a[1] = LOAD32LE(context->buffer + 4);
-   a[2] = LOAD32LE(context->buffer + 8);
-   a[3] = LOAD32LE(context->buffer + 12);
-   a[4] = context->buffer[16];
+   u[0] = LOAD32LE(context->buffer);
+   u[1] = LOAD32LE(context->buffer + 4);
+   u[2] = LOAD32LE(context->buffer + 8);
+   u[3] = LOAD32LE(context->buffer + 12);
+   u[4] = context->buffer[16];
 
    //Add this number to the accumulator
-   context->a[0] += a[0];
-   context->a[1] += a[1];
-   context->a[2] += a[2];
-   context->a[3] += a[3];
-   context->a[4] += a[4];
-
-   //Propagate the carry
-   context->a[1] += context->a[0] >> 32;
-   context->a[2] += context->a[1] >> 32;
-   context->a[3] += context->a[2] >> 32;
-   context->a[4] += context->a[3] >> 32;
-
-   //We only consider the least significant bits
-   a[0] = context->a[0] & 0xFFFFFFFF;
-   a[1] = context->a[1] & 0xFFFFFFFF;
-   a[2] = context->a[2] & 0xFFFFFFFF;
-   a[3] = context->a[3] & 0xFFFFFFFF;
-   a[4] = context->a[4] & 0xFFFFFFFF;
-
-   //Copy r
-   r[0] = context->r[0];
-   r[1] = context->r[1];
-   r[2] = context->r[2];
-   r[3] = context->r[3];
+   temp = (uint64_t) context->a[0] + u[0];
+   context->a[0] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += (uint64_t) context->a[1] + u[1];
+   context->a[1] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += (uint64_t) context->a[2] + u[2];
+   context->a[2] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += (uint64_t) context->a[3] + u[3];
+   context->a[3] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += (uint64_t) context->a[4] + u[4];
+   context->a[4] = temp & 0xFFFFFFFF;
 
    //Multiply the accumulator by r
-   context->a[0] = (uint64_t) a[0] * r[0];
-   context->a[1] = (uint64_t) a[0] * r[1] + (uint64_t) a[1] * r[0];
-   context->a[2] = (uint64_t) a[0] * r[2] + (uint64_t) a[1] * r[1] + (uint64_t) a[2] * r[0];
-   context->a[3] = (uint64_t) a[0] * r[3] + (uint64_t) a[1] * r[2] + (uint64_t) a[2] * r[1] + (uint64_t) a[3] * r[0];
-   context->a[4] = (uint64_t) a[1] * r[3] + (uint64_t) a[2] * r[2] + (uint64_t) a[3] * r[1] + (uint64_t) a[4] * r[0];
-   context->a[5] = (uint64_t) a[2] * r[3] + (uint64_t) a[3] * r[2] + (uint64_t) a[4] * r[1];
-   context->a[6] = (uint64_t) a[3] * r[3] + (uint64_t) a[4] * r[2];
-   context->a[7] = (uint64_t) a[4] * r[3];
+   temp = (uint64_t) context->a[0] * context->r[0];
+   u[0] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += (uint64_t) context->a[0] * context->r[1];
+   temp += (uint64_t) context->a[1] * context->r[0];
+   u[1] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += (uint64_t) context->a[0] * context->r[2];
+   temp += (uint64_t) context->a[1] * context->r[1];
+   temp += (uint64_t) context->a[2] * context->r[0];
+   u[2] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += (uint64_t) context->a[0] * context->r[3];
+   temp += (uint64_t) context->a[1] * context->r[2];
+   temp += (uint64_t) context->a[2] * context->r[1];
+   temp += (uint64_t) context->a[3] * context->r[0];
+   u[3] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += (uint64_t) context->a[1] * context->r[3];
+   temp += (uint64_t) context->a[2] * context->r[2];
+   temp += (uint64_t) context->a[3] * context->r[1];
+   temp += (uint64_t) context->a[4] * context->r[0];
+   u[4] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += (uint64_t) context->a[2] * context->r[3];
+   temp += (uint64_t) context->a[3] * context->r[2];
+   temp += (uint64_t) context->a[4] * context->r[1];
+   u[5] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += (uint64_t) context->a[3] * context->r[3];
+   temp += (uint64_t) context->a[4] * context->r[2];
+   u[6] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += (uint64_t) context->a[4] * context->r[3];
+   u[7] = temp & 0xFFFFFFFF;
 
-   //Propagate the carry
-   context->a[1] += context->a[0] >> 32;
-   context->a[2] += context->a[1] >> 32;
-   context->a[3] += context->a[2] >> 32;
-   context->a[4] += context->a[3] >> 32;
-   context->a[5] += context->a[4] >> 32;
-   context->a[6] += context->a[5] >> 32;
-   context->a[7] += context->a[6] >> 32;
-
-   //Save the high part of the accumulator
-   a[0] = context->a[4] & 0xFFFFFFFC;
-   a[1] = context->a[5] & 0xFFFFFFFF;
-   a[2] = context->a[6] & 0xFFFFFFFF;
-   a[3] = context->a[7] & 0xFFFFFFFF;
-
-   //We only consider the least significant bits
-   context->a[0] &= 0xFFFFFFFF;
-   context->a[1] &= 0xFFFFFFFF;
-   context->a[2] &= 0xFFFFFFFF;
-   context->a[3] &= 0xFFFFFFFF;
-   context->a[4] &= 0x00000003;
-
-   //Perform fast modular reduction (first pass)
-   context->a[0] += a[0];
-   context->a[0] += (a[0] >> 2) | (a[1] << 30);
-   context->a[1] += a[1];
-   context->a[1] += (a[1] >> 2) | (a[2] << 30);
-   context->a[2] += a[2];
-   context->a[2] += (a[2] >> 2) | (a[3] << 30);
-   context->a[3] += a[3];
-   context->a[3] += (a[3] >> 2);
-
-   //Propagate the carry
-   context->a[1] += context->a[0] >> 32;
-   context->a[2] += context->a[1] >> 32;
-   context->a[3] += context->a[2] >> 32;
-   context->a[4] += context->a[3] >> 32;
-
-   //Save the high part of the accumulator
-   a[0] = context->a[4] & 0xFFFFFFFC;
-
-   //We only consider the least significant bits
-   context->a[0] &= 0xFFFFFFFF;
-   context->a[1] &= 0xFFFFFFFF;
-   context->a[2] &= 0xFFFFFFFF;
-   context->a[3] &= 0xFFFFFFFF;
-   context->a[4] &= 0x00000003;
-
-   //Perform fast modular reduction (second pass)
-   context->a[0] += a[0];
-   context->a[0] += a[0] >> 2;
-
-   //Propagate the carry
-   context->a[1] += context->a[0] >> 32;
-   context->a[2] += context->a[1] >> 32;
-   context->a[3] += context->a[2] >> 32;
-   context->a[4] += context->a[3] >> 32;
-
-   //We only consider the least significant bits
-   context->a[0] &= 0xFFFFFFFF;
-   context->a[1] &= 0xFFFFFFFF;
-   context->a[2] &= 0xFFFFFFFF;
-   context->a[3] &= 0xFFFFFFFF;
-   context->a[4] &= 0x00000003;
+   //Perform modular reduction
+   temp = u[0];
+   temp += u[4] & 0xFFFFFFFC;
+   temp += (u[4] >> 2) | (u[5] << 30);
+   context->a[0] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += u[1];
+   temp += u[5];
+   temp += (u[5] >> 2) | (u[6] << 30);
+   context->a[1] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += u[2];
+   temp += u[6];
+   temp += (u[6] >> 2) | (u[7] << 30);
+   context->a[2] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += u[3];
+   temp += u[7];
+   temp += u[7] >> 2;
+   context->a[3] = temp & 0xFFFFFFFF;
+   temp >>= 32;
+   temp += u[4] & 0x00000003;
+   context->a[4] = temp & 0xFFFFFFFF;
 }
 
 #endif

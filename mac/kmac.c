@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -31,7 +31,7 @@
  * built from cSHAKE128 and cSHAKE256, respectively
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -45,9 +45,9 @@
 #if (KMAC_SUPPORT == ENABLED)
 
 //KMAC128 object identifier (2.16.840.1.101.3.4.2.19)
-const uint8_t kmac128Oid[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x13};
+const uint8_t KMAC128_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x13};
 //KMAC256 object identifier (2.16.840.1.101.3.4.2.20)
-const uint8_t kmac256Oid[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x14};
+const uint8_t KMAC256_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x14};
 
 
 /**

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -131,12 +131,12 @@ error_t chacha20Poly1305Encrypt(const uint8_t *k, size_t kLen,
    //Encode the length of the AAD as a 64-bit little-endian integer
    STORE64LE(aLen, temp);
    //Compute MAC over the length field
-   poly1305Update(&poly1305Context, temp, sizeof(uint64_t));
+   poly1305Update(&poly1305Context, temp, 8);
 
    //Encode the length of the ciphertext as a 64-bit little-endian integer
    STORE64LE(length, temp);
    //Compute MAC over the length field
-   poly1305Update(&poly1305Context, temp, sizeof(uint64_t));
+   poly1305Update(&poly1305Context, temp, 8);
 
    //Compute message-authentication code
    poly1305Final(&poly1305Context, t);
@@ -233,12 +233,12 @@ error_t chacha20Poly1305Decrypt(const uint8_t *k, size_t kLen,
    //Encode the length of the AAD as a 64-bit little-endian integer
    STORE64LE(aLen, temp);
    //Compute MAC over the length field
-   poly1305Update(&poly1305Context, temp, sizeof(uint64_t));
+   poly1305Update(&poly1305Context, temp, 8);
 
    //Encode the length of the ciphertext as a 64-bit little-endian integer
    STORE64LE(length, temp);
    //Compute MAC over the length field
-   poly1305Update(&poly1305Context, temp, sizeof(uint64_t));
+   poly1305Update(&poly1305Context, temp, 8);
 
    //Compute message-authentication code
    poly1305Final(&poly1305Context, temp);

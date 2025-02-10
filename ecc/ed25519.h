@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _ED25519_H
@@ -36,11 +36,11 @@
 #include "ecc/eddsa.h"
 #include "hash/sha512.h"
 
-//Length of EdDSA private keys
+//Length of Ed25519 private keys
 #define ED25519_PRIVATE_KEY_LEN 32
-//Length of EdDSA public keys
+//Length of Ed25519 public keys
 #define ED25519_PUBLIC_KEY_LEN 32
-//Length of EdDSA signatures
+//Length of Ed25519 signatures
 #define ED25519_SIGNATURE_LEN 64
 
 //Ed25519ph flag
@@ -60,15 +60,64 @@ extern "C" {
 
 typedef struct
 {
-   uint32_t x[8];
-   uint32_t y[8];
-   uint32_t z[8];
-   uint32_t t[8];
+   int32_t x[9];
+   int32_t y[9];
+   int32_t z[9];
+   int32_t t[9];
 } Ed25519Point;
 
 
 /**
- * @brief Ed25519 working state
+ * @brief Working state (scalar multiplication)
+ **/
+
+typedef struct
+{
+   Ed25519Point u;
+   Ed25519Point v;
+   int32_t a[9];
+   int32_t b[9];
+   int32_t c[9];
+   int32_t d[9];
+   int32_t e[9];
+   int32_t f[9];
+   int32_t g[9];
+   int32_t h[9];
+} Ed25519SubState;
+
+
+/**
+ * @brief Working state (public key generation)
+ **/
+
+typedef struct
+{
+   Sha512Context sha512Context;
+   uint8_t s[64];
+   Ed25519Point a;
+   Ed25519SubState subState;
+} Ed25519GeneratePublicKeyState;
+
+
+/**
+ * @brief Working state (signature generation)
+ **/
+
+typedef struct
+{
+   Sha512Context sha512Context;
+   uint8_t h[64];
+   uint8_t k[64];
+   uint8_t p[32];
+   uint8_t r[32];
+   uint8_t s[32];
+   Ed25519Point a;
+   Ed25519SubState subState;
+} Ed25519GenerateSignatureState;
+
+
+/**
+ * @brief Working state (signature verification)
  **/
 
 typedef struct
@@ -78,20 +127,9 @@ typedef struct
    uint8_t p[32];
    uint8_t r[32];
    uint8_t s[32];
-   Ed25519Point ka;
-   Ed25519Point rb;
-   Ed25519Point sb;
-   Ed25519Point u;
-   Ed25519Point v;
-   uint32_t a[8];
-   uint32_t b[8];
-   uint32_t c[8];
-   uint32_t d[8];
-   uint32_t e[8];
-   uint32_t f[8];
-   uint32_t g[8];
-   uint32_t h[8];
-} Ed25519State;
+   Ed25519Point a;
+   Ed25519SubState subState;
+} Ed25519VerifySignatureState;
 
 
 //Ed25519 related functions
@@ -108,7 +146,7 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature);
 
 error_t ed25519GenerateSignatureEx(const uint8_t *privateKey,
-   const uint8_t *publicKey, const DataChunk *messageChunks,
+   const uint8_t *publicKey, const DataChunk *message, uint_t messageLen,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature);
 
 error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
@@ -116,16 +154,20 @@ error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
    const uint8_t *signature);
 
 error_t ed25519VerifySignatureEx(const uint8_t *publicKey,
-   const DataChunk *messageChunks, const void *context,
+   const DataChunk *message, uint_t messageLen, const void *context,
    uint8_t contextLen, uint8_t flag, const uint8_t *signature);
 
-void ed25519Mul(Ed25519State *state, Ed25519Point *r, const uint8_t *k,
+void ed25519Mul(Ed25519SubState *state, Ed25519Point *r, const uint8_t *k,
    const Ed25519Point *p);
 
-void ed25519Add(Ed25519State *state, Ed25519Point *r, const Ed25519Point *p,
+void ed25519TwinMul(Ed25519SubState *state, Ed25519Point *r, const uint8_t *k1,
+   const Ed25519Point *p, const uint8_t *k2, const Ed25519Point *q);
+
+void ed25519Add(Ed25519SubState *state, Ed25519Point *r, const Ed25519Point *p,
    const Ed25519Point *q);
 
-void ed25519Double(Ed25519State *state, Ed25519Point *r, const Ed25519Point *p);
+void ed25519Double(Ed25519SubState *state, Ed25519Point *r,
+   const Ed25519Point *p);
 
 void ed25519Encode(Ed25519Point *p, uint8_t *data);
 uint32_t ed25519Decode(Ed25519Point *p, const uint8_t *data);

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -70,7 +70,7 @@ error_t mlkem512GenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
    OQS_STATUS status;
 
    //Key pair generation
-   status = OQS_KEM_kyber_512_keypair(pk, sk);
+   status = OQS_KEM_ml_kem_512_keypair(pk, sk);
 
    //Return status code
    return (status == OQS_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
@@ -93,7 +93,7 @@ error_t mlkem512Encapsulate(const PrngAlgo *prngAlgo, void *prngContext,
    OQS_STATUS status;
 
    //Encapsulation algorithm
-   status = OQS_KEM_kyber_512_encaps(ct, ss, pk);
+   status = OQS_KEM_ml_kem_512_encaps(ct, ss, pk);
 
    //Return status code
    return (status == OQS_SUCCESS) ? NO_ERROR : ERROR_FAILURE;
@@ -113,7 +113,7 @@ error_t mlkem512Decapsulate(uint8_t *ss, const uint8_t *ct, const uint8_t *sk)
    OQS_STATUS status;
 
    //Decapsulation algorithm
-   status = OQS_KEM_kyber_512_decaps(ss, ct, sk);
+   status = OQS_KEM_ml_kem_512_decaps(ss, ct, sk);
 
    //Return status code
    return (status == OQS_SUCCESS) ? NO_ERROR : ERROR_FAILURE;

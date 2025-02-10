@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _X509_KEY_PARSE_H
@@ -62,20 +62,17 @@ error_t x509ParseEcPublicKey(const uint8_t *data, size_t length,
 error_t x509ParseEcParameters(const uint8_t *data, size_t length,
    X509EcParameters *ecParams);
 
-error_t x509ImportRsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
-   RsaPublicKey *publicKey);
+error_t x509ImportRsaPublicKey(RsaPublicKey *publicKey,
+   const X509SubjectPublicKeyInfo *publicKeyInfo);
 
-error_t x509ImportDsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
-   DsaPublicKey *publicKey);
+error_t x509ImportDsaPublicKey(DsaPublicKey *publicKey,
+   const X509SubjectPublicKeyInfo *publicKeyInfo);
 
-error_t x509ImportEcPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
-   EcPublicKey *publicKey);
+error_t x509ImportEcPublicKey(EcPublicKey *publicKey,
+   const X509SubjectPublicKeyInfo *publicKeyInfo);
 
-error_t x509ImportEcParameters(const X509EcParameters *ecParams,
-   EcDomainParameters *params);
-
-error_t x509ImportEddsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
-   EddsaPublicKey *publicKey);
+error_t x509ImportEddsaPublicKey(EddsaPublicKey *publicKey,
+   const X509SubjectPublicKeyInfo *publicKeyInfo);
 
 //C++ guard
 #ifdef __cplusplus

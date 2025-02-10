@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * blocks of 128 bits under control of a 128/192/256-bit secret key
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -72,10 +72,14 @@
 //S-function
 #define S(zl, zr) \
 { \
-   zl = (sbox1[(zl >> 24) & 0xFF] << 24) | (sbox2[(zl >> 16) & 0xFF] << 16) | \
-      (sbox3[(zl >> 8) & 0xFF] << 8) | sbox4[zl & 0xFF]; \
-   zr = (sbox2[(zr >> 24) & 0xFF] << 24) | (sbox3[(zr >> 16) & 0xFF] << 16) | \
-      (sbox4[(zr >> 8) & 0xFF] << 8) | sbox1[zr & 0xFF]; \
+   zl = ((uint32_t) sbox1[(zl >> 24) & 0xFF] << 24) | \
+      ((uint32_t) sbox2[(zl >> 16) & 0xFF] << 16) | \
+      ((uint32_t) sbox3[(zl >> 8) & 0xFF] << 8) | \
+      (uint32_t) sbox4[zl & 0xFF]; \
+   zr = ((uint32_t) sbox2[(zr >> 24) & 0xFF] << 24) | \
+      ((uint32_t) sbox3[(zr >> 16) & 0xFF] << 16) | \
+      ((uint32_t) sbox4[(zr >> 8) & 0xFF] << 8) | \
+      (uint32_t) sbox1[zr & 0xFF]; \
 }
 
 //P-function
@@ -336,12 +340,21 @@ error_t camelliaInit(CamelliaContext *context, const uint8_t *key,
       return ERROR_INVALID_KEY_LENGTH;
    }
 
+   //Save the supplied secret key
+   for(i = 0; i < 16; i++)
+   {
+      if(i < (keyLen / 4))
+      {
+         context->k[i] = LOAD32BE(key + i * 4);
+      }
+      else
+      {
+         context->k[i] = 0;
+      }
+   }
+
    //Point to KA, KB, KL and KR
    k = context->k;
-   //Clear key contents
-   osMemset(k, 0, 64);
-   //Save the supplied secret key
-   osMemcpy(k, key, keyLen);
 
    //192-bit keys require special processing
    if(keyLen == 24)
@@ -354,8 +367,6 @@ error_t camelliaInit(CamelliaContext *context, const uint8_t *key,
    //XOR KL and KR before applying the rounds
    for(i = 0; i < 4; i++)
    {
-      k[KL + i] = betoh32(k[KL + i]);
-      k[KR + i] = betoh32(k[KR + i]);
       k[KB + i] = k[KL + i] ^ k[KR + i];
    }
 
@@ -363,9 +374,10 @@ error_t camelliaInit(CamelliaContext *context, const uint8_t *key,
    for(i = 0; i < 6; i++)
    {
       //Apply round function
-      ROUND(k[KB + 0], k[KB + 1], k[KB + 2], k[KB + 3], sigma[2 * i], sigma[2 * i + 1]);
+      ROUND(k[KB + 0], k[KB + 1], k[KB + 2], k[KB + 3], sigma[2 * i],
+         sigma[2 * i + 1]);
 
-      //The 2nd round requires special processing
+      //The 2nd and the 4th rounds require special processing
       if(i == 1)
       {
          //The result is XORed with KL
@@ -374,17 +386,23 @@ error_t camelliaInit(CamelliaContext *context, const uint8_t *key,
          k[KB + 2] ^= k[KL + 2];
          k[KB + 3] ^= k[KL + 3];
       }
-      //The 4th round requires special processing
       else if(i == 3)
       {
          //Save KA after the 4th round
-         osMemcpy(k + KA, k + KB, 16);
+         k[KA + 0] = k[KB + 0];
+         k[KA + 1] = k[KB + 1];
+         k[KA + 2] = k[KB + 2];
+         k[KA + 3] = k[KB + 3];
 
          //The result is XORed with KR
          k[KB + 0] ^= k[KR + 0];
          k[KB + 1] ^= k[KR + 1];
          k[KB + 2] ^= k[KR + 2];
          k[KB + 3] ^= k[KR + 3];
+      }
+      else
+      {
+         //Just for sanity
       }
    }
 
@@ -420,8 +438,11 @@ error_t camelliaInit(CamelliaContext *context, const uint8_t *key,
       }
       else
       {
-         context->ks[p->index] = (k[n % 4] << m) | (k[(n + 1) % 4] >> (32 - m));
-         context->ks[p->index + 1] = (k[(n + 1) % 4] << m) | (k[(n + 2) % 4] >> (32 - m));
+         context->ks[p->index] = (k[n % 4] << m) |
+            (k[(n + 1) % 4] >> (32 - m));
+
+         context->ks[p->index + 1] = (k[(n + 1) % 4] << m) |
+            (k[(n + 2) % 4] >> (32 - m));
       }
 
       //Next subkey
@@ -429,7 +450,7 @@ error_t camelliaInit(CamelliaContext *context, const uint8_t *key,
       i--;
    }
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -445,15 +466,19 @@ void camelliaEncryptBlock(CamelliaContext *context, const uint8_t *input,
    uint8_t *output)
 {
    uint_t i;
+   uint32_t left1;
+   uint32_t left2;
+   uint32_t right1;
+   uint32_t right2;
    uint32_t temp1;
    uint32_t temp2;
    uint32_t *ks;
 
    //The plaintext is separated into two parts (L and R)
-   uint32_t left1 = LOAD32BE(input + 0);
-   uint32_t left2 = LOAD32BE(input + 4);
-   uint32_t right1 = LOAD32BE(input + 8);
-   uint32_t right2 = LOAD32BE(input + 12);
+   left1 = LOAD32BE(input);
+   left2 = LOAD32BE(input + 4);
+   right1 = LOAD32BE(input + 8);
+   right2 = LOAD32BE(input + 12);
 
    //The key schedule must be applied in ascending order
    ks = context->ks;
@@ -495,7 +520,7 @@ void camelliaEncryptBlock(CamelliaContext *context, const uint8_t *input,
    left2 ^= ks[3];
 
    //The resulting value is the ciphertext
-   STORE32BE(right1, output + 0);
+   STORE32BE(right1, output);
    STORE32BE(right2, output + 4);
    STORE32BE(left1, output + 8);
    STORE32BE(left2, output + 12);
@@ -513,18 +538,29 @@ void camelliaDecryptBlock(CamelliaContext *context, const uint8_t *input,
    uint8_t *output)
 {
    uint_t i;
+   uint32_t left1;
+   uint32_t left2;
+   uint32_t right1;
+   uint32_t right2;
    uint32_t temp1;
    uint32_t temp2;
    uint32_t *ks;
 
    //The ciphertext is separated into two parts (L and R)
-   uint32_t right1 = LOAD32BE(input + 0);
-   uint32_t right2 = LOAD32BE(input + 4);
-   uint32_t left1 = LOAD32BE(input + 8);
-   uint32_t left2 = LOAD32BE(input + 12);
+   right1 = LOAD32BE(input);
+   right2 = LOAD32BE(input + 4);
+   left1 = LOAD32BE(input + 8);
+   left2 = LOAD32BE(input + 12);
 
    //The key schedule must be applied in reverse order
-   ks = (context->nr == 18) ? (context->ks + 48) : (context->ks + 64);
+   if(context->nr == 18)
+   {
+      ks = context->ks + 48;
+   }
+   else
+   {
+      ks = context->ks + 64;
+   }
 
    //XOR ciphertext with kw3 and kw4
    right1 ^= ks[0];
@@ -563,7 +599,7 @@ void camelliaDecryptBlock(CamelliaContext *context, const uint8_t *input,
    right2 ^= ks[3];
 
    //The resulting value is the plaintext
-   STORE32BE(left1, output + 0);
+   STORE32BE(left1, output);
    STORE32BE(left2, output + 4);
    STORE32BE(right1, output + 8);
    STORE32BE(right2, output + 12);

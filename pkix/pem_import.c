@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -64,9 +64,7 @@ error_t pemImportCertificate(const char_t *input, size_t inputLen,
    error_t error;
 
    //Check parameters
-   if(input == NULL && inputLen != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(outputLen == NULL)
+   if(input == NULL || outputLen == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //X.509 certificates are encoded using the "CERTIFICATE" label
@@ -95,9 +93,7 @@ error_t pemImportCrl(const char_t *input, size_t inputLen,
    error_t error;
 
    //Check parameters
-   if(input == NULL && inputLen != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(outputLen == NULL)
+   if(input == NULL || outputLen == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //CRLs are encoded using the "X509 CRL" label
@@ -124,9 +120,7 @@ error_t pemImportCsr(const char_t *input, size_t inputLen,
    error_t error;
 
    //Check parameters
-   if(input == NULL && inputLen != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(outputLen == NULL)
+   if(input == NULL || outputLen == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //CSRs are encoded using the "CERTIFICATE REQUEST" label
@@ -140,14 +134,14 @@ error_t pemImportCsr(const char_t *input, size_t inputLen,
 
 /**
  * @brief Decode a PEM file containing Diffie-Hellman parameters
+ * @param[out] params Diffie-Hellman parameters resulting from the parsing process
  * @param[in] input Pointer to the PEM encoding
  * @param[in] length Length of the PEM encoding
- * @param[out] params Diffie-Hellman parameters resulting from the parsing process
  * @return Error code
  **/
 
-error_t pemImportDhParameters(const char_t *input, size_t length,
-   DhParameters *params)
+error_t pemImportDhParameters(DhParameters *params, const char_t *input,
+   size_t length)
 {
 #if (DH_SUPPORT == ENABLED)
    error_t error;
@@ -157,9 +151,7 @@ error_t pemImportDhParameters(const char_t *input, size_t length,
    Asn1Tag tag;
 
    //Check parameters
-   if(input == NULL && length != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(params == NULL)
+   if(params == NULL || input == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Initialize variables
@@ -251,14 +243,14 @@ error_t pemImportDhParameters(const char_t *input, size_t length,
 
 /**
  * @brief Decode a PEM file containing an RSA public key
+ * @param[out] publicKey RSA public key resulting from the parsing process
  * @param[in] input Pointer to the PEM encoding
  * @param[in] length Length of the PEM encoding
- * @param[out] publicKey RSA public key resulting from the parsing process
  * @return Error code
  **/
 
-error_t pemImportRsaPublicKey(const char_t *input, size_t length,
-   RsaPublicKey *publicKey)
+error_t pemImportRsaPublicKey(RsaPublicKey *publicKey, const char_t *input,
+   size_t length)
 {
 #if (RSA_SUPPORT == ENABLED)
    error_t error;
@@ -267,9 +259,7 @@ error_t pemImportRsaPublicKey(const char_t *input, size_t length,
    X509SubjectPublicKeyInfo publicKeyInfo;
 
    //Check parameters
-   if(input == NULL && length != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(publicKey == NULL)
+   if(publicKey == NULL || input == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Clear the SubjectPublicKeyInfo structure
@@ -305,7 +295,7 @@ error_t pemImportRsaPublicKey(const char_t *input, size_t length,
             publicKeyInfo.oid.length = sizeof(RSA_ENCRYPTION_OID);
 
             //Import the RSA public key
-            error = x509ImportRsaPublicKey(&publicKeyInfo, publicKey);
+            error = x509ImportRsaPublicKey(publicKey, &publicKeyInfo);
          }
 
          //Release previously allocated memory
@@ -342,7 +332,7 @@ error_t pemImportRsaPublicKey(const char_t *input, size_t length,
          if(!error)
          {
             //Import the RSA public key
-            error = x509ImportRsaPublicKey(&publicKeyInfo, publicKey);
+            error = x509ImportRsaPublicKey(publicKey, &publicKeyInfo);
          }
 
          //Release previously allocated memory
@@ -378,16 +368,16 @@ error_t pemImportRsaPublicKey(const char_t *input, size_t length,
 
 /**
  * @brief Decode a PEM file containing an RSA private key
+ * @param[out] privateKey RSA private key resulting from the parsing process
  * @param[in] input Pointer to the PEM encoding
  * @param[in] length Length of the PEM encoding
  * @param[in] password NULL-terminated string containing the password. This
  *   parameter is required if the private key is encrypted
- * @param[out] privateKey RSA private key resulting from the parsing process
  * @return Error code
  **/
 
-error_t pemImportRsaPrivateKey(const char_t *input, size_t length,
-   const char_t *password, RsaPrivateKey *privateKey)
+error_t pemImportRsaPrivateKey(RsaPrivateKey *privateKey, const char_t *input,
+   size_t length, const char_t *password)
 {
 #if (RSA_SUPPORT == ENABLED)
    error_t error;
@@ -397,9 +387,7 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length,
    Pkcs8PrivateKeyInfo privateKeyInfo;
 
    //Check parameters
-   if(input == NULL && length != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(privateKey == NULL)
+   if(privateKey == NULL || input == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Clear the PrivateKeyInfo structure
@@ -448,7 +436,7 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length,
             privateKeyInfo.oid.length = sizeof(RSA_ENCRYPTION_OID);
 
             //Import the RSA private key
-            error = pkcs8ImportRsaPrivateKey(&privateKeyInfo, privateKey);
+            error = pkcs8ImportRsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
          //Release previously allocated memory
@@ -484,7 +472,7 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Import the RSA private key
-            error = pkcs8ImportRsaPrivateKey(&privateKeyInfo, privateKey);
+            error = pkcs8ImportRsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
          //Release previously allocated memory
@@ -545,7 +533,7 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Import the RSA private key
-            error = pkcs8ImportRsaPrivateKey(&privateKeyInfo, privateKey);
+            error = pkcs8ImportRsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
          //Release previously allocated memory
@@ -585,14 +573,14 @@ error_t pemImportRsaPrivateKey(const char_t *input, size_t length,
 
 /**
  * @brief Decode a PEM file containing a DSA public key
+ * @param[out] publicKey DSA public key resulting from the parsing process
  * @param[in] input Pointer to the PEM encoding
  * @param[in] length Length of the PEM encoding
- * @param[out] publicKey DSA public key resulting from the parsing process
  * @return Error code
  **/
 
-error_t pemImportDsaPublicKey(const char_t *input, size_t length,
-   DsaPublicKey *publicKey)
+error_t pemImportDsaPublicKey(DsaPublicKey *publicKey, const char_t *input,
+   size_t length)
 {
 #if (DSA_SUPPORT == ENABLED)
    error_t error;
@@ -601,9 +589,7 @@ error_t pemImportDsaPublicKey(const char_t *input, size_t length,
    X509SubjectPublicKeyInfo publicKeyInfo;
 
    //Check parameters
-   if(input == NULL && length != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(publicKey == NULL)
+   if(publicKey == NULL || input == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Public keys are encoded using the "PUBLIC KEY" label
@@ -634,7 +620,7 @@ error_t pemImportDsaPublicKey(const char_t *input, size_t length,
          if(!error)
          {
             //Import the DSA public key
-            error = x509ImportDsaPublicKey(&publicKeyInfo, publicKey);
+            error = x509ImportDsaPublicKey(publicKey, &publicKeyInfo);
          }
 
          //Release previously allocated memory
@@ -665,16 +651,16 @@ error_t pemImportDsaPublicKey(const char_t *input, size_t length,
 
 /**
  * @brief Decode a PEM file containing a DSA private key
+ * @param[out] privateKey DSA private key resulting from the parsing process
  * @param[in] input Pointer to the PEM encoding
  * @param[in] length Length of the PEM encoding
  * @param[in] password NULL-terminated string containing the password. This
  *   parameter is required if the private key is encrypted
- * @param[out] privateKey DSA private key resulting from the parsing process
  * @return Error code
  **/
 
-error_t pemImportDsaPrivateKey(const char_t *input, size_t length,
-   const char_t *password, DsaPrivateKey *privateKey)
+error_t pemImportDsaPrivateKey(DsaPrivateKey *privateKey, const char_t *input,
+   size_t length, const char_t *password)
 {
 #if (DSA_SUPPORT == ENABLED)
    error_t error;
@@ -684,9 +670,7 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length,
    Pkcs8PrivateKeyInfo privateKeyInfo;
 
    //Check parameters
-   if(input == NULL && length != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(privateKey == NULL)
+   if(privateKey == NULL || input == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Clear the PrivateKeyInfo structure
@@ -724,7 +708,7 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length,
          {
             //Read DSAPrivateKey structure
             error = pkcs8ParseDsaPrivateKey(buffer, n, &privateKeyInfo.dsaParams,
-               &privateKeyInfo.dsaPrivateKey);
+               &privateKeyInfo.dsaPrivateKey, &privateKeyInfo.dsaPublicKey);
          }
 
          //Check status code
@@ -735,7 +719,7 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length,
             privateKeyInfo.oid.length = sizeof(DSA_OID);
 
             //Import the DSA private key
-            error = pkcs8ImportDsaPrivateKey(&privateKeyInfo, privateKey);
+            error = pkcs8ImportDsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
          //Release previously allocated memory
@@ -771,7 +755,7 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Import the DSA private key
-            error = pkcs8ImportDsaPrivateKey(&privateKeyInfo, privateKey);
+            error = pkcs8ImportDsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
          //Release previously allocated memory
@@ -832,7 +816,7 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Import the DSA private key
-            error = pkcs8ImportDsaPrivateKey(&privateKeyInfo, privateKey);
+            error = pkcs8ImportDsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
          //Release previously allocated memory
@@ -871,215 +855,15 @@ error_t pemImportDsaPrivateKey(const char_t *input, size_t length,
 
 
 /**
- * @brief Decode a PEM file containing EC domain parameters
- * @param[in] input Pointer to the PEM encoding
- * @param[in] length Length of the PEM encoding
- * @param[out] params EC domain parameters
- * @return Error code
- **/
-
-error_t pemImportEcParameters(const char_t *input, size_t length,
-   EcDomainParameters *params)
-{
-#if (EC_SUPPORT == ENABLED)
-   error_t error;
-   size_t n;
-   uint8_t *buffer;
-
-   //Check parameters
-   if(input == NULL && length != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(params == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //The type of data encoded is labeled depending on the type label in
-   //the "-----BEGIN " line (refer to RFC 7468, section 2)
-   if(pemDecodeFile(input, length, "EC PARAMETERS", NULL, &n, NULL,
-      NULL) == NO_ERROR)
-   {
-      X509EcParameters ecParams;
-
-      //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
-
-      //Successful memory allocation?
-      if(buffer != NULL)
-      {
-         //Decode the content of the PEM container
-         error = pemDecodeFile(input, length, "EC PARAMETERS", buffer, &n,
-            NULL, NULL);
-
-         //Check status code
-         if(!error)
-         {
-            //Parse ECParameters structure
-            error = x509ParseEcParameters(buffer, n, &ecParams);
-         }
-
-         //Check status code
-         if(!error)
-         {
-            //Import the EC domain parameters
-            error = x509ImportEcParameters(&ecParams, params);
-         }
-
-         //Release previously allocated memory
-         cryptoFreeMem(buffer);
-      }
-      else
-      {
-         //Failed to allocate memory
-         error = ERROR_OUT_OF_MEMORY;
-      }
-   }
-   else if(pemDecodeFile(input, length, "EC PRIVATE KEY", NULL, &n, NULL,
-      NULL) == NO_ERROR)
-   {
-      Pkcs8PrivateKeyInfo privateKeyInfo;
-
-      //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
-
-      //Successful memory allocation?
-      if(buffer != NULL)
-      {
-         //Decode the content of the PEM container
-         error = pemDecodeFile(input, length, "EC PRIVATE KEY", buffer, &n,
-            NULL, NULL);
-
-         //Check status code
-         if(!error)
-         {
-            //Read ECPrivateKey structure
-            error = pkcs8ParseEcPrivateKey(buffer, n, &privateKeyInfo.ecParams,
-               &privateKeyInfo.ecPrivateKey);
-         }
-
-         //Check status code
-         if(!error)
-         {
-            //Import the EC domain parameters
-            error = x509ImportEcParameters(&privateKeyInfo.ecParams, params);
-         }
-
-         //Release previously allocated memory
-         cryptoFreeMem(buffer);
-      }
-      else
-      {
-         //Failed to allocate memory
-         error = ERROR_OUT_OF_MEMORY;
-      }
-   }
-   else if(pemDecodeFile(input, length, "PRIVATE KEY", NULL, &n, NULL,
-      NULL) == NO_ERROR)
-   {
-      Pkcs8PrivateKeyInfo privateKeyInfo;
-
-      //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
-
-      //Successful memory allocation?
-      if(buffer != NULL)
-      {
-         //Decode the content of the PEM container
-         error = pemDecodeFile(input, length, "PRIVATE KEY", buffer, &n,
-            NULL, NULL);
-
-         //Check status code
-         if(!error)
-         {
-            //Read the PrivateKeyInfo structure (refer to RFC 5208, section 5)
-            error = pkcs8ParsePrivateKeyInfo(buffer, n, &privateKeyInfo);
-         }
-
-         //Check status code
-         if(!error)
-         {
-            //Import the EC domain parameters
-            error = x509ImportEcParameters(&privateKeyInfo.ecParams, params);
-         }
-
-         //Release previously allocated memory
-         cryptoFreeMem(buffer);
-      }
-      else
-      {
-         //Failed to allocate memory
-         error = ERROR_OUT_OF_MEMORY;
-      }
-   }
-   else if(pemDecodeFile(input, length, "PUBLIC KEY", NULL, &n, NULL,
-      NULL) == NO_ERROR)
-   {
-      X509SubjectPublicKeyInfo publicKeyInfo;
-
-      //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
-
-      //Successful memory allocation?
-      if(buffer != NULL)
-      {
-         //Decode the content of the PEM container
-         error = pemDecodeFile(input, length, "PUBLIC KEY", buffer, &n,
-            NULL, NULL);
-
-         //Check status code
-         if(!error)
-         {
-            //The ASN.1 encoded data of the public key is the SubjectPublicKeyInfo
-            //structure (refer to RFC 7468, section 13)
-            error = x509ParseSubjectPublicKeyInfo(buffer, n, &n, &publicKeyInfo);
-         }
-
-         //Check status code
-         if(!error)
-         {
-            //Import the EC domain parameters
-            error = x509ImportEcParameters(&publicKeyInfo.ecParams, params);
-         }
-
-         //Release previously allocated memory
-         cryptoFreeMem(buffer);
-      }
-      else
-      {
-         //Failed to allocate memory
-         error = ERROR_OUT_OF_MEMORY;
-      }
-   }
-   else
-   {
-      //The PEM file does not contain valid EC domain parameters
-      error = ERROR_END_OF_FILE;
-   }
-
-   //Any error to report?
-   if(error)
-   {
-      //Clean up side effects
-      ecFreeDomainParameters(params);
-   }
-
-   //Return status code
-   return error;
-#else
-   //Not implemented
-   return ERROR_NOT_IMPLEMENTED;
-#endif
-}
-
-
-/**
  * @brief Decode a PEM file containing an EC public key
+ * @param[out] publicKey EC public key resulting from the parsing process
  * @param[in] input Pointer to the PEM encoding
  * @param[in] length Length of the PEM encoding
- * @param[out] publicKey EC public key resulting from the parsing process
  * @return Error code
  **/
 
-error_t pemImportEcPublicKey(const char_t *input, size_t length,
-   EcPublicKey *publicKey)
+error_t pemImportEcPublicKey(EcPublicKey *publicKey, const char_t *input,
+   size_t length)
 {
 #if (EC_SUPPORT == ENABLED)
    error_t error;
@@ -1088,9 +872,7 @@ error_t pemImportEcPublicKey(const char_t *input, size_t length,
    X509SubjectPublicKeyInfo publicKeyInfo;
 
    //Check parameters
-   if(input == NULL && length != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(publicKey == NULL)
+   if(publicKey == NULL || input == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Public keys are encoded using the "PUBLIC KEY" label
@@ -1121,7 +903,7 @@ error_t pemImportEcPublicKey(const char_t *input, size_t length,
          if(!error)
          {
             //Import the EC public key
-            error = x509ImportEcPublicKey(&publicKeyInfo, publicKey);
+            error = x509ImportEcPublicKey(publicKey, &publicKeyInfo);
          }
 
          //Release previously allocated memory
@@ -1152,16 +934,16 @@ error_t pemImportEcPublicKey(const char_t *input, size_t length,
 
 /**
  * @brief Decode a PEM file containing an EC private key
+ * @param[out] privateKey EC private key resulting from the parsing process
  * @param[in] input Pointer to the PEM encoding
  * @param[in] length Length of the PEM encoding
  * @param[in] password NULL-terminated string containing the password. This
  *   parameter is required if the private key is encrypted
- * @param[out] privateKey EC private key resulting from the parsing process
  * @return Error code
  **/
 
-error_t pemImportEcPrivateKey(const char_t *input, size_t length,
-   const char_t *password, EcPrivateKey *privateKey)
+error_t pemImportEcPrivateKey(EcPrivateKey *privateKey, const char_t *input,
+   size_t length, const char_t *password)
 {
 #if (EC_SUPPORT == ENABLED)
    error_t error;
@@ -1171,9 +953,7 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length,
    Pkcs8PrivateKeyInfo privateKeyInfo;
 
    //Check parameters
-   if(input == NULL && length != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(privateKey == NULL)
+   if(privateKey == NULL || input == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Clear the PrivateKeyInfo structure
@@ -1211,7 +991,7 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length,
          {
             //Read ECPrivateKey structure
             error = pkcs8ParseEcPrivateKey(buffer, n, &privateKeyInfo.ecParams,
-               &privateKeyInfo.ecPrivateKey);
+               &privateKeyInfo.ecPrivateKey, &privateKeyInfo.ecPublicKey);
          }
 
          //Check status code
@@ -1222,7 +1002,7 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length,
             privateKeyInfo.oid.length = sizeof(EC_PUBLIC_KEY_OID);
 
             //Import the EC private key
-            error = pkcs8ImportEcPrivateKey(&privateKeyInfo, privateKey);
+            error = pkcs8ImportEcPrivateKey(privateKey, &privateKeyInfo);
          }
 
          //Release previously allocated memory
@@ -1258,7 +1038,7 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Import the EC private key
-            error = pkcs8ImportEcPrivateKey(&privateKeyInfo, privateKey);
+            error = pkcs8ImportEcPrivateKey(privateKey, &privateKeyInfo);
          }
 
          //Release previously allocated memory
@@ -1319,7 +1099,7 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Import the EC private key
-            error = pkcs8ImportEcPrivateKey(&privateKeyInfo, privateKey);
+            error = pkcs8ImportEcPrivateKey(privateKey, &privateKeyInfo);
          }
 
          //Release previously allocated memory
@@ -1359,14 +1139,14 @@ error_t pemImportEcPrivateKey(const char_t *input, size_t length,
 
 /**
  * @brief Decode a PEM file containing a EdDSA public key
+ * @param[out] publicKey EdDSA public key resulting from the parsing process
  * @param[in] input Pointer to the PEM encoding
  * @param[in] length Length of the PEM encoding
- * @param[out] publicKey EdDSA public key resulting from the parsing process
  * @return Error code
  **/
 
-error_t pemImportEddsaPublicKey(const char_t *input, size_t length,
-   EddsaPublicKey *publicKey)
+error_t pemImportEddsaPublicKey(EddsaPublicKey *publicKey, const char_t *input,
+   size_t length)
 {
 #if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
    error_t error;
@@ -1375,9 +1155,7 @@ error_t pemImportEddsaPublicKey(const char_t *input, size_t length,
    X509SubjectPublicKeyInfo publicKeyInfo;
 
    //Check parameters
-   if(input == NULL && length != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(publicKey == NULL)
+   if(publicKey == NULL || input == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Public keys are encoded using the "PUBLIC KEY" label
@@ -1408,7 +1186,7 @@ error_t pemImportEddsaPublicKey(const char_t *input, size_t length,
          if(!error)
          {
             //Import the EdDSA public key
-            error = x509ImportEddsaPublicKey(&publicKeyInfo, publicKey);
+            error = x509ImportEddsaPublicKey(publicKey, &publicKeyInfo);
          }
 
          //Release previously allocated memory
@@ -1439,16 +1217,16 @@ error_t pemImportEddsaPublicKey(const char_t *input, size_t length,
 
 /**
  * @brief Decode a PEM file containing a EdDSA private key
+ * @param[out] privateKey EdDSA private key resulting from the parsing process
  * @param[in] input Pointer to the PEM encoding
  * @param[in] length Length of the PEM encoding
  * @param[in] password NULL-terminated string containing the password. This
  *   parameter is required if the private key is encrypted
- * @param[out] privateKey EdDSA private key resulting from the parsing process
  * @return Error code
  **/
 
-error_t pemImportEddsaPrivateKey(const char_t *input, size_t length,
-   const char_t *password, EddsaPrivateKey *privateKey)
+error_t pemImportEddsaPrivateKey(EddsaPrivateKey *privateKey,
+   const char_t *input, size_t length, const char_t *password)
 {
 #if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
    error_t error;
@@ -1457,9 +1235,7 @@ error_t pemImportEddsaPrivateKey(const char_t *input, size_t length,
    Pkcs8PrivateKeyInfo privateKeyInfo;
 
    //Check parameters
-   if(input == NULL && length != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(privateKey == NULL)
+   if(privateKey == NULL || input == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //The type of data encoded is labeled depending on the type label in
@@ -1488,7 +1264,7 @@ error_t pemImportEddsaPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Import the EdDSA private key
-            error = pkcs8ImportEddsaPrivateKey(&privateKeyInfo, privateKey);
+            error = pkcs8ImportEddsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
          //Release previously allocated memory
@@ -1549,7 +1325,7 @@ error_t pemImportEddsaPrivateKey(const char_t *input, size_t length,
          if(!error)
          {
             //Import the EdDSA private key
-            error = pkcs8ImportEddsaPrivateKey(&privateKeyInfo, privateKey);
+            error = pkcs8ImportEddsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
          //Release previously allocated memory
@@ -1588,32 +1364,22 @@ error_t pemImportEddsaPrivateKey(const char_t *input, size_t length,
 
 
 /**
- * @brief Retrieve the type of a PEM-encoded public key
+ * @brief Extract the public key type from a PEM file
  * @param[in] input Pointer to the PEM encoding
  * @param[in] length Length of the PEM encoding
- * @param[out] keyType Public key type
- * @return Error code
+ * @return Public key type
  **/
 
-error_t pemGetPublicKeyType(const char_t *input, size_t length,
-   X509KeyType *keyType)
+X509KeyType pemGetPublicKeyType(const char_t *input, size_t length)
 {
    error_t error;
    size_t n;
    uint8_t *buffer;
+   X509KeyType keyType;
    X509SubjectPublicKeyInfo publicKeyInfo;
 
-   //Check parameters
-   if(input == NULL && length != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(keyType == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Initialize status code
-   error = NO_ERROR;
-
-   //Default public key type
-   *keyType = X509_KEY_TYPE_UNKNOWN;
+   //Initialize variable
+   keyType = X509_KEY_TYPE_UNKNOWN;
 
 #if (RSA_SUPPORT == ENABLED)
    //PEM container with "RSA PUBLIC KEY" label?
@@ -1621,7 +1387,7 @@ error_t pemGetPublicKeyType(const char_t *input, size_t length,
       NULL) == NO_ERROR)
    {
       //The PEM file contains an RSA public key (PKCS #1 format)
-      *keyType = X509_KEY_TYPE_RSA;
+      keyType = X509_KEY_TYPE_RSA;
    }
    else
 #endif
@@ -1651,104 +1417,59 @@ error_t pemGetPublicKeyType(const char_t *input, size_t length,
          if(!error)
          {
             //Check public key algorithm identifier
-            *keyType = x509GetPublicKeyType(publicKeyInfo.oid.value,
+            keyType = x509GetPublicKeyType(publicKeyInfo.oid.value,
                publicKeyInfo.oid.length);
 
 #if (EC_SUPPORT == ENABLED)
             //EC public key identifier?
-            if(*keyType == X509_KEY_TYPE_EC)
+            if(keyType == X509_KEY_TYPE_EC)
             {
                //SM2 elliptic curve?
-               if(!oidComp(publicKeyInfo.ecParams.namedCurve.value,
-                  publicKeyInfo.ecParams.namedCurve.length, SM2_OID,
-                  sizeof(SM2_OID)))
+               if(OID_COMP(publicKeyInfo.ecParams.namedCurve.value,
+                  publicKeyInfo.ecParams.namedCurve.length, SM2_OID) == 0)
                {
                   //The PEM file contains an SM2 public key
-                  *keyType = X509_KEY_TYPE_SM2;
+                  keyType = X509_KEY_TYPE_SM2;
                }
             }
 #endif
-            //Unknown algorithm identifier?
-            if(*keyType == X509_KEY_TYPE_UNKNOWN)
-            {
-               //Report an error
-               error = ERROR_WRONG_IDENTIFIER;
-            }
          }
 
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
-      else
-      {
-         //Failed to allocate memory
-         error = ERROR_OUT_OF_MEMORY;
-      }
-   }
-   else
-   {
-      //The PEM file does not contain a valid public key
-      error = ERROR_END_OF_FILE;
    }
 
-   //Return status code
-   return error;
+   //Return the public key type
+   return keyType;
 }
 
 
 /**
- * @brief Retrieve the type of a PEM-encoded private key
+ * @brief Extract elliptic curve parameters from a PEM file
  * @param[in] input Pointer to the PEM encoding
  * @param[in] length Length of the PEM encoding
- * @param[out] keyType Private key type
- * @return Error code
+ * @return Elliptic curve parameters
  **/
 
-error_t pemGetPrivateKeyType(const char_t *input, size_t length,
-   X509KeyType *keyType)
+const EcCurve *pemGetPublicKeyCurve(const char_t *input, size_t length)
 {
+#if (EC_SUPPORT == ENABLED)
    error_t error;
    size_t n;
    uint8_t *buffer;
-   Pkcs8PrivateKeyInfo privateKeyInfo;
+   const EcCurve *curve;
 
-   //Check parameters
-   if(input == NULL && length != 0)
-      return ERROR_INVALID_PARAMETER;
-   if(keyType == NULL)
-      return ERROR_INVALID_PARAMETER;
+   //Initialize variable
+   curve = NULL;
 
-   //Initialize status code
-   error = NO_ERROR;
-
-   //Default private key type
-   *keyType = X509_KEY_TYPE_UNKNOWN;
-
-#if (RSA_SUPPORT == ENABLED)
-   //PEM container with "RSA PRIVATE KEY" label?
-   if(pemDecodeFile(input, length, "RSA PRIVATE KEY", NULL, &n, NULL,
+   //The type of data encoded is labeled depending on the type label in
+   //the "-----BEGIN " line (refer to RFC 7468, section 2)
+   if(pemDecodeFile(input, length, "EC PARAMETERS", NULL, &n, NULL,
       NULL) == NO_ERROR)
    {
-      //The PEM file contains an RSA private key (PKCS #1 format)
-      *keyType = X509_KEY_TYPE_RSA;
-   }
-   else
-#endif
-#if (DSA_SUPPORT == ENABLED)
-   //PEM container with "DSA PRIVATE KEY" label?
-   if(pemDecodeFile(input, length, "DSA PRIVATE KEY", NULL, &n, NULL,
-      NULL) == NO_ERROR)
-   {
-      //The PEM file contains a DSA private key
-      *keyType = X509_KEY_TYPE_DSA;
-   }
-   else
-#endif
-#if (EC_SUPPORT == ENABLED)
-   //PEM container with "EC PRIVATE KEY" label?
-   if(pemDecodeFile(input, length, "EC PRIVATE KEY", NULL, &n, NULL,
-      NULL) == NO_ERROR)
-   {
+      X509EcParameters ecParams;
+
       //Allocate a memory buffer to hold the ASN.1 data
       buffer = cryptoAllocMem(n);
 
@@ -1756,50 +1477,33 @@ error_t pemGetPrivateKeyType(const char_t *input, size_t length,
       if(buffer != NULL)
       {
          //Decode the content of the PEM container
-         error = pemDecodeFile(input, length, "EC PRIVATE KEY", buffer, &n,
+         error = pemDecodeFile(input, length, "EC PARAMETERS", buffer, &n,
             NULL, NULL);
 
          //Check status code
          if(!error)
          {
-            //Read ECPrivateKey structure
-            error = pkcs8ParseEcPrivateKey(buffer, n, &privateKeyInfo.ecParams,
-               &privateKeyInfo.ecPrivateKey);
+            //Parse ECParameters structure
+            error = x509ParseEcParameters(buffer, n, &ecParams);
          }
 
          //Check status code
          if(!error)
          {
-            //SM2 elliptic curve?
-            if(!oidComp(privateKeyInfo.ecParams.namedCurve.value,
-               privateKeyInfo.ecParams.namedCurve.length, SM2_OID,
-               sizeof(SM2_OID)))
-            {
-               //The PEM file contains an SM2 private key
-               *keyType = X509_KEY_TYPE_SM2;
-            }
-            else
-            {
-               //The PEM file contains an EC private key
-               *keyType = X509_KEY_TYPE_EC;
-            }
+            //Get the elliptic curve that matches the OID
+            curve = ecGetCurve(ecParams.namedCurve.value,
+               ecParams.namedCurve.length);
          }
 
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
-      else
-      {
-         //Failed to allocate memory
-         error = ERROR_OUT_OF_MEMORY;
-      }
    }
-   else
-#endif
-   //PEM container with "PRIVATE KEY" label?
-   if(pemDecodeFile(input, length, "PRIVATE KEY", NULL, &n, NULL,
+   else if(pemDecodeFile(input, length, "PUBLIC KEY", NULL, &n, NULL,
       NULL) == NO_ERROR)
    {
+      X509SubjectPublicKeyInfo publicKeyInfo;
+
       //Allocate a memory buffer to hold the ASN.1 data
       buffer = cryptoAllocMem(n);
 
@@ -1807,62 +1511,36 @@ error_t pemGetPrivateKeyType(const char_t *input, size_t length,
       if(buffer != NULL)
       {
          //Decode the content of the PEM container
-         error = pemDecodeFile(input, length, "PRIVATE KEY", buffer, &n,
+         error = pemDecodeFile(input, length, "PUBLIC KEY", buffer, &n,
             NULL, NULL);
 
          //Check status code
          if(!error)
          {
-            //Read the PrivateKeyInfo structure (refer to RFC 5208, section 5)
-            error = pkcs8ParsePrivateKeyInfo(buffer, n, &privateKeyInfo);
+            //The ASN.1 encoded data of the public key is the SubjectPublicKeyInfo
+            //structure (refer to RFC 7468, section 13)
+            error = x509ParseSubjectPublicKeyInfo(buffer, n, &n, &publicKeyInfo);
          }
 
          //Check status code
          if(!error)
          {
-            //Check public key algorithm identifier
-            *keyType = x509GetPublicKeyType(privateKeyInfo.oid.value,
-               privateKeyInfo.oid.length);
-
-#if (EC_SUPPORT == ENABLED)
-            //EC public key identifier?
-            if(*keyType == X509_KEY_TYPE_EC)
-            {
-               //SM2 elliptic curve?
-               if(!oidComp(privateKeyInfo.ecParams.namedCurve.value,
-                  privateKeyInfo.ecParams.namedCurve.length, SM2_OID,
-                  sizeof(SM2_OID)))
-               {
-                  //The PEM file contains an SM2 private key
-                  *keyType = X509_KEY_TYPE_SM2;
-               }
-            }
-#endif
-            //Unknown algorithm identifier?
-            if(*keyType == X509_KEY_TYPE_UNKNOWN)
-            {
-               //Report an error
-               error = ERROR_WRONG_IDENTIFIER;
-            }
+            //Get the elliptic curve that matches the OID
+            curve = ecGetCurve(publicKeyInfo.ecParams.namedCurve.value,
+               publicKeyInfo.ecParams.namedCurve.length);
          }
 
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
-      else
-      {
-         //Failed to allocate memory
-         error = ERROR_OUT_OF_MEMORY;
-      }
-   }
-   else
-   {
-      //The PEM file does not contain a valid private key
-      error = ERROR_END_OF_FILE;
    }
 
-   //Return status code
-   return error;
+   //Return the elliptic curve parameters, if any
+   return curve;
+#else
+   //Not implemented
+   return NULL;
+#endif
 }
 
 #endif

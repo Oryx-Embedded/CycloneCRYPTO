@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -354,7 +354,7 @@ bool_t x509IsHashAlgoSupported(X509HashAlgo hashAlgo)
 bool_t x509IsCurveSupported(const uint8_t *oid, size_t length)
 {
    //Return TRUE is the elliptic curve is supported
-   if(x509GetCurveInfo(oid, length) != NULL)
+   if(x509GetCurve(oid, length) != NULL)
    {
       return TRUE;
    }
@@ -388,11 +388,14 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
    oid = signAlgoId->oid.value;
    oidLen = signAlgoId->oid.length;
 
+   //Just for sanity
+   (void) oid;
+   (void) oidLen;
+
 #if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
 #if (X509_MD5_SUPPORT == ENABLED && MD5_SUPPORT == ENABLED)
    //RSA with MD5 signature algorithm?
-   if(!oidComp(oid, oidLen, MD5_WITH_RSA_ENCRYPTION_OID,
-      sizeof(MD5_WITH_RSA_ENCRYPTION_OID)))
+   if(OID_COMP(oid, oidLen, MD5_WITH_RSA_ENCRYPTION_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = MD5_HASH_ALGO;
@@ -401,8 +404,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
    //RSA with SHA-1 signature algorithm?
-   if(!oidComp(oid, oidLen, SHA1_WITH_RSA_ENCRYPTION_OID,
-      sizeof(SHA1_WITH_RSA_ENCRYPTION_OID)))
+   if(OID_COMP(oid, oidLen, SHA1_WITH_RSA_ENCRYPTION_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA1_HASH_ALGO;
@@ -411,8 +413,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA224_SUPPORT == ENABLED && SHA224_SUPPORT == ENABLED)
    //RSA with SHA-224 signature algorithm?
-   if(!oidComp(oid, oidLen, SHA224_WITH_RSA_ENCRYPTION_OID,
-      sizeof(SHA224_WITH_RSA_ENCRYPTION_OID)))
+   if(OID_COMP(oid, oidLen, SHA224_WITH_RSA_ENCRYPTION_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA224_HASH_ALGO;
@@ -421,8 +422,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
    //RSA with SHA-256 signature algorithm?
-   if(!oidComp(oid, oidLen, SHA256_WITH_RSA_ENCRYPTION_OID,
-      sizeof(SHA256_WITH_RSA_ENCRYPTION_OID)))
+   if(OID_COMP(oid, oidLen, SHA256_WITH_RSA_ENCRYPTION_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA256_HASH_ALGO;
@@ -431,8 +431,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
    //RSA with SHA-384 signature algorithm?
-   if(!oidComp(oid, oidLen, SHA384_WITH_RSA_ENCRYPTION_OID,
-      sizeof(SHA384_WITH_RSA_ENCRYPTION_OID)))
+   if(OID_COMP(oid, oidLen, SHA384_WITH_RSA_ENCRYPTION_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA384_HASH_ALGO;
@@ -441,8 +440,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
    //RSA with SHA-512 signature algorithm?
-   if(!oidComp(oid, oidLen, SHA512_WITH_RSA_ENCRYPTION_OID,
-      sizeof(SHA512_WITH_RSA_ENCRYPTION_OID)))
+   if(OID_COMP(oid, oidLen, SHA512_WITH_RSA_ENCRYPTION_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA512_HASH_ALGO;
@@ -451,8 +449,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
    //RSA with SHA3-224 signature algorithm?
-   if(!oidComp(oid, oidLen, RSASSA_PKCS1_V1_5_WITH_SHA3_224_OID,
-      sizeof(RSASSA_PKCS1_V1_5_WITH_SHA3_224_OID)))
+   if(OID_COMP(oid, oidLen, RSASSA_PKCS1_V1_5_WITH_SHA3_224_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA3_224_HASH_ALGO;
@@ -461,8 +458,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
    //RSA with SHA3-256 signature algorithm?
-   if(!oidComp(oid, oidLen, RSASSA_PKCS1_V1_5_WITH_SHA3_256_OID,
-      sizeof(RSASSA_PKCS1_V1_5_WITH_SHA3_256_OID)))
+   if(OID_COMP(oid, oidLen, RSASSA_PKCS1_V1_5_WITH_SHA3_256_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA3_256_HASH_ALGO;
@@ -471,8 +467,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
    //RSA with SHA3-384 signature algorithm?
-   if(!oidComp(oid, oidLen, RSASSA_PKCS1_V1_5_WITH_SHA3_384_OID,
-      sizeof(RSASSA_PKCS1_V1_5_WITH_SHA3_384_OID)))
+   if(OID_COMP(oid, oidLen, RSASSA_PKCS1_V1_5_WITH_SHA3_384_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA3_384_HASH_ALGO;
@@ -481,8 +476,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
    //RSA with SHA3-512 signature algorithm?
-   if(!oidComp(oid, oidLen, RSASSA_PKCS1_V1_5_WITH_SHA3_512_OID,
-      sizeof(RSASSA_PKCS1_V1_5_WITH_SHA3_512_OID)))
+   if(OID_COMP(oid, oidLen, RSASSA_PKCS1_V1_5_WITH_SHA3_512_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_RSA;
       *hashAlgo = SHA3_512_HASH_ALGO;
@@ -492,8 +486,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
    //RSA-PSS signature algorithm
-   if(!oidComp(oid, oidLen, RSASSA_PSS_OID,
-      sizeof(RSASSA_PSS_OID)))
+   if(OID_COMP(oid, oidLen, RSASSA_PSS_OID) == 0)
    {
       //Get the OID of the hash algorithm
       oid = signAlgoId->rsaPssParams.hashAlgo.value;
@@ -501,7 +494,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 
 #if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
       //SHA-1 hash algorithm identifier?
-      if(!oidComp(oid, oidLen, SHA1_OID, sizeof(SHA1_OID)))
+      if(OID_COMP(oid, oidLen, SHA1_OID) == 0)
       {
          //RSA-PSS with SHA-1 signature algorithm
          *signAlgo = X509_SIGN_ALGO_RSA_PSS;
@@ -511,7 +504,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA224_SUPPORT == ENABLED && SHA224_SUPPORT == ENABLED)
       //SHA-224 hash algorithm identifier?
-      if(!oidComp(oid, oidLen, SHA224_OID, sizeof(SHA224_OID)))
+      if(OID_COMP(oid, oidLen, SHA224_OID) == 0)
       {
          //RSA-PSS with SHA-224 signature algorithm
          *signAlgo = X509_SIGN_ALGO_RSA_PSS;
@@ -521,7 +514,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
       //SHA-256 hash algorithm identifier?
-      if(!oidComp(oid, oidLen, SHA256_OID, sizeof(SHA256_OID)))
+      if(OID_COMP(oid, oidLen, SHA256_OID) == 0)
       {
          //RSA-PSS with SHA-256 signature algorithm
          *signAlgo = X509_SIGN_ALGO_RSA_PSS;
@@ -531,7 +524,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
       //SHA-384 hash algorithm identifier?
-      if(!oidComp(oid, oidLen, SHA384_OID, sizeof(SHA384_OID)))
+      if(OID_COMP(oid, oidLen, SHA384_OID) == 0)
       {
          //RSA-PSS with SHA-384 signature algorithm
          *signAlgo = X509_SIGN_ALGO_RSA_PSS;
@@ -541,7 +534,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
       //SHA-512 hash algorithm identifier?
-      if(!oidComp(oid, oidLen, SHA512_OID, sizeof(SHA512_OID)))
+      if(OID_COMP(oid, oidLen, SHA512_OID) == 0)
       {
          //RSA-PSS with SHA-512 signature algorithm
          *signAlgo = X509_SIGN_ALGO_RSA_PSS;
@@ -551,7 +544,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
       //SHA3-224 hash algorithm identifier?
-      if(!oidComp(oid, oidLen, SHA3_224_OID, sizeof(SHA3_224_OID)))
+      if(OID_COMP(oid, oidLen, SHA3_224_OID) == 0)
       {
          //RSA-PSS with SHA3-224 signature algorithm
          *signAlgo = X509_SIGN_ALGO_RSA_PSS;
@@ -561,7 +554,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
       //SHA3-256 hash algorithm identifier?
-      if(!oidComp(oid, oidLen, SHA3_256_OID, sizeof(SHA3_256_OID)))
+      if(OID_COMP(oid, oidLen, SHA3_256_OID) == 0)
       {
          //RSA-PSS with SHA3-256 signature algorithm
          *signAlgo = X509_SIGN_ALGO_RSA_PSS;
@@ -571,7 +564,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
       //SHA3-384 hash algorithm identifier?
-      if(!oidComp(oid, oidLen, SHA3_384_OID, sizeof(SHA3_384_OID)))
+      if(OID_COMP(oid, oidLen, SHA3_384_OID) == 0)
       {
          //RSA-PSS with SHA3-384 signature algorithm
          *signAlgo = X509_SIGN_ALGO_RSA_PSS;
@@ -581,7 +574,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
       //SHA3-512 hash algorithm identifier?
-      if(!oidComp(oid, oidLen, SHA3_512_OID, sizeof(SHA3_512_OID)))
+      if(OID_COMP(oid, oidLen, SHA3_512_OID) == 0)
       {
          //RSA-PSS with SHA3-512 signature algorithm
          *signAlgo = X509_SIGN_ALGO_RSA_PSS;
@@ -600,8 +593,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #if (X509_DSA_SUPPORT == ENABLED && DSA_SUPPORT == ENABLED)
 #if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
    //DSA with SHA-1 signature algorithm?
-   if(!oidComp(oid, oidLen, DSA_WITH_SHA1_OID,
-      sizeof(DSA_WITH_SHA1_OID)))
+   if(OID_COMP(oid, oidLen, DSA_WITH_SHA1_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA1_HASH_ALGO;
@@ -610,8 +602,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA224_SUPPORT == ENABLED && SHA224_SUPPORT == ENABLED)
    //DSA with SHA-224 signature algorithm?
-   if(!oidComp(oid, oidLen, DSA_WITH_SHA224_OID,
-      sizeof(DSA_WITH_SHA224_OID)))
+   if(OID_COMP(oid, oidLen, DSA_WITH_SHA224_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA224_HASH_ALGO;
@@ -620,8 +611,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
    //DSA with SHA-256 signature algorithm?
-   if(!oidComp(oid, oidLen, DSA_WITH_SHA256_OID,
-      sizeof(DSA_WITH_SHA256_OID)))
+   if(OID_COMP(oid, oidLen, DSA_WITH_SHA256_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA256_HASH_ALGO;
@@ -630,8 +620,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
    //DSA with SHA-384 signature algorithm?
-   if(!oidComp(oid, oidLen, DSA_WITH_SHA384_OID,
-      sizeof(DSA_WITH_SHA384_OID)))
+   if(OID_COMP(oid, oidLen, DSA_WITH_SHA384_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA384_HASH_ALGO;
@@ -640,8 +629,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
    //DSA with SHA-512 signature algorithm?
-   if(!oidComp(oid, oidLen, DSA_WITH_SHA512_OID,
-      sizeof(DSA_WITH_SHA512_OID)))
+   if(OID_COMP(oid, oidLen, DSA_WITH_SHA512_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA512_HASH_ALGO;
@@ -650,8 +638,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
    //DSA with SHA3-224 signature algorithm?
-   if(!oidComp(oid, oidLen, DSA_WITH_SHA3_224_OID,
-      sizeof(DSA_WITH_SHA3_224_OID)))
+   if(OID_COMP(oid, oidLen, DSA_WITH_SHA3_224_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA3_224_HASH_ALGO;
@@ -660,8 +647,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
    //DSA with SHA3-256 signature algorithm?
-   if(!oidComp(oid, oidLen, DSA_WITH_SHA3_256_OID,
-      sizeof(DSA_WITH_SHA3_256_OID)))
+   if(OID_COMP(oid, oidLen, DSA_WITH_SHA3_256_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA3_256_HASH_ALGO;
@@ -670,8 +656,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
    //DSA with SHA3-384 signature algorithm?
-   if(!oidComp(oid, oidLen, DSA_WITH_SHA3_384_OID,
-      sizeof(DSA_WITH_SHA3_384_OID)))
+   if(OID_COMP(oid, oidLen, DSA_WITH_SHA3_384_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA3_384_HASH_ALGO;
@@ -680,8 +665,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
    //DSA with SHA3-512 signature algorithm?
-   if(!oidComp(oid, oidLen, DSA_WITH_SHA3_512_OID,
-      sizeof(DSA_WITH_SHA3_512_OID)))
+   if(OID_COMP(oid, oidLen, DSA_WITH_SHA3_512_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_DSA;
       *hashAlgo = SHA3_512_HASH_ALGO;
@@ -692,8 +676,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
 #if (X509_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
    //ECDSA with SHA-1 signature algorithm?
-   if(!oidComp(oid, oidLen, ECDSA_WITH_SHA1_OID,
-      sizeof(ECDSA_WITH_SHA1_OID)))
+   if(OID_COMP(oid, oidLen, ECDSA_WITH_SHA1_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA1_HASH_ALGO;
@@ -702,8 +685,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA224_SUPPORT == ENABLED && SHA224_SUPPORT == ENABLED)
    //ECDSA with SHA-224 signature algorithm?
-   if(!oidComp(oid, oidLen, ECDSA_WITH_SHA224_OID,
-      sizeof(ECDSA_WITH_SHA224_OID)))
+   if(OID_COMP(oid, oidLen, ECDSA_WITH_SHA224_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA224_HASH_ALGO;
@@ -712,8 +694,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
    //ECDSA with SHA-256 signature algorithm?
-   if(!oidComp(oid, oidLen, ECDSA_WITH_SHA256_OID,
-      sizeof(ECDSA_WITH_SHA256_OID)))
+   if(OID_COMP(oid, oidLen, ECDSA_WITH_SHA256_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA256_HASH_ALGO;
@@ -722,8 +703,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
    //ECDSA with SHA-384 signature algorithm?
-   if(!oidComp(oid, oidLen, ECDSA_WITH_SHA384_OID,
-      sizeof(ECDSA_WITH_SHA384_OID)))
+   if(OID_COMP(oid, oidLen, ECDSA_WITH_SHA384_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA384_HASH_ALGO;
@@ -732,8 +712,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
    //ECDSA with SHA-512 signature algorithm?
-   if(!oidComp(oid, oidLen, ECDSA_WITH_SHA512_OID,
-      sizeof(ECDSA_WITH_SHA512_OID)))
+   if(OID_COMP(oid, oidLen, ECDSA_WITH_SHA512_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA512_HASH_ALGO;
@@ -742,8 +721,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_224_SUPPORT == ENABLED && SHA3_224_SUPPORT == ENABLED)
    //ECDSA with SHA3-224 signature algorithm?
-   if(!oidComp(oid, oidLen, ECDSA_WITH_SHA3_224_OID,
-      sizeof(ECDSA_WITH_SHA3_224_OID)))
+   if(OID_COMP(oid, oidLen, ECDSA_WITH_SHA3_224_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA3_224_HASH_ALGO;
@@ -752,8 +730,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_256_SUPPORT == ENABLED && SHA3_256_SUPPORT == ENABLED)
    //ECDSA with SHA3-256 signature algorithm?
-   if(!oidComp(oid, oidLen, ECDSA_WITH_SHA3_256_OID,
-      sizeof(ECDSA_WITH_SHA3_256_OID)))
+   if(OID_COMP(oid, oidLen, ECDSA_WITH_SHA3_256_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA3_256_HASH_ALGO;
@@ -762,8 +739,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_384_SUPPORT == ENABLED && SHA3_384_SUPPORT == ENABLED)
    //ECDSA with SHA3-384 signature algorithm?
-   if(!oidComp(oid, oidLen, ECDSA_WITH_SHA3_384_OID,
-      sizeof(ECDSA_WITH_SHA3_384_OID)))
+   if(OID_COMP(oid, oidLen, ECDSA_WITH_SHA3_384_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA3_384_HASH_ALGO;
@@ -772,8 +748,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_SHA3_512_SUPPORT == ENABLED && SHA3_512_SUPPORT == ENABLED)
    //ECDSA with SHA3-512 signature algorithm?
-   if(!oidComp(oid, oidLen, ECDSA_WITH_SHA3_512_OID,
-      sizeof(ECDSA_WITH_SHA3_512_OID)))
+   if(OID_COMP(oid, oidLen, ECDSA_WITH_SHA3_512_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_ECDSA;
       *hashAlgo = SHA3_512_HASH_ALGO;
@@ -784,7 +759,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #if (X509_SM2_SUPPORT == ENABLED && SM2_SUPPORT == ENABLED && \
    X509_SM3_SUPPORT == ENABLED && SM3_SUPPORT == ENABLED)
    //SM2 with SM3 signature algorithm?
-   if(!oidComp(oid, oidLen, SM2_WITH_SM3_OID, sizeof(SM2_WITH_SM3_OID)))
+   if(OID_COMP(oid, oidLen, SM2_WITH_SM3_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_SM2;
       *hashAlgo = SM3_HASH_ALGO;
@@ -793,7 +768,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
    //Ed25519 signature algorithm?
-   if(!oidComp(oid, oidLen, ED25519_OID, sizeof(ED25519_OID)))
+   if(OID_COMP(oid, oidLen, ED25519_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_ED25519;
       *hashAlgo = NULL;
@@ -802,7 +777,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
 #endif
 #if (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED)
    //Ed448 signature algorithm?
-   if(!oidComp(oid, oidLen, ED448_OID, sizeof(ED448_OID)))
+   if(OID_COMP(oid, oidLen, ED448_OID) == 0)
    {
       *signAlgo = X509_SIGN_ALGO_ED448;
       *hashAlgo = NULL;
@@ -837,54 +812,54 @@ X509KeyType x509GetPublicKeyType(const uint8_t *oid, size_t length)
    }
 #if (RSA_SUPPORT == ENABLED)
    //RSA algorithm identifier?
-   else if(!oidComp(oid, length, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)))
+   else if(OID_COMP(oid, length, RSA_ENCRYPTION_OID) == 0)
    {
       keyType = X509_KEY_TYPE_RSA;
    }
    //RSA-PSS algorithm identifier?
-   else if(!oidComp(oid, length, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
+   else if(OID_COMP(oid, length, RSASSA_PSS_OID) == 0)
    {
       keyType = X509_KEY_TYPE_RSA_PSS;
    }
 #endif
 #if (DSA_SUPPORT == ENABLED)
    //DSA algorithm identifier?
-   else if(!oidComp(oid, length, DSA_OID, sizeof(DSA_OID)))
+   else if(OID_COMP(oid, length, DSA_OID) == 0)
    {
       keyType = X509_KEY_TYPE_DSA;
    }
 #endif
 #if (EC_SUPPORT == ENABLED)
    //EC public key identifier?
-   else if(!oidComp(oid, length, EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
+   else if(OID_COMP(oid, length, EC_PUBLIC_KEY_OID) == 0)
    {
       keyType = X509_KEY_TYPE_EC;
    }
 #endif
 #if (X25519_SUPPORT == ENABLED)
    //X25519 algorithm identifier?
-   else if(!oidComp(oid, length, X25519_OID, sizeof(X25519_OID)))
+   else if(OID_COMP(oid, length, X25519_OID) == 0)
    {
       keyType = X509_KEY_TYPE_X25519;
    }
 #endif
 #if (ED25519_SUPPORT == ENABLED)
    //Ed25519 algorithm identifier?
-   else if(!oidComp(oid, length, ED25519_OID, sizeof(ED25519_OID)))
+   else if(OID_COMP(oid, length, ED25519_OID) == 0)
    {
       keyType = X509_KEY_TYPE_ED25519;
    }
 #endif
 #if (X448_SUPPORT == ENABLED)
    //X448 algorithm identifier?
-   else if(!oidComp(oid, length, X448_OID, sizeof(X448_OID)))
+   else if(OID_COMP(oid, length, X448_OID) == 0)
    {
       keyType = X509_KEY_TYPE_X448;
    }
 #endif
 #if (ED448_SUPPORT == ENABLED)
    //Ed448 algorithm identifier?
-   else if(!oidComp(oid, length, ED448_OID, sizeof(ED448_OID)))
+   else if(OID_COMP(oid, length, ED448_OID) == 0)
    {
       keyType = X509_KEY_TYPE_ED448;
    }
@@ -904,213 +879,262 @@ X509KeyType x509GetPublicKeyType(const uint8_t *oid, size_t length)
  * @brief Get the elliptic curve that matches the specified OID
  * @param[in] oid Object identifier
  * @param[in] length Length of the OID, in bytes
- * @return Elliptic curve domain parameters
+ * @return Elliptic curve parameters
  **/
 
-const EcCurveInfo *x509GetCurveInfo(const uint8_t *oid, size_t length)
+const EcCurve *x509GetCurve(const uint8_t *oid, size_t length)
 {
-   const EcCurveInfo *curveInfo;
+   const EcCurve *curve;
 
-   //Default elliptic curve domain parameters
-   curveInfo = NULL;
+   //Default elliptic curve parameters
+   curve = NULL;
 
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
    //Invalid parameters?
    if(oid == NULL || length == 0)
    {
-      curveInfo = NULL;
+      curve = NULL;
    }
 #if (X509_SECP112R1_SUPPORT == ENABLED)
    //secp112r1 elliptic curve?
-   else if(!oidComp(oid, length, SECP112R1_OID, sizeof(SECP112R1_OID)))
+   else if(OID_COMP(oid, length, SECP112R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SECP112R2_SUPPORT == ENABLED)
    //secp112r2 elliptic curve?
-   else if(!oidComp(oid, length, SECP112R2_OID, sizeof(SECP112R2_OID)))
+   else if(OID_COMP(oid, length, SECP112R2_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SECP128R1_SUPPORT == ENABLED)
    //secp128r1 elliptic curve?
-   else if(!oidComp(oid, length, SECP128R1_OID, sizeof(SECP128R1_OID)))
+   else if(OID_COMP(oid, length, SECP128R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SECP128R2_SUPPORT == ENABLED)
    //secp128r2 elliptic curve?
-   else if(!oidComp(oid, length, SECP128R2_OID, sizeof(SECP128R2_OID)))
+   else if(OID_COMP(oid, length, SECP128R2_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SECP160K1_SUPPORT == ENABLED)
    //secp160k1 elliptic curve?
-   else if(!oidComp(oid, length, SECP160K1_OID, sizeof(SECP160K1_OID)))
+   else if(OID_COMP(oid, length, SECP160K1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SECP160R1_SUPPORT == ENABLED)
    //secp160r1 elliptic curve?
-   else if(!oidComp(oid, length, SECP160R1_OID, sizeof(SECP160R1_OID)))
+   else if(OID_COMP(oid, length, SECP160R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SECP160R2_SUPPORT == ENABLED)
    //secp160r2 elliptic curve?
-   else if(!oidComp(oid, length, SECP160R2_OID, sizeof(SECP160R2_OID)))
+   else if(OID_COMP(oid, length, SECP160R2_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SECP192K1_SUPPORT == ENABLED)
    //secp192k1 elliptic curve?
-   else if(!oidComp(oid, length, SECP192K1_OID, sizeof(SECP192K1_OID)))
+   else if(OID_COMP(oid, length, SECP192K1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SECP192R1_SUPPORT == ENABLED)
    //secp192r1 elliptic curve?
-   else if(!oidComp(oid, length, SECP192R1_OID, sizeof(SECP192R1_OID)))
+   else if(OID_COMP(oid, length, SECP192R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SECP224K1_SUPPORT == ENABLED)
    //secp224k1 elliptic curve?
-   else if(!oidComp(oid, length, SECP224K1_OID, sizeof(SECP224K1_OID)))
+   else if(OID_COMP(oid, length, SECP224K1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SECP224R1_SUPPORT == ENABLED)
    //secp224r1 elliptic curve?
-   else if(!oidComp(oid, length, SECP224R1_OID, sizeof(SECP224R1_OID)))
+   else if(OID_COMP(oid, length, SECP224R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SECP256K1_SUPPORT == ENABLED)
    //secp256k1 elliptic curve?
-   else if(!oidComp(oid, length, SECP256K1_OID, sizeof(SECP256K1_OID)))
+   else if(OID_COMP(oid, length, SECP256K1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SECP256R1_SUPPORT == ENABLED)
    //secp256r1 elliptic curve?
-   else if(!oidComp(oid, length, SECP256R1_OID, sizeof(SECP256R1_OID)))
+   else if(OID_COMP(oid, length, SECP256R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SECP384R1_SUPPORT == ENABLED)
    //secp384r1 elliptic curve?
-   else if(!oidComp(oid, length, SECP384R1_OID, sizeof(SECP384R1_OID)))
+   else if(OID_COMP(oid, length, SECP384R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SECP521R1_SUPPORT == ENABLED)
    //secp521r1 elliptic curve?
-   else if(!oidComp(oid, length, SECP521R1_OID, sizeof(SECP521R1_OID)))
+   else if(OID_COMP(oid, length, SECP521R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_BRAINPOOLP160R1_SUPPORT == ENABLED)
    //brainpoolP160r1 elliptic curve?
-   else if(!oidComp(oid, length, BRAINPOOLP160R1_OID, sizeof(BRAINPOOLP160R1_OID)))
+   else if(OID_COMP(oid, length, BRAINPOOLP160R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
+   }
+#endif
+#if (X509_BRAINPOOLP160T1_SUPPORT == ENABLED)
+   //brainpoolP160t1 elliptic curve?
+   else if(OID_COMP(oid, length, BRAINPOOLP160T1_OID) == 0)
+   {
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_BRAINPOOLP192R1_SUPPORT == ENABLED)
    //brainpoolP192r1 elliptic curve?
-   else if(!oidComp(oid, length, BRAINPOOLP192R1_OID, sizeof(BRAINPOOLP192R1_OID)))
+   else if(OID_COMP(oid, length, BRAINPOOLP192R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
+   }
+#endif
+#if (X509_BRAINPOOLP192T1_SUPPORT == ENABLED)
+   //brainpoolP192t1 elliptic curve?
+   else if(OID_COMP(oid, length, BRAINPOOLP192T1_OID) == 0)
+   {
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_BRAINPOOLP224R1_SUPPORT == ENABLED)
    //brainpoolP224r1 elliptic curve?
-   else if(!oidComp(oid, length, BRAINPOOLP224R1_OID, sizeof(BRAINPOOLP224R1_OID)))
+   else if(OID_COMP(oid, length, BRAINPOOLP224R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
+   }
+#endif
+#if (X509_BRAINPOOLP224T1_SUPPORT == ENABLED)
+   //brainpoolP224t1 elliptic curve?
+   else if(OID_COMP(oid, length, BRAINPOOLP224T1_OID) == 0)
+   {
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_BRAINPOOLP256R1_SUPPORT == ENABLED)
    //brainpoolP256r1 elliptic curve?
-   else if(!oidComp(oid, length, BRAINPOOLP256R1_OID, sizeof(BRAINPOOLP256R1_OID)))
+   else if(OID_COMP(oid, length, BRAINPOOLP256R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
+   }
+#endif
+#if (X509_BRAINPOOLP256T1_SUPPORT == ENABLED)
+   //brainpoolP256t1 elliptic curve?
+   else if(OID_COMP(oid, length, BRAINPOOLP256T1_OID) == 0)
+   {
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_BRAINPOOLP320R1_SUPPORT == ENABLED)
    //brainpoolP320r1 elliptic curve?
-   else if(!oidComp(oid, length, BRAINPOOLP320R1_OID, sizeof(BRAINPOOLP320R1_OID)))
+   else if(OID_COMP(oid, length, BRAINPOOLP320R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
+   }
+#endif
+#if (X509_BRAINPOOLP320T1_SUPPORT == ENABLED)
+   //brainpoolP320t1 elliptic curve?
+   else if(OID_COMP(oid, length, BRAINPOOLP320T1_OID) == 0)
+   {
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_BRAINPOOLP384R1_SUPPORT == ENABLED)
    //brainpoolP384r1 elliptic curve?
-   else if(!oidComp(oid, length, BRAINPOOLP384R1_OID, sizeof(BRAINPOOLP384R1_OID)))
+   else if(OID_COMP(oid, length, BRAINPOOLP384R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
+   }
+#endif
+#if (X509_BRAINPOOLP384T1_SUPPORT == ENABLED)
+   //brainpoolP384t1 elliptic curve?
+   else if(OID_COMP(oid, length, BRAINPOOLP384T1_OID) == 0)
+   {
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_BRAINPOOLP512R1_SUPPORT == ENABLED)
    //brainpoolP512r1 elliptic curve?
-   else if(!oidComp(oid, length, BRAINPOOLP512R1_OID, sizeof(BRAINPOOLP512R1_OID)))
+   else if(OID_COMP(oid, length, BRAINPOOLP512R1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
+   }
+#endif
+#if (X509_BRAINPOOLP512T1_SUPPORT == ENABLED)
+   //brainpoolP512t1 elliptic curve?
+   else if(OID_COMP(oid, length, BRAINPOOLP512T1_OID) == 0)
+   {
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_FRP256V1_SUPPORT == ENABLED)
    //FRP256v1 elliptic curve?
-   else if(!oidComp(oid, length, FRP256V1_OID, sizeof(FRP256V1_OID)))
+   else if(OID_COMP(oid, length, FRP256V1_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_SM2_SUPPORT == ENABLED)
    //SM2 elliptic curve?
-   else if(!oidComp(oid, length, SM2_OID, sizeof(SM2_OID)))
+   else if(OID_COMP(oid, length, SM2_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_ED25519_SUPPORT == ENABLED)
    //Ed25519 elliptic curve?
-   else if(!oidComp(oid, length, ED25519_OID, sizeof(ED25519_OID)))
+   else if(OID_COMP(oid, length, ED25519_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
 #if (X509_ED448_SUPPORT == ENABLED)
    //Ed448 elliptic curve?
-   else if(!oidComp(oid, length, ED448_OID, sizeof(ED448_OID)))
+   else if(OID_COMP(oid, length, ED448_OID) == 0)
    {
-      curveInfo = ecGetCurveInfo(oid, length);
+      curve = ecGetCurve(oid, length);
    }
 #endif
    //Unknown elliptic curve?
    else
    {
-      curveInfo = NULL;
+      curve = NULL;
    }
 #endif
 
-   //Return the elliptic curve domain parameters, if any
-   return curveInfo;
+   //Return the elliptic curve parameters, if any
+   return curve;
 }
 
 #endif

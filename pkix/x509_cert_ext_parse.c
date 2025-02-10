@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -128,78 +128,78 @@ error_t x509ParseCertExtensions(const uint8_t *data, size_t length,
          return error;
 
       //Check extension identifier
-      if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_BASIC_CONSTRAINTS_OID, sizeof(X509_BASIC_CONSTRAINTS_OID)))
+      if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_BASIC_CONSTRAINTS_OID) == 0)
       {
          //Parse BasicConstraints extension
          error = x509ParseBasicConstraints(extension.critical, extension.data.value,
             extension.data.length, &extensions->basicConstraints);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_NAME_CONSTRAINTS_OID, sizeof(X509_NAME_CONSTRAINTS_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_NAME_CONSTRAINTS_OID) == 0)
       {
          //Parse NameConstraints extension
          error = x509ParseNameConstraints(extension.critical, extension.data.value,
             extension.data.length, &extensions->nameConstraints);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_KEY_USAGE_OID, sizeof(X509_KEY_USAGE_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_KEY_USAGE_OID) == 0)
       {
          //Parse KeyUsage extension
          error = x509ParseKeyUsage(extension.critical, extension.data.value,
             extension.data.length, &extensions->keyUsage);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_EXTENDED_KEY_USAGE_OID, sizeof(X509_EXTENDED_KEY_USAGE_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_EXTENDED_KEY_USAGE_OID) == 0)
       {
          //Parse ExtendedKeyUsage extension
          error = x509ParseExtendedKeyUsage(extension.critical, extension.data.value,
             extension.data.length, &extensions->extKeyUsage);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_SUBJECT_ALT_NAME_OID, sizeof(X509_SUBJECT_ALT_NAME_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_SUBJECT_ALT_NAME_OID) == 0)
       {
          //Parse SubjectAltName extension
          error = x509ParseSubjectAltName(extension.critical, extension.data.value,
             extension.data.length, &extensions->subjectAltName);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_SUBJECT_KEY_ID_OID, sizeof(X509_SUBJECT_KEY_ID_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_SUBJECT_KEY_ID_OID) == 0)
       {
          //Parse SubjectKeyIdentifier extension
          error = x509ParseSubjectKeyId(extension.critical, extension.data.value,
             extension.data.length, &extensions->subjectKeyId);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_AUTHORITY_KEY_ID_OID, sizeof(X509_AUTHORITY_KEY_ID_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_AUTHORITY_KEY_ID_OID) == 0)
       {
          //Parse AuthorityKeyIdentifier extension
          error = x509ParseAuthKeyId(extension.critical, extension.data.value,
             extension.data.length, &extensions->authKeyId);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_CRL_DISTR_POINTS_OID, sizeof(X509_CRL_DISTR_POINTS_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_CRL_DISTR_POINTS_OID) == 0)
       {
          //Parse CRLDistributionPoints extension
          error = x509ParseCrlDistrPoints(extension.critical, extension.data.value,
             extension.data.length, &extensions->crlDistrPoints);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_AUTH_INFO_ACCESS_OID, sizeof(X509_AUTH_INFO_ACCESS_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_AUTH_INFO_ACCESS_OID) == 0)
       {
          //Parse AuthorityInformationAccess extension
          error = x509ParseAuthInfoAccess(extension.critical, extension.data.value,
             extension.data.length, &extensions->authInfoAccess);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_PKIX_OCSP_NO_CHECK_OID, sizeof(X509_PKIX_OCSP_NO_CHECK_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_PKIX_OCSP_NO_CHECK_OID) == 0)
       {
          //Parse PkixOcspNoCheck extension
          error = x509ParsePkixOcspNoCheck(extension.critical, extension.data.value,
             extension.data.length, &extensions->pkixOcspNoCheck);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_NS_CERT_TYPE_OID, sizeof(X509_NS_CERT_TYPE_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_NS_CERT_TYPE_OID) == 0)
       {
          //Parse NetscapeCertType extension
          error = x509ParseNsCertType(extension.critical, extension.data.value,
@@ -733,8 +733,7 @@ error_t x509ParseExtendedKeyUsage(bool_t critical, const uint8_t *data,
          return error;
 
       //anyExtendedKeyUsage?
-      if(!oidComp(tag.value, tag.length,
-         X509_ANY_EXT_KEY_USAGE_OID, sizeof(X509_ANY_EXT_KEY_USAGE_OID)))
+      if(OID_COMP(tag.value, tag.length, X509_ANY_EXT_KEY_USAGE_OID) == 0)
       {
          //If a CA includes extended key usages to satisfy such applications,
          //but does not wish to restrict usages of the key, the CA can include
@@ -742,92 +741,79 @@ error_t x509ParseExtendedKeyUsage(bool_t critical, const uint8_t *data,
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_ANY;
       }
       //id-kp-serverAuth?
-      else if(!oidComp(tag.value, tag.length,
-         X509_KP_SERVER_AUTH_OID, sizeof(X509_KP_SERVER_AUTH_OID)))
+      else if(OID_COMP(tag.value, tag.length, X509_KP_SERVER_AUTH_OID) == 0)
       {
          //TLS WWW server authentication
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_SERVER_AUTH;
       }
       //id-kp-clientAuth?
-      else if(!oidComp(tag.value, tag.length,
-         X509_KP_CLIENT_AUTH_OID, sizeof(X509_KP_CLIENT_AUTH_OID)))
+      else if(OID_COMP(tag.value, tag.length, X509_KP_CLIENT_AUTH_OID) == 0)
       {
          //TLS WWW client authentication
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_CLIENT_AUTH;
       }
       //id-kp-codeSigning?
-      else if(!oidComp(tag.value, tag.length,
-         X509_KP_CODE_SIGNING_OID, sizeof(X509_KP_CODE_SIGNING_OID)))
+      else if(OID_COMP(tag.value, tag.length, X509_KP_CODE_SIGNING_OID) == 0)
       {
          //Signing of downloadable executable code
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_CODE_SIGNING;
       }
       //id-kp-emailProtection?
-      else if(!oidComp(tag.value, tag.length,
-         X509_KP_EMAIL_PROTECTION_OID, sizeof(X509_KP_EMAIL_PROTECTION_OID)))
+      else if(OID_COMP(tag.value, tag.length, X509_KP_EMAIL_PROTECTION_OID) == 0)
       {
          //Email protection
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_EMAIL_PROTECTION;
       }
       //id-kp-ipsecEndSystem?
-      else if(!oidComp(tag.value, tag.length,
-         X509_KP_IPSEC_END_SYSTEM_OID, sizeof(X509_KP_IPSEC_END_SYSTEM_OID)))
+      else if(OID_COMP(tag.value, tag.length, X509_KP_IPSEC_END_SYSTEM_OID) == 0)
       {
          //IPsec end system
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_IPSEC_END_SYSTEM;
       }
       //id-kp-ipsecTunnel?
-      else if(!oidComp(tag.value, tag.length,
-         X509_KP_IPSEC_TUNNEL_OID, sizeof(X509_KP_IPSEC_TUNNEL_OID)))
+      else if(OID_COMP(tag.value, tag.length, X509_KP_IPSEC_TUNNEL_OID) == 0)
       {
          //IPsec tunnel
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_IPSEC_TUNNEL;
       }
       //id-kp-ipsecUser?
-      else if(!oidComp(tag.value, tag.length,
-         X509_KP_IPSEC_USER_OID, sizeof(X509_KP_IPSEC_USER_OID)))
+      else if(OID_COMP(tag.value, tag.length, X509_KP_IPSEC_USER_OID) == 0)
       {
          //IPsec user
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_IPSEC_USER;
       }
       //id-kp-timeStamping?
-      else if(!oidComp(tag.value, tag.length,
-         X509_KP_TIME_STAMPING_OID, sizeof(X509_KP_TIME_STAMPING_OID)))
+      else if(OID_COMP(tag.value, tag.length, X509_KP_TIME_STAMPING_OID) == 0)
       {
          //Binding the hash of an object to a time
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_TIME_STAMPING;
       }
       //id-kp-OCSPSigning?
-      else if(!oidComp(tag.value, tag.length,
-         X509_KP_OCSP_SIGNING_OID, sizeof(X509_KP_OCSP_SIGNING_OID)))
+      else if(OID_COMP(tag.value, tag.length, X509_KP_OCSP_SIGNING_OID) == 0)
       {
          //Signing OCSP responses
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_OCSP_SIGNING;
       }
       //id-kp-ipsecIKE?
-      else if(!oidComp(tag.value, tag.length,
-         X509_KP_IPSEC_IKE_OID, sizeof(X509_KP_IPSEC_IKE_OID)))
+      else if(OID_COMP(tag.value, tag.length, X509_KP_IPSEC_IKE_OID) == 0)
       {
          //The certificate is intended to be used with IKE
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_IPSEC_IKE;
       }
       //id-kp-secureShellClient?
-      else if(!oidComp(tag.value, tag.length,
-         X509_KP_SSH_CLIENT_OID, sizeof(X509_KP_SSH_CLIENT_OID)))
+      else if(OID_COMP(tag.value, tag.length, X509_KP_SSH_CLIENT_OID) == 0)
       {
          //The key can be used for a Secure Shell client
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_SSH_CLIENT;
       }
       //id-kp-secureShellServer?
-      else if(!oidComp(tag.value, tag.length,
-         X509_KP_SSH_SERVER_OID, sizeof(X509_KP_SSH_SERVER_OID)))
+      else if(OID_COMP(tag.value, tag.length, X509_KP_SSH_SERVER_OID) == 0)
       {
          //The key can be used for a Secure Shell server
          extKeyUsage->bitmap |= X509_EXT_KEY_USAGE_SSH_SERVER;
       }
       //id-kp-documentSigning?
-      else if(!oidComp(tag.value, tag.length,
-         X509_KP_DOC_SIGNING_OID, sizeof(X509_KP_DOC_SIGNING_OID)))
+      else if(OID_COMP(tag.value, tag.length, X509_KP_DOC_SIGNING_OID) == 0)
       {
          //The public key encoded in the certificate has been certified to be
          //used for cryptographic operations on contents that are consumed by
@@ -1570,7 +1556,7 @@ error_t x509CheckDuplicateExtension(const uint8_t *oid, size_t oidLen,
 
       //A certificate must not include more than one instance of a particular
       //extension (refer to RFC 5280, section 4.2)
-      if(!oidComp(extension.oid.value, extension.oid.length, oid, oidLen))
+      if(oidComp(extension.oid.value, extension.oid.length, oid, oidLen) == 0)
       {
          return ERROR_INVALID_SYNTAX;
       }

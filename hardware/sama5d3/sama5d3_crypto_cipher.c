@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -206,7 +206,7 @@ void desDecryptBlock(DesContext *context, const uint8_t *input, uint8_t *output)
 
 /**
  * @brief Perform Triple DES encryption or decryption
- * @param[in] context DES algorithm context
+ * @param[in] context Triple DES algorithm context
  * @param[in,out] iv Initialization vector
  * @param[in] input Data to be encrypted/decrypted
  * @param[out] output Data resulting from the encryption/decryption process

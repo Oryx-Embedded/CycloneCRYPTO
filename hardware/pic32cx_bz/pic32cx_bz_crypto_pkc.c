@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -40,6 +40,7 @@
 #include "hardware/pic32cx_bz/pic32cx_bz_crypto_pkc.h"
 #include "pkc/rsa.h"
 #include "ecc/ec.h"
+#include "ecc/ec_misc.h"
 #include "ecc/ecdsa.h"
 #include "mpi/mpi.h"
 #include "debug.h"
@@ -92,14 +93,14 @@ error_t pukccInit(void)
 /**
  * @brief Import byte array
  * @param[in,out] dest Pointer to the crypto memory
- * @param[in] array Pointer to the byte array
- * @param[in] arrayLen Length of the array to be copied
+ * @param[in] src Pointer to the byte array
+ * @param[in] srcLen Length of the array to be copied
  * @param[in] totalLen Desired length of the area, in bytes
  * @return Pointer to the initialized area
  **/
 
-uint8_t *pukccImportArray(uint8_t **dest, const uint8_t *array,
-   size_t arrayLen, size_t totalLen)
+uint8_t *pukccImportArray(uint8_t **dest, const uint8_t *src, size_t srcLen,
+   size_t totalLen)
 {
    size_t i;
    uint8_t *p;
@@ -108,9 +109,9 @@ uint8_t *pukccImportArray(uint8_t **dest, const uint8_t *array,
    p = *dest;
 
    //Copy the byte array to the crypto memory
-   for(i = 0; i < arrayLen; i++)
+   for(i = 0; i < srcLen; i++)
    {
-      p[i] = array[arrayLen - 1 - i];
+      p[i] = src[srcLen - 1 - i];
    }
 
    //Pad the data with zeroes
@@ -121,6 +122,32 @@ uint8_t *pukccImportArray(uint8_t **dest, const uint8_t *array,
 
    //Advance data pointer
    *dest = p + i;
+
+   //Return a pointer to the initialized area
+   return p;
+}
+
+
+/**
+ * @brief Import scalar
+ * @param[in,out] dest Pointer to the crypto memory
+ * @param[in] src Pointer to the scalar
+ * @param[in] totalLen Desired length of the area, in bytes
+ * @return Pointer to the initialized area
+ **/
+
+uint8_t *pukccImportScalar(uint8_t **dest, const uint32_t *src, size_t totalLen)
+{
+   uint8_t *p;
+
+   //Point to the crypto memory
+   p = *dest;
+
+   //Copy the scalar to the crypto memory
+   ecScalarExport(src, (totalLen - 1) / 4, p, totalLen, EC_SCALAR_FORMAT_LITTLE_ENDIAN);
+
+   //Advance data pointer
+   *dest = p + totalLen;
 
    //Return a pointer to the initialized area
    return p;
@@ -182,6 +209,8 @@ uint8_t *pukccWorkspace(uint8_t **dest, size_t totalLen)
 }
 
 
+#if (MPI_SUPPORT == ENABLED)
+
 /**
  * @brief Multiple precision multiplication
  * @param[out] r Resulting integer R = A * B
@@ -196,13 +225,13 @@ error_t mpiMul(Mpi *r, const Mpi *a, const Mpi *b)
    size_t m;
    size_t n;
    uint8_t *pos;
-   PukccFmultParams params;
+   PukccFmultParams params = {0};
 
-   //Retrieve the length of the input integer, in bytes
+   //Get the length of the input integer, in bytes
    m = mpiGetByteLength(a);
    m = (m + 3U) & ~3U;
 
-   //Retrieve the length of the modulus, in bytes
+   //Get the length of the modulus, in bytes
    n = mpiGetByteLength(b);
    n = (n + 3U) & ~3U;
 
@@ -284,12 +313,12 @@ error_t mpiMod2(Mpi *r, const Mpi *a, const Mpi *p)
    size_t n;
    size_t modLen;
    uint8_t *pos;
-   PukccRedModParams params;
+   PukccRedModParams params = {0};
 
-   //Retrieve the length of the input integer, in bytes
+   //Get the length of the input integer, in bytes
    n = mpiGetByteLength(a);
 
-   //Retrieve the length of the modulus, in bytes
+   //Get the length of the modulus, in bytes
    modLen = mpiGetByteLength(p);
    modLen = (modLen + 3U) & ~3U;
 
@@ -359,11 +388,11 @@ error_t mpiInvMod(Mpi *r, const Mpi *a, const Mpi *p)
    size_t m;
    size_t n;
    uint8_t *pos;
-   PukccGcdParams params;
+   PukccGcdParams params = {0};
 
-   //Retrieve the length of the input integer, in bytes
+   //Get the length of the input integer, in bytes
    m = mpiGetByteLength(a);
-   //Retrieve the length of the modulus, in bytes
+   //Get the length of the modulus, in bytes
    n = mpiGetByteLength(p);
 
    //Compute the length of the areas X, Y, A and Z
@@ -435,16 +464,16 @@ error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    size_t modLen;
    size_t expLen;
    uint8_t *pos;
-   PukccExpModParams params;
+   PukccExpModParams params = {0};
 
-   //Retrieve the length of the input integer, in bytes
+   //Get the length of the input integer, in bytes
    n = mpiGetByteLength(a);
 
-   //Retrieve the length of the modulus, in bytes
+   //Get the length of the modulus, in bytes
    modLen = mpiGetByteLength(p);
    modLen = (modLen + 3U) & ~3U;
 
-   //Retrieve the length of the exponent, in bytes
+   //Get the length of the exponent, in bytes
    expLen = mpiGetByteLength(e);
    expLen = (expLen + 3U) & ~3U;
 
@@ -584,9 +613,9 @@ error_t mpiCheckProbablePrime(const Mpi *a)
    uint_t k;
    size_t n;
    uint8_t *pos;
-   PukccPrimeGenParams params;
+   PukccPrimeGenParams params = {0};
 
-   //Retrieve the length of the input integer, in bits
+   //Get the length of the input integer, in bits
    n = mpiGetBitLength(a);
 
    //Prime numbers of a size lower than 96 bits cannot be tested by this
@@ -644,7 +673,7 @@ error_t mpiCheckProbablePrime(const Mpi *a)
       k = 27;
    }
 
-   //Retrieve the length of the input integer, in bytes
+   //Get the length of the input integer, in bytes
    n = mpiGetByteLength(a);
    n = (n + 3U) & ~3U;
 
@@ -713,6 +742,8 @@ error_t mpiCheckProbablePrime(const Mpi *a)
    return error;
 }
 
+#endif
+#if (RSA_SUPPORT == ENABLED)
 
 /**
  * @brief RSA decryption primitive
@@ -733,7 +764,7 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    size_t dqLen;
    size_t qinvLen;
 
-   //Retrieve the length of the private key
+   //Get the length of the private key
    nLen = mpiGetByteLength(&key->n);
    dLen = mpiGetByteLength(&key->d);
    pLen = mpiGetByteLength(&key->p);
@@ -757,17 +788,17 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
       size_t modLen;
       size_t expLen;
       uint8_t *pos;
-      PukccCrtParams params;
+      PukccCrtParams params = {0};
 
-      //Retrieve the length of the ciphertext, in bytes
+      //Get the length of the ciphertext, in bytes
       cLen = mpiGetByteLength(c);
 
-      //Retrieve the length of the modulus, in bytes
+      //Get the length of the modulus, in bytes
       modLen = MAX(pLen, qLen);
       modLen = MAX(modLen, 12);
       modLen = (modLen + 3U) & ~3U;
 
-      //Retrieve the length of the reduced exponents, in bytes
+      //Get the length of the reduced exponents, in bytes
       expLen = MAX(dpLen, dqLen);
       expLen = (expLen + 3U) & ~3U;
 
@@ -844,23 +875,25 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    return error;
 }
 
+#endif
+#if (EC_SUPPORT == ENABLED)
 
 /**
  * @brief Check whether the affine point S is on the curve
- * @param[in] ecParams EC domain parameters
+ * @param[in] curve Elliptic curve parameters
  * @param[in] s Affine representation of the point
  * @return TRUE if the affine point S is on the curve, else FALSE
  **/
 
-bool_t ecIsPointAffine(const EcDomainParameters *ecParams, const EcPoint *s)
+bool_t ecIsPointAffine(const EcCurve *curve, const EcPoint *s)
 {
    bool_t valid;
    size_t modLen;
    uint8_t *pos;
-   PukccZpEcPointIsOnCurveParams params;
+   PukccZpEcPointIsOnCurveParams params = {0};
 
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&ecParams->p);
+   //Get the length of the modulus, in bytes
+   modLen = (curve->fieldSize + 7) /8;
    modLen = (modLen + 3U) & ~3U;
 
    //Acquire exclusive access to the PUKCC accelerator
@@ -870,7 +903,7 @@ bool_t ecIsPointAffine(const EcDomainParameters *ecParams, const EcPoint *s)
    pos = (uint8_t *) PUKCC_CRYPTO_RAM_BASE;
 
    //Copy modulus
-   params.mod = pukccImportMpi(&pos, &ecParams->p, modLen + 4);
+   params.mod = pukccImportScalar(&pos, curve->p, modLen + 4);
    //Initialize reduction constant
    params.cns = pukccWorkspace(&pos, modLen + 12);
    //Initialize workspace R
@@ -898,15 +931,15 @@ bool_t ecIsPointAffine(const EcDomainParameters *ecParams, const EcPoint *s)
       pos = params.r;
 
       //Copy point coordinates
-      params.point.x = pukccImportMpi(&pos, &s->x, modLen + 4);
-      params.point.y = pukccImportMpi(&pos, &s->y, modLen + 4);
+      params.point.x = pukccImportScalar(&pos, s->x, modLen + 4);
+      params.point.y = pukccImportScalar(&pos, s->y, modLen + 4);
       params.point.z = pukccWorkspace(&pos, modLen + 4);
       params.point.z[0] = 1;
 
       //Copy curve parameter a
-      params.a = pukccImportMpi(&pos, &ecParams->a, modLen + 4);
+      params.a = pukccImportScalar(&pos, curve->a, modLen + 4);
       //Copy curve parameter b
-      params.b = pukccImportMpi(&pos, &ecParams->b, modLen + 4);
+      params.b = pukccImportScalar(&pos, curve->b, modLen + 4);
       //Initialize workspace
       params.w = pukccWorkspace(&pos, 4 * modLen + 28);
 
@@ -945,22 +978,21 @@ bool_t ecIsPointAffine(const EcDomainParameters *ecParams, const EcPoint *s)
 
 /**
  * @brief Recover affine representation
- * @param[in] ecParams EC domain parameters
+ * @param[in] curve Elliptic curve parameters
  * @param[out] r Affine representation of the point
  * @param[in] s Projective representation of the point
  * @return Error code
  **/
 
-error_t ecAffinify(const EcDomainParameters *ecParams, EcPoint *r,
-   const EcPoint *s)
+error_t ecAffinify(const EcCurve *curve, EcPoint3 *r, const EcPoint3 *s)
 {
    error_t error;
    size_t modLen;
    uint8_t *pos;
    PukccZpEcConvProjToAffineParams params = {0};
 
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&ecParams->p);
+   //Get the length of the modulus, in bytes
+   modLen = (curve->fieldSize + 7) / 8;
    modLen = (modLen + 3U) & ~3U;
 
    //Acquire exclusive access to the PUKCC accelerator
@@ -970,7 +1002,7 @@ error_t ecAffinify(const EcDomainParameters *ecParams, EcPoint *r,
    pos = (uint8_t *) PUKCC_CRYPTO_RAM_BASE;
 
    //Copy modulus
-   params.mod = pukccImportMpi(&pos, &ecParams->p, modLen + 4);
+   params.mod = pukccImportScalar(&pos, curve->p, modLen + 4);
    //Initialize reduction constant
    params.cns = pukccWorkspace(&pos, modLen + 12);
    //Initialize workspace R
@@ -998,9 +1030,9 @@ error_t ecAffinify(const EcDomainParameters *ecParams, EcPoint *r,
       pos = params.r;
 
       //Copy point coordinates
-      params.point.x = pukccImportMpi(&pos, &s->x, modLen + 4);
-      params.point.y = pukccImportMpi(&pos, &s->y, modLen + 4);
-      params.point.z = pukccImportMpi(&pos, &s->z, modLen + 4);
+      params.point.x = pukccImportScalar(&pos, s->x, modLen + 4);
+      params.point.y = pukccImportScalar(&pos, s->y, modLen + 4);
+      params.point.z = pukccImportScalar(&pos, s->z, modLen + 4);
       //Initialize workspace
       params.w = pukccWorkspace(&pos, 4 * modLen + 48);
 
@@ -1019,23 +1051,23 @@ error_t ecAffinify(const EcDomainParameters *ecParams, EcPoint *r,
    if(PUKCL(u2Status) == PUKCL_OK)
    {
       //Copy the x-coordinate of the result
-      error = mpiImport(&r->x, params.point.x, modLen,
-         MPI_FORMAT_LITTLE_ENDIAN);
+      error = ecScalarImport(r->x, EC_MAX_MODULUS_SIZE, params.point.x, modLen,
+         EC_SCALAR_FORMAT_LITTLE_ENDIAN);
 
       //Check error code
       if(!error)
       {
          //Copy the y-coordinate of the result
-         error = mpiImport(&r->y, params.point.y, modLen,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         error = ecScalarImport(r->y, EC_MAX_MODULUS_SIZE, params.point.y, modLen,
+            EC_SCALAR_FORMAT_LITTLE_ENDIAN);
       }
 
       //Check error code
       if(!error)
       {
          //Copy the z-coordinate of the result
-         error = mpiImport(&r->z, params.point.z, modLen,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         error = ecScalarImport(r->z, EC_MAX_MODULUS_SIZE, params.point.z, modLen,
+            EC_SCALAR_FORMAT_LITTLE_ENDIAN);
       }
    }
    else
@@ -1053,30 +1085,47 @@ error_t ecAffinify(const EcDomainParameters *ecParams, EcPoint *r,
 
 
 /**
- * @brief Scalar multiplication
- * @param[in] ecParams EC domain parameters
+ * @brief Scalar multiplication (fast calculation)
+ * @param[in] curve Elliptic curve parameters
  * @param[out] r Resulting point R = d.S
  * @param[in] d An integer d such as 0 <= d < p
  * @param[in] s EC point
  * @return Error code
  **/
 
-error_t ecMult(const EcDomainParameters *ecParams, EcPoint *r, const Mpi *d,
-   const EcPoint *s)
+error_t ecMulFast(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
+   const EcPoint3 *s)
+{
+   //Compute R = d.S
+   return ecMulRegular(curve, r, d, s);
+}
+
+
+/**
+ * @brief Scalar multiplication (regular calculation)
+ * @param[in] curve Elliptic curve parameters
+ * @param[out] r Resulting point R = d.S
+ * @param[in] d An integer d such as 0 <= d < q
+ * @param[in] s EC point
+ * @return Error code
+ **/
+
+error_t ecMulRegular(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
+   const EcPoint3 *s)
 {
    error_t error;
-   size_t kLen;
    size_t modLen;
+   size_t orderLen;
    uint8_t *pos;
    PukccZpEccMulParams params = {0};
 
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&ecParams->p);
+   //Get the length of the modulus, in bytes
+   modLen = (curve->fieldSize + 7) / 8;
    modLen = (modLen + 3U) & ~3U;
 
-   //Retrieve the length of the scalar number
-   kLen = mpiGetByteLength(d);
-   kLen = (kLen + 3U) & ~3U;
+   //Get the length of the order, in bytes
+   orderLen = (curve->orderSize + 7) / 8;
+   orderLen = (orderLen + 3U) & ~3U;
 
    //Acquire exclusive access to the PUKCC accelerator
    osAcquireMutex(&pic32cxbzCryptoMutex);
@@ -1085,7 +1134,7 @@ error_t ecMult(const EcDomainParameters *ecParams, EcPoint *r, const Mpi *d,
    pos = (uint8_t *) PUKCC_CRYPTO_RAM_BASE;
 
    //Copy modulus
-   params.mod = pukccImportMpi(&pos, &ecParams->p, modLen + 4);
+   params.mod = pukccImportScalar(&pos, curve->p, modLen + 4);
    //Initialize reduction constant
    params.cns = pukccWorkspace(&pos, modLen + 12);
    //Initialize workspace R
@@ -1113,16 +1162,16 @@ error_t ecMult(const EcDomainParameters *ecParams, EcPoint *r, const Mpi *d,
       pos = params.r;
 
       //Copy scalar number
-      params.k = pukccImportMpi(&pos, d, kLen + 4);
+      params.k = pukccImportScalar(&pos, d, orderLen + 4);
 
       //Copy point coordinates
-      params.point.x = pukccImportMpi(&pos, &s->x, modLen + 4);
-      params.point.y = pukccImportMpi(&pos, &s->y, modLen + 4);
+      params.point.x = pukccImportScalar(&pos, s->x, modLen + 4);
+      params.point.y = pukccImportScalar(&pos, s->y, modLen + 4);
       params.point.z = pukccWorkspace(&pos, modLen + 4);
       params.point.z[0] = 1;
 
       //Copy curve parameter a
-      params.a = pukccImportMpi(&pos, &ecParams->a, modLen + 4);
+      params.a = pukccImportScalar(&pos, curve->a, modLen + 4);
       //Initialize workspace
       params.w = pukccWorkspace(&pos, 8 * modLen + 44);
 
@@ -1130,7 +1179,7 @@ error_t ecMult(const EcDomainParameters *ecParams, EcPoint *r, const Mpi *d,
       PUKCL_ZpEccMul(u2ModLength) = modLen;
       PUKCL_ZpEccMul(nu1ModBase) = PUKCC_FAR_TO_NEAR(params.mod);
       PUKCL_ZpEccMul(nu1CnsBase) = PUKCC_FAR_TO_NEAR(params.cns);
-      PUKCL_ZpEccMul(u2KLength) = kLen;
+      PUKCL_ZpEccMul(u2KLength) = orderLen;
       PUKCL_ZpEccMul(nu1KBase) = PUKCC_FAR_TO_NEAR(params.k);
       PUKCL_ZpEccMul(nu1PointBase) = PUKCC_FAR_TO_NEAR(params.point.x);
       PUKCL_ZpEccMul(nu1ABase) = PUKCC_FAR_TO_NEAR(params.a);
@@ -1144,23 +1193,23 @@ error_t ecMult(const EcDomainParameters *ecParams, EcPoint *r, const Mpi *d,
    if(PUKCL(u2Status) == PUKCL_OK)
    {
       //Copy the x-coordinate of the result
-      error = mpiImport(&r->x, params.point.x, modLen,
-         MPI_FORMAT_LITTLE_ENDIAN);
+      error = ecScalarImport(r->x, EC_MAX_MODULUS_SIZE, params.point.x, modLen,
+         EC_SCALAR_FORMAT_LITTLE_ENDIAN);
 
       //Check error code
       if(!error)
       {
          //Copy the y-coordinate of the result
-         error = mpiImport(&r->y, params.point.y, modLen,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         error = ecScalarImport(r->y, EC_MAX_MODULUS_SIZE, params.point.y, modLen,
+            EC_SCALAR_FORMAT_LITTLE_ENDIAN);
       }
 
       //Check error code
       if(!error)
       {
          //Copy the z-coordinate of the result
-         error = mpiImport(&r->z, params.point.z, modLen,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         error = ecScalarImport(r->z, EC_MAX_MODULUS_SIZE, params.point.z, modLen,
+            EC_SCALAR_FORMAT_LITTLE_ENDIAN);
       }
    }
    else
@@ -1176,13 +1225,14 @@ error_t ecMult(const EcDomainParameters *ecParams, EcPoint *r, const Mpi *d,
    return error;
 }
 
+#endif
+#if (ECDSA_SUPPORT == ENABLED)
 
 /**
  * @brief ECDSA signature generation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] ecParams EC domain parameters
- * @param[in] privateKey Signer's ECDSA private key
+ * @param[in] privateKey Signer's EC private key
  * @param[in] digest Digest of the message to be signed
  * @param[in] digestLen Length in octets of the digest
  * @param[out] signature (R, S) integer pair
@@ -1190,37 +1240,41 @@ error_t ecMult(const EcDomainParameters *ecParams, EcPoint *r, const Mpi *d,
  **/
 
 error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *ecParams, const EcPrivateKey *privateKey,
-   const uint8_t *digest, size_t digestLen, EcdsaSignature *signature)
+   const EcPrivateKey *privateKey, const uint8_t *digest, size_t digestLen,
+   EcdsaSignature *signature)
 {
    error_t error;
    size_t modLen;
    size_t orderLen;
-   size_t scalarLen;
    uint8_t *pos;
-   PukccZpEcDsaGenerateParams params;
-   Mpi k;
+   uint32_t k[EC_MAX_ORDER_SIZE];
+   const EcCurve *curve;
+   PukccZpEcDsaGenerateParams params = {0};
 
    //Check parameters
-   if(ecParams == NULL || privateKey == NULL || digest == NULL || signature == NULL)
+   if(privateKey == NULL || digest == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&ecParams->p);
+   //Invalid elliptic curve?
+   if(privateKey->curve == NULL)
+      return ERROR_INVALID_ELLIPTIC_CURVE;
+
+   //Get elliptic curve parameters
+   curve = privateKey->curve;
+
+   //Get the length of the modulus, in bytes
+   modLen = (curve->fieldSize + 7) / 8;
    modLen = (modLen + 3U) & ~3U;
 
-   //Retrieve the length of the base point order, in bytes
-   orderLen = mpiGetByteLength(&ecParams->q);
-   //Compute the length of the scalar
-   scalarLen = (orderLen + 3U) & ~3U;
-   //Keep the leftmost bits of the hash value
-   digestLen = MIN(digestLen, orderLen);
+   //Get the length of the order, in bytes
+   orderLen = (curve->orderSize + 7) / 8;
+   orderLen = (orderLen + 3U) & ~3U;
 
-   //Initialize multiple precision integer
-   mpiInit(&k);
+   //Keep the leftmost bits of the hash value
+   digestLen = MIN(digestLen, (curve->orderSize + 7) / 8);
 
    //Generate a random number k such as 0 < k < q - 1
-   error = mpiRandRange(&k, &ecParams->q, prngAlgo, prngContext);
+   error = ecScalarRand(curve, k, prngAlgo, prngContext);
 
    //Acquire exclusive access to the PUKCC accelerator
    osAcquireMutex(&pic32cxbzCryptoMutex);
@@ -1232,9 +1286,9 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
       pos = (uint8_t *) PUKCC_CRYPTO_RAM_BASE;
 
       //Copy modulus
-      params.mod = pukccImportMpi(&pos, &ecParams->p, modLen + 4);
+      params.mod = pukccImportScalar(&pos, curve->p, modLen + 4);
       //Initialize reduction constant
-      params.cns = pukccWorkspace(&pos, scalarLen + 12);
+      params.cns = pukccWorkspace(&pos, orderLen + 12);
       //Initialize workspace R
       params.r = pukccWorkspace(&pos, 64);
       //Initialize workspace X
@@ -1265,20 +1319,20 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
       pos = params.r;
 
       //Copy base point coordinates
-      params.basePoint.x = pukccImportMpi(&pos, &ecParams->g.x, modLen + 4);
-      params.basePoint.y = pukccImportMpi(&pos, &ecParams->g.y, modLen + 4);
-      params.basePoint.z = pukccImportMpi(&pos, &ecParams->g.z, modLen + 4);
+      params.basePoint.x = pukccImportScalar(&pos, curve->g.x, modLen + 4);
+      params.basePoint.y = pukccImportScalar(&pos, curve->g.y, modLen + 4);
+      params.basePoint.z = pukccImportScalar(&pos, curve->g.z, modLen + 4);
 
       //Copy base point order
-      params.order = pukccImportMpi(&pos, &ecParams->q, scalarLen + 4);
+      params.order = pukccImportScalar(&pos, curve->q, orderLen + 4);
       //Copy curve parameter a
-      params.a = pukccImportMpi(&pos, &ecParams->a, modLen + 4);
+      params.a = pukccImportScalar(&pos, curve->a, modLen + 4);
       //Copy private key
-      params.privateKey = pukccImportMpi(&pos, &privateKey->d, scalarLen + 4);
+      params.privateKey = pukccImportScalar(&pos, privateKey->d, orderLen + 4);
       //Copy random scalar
-      params.k = pukccImportMpi(&pos, &k, scalarLen + 4);
+      params.k = pukccImportScalar(&pos, k, orderLen + 4);
       //Copy digest
-      params.h = pukccImportArray(&pos, digest, digestLen, scalarLen + 4);
+      params.h = pukccImportArray(&pos, digest, digestLen, orderLen + 4);
       //Initialize workspace
       params.w = pukccWorkspace(&pos, 8 * modLen + 44);
 
@@ -1290,7 +1344,7 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
       PUKCL_ZpEcDsaGenerate(nu1OrderPointBase) = PUKCC_FAR_TO_NEAR(params.order);
       PUKCL_ZpEcDsaGenerate(nu1ABase) = PUKCC_FAR_TO_NEAR(params.a);
       PUKCL_ZpEcDsaGenerate(nu1PrivateKey) = PUKCC_FAR_TO_NEAR(params.privateKey);
-      PUKCL_ZpEcDsaGenerate(u2ScalarLength) = scalarLen;
+      PUKCL_ZpEcDsaGenerate(u2ScalarLength) = orderLen;
       PUKCL_ZpEcDsaGenerate(nu1ScalarNumber) = PUKCC_FAR_TO_NEAR(params.k);
       PUKCL_ZpEcDsaGenerate(nu1HashBase) = PUKCC_FAR_TO_NEAR(params.h);
       PUKCL_ZpEcDsaGenerate(nu1Workspace) = PUKCC_FAR_TO_NEAR(params.w);
@@ -1306,34 +1360,25 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    //Check error code
    if(!error)
    {
+      //Save elliptic curve parameters
+      signature->curve = curve;
+
       //Copy the first part of the ECDSA signature
-      error = mpiImport(&signature->r, params.basePoint.x, scalarLen,
-         MPI_FORMAT_LITTLE_ENDIAN);
+      error = ecScalarImport(signature->r, EC_MAX_ORDER_SIZE,
+         params.basePoint.x, orderLen, EC_SCALAR_FORMAT_LITTLE_ENDIAN);
    }
 
    //Check error code
    if(!error)
    {
       //Copy the second part of the ECDSA signature
-      error = mpiImport(&signature->s, params.basePoint.x + scalarLen + 4,
-         scalarLen, MPI_FORMAT_LITTLE_ENDIAN);
+      error = ecScalarImport(signature->s, EC_MAX_ORDER_SIZE,
+         params.basePoint.x + orderLen + 4, orderLen,
+         EC_SCALAR_FORMAT_LITTLE_ENDIAN);
    }
 
    //Release exclusive access to the PUKCC accelerator
    osReleaseMutex(&pic32cxbzCryptoMutex);
-
-   //Check error code
-   if(!error)
-   {
-      //Dump ECDSA signature
-      TRACE_DEBUG("  r:\r\n");
-      TRACE_DEBUG_MPI("    ", &signature->r);
-      TRACE_DEBUG("  s:\r\n");
-      TRACE_DEBUG_MPI("    ", &signature->s);
-   }
-
-   //Release multiple precision integer
-   mpiFree(&k);
 
    //Return error code
    return error;
@@ -1342,55 +1387,66 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
 
 /**
  * @brief ECDSA signature verification
- * @param[in] ecParams EC domain parameters
- * @param[in] publicKey Signer's ECDSA public key
+ * @param[in] publicKey Signer's EC public key
  * @param[in] digest Digest of the message whose signature is to be verified
  * @param[in] digestLen Length in octets of the digest
  * @param[in] signature (R, S) integer pair
  * @return Error code
  **/
 
-error_t ecdsaVerifySignature(const EcDomainParameters *ecParams,
-   const EcPublicKey *publicKey, const uint8_t *digest, size_t digestLen,
-   const EcdsaSignature *signature)
+error_t ecdsaVerifySignature(const EcPublicKey *publicKey,
+   const uint8_t *digest, size_t digestLen, const EcdsaSignature *signature)
 {
    error_t error;
    size_t modLen;
    size_t orderLen;
-   size_t scalarLen;
    uint8_t *pos;
-   PukccZpEcDsaVerifyParams params;
+   const EcCurve *curve;
+   PukccZpEcDsaVerifyParams params = {0};
 
    //Check parameters
-   if(ecParams == NULL || publicKey == NULL || digest == NULL || signature == NULL)
+   if(publicKey == NULL || digest == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
 
+   //Invalid elliptic curve?
+   if(publicKey->curve == NULL)
+      return ERROR_INVALID_ELLIPTIC_CURVE;
+
+   //Verify that the public key is on the curve
+   if(!ecIsPointAffine(publicKey->curve, &publicKey->q))
+   {
+      return ERROR_INVALID_SIGNATURE;
+   }
+
    //The verifier shall check that 0 < r < q
-   if(mpiCompInt(&signature->r, 0) <= 0 ||
-      mpiComp(&signature->r, &ecParams->q) >= 0)
+   if(ecScalarCompInt(signature->r, 0, EC_MAX_ORDER_SIZE) <= 0 ||
+      ecScalarComp(signature->r, publicKey->curve->q, EC_MAX_ORDER_SIZE) >= 0)
    {
       //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
    }
 
    //The verifier shall check that 0 < s < q
-   if(mpiCompInt(&signature->s, 0) <= 0 ||
-      mpiComp(&signature->s, &ecParams->q) >= 0)
+   if(ecScalarCompInt(signature->s, 0, EC_MAX_ORDER_SIZE) <= 0 ||
+      ecScalarComp(signature->s, publicKey->curve->q, EC_MAX_ORDER_SIZE) >= 0)
    {
       //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
    }
 
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&ecParams->p);
+   //Get elliptic curve parameters
+   curve = publicKey->curve;
+
+   //Get the length of the modulus, in bytes
+   modLen = (curve->fieldSize + 7) / 8;
    modLen = (modLen + 3U) & ~3U;
 
-   //Retrieve the length of the base point order, in bytes
-   orderLen = mpiGetByteLength(&ecParams->q);
-   //Compute the length of the scalar
-   scalarLen = (orderLen + 3U) & ~3U;
+   //Get the length of the order, in bytes
+   orderLen = (curve->orderSize + 7) / 8;
+   orderLen = (orderLen + 3U) & ~3U;
+
    //Keep the leftmost bits of the hash value
-   digestLen = MIN(digestLen, orderLen);
+   digestLen = MIN(digestLen, (curve->orderSize + 7) / 8);
 
    //Acquire exclusive access to the PUKCC accelerator
    osAcquireMutex(&pic32cxbzCryptoMutex);
@@ -1399,9 +1455,9 @@ error_t ecdsaVerifySignature(const EcDomainParameters *ecParams,
    pos = (uint8_t *) PUKCC_CRYPTO_RAM_BASE;
 
    //Copy modulus
-   params.mod = pukccImportMpi(&pos, &ecParams->p, modLen + 4);
+   params.mod = pukccImportScalar(&pos, curve->p, modLen + 4);
    //Initialize reduction constant
-   params.cns = pukccWorkspace(&pos, scalarLen + 12);
+   params.cns = pukccWorkspace(&pos, orderLen + 12);
    //Initialize workspace R
    params.r = pukccWorkspace(&pos, 64);
    //Initialize workspace X
@@ -1427,27 +1483,27 @@ error_t ecdsaVerifySignature(const EcDomainParameters *ecParams,
       pos = params.r;
 
       //Copy base point coordinates
-      params.basePoint.x = pukccImportMpi(&pos, &ecParams->g.x, modLen + 4);
-      params.basePoint.y = pukccImportMpi(&pos, &ecParams->g.y, modLen + 4);
-      params.basePoint.z = pukccImportMpi(&pos, &ecParams->g.z, modLen + 4);
+      params.basePoint.x = pukccImportScalar(&pos, curve->g.x, modLen + 4);
+      params.basePoint.y = pukccImportScalar(&pos, curve->g.y, modLen + 4);
+      params.basePoint.z = pukccImportScalar(&pos, curve->g.z, modLen + 4);
 
       //Copy base point order
-      params.order = pukccImportMpi(&pos, &ecParams->q, scalarLen + 4);
+      params.order = pukccImportScalar(&pos, curve->q, orderLen + 4);
       //Copy curve parameter a
-      params.a = pukccImportMpi(&pos, &ecParams->a, modLen + 4);
+      params.a = pukccImportScalar(&pos, curve->a, modLen + 4);
 
       //Copy public key
-      params.publicKey.x = pukccImportMpi(&pos, &publicKey->q.x, modLen + 4);
-      params.publicKey.y = pukccImportMpi(&pos, &publicKey->q.y, modLen + 4);
+      params.publicKey.x = pukccImportScalar(&pos, publicKey->q.x, modLen + 4);
+      params.publicKey.y = pukccImportScalar(&pos, publicKey->q.y, modLen + 4);
       params.publicKey.z = pukccWorkspace(&pos, modLen + 4);
       params.publicKey.z[0] = 1;
 
       //Copy digest
-      params.h = pukccImportArray(&pos, digest, digestLen, scalarLen + 4);
+      params.h = pukccImportArray(&pos, digest, digestLen, orderLen + 4);
 
       //Copy signature
-      params.r = pukccImportMpi(&pos, &signature->r, scalarLen + 4);
-      params.s = pukccImportMpi(&pos, &signature->s, scalarLen + 4);
+      params.r = pukccImportScalar(&pos, signature->r, orderLen + 4);
+      params.s = pukccImportScalar(&pos, signature->s, orderLen + 4);
 
       //Initialize workspace
       params.w = pukccWorkspace(&pos, 8 * modLen + 44);
@@ -1461,7 +1517,7 @@ error_t ecdsaVerifySignature(const EcDomainParameters *ecParams,
       PUKCL_ZpEcDsaVerify(nu1OrderPointBase) = PUKCC_FAR_TO_NEAR(params.order);
       PUKCL_ZpEcDsaVerify(nu1ABase) = PUKCC_FAR_TO_NEAR(params.a);
       PUKCL_ZpEcDsaVerify(nu1PointPublicKeyGen) = PUKCC_FAR_TO_NEAR(params.publicKey.x);
-      PUKCL_ZpEcDsaVerify(u2ScalarLength) = scalarLen;
+      PUKCL_ZpEcDsaVerify(u2ScalarLength) = orderLen;
       PUKCL_ZpEcDsaVerify(nu1HashBase) = PUKCC_FAR_TO_NEAR(params.h);
       PUKCL_ZpEcDsaVerify(nu1PointSignature) = PUKCC_FAR_TO_NEAR(params.r);
       PUKCL_ZpEcDsaVerify(nu1Workspace) = PUKCC_FAR_TO_NEAR(params.w);
@@ -1494,4 +1550,5 @@ error_t ecdsaVerifySignature(const EcDomainParameters *ecParams,
    return error;
 }
 
+#endif
 #endif

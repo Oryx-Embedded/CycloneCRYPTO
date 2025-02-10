@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -31,7 +31,7 @@
  * documents. Refer to FIPS 186-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -136,6 +136,8 @@ void dsaInitPrivateKey(DsaPrivateKey *key)
    dsaInitDomainParameters(&key->params);
    //Initialize secret exponent
    mpiInit(&key->x);
+   //Initialize public key value
+   mpiInit(&key->y);
 
    //Initialize private key slot
    key->slot = -1;
@@ -153,6 +155,8 @@ void dsaFreePrivateKey(DsaPrivateKey *key)
    dsaFreeDomainParameters(&key->params);
    //Free secret exponent
    mpiFree(&key->x);
+   //Free public key value
+   mpiFree(&key->y);
 }
 
 
@@ -183,14 +187,152 @@ void dsaFreeSignature(DsaSignature *signature)
 
 
 /**
- * @brief Encode DSA signature using ASN.1
- * @param[in] signature (R, S) integer pair
- * @param[out] data Pointer to the buffer where to store the resulting ASN.1 structure
- * @param[out] length Length of the ASN.1 structure
+ * @brief Import an ASN.1 encoded DSA signature
+ * @param[out] signature DSA signature
+ * @param[in] data Pointer to the octet string
+ * @param[in] length Length of the octet string, in bytes
  * @return Error code
  **/
 
-error_t dsaWriteSignature(const DsaSignature *signature, uint8_t *data, size_t *length)
+error_t dsaImportSignature(DsaSignature *signature, const uint8_t *data,
+   size_t length)
+{
+   error_t error;
+   Asn1Tag tag;
+
+   //Debug message
+   TRACE_DEBUG("Importing DSA signature...\r\n");
+
+   //Dump DSA signature
+   TRACE_DEBUG("  signature:\r\n");
+   TRACE_DEBUG_ARRAY("    ", data, length);
+
+   //Start of exception handling block
+   do
+   {
+      //Display ASN.1 structure
+      error = asn1DumpObject(data, length, 0);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Read the contents of the ASN.1 structure
+      error = asn1ReadSequence(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         break;
+
+      //Malformed DSA signature?
+      if(length != tag.totalLength)
+      {
+         //Report an error
+         error = ERROR_INVALID_SYNTAX;
+         break;
+      }
+
+      //Point to the first field
+      data = tag.value;
+      length = tag.length;
+
+      //Read the integer R
+      error = asn1ReadTag(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         break;
+
+      //Enforce encoding, class and type
+      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
+         ASN1_TYPE_INTEGER);
+      //Invalid tag?
+      if(error)
+         break;
+
+      //Make sure R is a positive integer
+      if(tag.length == 0 || (tag.value[0] & 0x80) != 0)
+      {
+         //Report an error
+         error = ERROR_INVALID_SYNTAX;
+         break;
+      }
+
+      //Convert the octet string to a multiple precision integer
+      error = mpiImport(&signature->r, tag.value, tag.length,
+         MPI_FORMAT_BIG_ENDIAN);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Point to the next field
+      data += tag.totalLength;
+      length -= tag.totalLength;
+
+      //Read the integer S
+      error = asn1ReadTag(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         break;
+
+      //Enforce encoding, class and type
+      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
+         ASN1_TYPE_INTEGER);
+      //Invalid tag?
+      if(error)
+         break;
+
+      //Make sure S is a positive integer
+      if(tag.length == 0 || (tag.value[0] & 0x80) != 0)
+      {
+         //Report an error
+         error = ERROR_INVALID_SYNTAX;
+         break;
+      }
+
+      //Convert the octet string to a multiple precision integer
+      error = mpiImport(&signature->s, tag.value, tag.length,
+         MPI_FORMAT_BIG_ENDIAN);
+      //Any error to report?
+      if(error)
+         break;
+
+      //Malformed DSA signature?
+      if(length != tag.totalLength)
+      {
+         //Report an error
+         error = ERROR_INVALID_SYNTAX;
+         break;
+      }
+
+      //Dump (R, S) integer pair
+      TRACE_DEBUG("  r:\r\n");
+      TRACE_DEBUG_MPI("    ", &signature->r);
+      TRACE_DEBUG("  s:\r\n");
+      TRACE_DEBUG_MPI("    ", &signature->s);
+
+      //End of exception handling block
+   } while(0);
+
+   //Any error to report?
+   if(error)
+   {
+      //Clean up side effects
+      dsaFreeSignature(signature);
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Export a DSA signature to ASN.1 format
+ * @param[in] signature DSA signature
+ * @param[out] data Pointer to the octet string
+ * @param[out] length Length of the octet string, in bytes
+ * @return Error code
+ **/
+
+error_t dsaExportSignature(const DsaSignature *signature, uint8_t *data,
+   size_t *length)
 {
    error_t error;
    size_t k;
@@ -200,7 +342,7 @@ error_t dsaWriteSignature(const DsaSignature *signature, uint8_t *data, size_t *
    Asn1Tag tag;
 
    //Debug message
-   TRACE_DEBUG("Writing DSA signature...\r\n");
+   TRACE_DEBUG("Exporting DSA signature...\r\n");
 
    //Dump (R, S) integer pair
    TRACE_DEBUG("  r:\r\n");
@@ -219,14 +361,19 @@ error_t dsaWriteSignature(const DsaSignature *signature, uint8_t *data, size_t *
 
    //R and S are always encoded in the smallest possible number of octets
    if(mpiGetBitValue(&signature->r, (rLen * 8) - 1))
+   {
       rLen++;
+   }
+
    if(mpiGetBitValue(&signature->s, (sLen * 8) - 1))
+   {
       sLen++;
+   }
 
    //The first pass computes the length of the ASN.1 sequence
    n = 0;
 
-   //The parameter R is encapsulated within an ASN.1 structure
+   //The integer R is encapsulated within an ASN.1 structure
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_INTEGER;
@@ -242,7 +389,7 @@ error_t dsaWriteSignature(const DsaSignature *signature, uint8_t *data, size_t *
    //Update the length of the ASN.1 sequence
    n += tag.totalLength;
 
-   //The parameter S is encapsulated within an ASN.1 structure
+   //The integer S is encapsulated within an ASN.1 structure
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_INTEGER;
@@ -277,7 +424,7 @@ error_t dsaWriteSignature(const DsaSignature *signature, uint8_t *data, size_t *
    //Advance write pointer
    k += n;
 
-   //Encode the parameter R using ASN.1
+   //Encode the integer R using ASN.1
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_INTEGER;
@@ -294,7 +441,7 @@ error_t dsaWriteSignature(const DsaSignature *signature, uint8_t *data, size_t *
    k += n;
 
    //Convert R to an octet string
-   error = mpiWriteRaw(&signature->r, data + k, rLen);
+   error = mpiExport(&signature->r, data + k, rLen, MPI_FORMAT_BIG_ENDIAN);
    //Any error to report?
    if(error)
       return error;
@@ -302,7 +449,7 @@ error_t dsaWriteSignature(const DsaSignature *signature, uint8_t *data, size_t *
    //Advance write pointer
    k += rLen;
 
-   //Encode the parameter S using ASN.1
+   //Encode the integer S using ASN.1
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_INTEGER;
@@ -319,7 +466,7 @@ error_t dsaWriteSignature(const DsaSignature *signature, uint8_t *data, size_t *
    k += n;
 
    //Convert S to an octet string
-   error = mpiWriteRaw(&signature->s, data + k, sLen);
+   error = mpiExport(&signature->s, data + k, sLen, MPI_FORMAT_BIG_ENDIAN);
    //Any error to report?
    if(error)
       return error;
@@ -333,140 +480,9 @@ error_t dsaWriteSignature(const DsaSignature *signature, uint8_t *data, size_t *
 
    //Total length of the ASN.1 structure
    *length = k;
+
    //Successful processing
    return NO_ERROR;
-}
-
-
-/**
- * @brief Read an ASN.1 encoded DSA signature
- * @param[in] data Pointer to the ASN.1 structure to decode
- * @param[in] length Length of the ASN.1 structure
- * @param[out] signature (R, S) integer pair
- * @return Error code
- **/
-
-error_t dsaReadSignature(const uint8_t *data, size_t length, DsaSignature *signature)
-{
-   error_t error;
-   Asn1Tag tag;
-
-   //Debug message
-   TRACE_DEBUG("Reading DSA signature...\r\n");
-
-   //Dump DSA signature
-   TRACE_DEBUG("  signature:\r\n");
-   TRACE_DEBUG_ARRAY("    ", data, length);
-
-   //Start of exception handling block
-   do
-   {
-      //Display ASN.1 structure
-      error = asn1DumpObject(data, length, 0);
-      //Any error to report?
-      if(error)
-         break;
-
-      //Read the contents of the ASN.1 structure
-      error = asn1ReadSequence(data, length, &tag);
-      //Failed to decode ASN.1 tag?
-      if(error)
-         break;
-
-      //Malformed DSA signature?
-      if(length != tag.totalLength)
-      {
-         //Report an error
-         error = ERROR_INVALID_SYNTAX;
-         break;
-      }
-
-      //Point to the first field
-      data = tag.value;
-      length = tag.length;
-
-      //Read the parameter R
-      error = asn1ReadTag(data, length, &tag);
-      //Failed to decode ASN.1 tag?
-      if(error)
-         break;
-
-      //Enforce encoding, class and type
-      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
-      //Invalid tag?
-      if(error)
-         break;
-
-      //Make sure R is a positive integer
-      if(tag.length == 0 || (tag.value[0] & 0x80) != 0)
-      {
-         //Report an error
-         error = ERROR_INVALID_SYNTAX;
-         break;
-      }
-
-      //Convert the octet string to a multiple precision integer
-      error = mpiReadRaw(&signature->r, tag.value, tag.length);
-      //Any error to report?
-      if(error)
-         break;
-
-      //Point to the next field
-      data += tag.totalLength;
-      length -= tag.totalLength;
-
-      //Read the parameter S
-      error = asn1ReadTag(data, length, &tag);
-      //Failed to decode ASN.1 tag?
-      if(error)
-         break;
-
-      //Enforce encoding, class and type
-      error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_INTEGER);
-      //Invalid tag?
-      if(error)
-         break;
-
-      //Make sure S is a positive integer
-      if(tag.length == 0 || (tag.value[0] & 0x80) != 0)
-      {
-         //Report an error
-         error = ERROR_INVALID_SYNTAX;
-         break;
-      }
-
-      //Convert the octet string to a multiple precision integer
-      error = mpiReadRaw(&signature->s, tag.value, tag.length);
-      //Any error to report?
-      if(error)
-         break;
-
-      //Malformed DSA signature?
-      if(length != tag.totalLength)
-      {
-         //Report an error
-         error = ERROR_INVALID_SYNTAX;
-         break;
-      }
-
-      //Dump (R, S) integer pair
-      TRACE_DEBUG("  r:\r\n");
-      TRACE_DEBUG_MPI("    ", &signature->r);
-      TRACE_DEBUG("  s:\r\n");
-      TRACE_DEBUG_MPI("    ", &signature->s);
-
-      //End of exception handling block
-   } while(0);
-
-   //Any error to report?
-   if(error)
-   {
-      //Clean up side effects
-      dsaFreeSignature(signature);
-   }
-
-   //Return status code
-   return error;
 }
 
 
@@ -511,7 +527,7 @@ error_t dsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    mpiInit(&k);
    mpiInit(&z);
 
-   //Generate a random number k such as 0 < k < q - 1
+   //Generate a random number k such as 0 < k < q
    MPI_CHECK(mpiRandRange(&k, &key->params.q, prngAlgo, prngContext));
 
    //Debug message
@@ -524,7 +540,7 @@ error_t dsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    n = MIN(n, digestLen * 8);
 
    //Convert the digest to a multiple precision integer
-   MPI_CHECK(mpiReadRaw(&z, digest, (n + 7) / 8));
+   MPI_CHECK(mpiImport(&z, digest, (n + 7) / 8, MPI_FORMAT_BIG_ENDIAN));
 
    //Keep the leftmost N bits of the hash value
    if((n % 8) != 0)
@@ -643,7 +659,7 @@ error_t dsaVerifySignature(const DsaPublicKey *key,
    n = MIN(n, digestLen * 8);
 
    //Convert the digest to a multiple precision integer
-   MPI_CHECK(mpiReadRaw(&z, digest, (n + 7) / 8));
+   MPI_CHECK(mpiImport(&z, digest, (n + 7) / 8, MPI_FORMAT_BIG_ENDIAN));
 
    //Keep the leftmost N bits of the hash value
    if((n % 8) != 0)
@@ -668,8 +684,8 @@ error_t dsaVerifySignature(const DsaPublicKey *key,
    TRACE_DEBUG("  v:\r\n");
    TRACE_DEBUG_MPI("    ", &v);
 
-   //If v = r, then the signature is verified. If v does not equal r,
-   //then the message or the signature may have been modified
+   //If v = r, then the signature is verified. If v does not equal r, then the
+   //message or the signature may have been modified
    if(!mpiComp(&v, &signature->r))
    {
       error = NO_ERROR;

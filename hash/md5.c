@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1321
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -209,7 +209,7 @@ __weak_func void md5Update(Md5Context *context, const void *data, size_t length)
 /**
  * @brief Finish the MD5 message digest
  * @param[in] context Pointer to the MD5 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 __weak_func void md5Final(Md5Context *context, uint8_t *digest)
@@ -235,22 +235,19 @@ __weak_func void md5Final(Md5Context *context, uint8_t *digest)
    md5Update(context, padding, paddingSize);
 
    //Append the length of the original message
-   context->x[14] = htole32((uint32_t) totalSize);
-   context->x[15] = htole32((uint32_t) (totalSize >> 32));
+   for(i = 0; i < 8; i++)
+   {
+      context->buffer[56 + i] = totalSize & 0xFF;
+      totalSize >>= 8;
+   }
 
    //Calculate the message digest
    md5ProcessBlock(context);
 
-   //Convert from host byte order to little-endian byte order
-   for(i = 0; i < 4; i++)
-   {
-      context->h[i] = htole32(context->h[i]);
-   }
-
    //Copy the resulting digest
-   if(digest != NULL)
+   for(i = 0; i < (MD5_DIGEST_SIZE / 4); i++)
    {
-      osMemcpy(digest, context->digest, MD5_DIGEST_SIZE);
+      STORE32LE(context->h[i], digest + i * 4);
    }
 }
 
@@ -265,19 +262,10 @@ __weak_func void md5FinalRaw(Md5Context *context, uint8_t *digest)
 {
    uint_t i;
 
-   //Convert from host byte order to little-endian byte order
-   for(i = 0; i < 4; i++)
-   {
-      context->h[i] = htole32(context->h[i]);
-   }
-
    //Copy the resulting digest
-   osMemcpy(digest, context->digest, MD5_DIGEST_SIZE);
-
-   //Convert from little-endian byte order to host byte order
-   for(i = 0; i < 4; i++)
+   for(i = 0; i < (MD5_DIGEST_SIZE / 4); i++)
    {
-      context->h[i] = letoh32(context->h[i]);
+      STORE32LE(context->h[i], digest + i * 4);
    }
 }
 
@@ -303,7 +291,7 @@ __weak_func void md5ProcessBlock(Md5Context *context)
    //Convert from little-endian byte order to host byte order
    for(i = 0; i < 16; i++)
    {
-      x[i] = letoh32(x[i]);
+      x[i] = LOAD32LE(context->buffer + i * 4);
    }
 
    //Round 1

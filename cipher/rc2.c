@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -32,7 +32,7 @@
  * for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -111,6 +111,7 @@ error_t rc2InitEx(Rc2Context *context, const uint8_t *key, size_t keyLen,
    uint_t effectiveKeyLen)
 {
    uint_t i;
+   uint_t j;
    uint_t t8;
    uint8_t tm;
 
@@ -140,7 +141,8 @@ error_t rc2InitEx(Rc2Context *context, const uint8_t *key, size_t keyLen,
    //First loop of the key expansion operation
    for(i = keyLen; i < 128; i++)
    {
-      context->l[i] = piTable[(context->l[i - 1] + context->l[i - keyLen]) & 0xFF];
+      j = context->l[i - 1] + context->l[i - keyLen];
+      context->l[i] = piTable[j & 0xFF];
    }
 
    //The intermediate step's bitwise AND operation reduces the search space
@@ -150,16 +152,17 @@ error_t rc2InitEx(Rc2Context *context, const uint8_t *key, size_t keyLen,
    //Second loop of the key expansion operation
    for(i = 128 - t8; i > 0; i--)
    {
-      context->l[i - 1] = piTable[context->l[i] ^ context->l[i + t8 - 1]];
+      j = context->l[i] ^ context->l[i + t8 - 1];
+      context->l[i - 1] = piTable[j & 0xFF];
    }
 
    //The low-order byte of each K word is given before the high-order byte
    for(i = 0; i < 64; i++)
    {
-      context->k[i] = letoh16(context->k[i]);
+      context->k[i] = LOAD16LE(context->l + i * 2);
    }
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -181,7 +184,7 @@ void rc2EncryptBlock(Rc2Context *context, const uint8_t *input,
    uint16_t r3;
 
    //The plaintext is divided into four 16-bit registers
-   r0 = LOAD16LE(input + 0);
+   r0 = LOAD16LE(input);
    r1 = LOAD16LE(input + 2);
    r2 = LOAD16LE(input + 4);
    r3 = LOAD16LE(input + 6);
@@ -211,7 +214,7 @@ void rc2EncryptBlock(Rc2Context *context, const uint8_t *input,
    }
 
    //The resulting value is the ciphertext
-   STORE16LE(r0, output + 0);
+   STORE16LE(r0, output);
    STORE16LE(r1, output + 2);
    STORE16LE(r2, output + 4);
    STORE16LE(r3, output + 6);
@@ -235,7 +238,7 @@ void rc2DecryptBlock(Rc2Context *context, const uint8_t *input,
    uint16_t r3;
 
    //The ciphertext is divided into four 16-bit registers
-   r0 = LOAD16LE(input + 0);
+   r0 = LOAD16LE(input);
    r1 = LOAD16LE(input + 2);
    r2 = LOAD16LE(input + 4);
    r3 = LOAD16LE(input + 6);
@@ -265,7 +268,7 @@ void rc2DecryptBlock(Rc2Context *context, const uint8_t *input,
    }
 
    //The resulting value is the plaintext
-   STORE16LE(r0, output + 0);
+   STORE16LE(r0, output);
    STORE16LE(r1, output + 2);
    STORE16LE(r2, output + 4);
    STORE16LE(r3, output + 6);

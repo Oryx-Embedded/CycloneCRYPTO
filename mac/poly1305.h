@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _POLY1305_H
@@ -48,7 +48,7 @@ typedef struct
 {
    uint32_t r[4];
    uint32_t s[4];
-   uint64_t a[8];
+   uint32_t a[5];
    uint8_t buffer[17];
    size_t size;
 } Poly1305Context;

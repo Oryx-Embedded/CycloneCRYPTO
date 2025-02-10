@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _CURVE448_H
@@ -33,6 +33,13 @@
 
 //Dependencies
 #include "core/crypto.h"
+
+//Speed optimization level
+#ifndef CURVE448_SPEED_OPTIMIZATION_LEVEL
+   #define CURVE448_SPEED_OPTIMIZATION_LEVEL 2
+#elif (CURVE448_SPEED_OPTIMIZATION_LEVEL < 0)
+   #error CURVE448_SPEED_OPTIMIZATION_LEVEL parameter is not valid
+#endif
 
 //Length of the elliptic curve
 #define CURVE448_BIT_LEN 448
@@ -48,30 +55,35 @@ extern "C" {
 #endif
 
 //Curve448 related functions
-void curve448SetInt(uint32_t *a, uint32_t b);
-void curve448Add(uint32_t *r, const uint32_t *a, const uint32_t *b);
-void curve448AddInt(uint32_t *r, const uint32_t *a, uint32_t b);
-void curve448Sub(uint32_t *r, const uint32_t *a, const uint32_t *b);
-void curve448SubInt(uint32_t *r, const uint32_t *a, uint32_t b);
-void curve448Mul(uint32_t *r, const uint32_t *a, const uint32_t *b);
-void curve448MulInt(uint32_t *r, const uint32_t *a, uint32_t b);
-void curve448Red(uint32_t *r, const uint32_t *a, uint32_t h);
-void curve448Sqr(uint32_t *r, const uint32_t *a);
-void curve448Pwr2(uint32_t *r, const uint32_t *a, uint_t n);
-void curve448Inv(uint32_t *r, const uint32_t *a);
+void curve448SetInt(int32_t *a, int32_t b);
 
-uint32_t curve448Sqrt(uint32_t *r, const uint32_t *a, const uint32_t *b);
+void curve448Add(int32_t *r, const int32_t *a, const int32_t *b);
+void curve448AddInt(int32_t *r, const int32_t *a, int32_t b);
 
-void curve448Copy(uint32_t *a, const uint32_t *b);
-void curve448Swap(uint32_t *a, uint32_t *b, uint32_t c);
+void curve448Sub(int32_t *r, const int32_t *a, const int32_t *b);
+void curve448SubInt(int32_t *r, const int32_t *a, int32_t b);
 
-void curve448Select(uint32_t *r, const uint32_t *a, const uint32_t *b,
+void curve448Mul(int32_t *r, const int32_t *a, const int32_t *b);
+void curve448MulInt(int32_t *r, const int32_t *a, int32_t b);
+void curve448Sqr(int32_t *r, const int32_t *a);
+void curve448Pwr2(int32_t *r, const int32_t *a, uint_t n);
+
+void curve448Inv(int32_t *r, const int32_t *a);
+
+uint32_t curve448Sqrt(int32_t *r, const int32_t *a, const int32_t *b);
+
+void curve448Canonicalize(int32_t *r, const int32_t *a);
+
+void curve448Copy(int32_t *a, const int32_t *b);
+void curve448Swap(int32_t *a, int32_t *b, uint32_t c);
+
+void curve448Select(int32_t *r, const int32_t *a, const int32_t *b,
    uint32_t c);
 
-uint32_t curve448Comp(const uint32_t *a, const uint32_t *b);
+uint32_t curve448Comp(const int32_t *a, const int32_t *b);
 
-void curve448Import(uint32_t *a, const uint8_t *data);
-void curve448Export(uint32_t *a, uint8_t *data);
+void curve448Import(int32_t *a, const uint8_t *data);
+void curve448Export(int32_t *a, uint8_t *data);
 
 //C++ guard
 #ifdef __cplusplus

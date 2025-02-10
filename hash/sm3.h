@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _SM3_H
@@ -60,11 +60,7 @@ extern "C" {
 
 typedef struct
 {
-   union
-   {
-      uint32_t h[8];
-      uint8_t digest[32];
-   };
+   uint32_t h[8];
    union
    {
       uint32_t w[16];
@@ -85,7 +81,6 @@ error_t sm3Compute(const void *data, size_t length, uint8_t *digest);
 void sm3Init(Sm3Context *context);
 void sm3Update(Sm3Context *context, const void *data, size_t length);
 void sm3Final(Sm3Context *context, uint8_t *digest);
-void sm3FinalRaw(Sm3Context *context, uint8_t *digest);
 void sm3ProcessBlock(Sm3Context *context);
 
 //C++ guard

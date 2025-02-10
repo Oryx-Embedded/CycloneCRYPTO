@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _HASH_ALGORITHMS_H
@@ -112,6 +112,11 @@
 //SHA3-512 hash support?
 #if (SHA3_512_SUPPORT == ENABLED)
    #include "hash/sha3_512.h"
+#endif
+
+//Ascon-Hash256 hash support?
+#if (ASCON_HASH256_SUPPORT == ENABLED)
+   #include "lwc/ascon_hash256.h"
 #endif
 
 //BLAKE2b-160 hash support?
@@ -224,6 +229,8 @@
    #define MAX_HASH_BLOCK_SIZE MD4_BLOCK_SIZE
 #elif (MD2_SUPPORT == ENABLED)
    #define MAX_HASH_BLOCK_SIZE MD2_BLOCK_SIZE
+#elif (ASCON_HASH256_SUPPORT == ENABLED)
+   #define MAX_HASH_BLOCK_SIZE ASCON_HASH256_BLOCK_SIZE
 #endif
 
 //Maximum digest size
@@ -251,6 +258,8 @@
    #define MAX_HASH_DIGEST_SIZE SHA512_256_DIGEST_SIZE
 #elif (SHA256_SUPPORT == ENABLED)
    #define MAX_HASH_DIGEST_SIZE SHA256_DIGEST_SIZE
+#elif (ASCON_HASH256_SUPPORT == ENABLED)
+   #define MAX_HASH_DIGEST_SIZE ASCON_HASH256_DIGEST_SIZE
 #elif (SM3_SUPPORT == ENABLED)
    #define MAX_HASH_DIGEST_SIZE SM3_DIGEST_SIZE
 #elif (BLAKE2S224_SUPPORT == ENABLED)
@@ -295,7 +304,6 @@ extern "C" {
 
 typedef union
 {
-   uint8_t digest[MAX_HASH_DIGEST_SIZE];
 #if (MD2_SUPPORT == ENABLED)
    Md2Context md2Context;
 #endif
@@ -343,6 +351,9 @@ typedef union
 #endif
 #if (SHA3_512_SUPPORT == ENABLED)
    Sha3_512Context sha3_512Context;
+#endif
+#if (ASCON_HASH256_SUPPORT == ENABLED)
+   AsconHash256Context asconHash256Context;
 #endif
 #if (BLAKE2B160_SUPPORT == ENABLED)
    Blake2b160Context blake2b160Context;

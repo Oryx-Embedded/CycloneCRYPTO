@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -37,7 +37,8 @@
 #include "core/crypto.h"
 #include "hardware/lpc55s6x/lpc55s6x_crypto.h"
 #include "hardware/lpc55s6x/lpc55s6x_crypto_cipher.h"
-#include "cipher/aes.h"
+#include "cipher/cipher_algorithms.h"
+#include "cipher_modes/cipher_modes.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -48,7 +49,7 @@
  * @brief Load AES key
  * @param[in] context AES algorithm context
  * @param[in] handle AES handle
- * @return status code
+ * @return Error code
  **/
 
 status_t aesLoadKey(AesContext *context, hashcrypt_handle_t *handle)
@@ -552,11 +553,15 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    //Initialize status code
    status = kStatus_Success;
 
-   //AES cipher algorithm?
-   if(cipher == AES_CIPHER_ALGO)
+   //Check the value of the parameter
+   if((m % 8) == 0 && m <= (cipher->blockSize * 8))
    {
-      //Check the value of the parameter
-      if(m == (AES_BLOCK_SIZE * 8))
+      //Determine the size, in bytes, of the specific part of the block to be
+      //incremented
+      m = m / 8;
+
+      //AES cipher algorithm?
+      if(cipher == AES_CIPHER_ALGO)
       {
          //Check the length of the payload
          if(length == 0)
@@ -565,8 +570,11 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
          }
          else if((length % AES_BLOCK_SIZE) == 0)
          {
+            size_t k;
+            size_t n;
             AesContext *aesContext;
             hashcrypt_handle_t handle;
+            uint8_t iv[AES_BLOCK_SIZE];
 
             //Point to the AES context
             aesContext = (AesContext *) context;
@@ -577,12 +585,28 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             //Load AES key
             status = aesLoadKey(context, &handle);
 
-            //Check status code
-            if(status == kStatus_Success)
+            //Process plaintext
+            while(length > 0 && status == kStatus_Success)
             {
+               //Limit the number of blocks to process at a time
+               k = 256 - t[AES_BLOCK_SIZE - 1];
+               n = MIN(length, k * AES_BLOCK_SIZE);
+               k = (n + AES_BLOCK_SIZE - 1) / AES_BLOCK_SIZE;
+
+               //Copy initial counter value
+               osMemcpy(iv, t, AES_BLOCK_SIZE);
+
                //Perform AES-CTR encryption
-               status = HASHCRYPT_AES_CryptCtr(HASHCRYPT, &handle, p, c,
-                  length, t, NULL, NULL);
+               status = HASHCRYPT_AES_CryptCtr(HASHCRYPT, &handle, p, c, n,
+                  iv, NULL, NULL);
+
+               //Standard incrementing function
+               ctrIncBlock(t, k, AES_BLOCK_SIZE, m);
+
+               //Next block
+               p += n;
+               c += n;
+               length -= n;
             }
 
             //Release exclusive access to the HASHCRYPT module
@@ -596,22 +620,9 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
       }
       else
       {
-         //The value of the parameter is not valid
-         status = kStatus_InvalidArgument;
-      }
-   }
-   else
-   {
-      //Check the value of the parameter
-      if((m % 8) == 0 && m <= (cipher->blockSize * 8))
-      {
          size_t i;
          size_t n;
          uint8_t o[16];
-
-         //Determine the size, in bytes, of the specific part of the block
-         //to be incremented
-         m = m / 8;
 
          //Process plaintext
          while(length > 0)
@@ -637,11 +648,11 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             length -= n;
          }
       }
-      else
-      {
-         //The value of the parameter is not valid
-         status = kStatus_InvalidArgument;
-      }
+   }
+   else
+   {
+      //The value of the parameter is not valid
+      status = kStatus_InvalidArgument;
    }
 
    //Return status code

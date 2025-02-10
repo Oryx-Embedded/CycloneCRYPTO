@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _X509_COMMON_H
@@ -264,11 +264,25 @@
    #error X509_BRAINPOOLP160R1_SUPPORT parameter is not valid
 #endif
 
+//brainpoolP160t1 elliptic curve support
+#ifndef X509_BRAINPOOLP160T1_SUPPORT
+   #define X509_BRAINPOOLP160T1_SUPPORT DISABLED
+#elif (X509_BRAINPOOLP160T1_SUPPORT != ENABLED && X509_BRAINPOOLP160T1_SUPPORT != DISABLED)
+   #error X509_BRAINPOOLP160T1_SUPPORT parameter is not valid
+#endif
+
 //brainpoolP192r1 elliptic curve support
 #ifndef X509_BRAINPOOLP192R1_SUPPORT
    #define X509_BRAINPOOLP192R1_SUPPORT DISABLED
 #elif (X509_BRAINPOOLP192R1_SUPPORT != ENABLED && X509_BRAINPOOLP192R1_SUPPORT != DISABLED)
    #error X509_BRAINPOOLP192R1_SUPPORT parameter is not valid
+#endif
+
+//brainpoolP192t1 elliptic curve support
+#ifndef X509_BRAINPOOLP192T1_SUPPORT
+   #define X509_BRAINPOOLP192T1_SUPPORT DISABLED
+#elif (X509_BRAINPOOLP192T1_SUPPORT != ENABLED && X509_BRAINPOOLP192T1_SUPPORT != DISABLED)
+   #error X509_BRAINPOOLP192T1_SUPPORT parameter is not valid
 #endif
 
 //brainpoolP224r1 elliptic curve support
@@ -278,6 +292,13 @@
    #error X509_BRAINPOOLP224R1_SUPPORT parameter is not valid
 #endif
 
+//brainpoolP224t1 elliptic curve support
+#ifndef X509_BRAINPOOLP224T1_SUPPORT
+   #define X509_BRAINPOOLP224T1_SUPPORT DISABLED
+#elif (X509_BRAINPOOLP224T1_SUPPORT != ENABLED && X509_BRAINPOOLP224T1_SUPPORT != DISABLED)
+   #error X509_BRAINPOOLP224T1_SUPPORT parameter is not valid
+#endif
+
 //brainpoolP256r1 elliptic curve support
 #ifndef X509_BRAINPOOLP256R1_SUPPORT
    #define X509_BRAINPOOLP256R1_SUPPORT DISABLED
@@ -285,11 +306,24 @@
    #error X509_BRAINPOOLP256R1_SUPPORT parameter is not valid
 #endif
 
+//brainpoolP256t1 elliptic curve support
+#ifndef X509_BRAINPOOLP256T1_SUPPORT
+   #define X509_BRAINPOOLP256T1_SUPPORT DISABLED
+#elif (X509_BRAINPOOLP256T1_SUPPORT != ENABLED && X509_BRAINPOOLP256T1_SUPPORT != DISABLED)
+   #error X509_BRAINPOOLP256T1_SUPPORT parameter is not valid
+#endif
+
 //brainpoolP320r1 elliptic curve support
 #ifndef X509_BRAINPOOLP320R1_SUPPORT
    #define X509_BRAINPOOLP320R1_SUPPORT DISABLED
 #elif (X509_BRAINPOOLP320R1_SUPPORT != ENABLED && X509_BRAINPOOLP320R1_SUPPORT != DISABLED)
    #error X509_BRAINPOOLP320R1_SUPPORT parameter is not valid
+#endif
+//brainpoolP320t1 elliptic curve support
+#ifndef X509_BRAINPOOLP320T1_SUPPORT
+   #define X509_BRAINPOOLP320T1_SUPPORT DISABLED
+#elif (X509_BRAINPOOLP320T1_SUPPORT != ENABLED && X509_BRAINPOOLP320T1_SUPPORT != DISABLED)
+   #error X509_BRAINPOOLP320T1_SUPPORT parameter is not valid
 #endif
 
 //brainpoolP384r1 elliptic curve support
@@ -299,11 +333,25 @@
    #error X509_BRAINPOOLP384R1_SUPPORT parameter is not valid
 #endif
 
+//brainpoolP384t1 elliptic curve support
+#ifndef X509_BRAINPOOLP384T1_SUPPORT
+   #define X509_BRAINPOOLP384T1_SUPPORT DISABLED
+#elif (X509_BRAINPOOLP384T1_SUPPORT != ENABLED && X509_BRAINPOOLP384T1_SUPPORT != DISABLED)
+   #error X509_BRAINPOOLP384T1_SUPPORT parameter is not valid
+#endif
+
 //brainpoolP512r1 elliptic curve support
 #ifndef X509_BRAINPOOLP512R1_SUPPORT
    #define X509_BRAINPOOLP512R1_SUPPORT DISABLED
 #elif (X509_BRAINPOOLP512R1_SUPPORT != ENABLED && X509_BRAINPOOLP512R1_SUPPORT != DISABLED)
    #error X509_BRAINPOOLP512R1_SUPPORT parameter is not valid
+#endif
+
+//brainpoolP512t1 elliptic curve support
+#ifndef X509_BRAINPOOLP512T1_SUPPORT
+   #define X509_BRAINPOOLP512T1_SUPPORT DISABLED
+#elif (X509_BRAINPOOLP512T1_SUPPORT != ENABLED && X509_BRAINPOOLP512T1_SUPPORT != DISABLED)
+   #error X509_BRAINPOOLP512T1_SUPPORT parameter is not valid
 #endif
 
 //FRP256v1 elliptic curve support
@@ -1351,7 +1399,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
    X509SignatureAlgo *signAlgo, const HashAlgo **hashAlgo);
 
 X509KeyType x509GetPublicKeyType(const uint8_t *oid, size_t length);
-const EcCurveInfo *x509GetCurveInfo(const uint8_t *oid, size_t length);
+const EcCurve *x509GetCurve(const uint8_t *oid, size_t length);
 
 //C++ guard
 #ifdef __cplusplus

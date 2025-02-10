@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _DSA_H
@@ -72,6 +72,7 @@ typedef struct
 {
    DsaDomainParameters params; ///<DSA domain parameters
    Mpi x;                      ///<Secret exponent
+   Mpi y;                      ///<Public key value
    int_t slot;                 ///<Private key slot
 } DsaPrivateKey;
 
@@ -112,8 +113,11 @@ void dsaFreePrivateKey(DsaPrivateKey *key);
 void dsaInitSignature(DsaSignature *signature);
 void dsaFreeSignature(DsaSignature *signature);
 
-error_t dsaWriteSignature(const DsaSignature *signature, uint8_t *data, size_t *length);
-error_t dsaReadSignature(const uint8_t *data, size_t length, DsaSignature *signature);
+error_t dsaImportSignature(DsaSignature *signature, const uint8_t *data,
+   size_t length);
+
+error_t dsaExportSignature(const DsaSignature *signature, uint8_t *data,
+   size_t *length);
 
 error_t dsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    const DsaPrivateKey *key, const uint8_t *digest, size_t digestLen,

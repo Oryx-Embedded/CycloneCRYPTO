@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -315,7 +315,7 @@ error_t x509GenerateDsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
    if(!error)
    {
       //Encode DSA signature using ASN.1
-      error = dsaWriteSignature(&dsaSignature, output, written);
+      error = dsaExportSignature(&dsaSignature, output, written);
    }
 
    //Release previously allocated resources
@@ -350,56 +350,46 @@ error_t x509GenerateEcdsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
 {
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
    error_t error;
-   const EcCurveInfo *curveInfo;
-   EcDomainParameters ecParams;
+   const EcCurve *curve;
    EcdsaSignature ecdsaSignature;
    uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
-   //Initialize EC domain parameters
-   ecInitDomainParameters(&ecParams);
    //Initialize ECDSA signature
    ecdsaInitSignature(&ecdsaSignature);
 
-   //Retrieve EC domain parameters
-   curveInfo = x509GetCurveInfo(publicKeyInfo->ecParams.namedCurve.value,
+   //Get the elliptic curve that matches the OID
+   curve = x509GetCurve(publicKeyInfo->ecParams.namedCurve.value,
       publicKeyInfo->ecParams.namedCurve.length);
 
    //Make sure the specified elliptic curve is supported
-   if(curveInfo != NULL)
-   {
-      //Load EC domain parameters
-      error = ecLoadDomainParameters(&ecParams, curveInfo);
-   }
-   else
-   {
-      //Invalid EC domain parameters
-      error = ERROR_BAD_CERTIFICATE;
-   }
-
-   //Check status code
-   if(!error)
+   if(curve != NULL && curve == privateKey->curve)
    {
       //Digest the TBSCertificate structure using the specified hash algorithm
       error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
-   }
 
-   //Check status code
-   if(!error)
-   {
-      //Generate ECDSA signature
-      error = ecdsaGenerateSignature(prngAlgo, prngContext, &ecParams,
-         privateKey, digest, hashAlgo->digestSize, &ecdsaSignature);
-   }
+      //Check status code
+      if(!error)
+      {
+         //Generate ECDSA signature
+         error = ecdsaGenerateSignature(prngAlgo, prngContext, privateKey,
+            digest, hashAlgo->digestSize, &ecdsaSignature);
+      }
 
-   //Check status code
-   if(!error)
+      //Check status code
+      if(!error)
+      {
+         //Encode ECDSA signature using ASN.1
+         error = ecdsaExportSignature(&ecdsaSignature, output, written,
+            ECDSA_SIGNATURE_FORMAT_ASN1);
+      }
+   }
+   else
    {
-      //Encode ECDSA signature using ASN.1
-      error = ecdsaWriteSignature(&ecdsaSignature, output, written);
+      //Invalid elliptic curve
+      error = ERROR_BAD_CERTIFICATE;
    }
 
    //Release previously allocated resources
-   ecFreeDomainParameters(&ecParams);
    ecdsaFreeSignature(&ecdsaSignature);
 
    //Return status code
@@ -429,35 +419,25 @@ error_t x509GenerateSm2Signature(const PrngAlgo *prngAlgo, void *prngContext,
 {
 #if (X509_SM2_SUPPORT == ENABLED && SM2_SUPPORT == ENABLED)
    error_t error;
-   EcDomainParameters ecParams;
    EcdsaSignature sm2Signature;
 
-   //Initialize EC domain parameters
-   ecInitDomainParameters(&ecParams);
    //Initialize SM2 signature
    ecdsaInitSignature(&sm2Signature);
 
-   //Load EC domain parameters
-   error = ecLoadDomainParameters(&ecParams, SM2_CURVE);
-
-   //Check status code
-   if(!error)
-   {
-      //Generate SM2 signature
-      error = sm2GenerateSignature(prngAlgo, prngContext, &ecParams,
-         privateKey, hashAlgo, SM2_DEFAULT_ID, osStrlen(SM2_DEFAULT_ID),
-         tbsData->value, tbsData->length, &sm2Signature);
-   }
+   //Generate SM2 signature
+   error = sm2GenerateSignature(prngAlgo, prngContext, privateKey, hashAlgo,
+      SM2_DEFAULT_ID, osStrlen(SM2_DEFAULT_ID), tbsData->value, tbsData->length,
+      &sm2Signature);
 
    //Check status code
    if(!error)
    {
       //Encode SM2 signature using ASN.1
-      error = ecdsaWriteSignature(&sm2Signature, output, written);
+      error = ecdsaExportSignature(&sm2Signature, output, written,
+         ECDSA_SIGNATURE_FORMAT_ASN1);
    }
 
    //Release previously allocated resources
-   ecFreeDomainParameters(&ecParams);
    ecdsaFreeSignature(&sm2Signature);
 
    //Return status code
@@ -483,30 +463,28 @@ error_t x509GenerateEd25519Signature(const X509OctetString *tbsData,
 {
 #if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
    error_t error;
+   const uint8_t *q;
 
-   //Check the length of the EdDSA private key
-   if(mpiGetByteLength(&privateKey->d) == ED25519_PRIVATE_KEY_LEN)
+   //Check elliptic curve parameters
+   if(privateKey->curve == ED25519_CURVE)
    {
-      uint8_t d[ED25519_PRIVATE_KEY_LEN];
+      //The public key is optional
+      q = (privateKey->q.curve != NULL) ? privateKey->q.q : NULL;
 
-      //Retrieve private key
-      error = mpiExport(&privateKey->d, d, ED25519_PRIVATE_KEY_LEN,
-         MPI_FORMAT_LITTLE_ENDIAN);
+      //Generate Ed25519 signature (PureEdDSA mode)
+      error = ed25519GenerateSignature(privateKey->d, q, tbsData->value,
+         tbsData->length, NULL, 0, 0, output);
 
       //Check status code
       if(!error)
       {
-         //Generate Ed25519 signature (PureEdDSA mode)
-         error = ed25519GenerateSignature(d, NULL, tbsData->value,
-            tbsData->length, NULL, 0, 0, output);
+         //Length of the resulting EdDSA signature
+         *written = ED25519_SIGNATURE_LEN;
       }
-
-      //Length of the resulting EdDSA signature
-      *written = ED25519_SIGNATURE_LEN;
    }
    else
    {
-      //The length of the EdDSA private key is not valid
+      //The private key is not valid
       error = ERROR_INVALID_KEY;
    }
 
@@ -533,30 +511,28 @@ error_t x509GenerateEd448Signature(const X509OctetString *tbsData,
 {
 #if (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED)
    error_t error;
+   const uint8_t *q;
 
-   //Check the length of the EdDSA private key
-   if(mpiGetByteLength(&privateKey->d) == ED448_PRIVATE_KEY_LEN)
+   //Check elliptic curve parameters
+   if(privateKey->curve == ED448_CURVE)
    {
-      uint8_t d[ED448_PRIVATE_KEY_LEN];
+      //The public key is optional
+      q = (privateKey->q.curve != NULL) ? privateKey->q.q : NULL;
 
-      //Retrieve private key
-      error = mpiExport(&privateKey->d, d, ED448_PRIVATE_KEY_LEN,
-         MPI_FORMAT_LITTLE_ENDIAN);
+      //Generate Ed448 signature (PureEdDSA mode)
+      error = ed448GenerateSignature(privateKey->d, q, tbsData->value,
+         tbsData->length, NULL, 0, 0, output);
 
       //Check status code
       if(!error)
       {
-         //Generate Ed448 signature (PureEdDSA mode)
-         error = ed448GenerateSignature(d, NULL, tbsData->value,
-            tbsData->length, NULL, 0, 0, output);
+         //Length of the resulting EdDSA signature
+         *written = ED448_SIGNATURE_LEN;
       }
-
-      //Length of the resulting EdDSA signature
-      *written = ED448_SIGNATURE_LEN;
    }
    else
    {
-      //The length of the EdDSA private key is not valid
+      //The private key is not valid
       error = ERROR_INVALID_KEY;
    }
 

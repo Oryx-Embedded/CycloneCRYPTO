@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -46,25 +46,25 @@
 //IAR EWARM compiler?
 #if defined(__ICCARM__)
 
-//DCP buffer
-#pragma data_alignment = 16
-#pragma location = MIMXRT1060_DCP_RAM_SECTION
-static uint8_t dcpBuffer[MIMXRT1060_DCP_BUFFER_SIZE];
-
 //DCP hash context
 #pragma data_alignment = 16
 #pragma location = MIMXRT1060_DCP_RAM_SECTION
 static dcp_hash_ctx_t dcpHashContext;
 
+//DCP buffer
+#pragma data_alignment = 16
+#pragma location = MIMXRT1060_DCP_RAM_SECTION
+static uint8_t dcpBuffer[MIMXRT1060_DCP_BUFFER_SIZE];
+
 //ARM or GCC compiler?
 #else
 
-//DCP buffer
-static uint8_t dcpBuffer[MIMXRT1060_DCP_BUFFER_SIZE]
-   __attribute__((aligned(16), __section__(MIMXRT1060_DCP_RAM_SECTION)));
-
 //DCP hash context
 static dcp_hash_ctx_t dcpHashContext
+   __attribute__((aligned(16), __section__(MIMXRT1060_DCP_RAM_SECTION)));
+
+//DCP buffer
+static uint8_t dcpBuffer[MIMXRT1060_DCP_BUFFER_SIZE]
    __attribute__((aligned(16), __section__(MIMXRT1060_DCP_RAM_SECTION)));
 
 #endif
@@ -205,7 +205,7 @@ void sha1Update(Sha1Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SHA-1 message digest
  * @param[in] context Pointer to the SHA-1 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha1Final(Sha1Context *context, uint8_t *digest)
@@ -221,16 +221,10 @@ void sha1Final(Sha1Context *context, uint8_t *digest)
    //Restore hash context
    dcpHashContext = context->dcpContext;
    //Finalize hash computation
-   DCP_HASH_Finish(DCP, &dcpHashContext, context->digest, &n);
+   DCP_HASH_Finish(DCP, &dcpHashContext, digest, &n);
 
    //Release exclusive access to the DCP module
    osReleaseMutex(&mimxrt1060CryptoMutex);
-
-   //Copy the resulting digest
-   if(digest != NULL)
-   {
-      osMemcpy(digest, context->digest, SHA1_DIGEST_SIZE);
-   }
 }
 
 #endif
@@ -370,7 +364,7 @@ void sha256Update(Sha256Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SHA-256 message digest
  * @param[in] context Pointer to the SHA-256 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha256Final(Sha256Context *context, uint8_t *digest)
@@ -386,16 +380,10 @@ void sha256Final(Sha256Context *context, uint8_t *digest)
    //Restore hash context
    dcpHashContext = context->dcpContext;
    //Finalize hash computation
-   DCP_HASH_Finish(DCP, &dcpHashContext, context->digest, &n);
+   DCP_HASH_Finish(DCP, &dcpHashContext, digest, &n);
 
    //Release exclusive access to the DCP module
    osReleaseMutex(&mimxrt1060CryptoMutex);
-
-   //Copy the resulting digest
-   if(digest != NULL)
-   {
-      osMemcpy(digest, context->digest, SHA256_DIGEST_SIZE);
-   }
 }
 
 #endif

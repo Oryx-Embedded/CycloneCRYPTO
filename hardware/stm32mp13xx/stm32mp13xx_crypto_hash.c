@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -436,7 +436,6 @@ void sha512ProcessBlock(Sha512Context *context)
 #endif
 #if (KECCAK_SUPPORT == ENABLED)
 
-
 /**
  * @brief Update state array
  * @param[in] data Pointer to the input buffer
@@ -450,6 +449,7 @@ void keccakProcessData(const uint8_t *data, size_t length, size_t blockSize,
 {
    uint_t i;
    uint32_t algo;
+   uint32_t temp;
 
    //Check block size
    if(blockSize == 72)
@@ -544,8 +544,8 @@ void keccakProcessData(const uint8_t *data, size_t length, size_t blockSize,
    //Save state array
    for(i = 0; i < 50; i++)
    {
-      a[i] = HASH1->CSR[6 + i];
-      a[i] = BETOH32(a[i]);
+      temp = HASH1->CSR[6 + i];
+      a[i] = BETOH32(temp);
    }
 
    //Release exclusive access to the HASH module

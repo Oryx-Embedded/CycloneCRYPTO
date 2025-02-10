@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -77,12 +77,12 @@ error_t teaInit(TeaContext *context, const uint8_t *key, size_t keyLen)
       return ERROR_INVALID_KEY_LENGTH;
 
    //Copy the 128-bit key
-   context->k[0] = LOAD32BE(key + 0);
+   context->k[0] = LOAD32BE(key);
    context->k[1] = LOAD32BE(key + 4);
    context->k[2] = LOAD32BE(key + 8);
    context->k[3] = LOAD32BE(key + 12);
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -106,7 +106,7 @@ void teaEncryptBlock(TeaContext *context, const uint8_t *input,
    sum = 0;
 
    //The 8 bytes of plaintext are split into 2 words
-   y = LOAD32BE(input + 0);
+   y = LOAD32BE(input);
    z = LOAD32BE(input + 4);
 
    //Apply 32 rounds
@@ -118,7 +118,7 @@ void teaEncryptBlock(TeaContext *context, const uint8_t *input,
    }
 
    //The 2 words of ciphertext are then written as 8 bytes
-   STORE32BE(y, output + 0);
+   STORE32BE(y, output);
    STORE32BE(z, output + 4);
 }
 
@@ -142,7 +142,7 @@ void teaDecryptBlock(TeaContext *context, const uint8_t *input,
    sum = (DELTA & 0x07FFFFFF) << 5;
 
    //The 8 bytes of ciphertext are split into 2 words
-   y = LOAD32BE(input + 0);
+   y = LOAD32BE(input);
    z = LOAD32BE(input + 4);
 
    //Apply 32 rounds
@@ -154,7 +154,7 @@ void teaDecryptBlock(TeaContext *context, const uint8_t *input,
    }
 
    //The 2 words of plaintext are then written as 8 bytes
-   STORE32BE(y, output + 0);
+   STORE32BE(y, output);
    STORE32BE(z, output + 4);
 }
 

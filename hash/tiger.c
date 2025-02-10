@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -485,7 +485,7 @@ void tigerUpdate(TigerContext *context, const void *data, size_t length)
 /**
  * @brief Finish the Tiger message digest
  * @param[in] context Pointer to the Tiger context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void tigerFinal(TigerContext *context, uint8_t *digest)
@@ -511,21 +511,19 @@ void tigerFinal(TigerContext *context, uint8_t *digest)
    tigerUpdate(context, padding, paddingSize);
 
    //Append the length of the original message
-   context->x[7] = htole64(totalSize);
+   for(i = 0; i < 8; i++)
+   {
+      context->buffer[56 + i] = totalSize & 0xFF;
+      totalSize >>= 8;
+   }
 
    //Calculate the message digest
    tigerProcessBlock(context);
 
-   //Convert from host byte order to little-endian byte order
-   for(i = 0; i < 3; i++)
-   {
-      context->h[i] = htole64(context->h[i]);
-   }
-
    //Copy the resulting digest
-   if(digest != NULL)
+   for(i = 0; i < (TIGER_DIGEST_SIZE / 8); i++)
    {
-      osMemcpy(digest, context->digest, TIGER_DIGEST_SIZE);
+      STORE64LE(context->h[i], digest + i * 8);
    }
 }
 
@@ -550,7 +548,7 @@ void tigerProcessBlock(TigerContext *context)
    //Convert from little-endian byte order to host byte order
    for(i = 0; i < 8; i++)
    {
-      x[i] = letoh64(x[i]);
+      x[i] = LOAD64LE(context->buffer + i * 8);
    }
 
    //The computation consists of three passes

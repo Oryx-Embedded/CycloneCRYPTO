@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -31,7 +31,7 @@
  * Refer to RFC 5794 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -66,79 +66,86 @@
 //Rotate left operation
 #define ROL128(b, a, n) \
 { \
-   (b)[0] = ((a)[((n) / 32 + 0) % 4] << ((n) % 32)) | ((a)[((n) / 32 + 1) % 4] >> (32 - ((n) % 32))); \
-   (b)[1] = ((a)[((n) / 32 + 1) % 4] << ((n) % 32)) | ((a)[((n) / 32 + 2) % 4] >> (32 - ((n) % 32))); \
-   (b)[2] = ((a)[((n) / 32 + 2) % 4] << ((n) % 32)) | ((a)[((n) / 32 + 3) % 4] >> (32 - ((n) % 32))); \
-   (b)[3] = ((a)[((n) / 32 + 3) % 4] << ((n) % 32)) | ((a)[((n) / 32 + 0) % 4] >> (32 - ((n) % 32))); \
+   (b)[0] = ((a)[((n) / 32 + 0) % 4] << ((n) % 32)) | \
+      ((a)[((n) / 32 + 1) % 4] >> (32 - ((n) % 32))); \
+   (b)[1] = ((a)[((n) / 32 + 1) % 4] << ((n) % 32)) | \
+      ((a)[((n) / 32 + 2) % 4] >> (32 - ((n) % 32))); \
+   (b)[2] = ((a)[((n) / 32 + 2) % 4] << ((n) % 32)) | \
+      ((a)[((n) / 32 + 3) % 4] >> (32 - ((n) % 32))); \
+   (b)[3] = ((a)[((n) / 32 + 3) % 4] << ((n) % 32)) | \
+      ((a)[((n) / 32 + 0) % 4] >> (32 - ((n) % 32))); \
 }
+
+//Byte access
+#define X(n) ((x[(n) / 4] >> ((3 - ((n) % 4)) * 8)) & 0xFF)
 
 //Substitution layer SL1
 #define SL1(b, a) \
 { \
-   uint8_t *x = (uint8_t *) (a); \
-   uint8_t *y = (uint8_t *) (b); \
-   y[0] = sb1[x[0]]; \
-   y[1] = sb2[x[1]]; \
-   y[2] = sb3[x[2]]; \
-   y[3] = sb4[x[3]]; \
-   y[4] = sb1[x[4]]; \
-   y[5] = sb2[x[5]]; \
-   y[6] = sb3[x[6]]; \
-   y[7] = sb4[x[7]]; \
-   y[8] = sb1[x[8]]; \
-   y[9] = sb2[x[9]]; \
-   y[10] = sb3[x[10]]; \
-   y[11] = sb4[x[11]]; \
-   y[12] = sb1[x[12]]; \
-   y[13] = sb2[x[13]]; \
-   y[14] = sb3[x[14]]; \
-   y[15] = sb4[x[15]]; \
+   uint32_t *x = (uint32_t *) (a); \
+   uint32_t *y = (uint32_t *) (b); \
+   y[0] = (uint32_t) sb1[X(0)] << 24; \
+   y[0] |= (uint32_t) sb2[X(1)] << 16; \
+   y[0] |= (uint32_t) sb3[X(2)] << 8; \
+   y[0] |= (uint32_t) sb4[X(3)]; \
+   y[1] = (uint32_t) sb1[X(4)] << 24; \
+   y[1] |= (uint32_t) sb2[X(5)] << 16; \
+   y[1] |= (uint32_t) sb3[X(6)] << 8; \
+   y[1] |= (uint32_t) sb4[X(7)]; \
+   y[2] = (uint32_t) sb1[X(8)] << 24; \
+   y[2] |= (uint32_t) sb2[X(9)] << 16; \
+   y[2] |= (uint32_t) sb3[X(10)] << 8; \
+   y[2] |= (uint32_t) sb4[X(11)]; \
+   y[3] = (uint32_t) sb1[X(12)] << 24; \
+   y[3] |= (uint32_t) sb2[X(13)] << 16; \
+   y[3] |= (uint32_t) sb3[X(14)] << 8; \
+   y[3] |= (uint32_t) sb4[X(15)]; \
 }
 
 //Substitution layer SL2
 #define SL2(b, a) \
 { \
-   uint8_t *x = (uint8_t *) (a); \
-   uint8_t *y = (uint8_t *) (b); \
-   y[0] = sb3[x[0]]; \
-   y[1] = sb4[x[1]]; \
-   y[2] = sb1[x[2]]; \
-   y[3] = sb2[x[3]]; \
-   y[4] = sb3[x[4]]; \
-   y[5] = sb4[x[5]]; \
-   y[6] = sb1[x[6]]; \
-   y[7] = sb2[x[7]]; \
-   y[8] = sb3[x[8]]; \
-   y[9] = sb4[x[9]]; \
-   y[10] = sb1[x[10]]; \
-   y[11] = sb2[x[11]]; \
-   y[12] = sb3[x[12]]; \
-   y[13] = sb4[x[13]]; \
-   y[14] = sb1[x[14]]; \
-   y[15] = sb2[x[15]]; \
+   uint32_t *x = (uint32_t *) (a); \
+   uint32_t *y = (uint32_t *) (b); \
+   y[0] = (uint32_t) sb3[X(0)] << 24; \
+   y[0] |= (uint32_t) sb4[X(1)] << 16; \
+   y[0] |= (uint32_t) sb1[X(2)] << 8; \
+   y[0] |= (uint32_t) sb2[X(3)]; \
+   y[1] = (uint32_t) sb3[X(4)] << 24; \
+   y[1] |= (uint32_t) sb4[X(5)] << 16; \
+   y[1] |= (uint32_t) sb1[X(6)] << 8; \
+   y[1] |= (uint32_t) sb2[X(7)]; \
+   y[2] = (uint32_t) sb3[X(8)] << 24; \
+   y[2] |= (uint32_t) sb4[X(9)] << 16; \
+   y[2] |= (uint32_t) sb1[X(10)] << 8; \
+   y[2] |= (uint32_t) sb2[X(11)]; \
+   y[3] = (uint32_t) sb3[X(12)] << 24; \
+   y[3] |= (uint32_t) sb4[X(13)] << 16; \
+   y[3] |= (uint32_t) sb1[X(14)] << 8; \
+   y[3] |= (uint32_t) sb2[X(15)]; \
 }
 
 //Diffusion layer
 #define A(b, a) \
 { \
-   uint8_t *x = (uint8_t *) (a); \
-   uint8_t *y = (uint8_t *) (b); \
-   y[0] = x[3] ^ x[4] ^ x[6] ^ x[8] ^ x[9] ^ x[13] ^ x[14]; \
-   y[1] = x[2] ^ x[5] ^ x[7] ^ x[8] ^ x[9] ^ x[12] ^ x[15]; \
-   y[2] = x[1] ^ x[4] ^ x[6] ^ x[10] ^ x[11] ^ x[12] ^ x[15]; \
-   y[3] = x[0] ^ x[5] ^ x[7] ^ x[10] ^ x[11] ^ x[13] ^ x[14]; \
-   y[4] = x[0] ^ x[2] ^ x[5] ^ x[8] ^ x[11] ^ x[14] ^ x[15]; \
-   y[5] = x[1] ^ x[3] ^ x[4] ^ x[9] ^ x[10] ^ x[14] ^ x[15]; \
-   y[6] = x[0] ^ x[2] ^ x[7] ^ x[9] ^ x[10] ^ x[12] ^ x[13]; \
-   y[7] = x[1] ^ x[3] ^ x[6] ^ x[8] ^ x[11] ^ x[12] ^ x[13]; \
-   y[8] = x[0] ^ x[1] ^ x[4] ^ x[7] ^ x[10] ^ x[13] ^ x[15]; \
-   y[9] = x[0] ^ x[1] ^ x[5] ^ x[6] ^ x[11] ^ x[12] ^ x[14]; \
-   y[10] = x[2] ^ x[3] ^ x[5] ^ x[6] ^ x[8] ^ x[13] ^ x[15]; \
-   y[11] = x[2] ^ x[3] ^ x[4] ^ x[7] ^ x[9] ^ x[12] ^ x[14]; \
-   y[12] = x[1] ^ x[2] ^ x[6] ^ x[7] ^ x[9] ^ x[11] ^ x[12]; \
-   y[13] = x[0] ^ x[3] ^ x[6] ^ x[7] ^ x[8] ^ x[10] ^ x[13]; \
-   y[14] = x[0] ^ x[3] ^ x[4] ^ x[5] ^ x[9] ^ x[11] ^ x[14]; \
-   y[15] = x[1] ^ x[2] ^ x[4] ^ x[5] ^ x[8] ^ x[10] ^ x[15]; \
+   uint32_t *x = (uint32_t *) (a); \
+   uint32_t *y = (uint32_t *) (b); \
+   y[0] = (X(3) ^ X(4) ^ X(6) ^ X(8) ^ X(9) ^ X(13) ^ X(14)) << 24; \
+   y[0] |= (X(2) ^ X(5) ^ X(7) ^ X(8) ^ X(9) ^ X(12) ^ X(15)) << 16; \
+   y[0] |= (X(1) ^ X(4) ^ X(6) ^ X(10) ^ X(11) ^ X(12) ^ X(15)) << 8; \
+   y[0] |= (X(0) ^ X(5) ^ X(7) ^ X(10) ^ X(11) ^ X(13) ^ X(14)); \
+   y[1] = (X(0) ^ X(2) ^ X(5) ^ X(8) ^ X(11) ^ X(14) ^ X(15)) << 24; \
+   y[1] |= (X(1) ^ X(3) ^ X(4) ^ X(9) ^ X(10) ^ X(14) ^ X(15)) << 16; \
+   y[1] |= (X(0) ^ X(2) ^ X(7) ^ X(9) ^ X(10) ^ X(12) ^ X(13)) << 8; \
+   y[1] |= (X(1) ^ X(3) ^ X(6) ^ X(8) ^ X(11) ^ X(12) ^ X(13)); \
+   y[2] = (X(0) ^ X(1) ^ X(4) ^ X(7) ^ X(10) ^ X(13) ^ X(15)) << 24; \
+   y[2] |= (X(0) ^ X(1) ^ X(5) ^ X(6) ^ X(11) ^ X(12) ^ X(14)) << 16; \
+   y[2] |= (X(2) ^ X(3) ^ X(5) ^ X(6) ^ X(8) ^ X(13) ^ X(15)) << 8; \
+   y[2] |= (X(2) ^ X(3) ^ X(4) ^ X(7) ^ X(9) ^ X(12) ^ X(14)); \
+   y[3] = (X(1) ^ X(2) ^ X(6) ^ X(7) ^ X(9) ^ X(11) ^ X(12)) << 24; \
+   y[3] |= (X(0) ^ X(3) ^ X(6) ^ X(7) ^ X(8) ^ X(10) ^ X(13)) << 16; \
+   y[3] |= (X(0) ^ X(3) ^ X(4) ^ X(5) ^ X(9) ^ X(11) ^ X(14)) << 8; \
+   y[3] |= (X(1) ^ X(2) ^ X(4) ^ X(5) ^ X(8) ^ X(10) ^ X(15)); \
 }
 
 //S-box 1
@@ -228,9 +235,8 @@ static const uint8_t sb4[256] =
 //Key scheduling constants
 static const uint32_t c[12] =
 {
-   BETOH32(0x517CC1B7), BETOH32(0x27220A94), BETOH32(0xFE13ABE8), BETOH32(0xFA9A6EE0),
-   BETOH32(0x6DB14ACC), BETOH32(0x9E21C820), BETOH32(0xFF28B1D5), BETOH32(0xEF5DE2B0),
-   BETOH32(0xDB92371D), BETOH32(0x2126E970), BETOH32(0x03249775), BETOH32(0x04E8C90E)
+   0x517CC1B7, 0x27220A94, 0xFE13ABE8, 0xFA9A6EE0, 0x6DB14ACC, 0x9E21C820,
+   0xFF28B1D5, 0xEF5DE2B0, 0xDB92371D, 0x2126E970, 0x03249775, 0x04E8C90E
 };
 
 //ARIA128-ECB OID (1.2.410.200046.1.1.1)
@@ -393,11 +399,23 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
       return ERROR_INVALID_KEY_LENGTH;
    }
 
-   //Compute 128-bit values KL and KR
-   osMemset(w, 0, sizeof(w));
-   osMemcpy(w, key, keyLen);
+   //Determine the number of 32-bit words in the key
+   keyLen /= 4;
 
-   //Save KR...
+   //Compute 128-bit values KL and KR
+   for(i = 0; i < 16; i++)
+   {
+      if(i < keyLen)
+      {
+         w[i] = LOAD32BE(key + i * 4);
+      }
+      else
+      {
+         w[i] = 0;
+      }
+   }
+
+   //Save KR
    MOV128(w + 8, w + 4);
 
    //Compute intermediate values W0, W1, W2, and W3
@@ -412,12 +430,6 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
    MOV128(w + 12, w + 8);
    OF(w + 12, ck3);
    XOR128(w + 12, w + 4);
-
-   //Convert from big-endian byte order to host byte order
-   for(i = 0; i < 16; i++)
-   {
-      w[i] = betoh32(w[i]);
-   }
 
    //Point to the encryption round keys
    ek = context->ek;
@@ -458,12 +470,6 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
    ROL128(ek + 64, w + 4, 19);
    XOR128(ek + 64, w + 0);
 
-   //Convert from host byte order to big-endian byte order
-   for(i = 0; i < 68; i++)
-   {
-      ek[i] = htobe32(ek[i]);
-   }
-
    //Decryption round keys are derived from the encryption round keys
    dk = context->dk;
    //Compute dk1
@@ -478,7 +484,7 @@ error_t ariaInit(AriaContext *context, const uint8_t *key, size_t keyLen)
    //Compute dk(n + 1)
    MOV128(dk + i * 4, ek + 0);
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -498,7 +504,10 @@ void ariaEncryptBlock(AriaContext *context, const uint8_t *input,
    uint32_t q[4];
 
    //Copy the plaintext to the buffer
-   osMemcpy(p, input, ARIA_BLOCK_SIZE);
+   p[0] = LOAD32BE(input);
+   p[1] = LOAD32BE(input + 4);
+   p[2] = LOAD32BE(input + 8);
+   p[3] = LOAD32BE(input + 12);
 
    //Point to the encryption round keys
    ek = context->ek;
@@ -546,7 +555,10 @@ void ariaEncryptBlock(AriaContext *context, const uint8_t *input,
    }
 
    //Copy the resulting ciphertext from the buffer
-   osMemcpy(output, q, ARIA_BLOCK_SIZE);
+   STORE32BE(q[0], output);
+   STORE32BE(q[1], output + 4);
+   STORE32BE(q[2], output + 8);
+   STORE32BE(q[3], output + 12);
 }
 
 
@@ -565,7 +577,10 @@ void ariaDecryptBlock(AriaContext *context, const uint8_t *input,
    uint32_t q[4];
 
    //Copy the ciphertext to the buffer
-   osMemcpy(p, input, ARIA_BLOCK_SIZE);
+   p[0] = LOAD32BE(input);
+   p[1] = LOAD32BE(input + 4);
+   p[2] = LOAD32BE(input + 8);
+   p[3] = LOAD32BE(input + 12);
 
    //Point to the decryption round keys
    dk = context->dk;
@@ -613,7 +628,10 @@ void ariaDecryptBlock(AriaContext *context, const uint8_t *input,
    }
 
    //The resulting value is the plaintext
-   osMemcpy(output, q, ARIA_BLOCK_SIZE);
+   STORE32BE(q[0], output);
+   STORE32BE(q[1], output + 4);
+   STORE32BE(q[2], output + 8);
+   STORE32BE(q[3], output + 12);
 }
 
 

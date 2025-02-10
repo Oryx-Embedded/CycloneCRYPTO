@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -1460,6 +1460,8 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
    size_t keySize;
    caam_handle_t caamHandle;
    AesContext *aesContext;
+   uint8_t *data;
+   uint64_t tag[2];
 
    //Make sure the GCM context is valid
    if(context == NULL)
@@ -1503,15 +1505,38 @@ error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
       //Set CAAM job ring
       caamHandle.jobRing = kCAAM_JobRing0;
 
+      //Force alignment to 64-bit boundaries
+      data = (uint8_t *) (((uint32_t) c + 7U) & ~7U);
+
+      //Copy the plaintext
+      if(p != data)
+      {
+         osMemmove(data, p, length);
+      }
+
       //Acquire exclusive access to the CAAM module
       osAcquireMutex(&mimxrt1170CryptoMutex);
 
       //Perform AES-GCM encryption
-      status = CAAM_AES_EncryptTagGcm(CAAM, &caamHandle, p, c, length, iv,
-         ivLen, a, aLen, (const uint8_t *) aesContext->ek, keySize, t, tLen);
+      status = CAAM_AES_EncryptTagGcm(CAAM, &caamHandle, data, data, length,
+         iv, ivLen, a, aLen, (const uint8_t *) aesContext->ek, keySize,
+         (uint8_t *) tag, tLen);
 
       //Release exclusive access to the CAAM module
       osReleaseMutex(&mimxrt1170CryptoMutex);
+   }
+
+   //Check status code
+   if(status == kStatus_Success)
+   {
+      //Copy the resulting ciphertext
+      if(c != data)
+      {
+         osMemmove(c, data, length);
+      }
+
+      //Copy the resulting tag
+      osMemcpy(t, tag, tLen);
    }
 
    //Return status code
@@ -1542,6 +1567,8 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    size_t keySize;
    caam_handle_t caamHandle;
    AesContext *aesContext;
+   uint8_t *data;
+   uint64_t tag[2];
 
    //Make sure the GCM context is valid
    if(context == NULL)
@@ -1585,15 +1612,38 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
       //Set CAAM job ring
       caamHandle.jobRing = kCAAM_JobRing0;
 
+      //Copy the tag
+      osMemmove(tag, t, tLen);
+
+      //Force alignment to 64-bit boundaries
+      data = (uint8_t *) (((uint32_t) p + 7U) & ~7U);
+
+      //Copy the ciphertext
+      if(c != data)
+      {
+         osMemmove(data, c, length);
+      }
+
       //Acquire exclusive access to the CAAM module
       osAcquireMutex(&mimxrt1170CryptoMutex);
 
       //Perform AES-GCM decryption
-      status = CAAM_AES_DecryptTagGcm(CAAM, &caamHandle, c, p, length, iv,
-         ivLen, a, aLen, (const uint8_t *) aesContext->ek, keySize, t, tLen);
+      status = CAAM_AES_DecryptTagGcm(CAAM, &caamHandle, data, data, length,
+         iv, ivLen, a, aLen, (const uint8_t *) aesContext->ek, keySize,
+         (uint8_t *) tag, tLen);
 
       //Release exclusive access to the CAAM module
       osReleaseMutex(&mimxrt1170CryptoMutex);
+   }
+
+   //Check status code
+   if(status == kStatus_Success)
+   {
+      //Copy the resulting plaintext
+      if(p != data)
+      {
+         osMemmove(p, data, length);
+      }
    }
 
    //Return status code

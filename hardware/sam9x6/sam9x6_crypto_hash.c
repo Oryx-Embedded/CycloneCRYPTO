@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -291,11 +291,12 @@ void sha1Update(Sha1Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SHA-1 message digest
  * @param[in] context Pointer to the SHA-1 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha1Final(Sha1Context *context, uint8_t *digest)
 {
+   uint_t i;
    size_t paddingSize;
    uint64_t totalSize;
 
@@ -316,16 +317,19 @@ void sha1Final(Sha1Context *context, uint8_t *digest)
    sha1Update(context, padding, paddingSize);
 
    //Append the length of the original message
-   context->w[14] = htobe32((uint32_t) (totalSize >> 32));
-   context->w[15] = htobe32((uint32_t) totalSize);
+   for(i = 0; i < 8; i++)
+   {
+      context->buffer[63 - i] = totalSize & 0xFF;
+      totalSize >>= 8;
+   }
 
    //Calculate the message digest
    hashProcessData(SHA_MR_ALGO_SHA1, context->buffer, 64, context->h);
 
    //Copy the resulting digest
-   if(digest != NULL)
+   for(i = 0; i < (SHA1_DIGEST_SIZE / 4); i++)
    {
-      osMemcpy(digest, context->digest, SHA1_DIGEST_SIZE);
+      STORE32LE(context->h[i], digest + i * 4);
    }
 }
 
@@ -338,8 +342,13 @@ void sha1Final(Sha1Context *context, uint8_t *digest)
 
 void sha1FinalRaw(Sha1Context *context, uint8_t *digest)
 {
+   uint_t i;
+
    //Copy the resulting digest
-   osMemcpy(digest, context->digest, SHA1_DIGEST_SIZE);
+   for(i = 0; i < (SHA1_DIGEST_SIZE / 4); i++)
+   {
+      STORE32LE(context->h[i], digest + i * 4);
+   }
 }
 
 #endif
@@ -459,11 +468,12 @@ void sha256Update(Sha256Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SHA-256 message digest
  * @param[in] context Pointer to the SHA-256 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha256Final(Sha256Context *context, uint8_t *digest)
 {
+   uint_t i;
    size_t paddingSize;
    uint64_t totalSize;
 
@@ -484,16 +494,19 @@ void sha256Final(Sha256Context *context, uint8_t *digest)
    sha256Update(context, padding, paddingSize);
 
    //Append the length of the original message
-   context->w[14] = htobe32((uint32_t) (totalSize >> 32));
-   context->w[15] = htobe32((uint32_t) totalSize);
+   for(i = 0; i < 8; i++)
+   {
+      context->buffer[63 - i] = totalSize & 0xFF;
+      totalSize >>= 8;
+   }
 
    //Calculate the message digest
    hashProcessData(SHA_MR_ALGO_SHA256, context->buffer, 64, context->h);
 
    //Copy the resulting digest
-   if(digest != NULL)
+   for(i = 0; i < (SHA256_DIGEST_SIZE / 4); i++)
    {
-      osMemcpy(digest, context->digest, SHA256_DIGEST_SIZE);
+      STORE32LE(context->h[i], digest + i * 4);
    }
 }
 
@@ -506,8 +519,13 @@ void sha256Final(Sha256Context *context, uint8_t *digest)
 
 void sha256FinalRaw(Sha256Context *context, uint8_t *digest)
 {
+   uint_t i;
+
    //Copy the resulting digest
-   osMemcpy(digest, context->digest, SHA256_DIGEST_SIZE);
+   for(i = 0; i < (SHA256_DIGEST_SIZE / 4); i++)
+   {
+      STORE32LE(context->h[i], digest + i * 4);
+   }
 }
 
 #endif
@@ -545,8 +563,13 @@ void sha384Init(Sha384Context *context)
 
 void sha384FinalRaw(Sha384Context *context, uint8_t *digest)
 {
+   uint_t i;
+
    //Copy the resulting digest
-   osMemcpy(digest, context->digest, SHA384_DIGEST_SIZE);
+   for(i = 0; i < (SHA384_DIGEST_SIZE / 8); i++)
+   {
+      STORE64LE(context->h[i], digest + i * 8);
+   }
 }
 
 #endif
@@ -640,11 +663,12 @@ void sha512Update(Sha512Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SHA-512 message digest
  * @param[in] context Pointer to the SHA-512 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha512Final(Sha512Context *context, uint8_t *digest)
 {
+   uint_t i;
    size_t paddingSize;
    uint64_t totalSize;
 
@@ -665,17 +689,20 @@ void sha512Final(Sha512Context *context, uint8_t *digest)
    sha512Update(context, padding, paddingSize);
 
    //Append the length of the original message
-   context->w[14] = 0;
-   context->w[15] = htobe64(totalSize);
+   for(i = 0; i < 16; i++)
+   {
+      context->buffer[127 - i] = totalSize & 0xFF;
+      totalSize >>= 8;
+   }
 
    //Calculate the message digest
    hashProcessData(SHA_MR_ALGO_SHA512, context->buffer, 128,
       (uint32_t *) context->h);
 
    //Copy the resulting digest
-   if(digest != NULL)
+   for(i = 0; i < (SHA512_DIGEST_SIZE / 8); i++)
    {
-      osMemcpy(digest, context->digest, SHA512_DIGEST_SIZE);
+      STORE64LE(context->h[i], digest + i * 8);
    }
 }
 

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -31,7 +31,7 @@
  * paper "Speeding up Serpent"
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -420,7 +420,7 @@ error_t serpentInit(SerpentContext *context, const uint8_t *key, size_t keyLen)
    //Copy the original key
    for(i = 0; i < keyLen; i++)
    {
-      p[i] = LOAD32LE(key + 4 * i);
+      p[i] = LOAD32LE(key + i * 4);
    }
 
    //Short keys with less than 256 bits are mapped to full-length keys of 256
@@ -480,7 +480,7 @@ error_t serpentInit(SerpentContext *context, const uint8_t *key, size_t keyLen)
    //Calculate the last round key
    SBOX3(w[128], w[129], w[130], w[131]);
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -502,7 +502,7 @@ void serpentEncryptBlock(SerpentContext *context, const uint8_t *input,
    uint32_t r3;
 
    //The 16 bytes of plaintext are split into 4 words
-   r0 = LOAD32LE(input + 0);
+   r0 = LOAD32LE(input);
    r1 = LOAD32LE(input + 4);
    r2 = LOAD32LE(input + 8);
    r3 = LOAD32LE(input + 12);
@@ -526,7 +526,7 @@ void serpentEncryptBlock(SerpentContext *context, const uint8_t *input,
    XOR(r0, r1, r2, r3, context->k[32]);
 
    //The 4 words of ciphertext are then written as 16 bytes
-   STORE32LE(r0, output + 0);
+   STORE32LE(r0, output);
    STORE32LE(r1, output + 4);
    STORE32LE(r2, output + 8);
    STORE32LE(r3, output + 12);
@@ -550,7 +550,7 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    uint32_t r3;
 
    //The 16 bytes of ciphertext are split into 4 words
-   r0 = LOAD32LE(input + 0);
+   r0 = LOAD32LE(input);
    r1 = LOAD32LE(input + 4);
    r2 = LOAD32LE(input + 8);
    r3 = LOAD32LE(input + 12);
@@ -576,7 +576,7 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
    }
 
    //The 4 words of plaintext are then written as 16 bytes
-   STORE32LE(r0, output + 0);
+   STORE32LE(r0, output);
    STORE32LE(r1, output + 4);
    STORE32LE(r2, output + 8);
    STORE32LE(r3, output + 12);

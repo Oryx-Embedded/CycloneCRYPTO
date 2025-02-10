@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _ASN1_H
@@ -122,6 +122,9 @@ error_t asn1ReadInt32(const uint8_t *data, size_t length, Asn1Tag *tag,
    int32_t *value);
 
 error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data,
+   size_t *written);
+
+error_t asn1WriteHeader(Asn1Tag *tag, bool_t reverse, uint8_t *data,
    size_t *written);
 
 error_t asn1WriteInt32(int32_t value, bool_t reverse, uint8_t *data,

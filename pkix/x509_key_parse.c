@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -37,7 +37,7 @@
 #include "encoding/asn1.h"
 #include "encoding/oid.h"
 #include "ecc/eddsa.h"
-#include "hash/sha1.h"
+#include "ecc/ec_misc.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -128,8 +128,8 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
 
 #if (RSA_SUPPORT == ENABLED)
    //RSA or RSA-PSS algorithm identifier?
-   if(!oidComp(oid, oidLen, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)) ||
-      !oidComp(oid, oidLen, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
+   if(OID_COMP(oid, oidLen, RSA_ENCRYPTION_OID) == 0 ||
+      OID_COMP(oid, oidLen, RSASSA_PSS_OID) == 0)
    {
       //Read RSAPublicKey structure
       error = x509ParseRsaPublicKey(data, length, &publicKeyInfo->rsaPublicKey);
@@ -138,7 +138,7 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
 #endif
 #if (DSA_SUPPORT == ENABLED)
    //DSA algorithm identifier?
-   if(!oidComp(oid, oidLen, DSA_OID, sizeof(DSA_OID)))
+   if(OID_COMP(oid, oidLen, DSA_OID) == 0)
    {
       //Read DSAPublicKey structure
       error = x509ParseDsaPublicKey(data, length, &publicKeyInfo->dsaPublicKey);
@@ -147,7 +147,7 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
 #endif
 #if (EC_SUPPORT == ENABLED)
    //EC public key identifier?
-   if(!oidComp(oid, oidLen, EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
+   if(OID_COMP(oid, oidLen, EC_PUBLIC_KEY_OID) == 0)
    {
       //Read ECPublicKey structure
       error = x509ParseEcPublicKey(data, length, &publicKeyInfo->ecPublicKey);
@@ -156,8 +156,8 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
 #endif
 #if (ED25519_SUPPORT == ENABLED)
    //X25519 or Ed25519 algorithm identifier?
-   if(!oidComp(oid, oidLen, X25519_OID, sizeof(X25519_OID)) ||
-      !oidComp(oid, oidLen, ED25519_OID, sizeof(ED25519_OID)))
+   if(OID_COMP(oid, oidLen, X25519_OID) == 0 ||
+      OID_COMP(oid, oidLen, ED25519_OID) == 0)
    {
       //Read ECPublicKey structure
       error = x509ParseEcPublicKey(data, length, &publicKeyInfo->ecPublicKey);
@@ -166,8 +166,8 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
 #endif
 #if (ED448_SUPPORT == ENABLED)
    //X448 or Ed448 algorithm identifier?
-   if(!oidComp(oid, oidLen, X448_OID, sizeof(X448_OID)) ||
-      !oidComp(oid, oidLen, ED448_OID, sizeof(ED448_OID)))
+   if(OID_COMP(oid, oidLen, X448_OID) == 0 ||
+      OID_COMP(oid, oidLen, ED448_OID) == 0)
    {
       //Read ECPublicKey structure
       error = x509ParseEcPublicKey(data, length, &publicKeyInfo->ecPublicKey);
@@ -555,13 +555,13 @@ error_t x509ParseEcParameters(const uint8_t *data, size_t length,
 
 /**
  * @brief Import an RSA public key
- * @param[in] publicKeyInfo Public key information
  * @param[out] publicKey RSA public key
+ * @param[in] publicKeyInfo Public key information
  * @return Error code
  **/
 
-error_t x509ImportRsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
-   RsaPublicKey *publicKey)
+error_t x509ImportRsaPublicKey(RsaPublicKey *publicKey,
+   const X509SubjectPublicKeyInfo *publicKeyInfo)
 {
    error_t error;
 
@@ -574,8 +574,8 @@ error_t x509ImportRsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
    oidLen = publicKeyInfo->oid.length;
 
    //RSA algorithm identifier?
-   if(!oidComp(oid, oidLen, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)) ||
-      !oidComp(oid, oidLen, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
+   if(OID_COMP(oid, oidLen, RSA_ENCRYPTION_OID) == 0 ||
+      OID_COMP(oid, oidLen, RSASSA_PSS_OID) == 0)
    {
       //Sanity check
       if(publicKeyInfo->rsaPublicKey.n.value != NULL &&
@@ -625,20 +625,20 @@ error_t x509ImportRsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
 
 /**
  * @brief Import a DSA public key
- * @param[in] publicKeyInfo Public key information
  * @param[out] publicKey DSA public key
+ * @param[in] publicKeyInfo Public key information
  * @return Error code
  **/
 
-error_t x509ImportDsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
-   DsaPublicKey *publicKey)
+error_t x509ImportDsaPublicKey(DsaPublicKey *publicKey,
+   const X509SubjectPublicKeyInfo *publicKeyInfo)
 {
    error_t error;
 
 #if (DSA_SUPPORT == ENABLED)
    //DSA algorithm identifier?
-   if(!oidComp(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
-      DSA_OID, sizeof(DSA_OID)))
+   if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      DSA_OID) == 0)
    {
       //Sanity check
       if(publicKeyInfo->dsaParams.p.value != NULL &&
@@ -710,68 +710,54 @@ error_t x509ImportDsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
 
 /**
  * @brief Import an EC public key
- * @param[in] publicKeyInfo Public key information
  * @param[out] publicKey EC public key
+ * @param[in] publicKeyInfo Public key information
  * @return Error code
  **/
 
-error_t x509ImportEcPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
-   EcPublicKey *publicKey)
+error_t x509ImportEcPublicKey(EcPublicKey *publicKey,
+   const X509SubjectPublicKeyInfo *publicKeyInfo)
 {
    error_t error;
 
 #if (EC_SUPPORT == ENABLED)
-   const EcCurveInfo *curveInfo;
-   EcDomainParameters params;
-
    //EC public key identifier?
-   if(!oidComp(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
-      EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
+   if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      EC_PUBLIC_KEY_OID) == 0)
    {
       //Sanity check
       if(publicKeyInfo->ecParams.namedCurve.value != NULL &&
          publicKeyInfo->ecPublicKey.q.value != NULL)
       {
-         //Initialize EC domain parameters
-         ecInitDomainParameters(&params);
+         const EcCurve *curve;
 
-         //Retrieve EC domain parameters
-         curveInfo = x509GetCurveInfo(publicKeyInfo->ecParams.namedCurve.value,
+         //Get the elliptic curve that matches the OID
+         curve = ecGetCurve(publicKeyInfo->ecParams.namedCurve.value,
             publicKeyInfo->ecParams.namedCurve.length);
 
          //Make sure the specified elliptic curve is supported
-         if(curveInfo != NULL)
+         if(curve != NULL)
          {
-            //Load EC domain parameters
-            error = ecLoadDomainParameters(&params, curveInfo);
+            //Read the EC public key
+            error = ecImportPublicKey(publicKey, curve,
+               publicKeyInfo->ecPublicKey.q.value,
+               publicKeyInfo->ecPublicKey.q.length, EC_PUBLIC_KEY_FORMAT_X963);
          }
          else
          {
-            //Invalid EC domain parameters
+            //Invalid elliptic curve
             error = ERROR_WRONG_IDENTIFIER;
          }
 
          //Check status code
          if(!error)
          {
-            //Read the EC public key
-            error = ecImport(&params, &publicKey->q,
-               publicKeyInfo->ecPublicKey.q.value,
-               publicKeyInfo->ecPublicKey.q.length);
+            //Dump EC public key
+            TRACE_DEBUG("EC public key X:\r\n");
+            TRACE_DEBUG_EC_SCALAR("  ", publicKey->q.x, (curve->fieldSize + 31) / 32);
+            TRACE_DEBUG("EC public key Y:\r\n");
+            TRACE_DEBUG_EC_SCALAR("  ", publicKey->q.y, (curve->fieldSize + 31) / 32);
          }
-
-         //Check status code
-         if(!error)
-         {
-            //Debug message
-            TRACE_DEBUG("  Public key X:\r\n");
-            TRACE_DEBUG_MPI("    ", &publicKey->q.x);
-            TRACE_DEBUG("  Public key Y:\r\n");
-            TRACE_DEBUG_MPI("    ", &publicKey->q.y);
-         }
-
-         //Release EC domain parameters
-         ecFreeDomainParameters(&params);
       }
       else
       {
@@ -784,43 +770,6 @@ error_t x509ImportEcPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
    //Invalid algorithm identifier?
    {
       //Report an error
-      error = ERROR_WRONG_IDENTIFIER;
-   }
-
-   //Return status code
-   return error;
-}
-
-
-/**
- * @brief Import EC domain parameters
- * @param[in] ecParams Pointer to the ECParameters structure
- * @param[out] params EC domain parameters
- * @return Error code
- **/
-
-error_t x509ImportEcParameters(const X509EcParameters *ecParams,
-   EcDomainParameters *params)
-{
-   error_t error;
-
-#if (EC_SUPPORT == ENABLED)
-   const EcCurveInfo *curveInfo;
-
-   //Retrieve EC domain parameters
-   curveInfo = ecGetCurveInfo(ecParams->namedCurve.value,
-      ecParams->namedCurve.length);
-
-   //Make sure the specified elliptic curve is supported
-   if(curveInfo != NULL)
-   {
-      //Load EC domain parameters
-      error = ecLoadDomainParameters(params, curveInfo);
-   }
-   else
-#endif
-   {
-      //Invalid EC domain parameters
       error = ERROR_WRONG_IDENTIFIER;
    }
 
@@ -831,59 +780,30 @@ error_t x509ImportEcParameters(const X509EcParameters *ecParams,
 
 /**
  * @brief Import an EdDSA public key
- * @param[in] publicKeyInfo Public key information
  * @param[out] publicKey EdDSA public key
+ * @param[in] publicKeyInfo Public key information
  * @return Error code
  **/
 
-error_t x509ImportEddsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
-   EddsaPublicKey *publicKey)
+error_t x509ImportEddsaPublicKey(EddsaPublicKey *publicKey,
+   const X509SubjectPublicKeyInfo *publicKeyInfo)
 {
+#if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
    error_t error;
+   const EcCurve *curve;
 
-#if (ED25519_SUPPORT == ENABLED)
-   //Ed25519 algorithm identifier?
-   if(!oidComp(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
-      ED25519_OID, sizeof(ED25519_OID)))
+   //Get the elliptic curve that matches the OID
+   curve = ecGetCurve(publicKeyInfo->oid.value, publicKeyInfo->oid.length);
+
+   //Edwards elliptic curve?
+   if(curve != NULL && curve->type == EC_CURVE_TYPE_EDWARDS)
    {
-      //Check the length of the Ed25519 public key
-      if(publicKeyInfo->ecPublicKey.q.value != NULL &&
-         publicKeyInfo->ecPublicKey.q.length == ED25519_PUBLIC_KEY_LEN)
-      {
-         //Read the Ed25519 public key
-         error = mpiImport(&publicKey->q, publicKeyInfo->ecPublicKey.q.value,
-            publicKeyInfo->ecPublicKey.q.length, MPI_FORMAT_LITTLE_ENDIAN);
-      }
-      else
-      {
-         //The public key is not valid
-         error = ERROR_INVALID_KEY;
-      }
+      //Read the EdDSA public key
+      error = eddsaImportPublicKey(publicKey, curve,
+         publicKeyInfo->ecPublicKey.q.value,
+         publicKeyInfo->ecPublicKey.q.length);
    }
    else
-#endif
-#if (ED448_SUPPORT == ENABLED)
-   //Ed448 algorithm identifier?
-   if(!oidComp(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
-      ED448_OID, sizeof(ED448_OID)))
-   {
-      //Check the length of the Ed448 public key
-      if(publicKeyInfo->ecPublicKey.q.value != NULL &&
-         publicKeyInfo->ecPublicKey.q.length == ED448_PUBLIC_KEY_LEN)
-      {
-         //Read the Ed448 public key
-         error = mpiImport(&publicKey->q, publicKeyInfo->ecPublicKey.q.value,
-            publicKeyInfo->ecPublicKey.q.length, MPI_FORMAT_LITTLE_ENDIAN);
-      }
-      else
-      {
-         //The public key is not valid
-         error = ERROR_INVALID_KEY;
-      }
-   }
-   else
-#endif
-   //Invalid algorithm identifier?
    {
       //Report an error
       error = ERROR_WRONG_IDENTIFIER;
@@ -892,13 +812,17 @@ error_t x509ImportEddsaPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
    //Check status code
    if(!error)
    {
-      //Debug message
+      //Dump EdDSA public key
       TRACE_DEBUG("EdDSA public key:\r\n");
-      TRACE_DEBUG_MPI("  ", &publicKey->q);
+      TRACE_DEBUG_ARRAY("  ", publicKey->q, publicKeyInfo->ecPublicKey.q.length);
    }
 
    //Return status code
    return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 #endif

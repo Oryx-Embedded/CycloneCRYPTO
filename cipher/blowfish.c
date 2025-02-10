@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * blocks of 128 bits under control of a 128/192/256-bit secret key
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -417,7 +417,7 @@ void blowfishEncryptBlock(BlowfishContext *context, const uint8_t *input,
    uint32_t t;
 
    //Divide the plaintext into two 32-bit halves (L and R)
-   l = LOAD32BE(input + 0);
+   l = LOAD32BE(input);
    r = LOAD32BE(input + 4);
 
    //16 rounds of computation are needed
@@ -446,7 +446,7 @@ void blowfishEncryptBlock(BlowfishContext *context, const uint8_t *input,
    r ^= context->p[17];
 
    //Recombine L and R
-   STORE32BE(r, output + 0);
+   STORE32BE(r, output);
    STORE32BE(l, output + 4);
 }
 
@@ -467,7 +467,7 @@ void blowfishDecryptBlock(BlowfishContext *context, const uint8_t *input,
    uint32_t t;
 
    //Divide the ciphertext into two 32-bit halves (L and R)
-   r = LOAD32BE(input + 0);
+   r = LOAD32BE(input);
    l = LOAD32BE(input + 4);
 
    //16 rounds of computation are needed
@@ -496,7 +496,7 @@ void blowfishDecryptBlock(BlowfishContext *context, const uint8_t *input,
    l ^= context->p[0];
 
    //Recombine L and R
-   STORE32BE(l, output + 0);
+   STORE32BE(l, output);
    STORE32BE(r, output + 4);
 }
 

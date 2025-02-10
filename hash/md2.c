@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * as output a 128-bit message digest of the input. Refer to RFC 1319
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -192,7 +192,7 @@ void md2Update(Md2Context *context, const void *data, size_t length)
 /**
  * @brief Finish the MD2 message digest
  * @param[in] context Pointer to the MD2 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void md2Final(Md2Context *context, uint8_t *digest)
@@ -213,10 +213,7 @@ void md2Final(Md2Context *context, uint8_t *digest)
    md2ProcessBlock(context->m, context->x, context->c);
 
    //Copy the resulting digest
-   if(digest != NULL)
-   {
-      osMemcpy(digest, context->digest, MD2_DIGEST_SIZE);
-   }
+   osMemcpy(digest, context->x, MD2_DIGEST_SIZE);
 }
 
 

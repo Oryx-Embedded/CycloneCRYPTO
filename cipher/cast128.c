@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -401,6 +401,7 @@ error_t cast128Init(Cast128Context *context, const uint8_t *key, size_t keyLen)
    uint32_t *k;
    uint32_t x0, x1, x2, x3;
    uint32_t z0, z1, z2, z3;
+   uint8_t buffer[16];
 
    //Check parameters
    if(context == NULL || key == NULL)
@@ -418,14 +419,20 @@ error_t cast128Init(Cast128Context *context, const uint8_t *key, size_t keyLen)
 
    //For key sizes less than 128 bits, the key is padded with zero bytes (in
    //the rightmost positions) out to 128 bits
-   osMemset(context->km, 0, 16);
-   osMemcpy(context->km, key, keyLen);
+   osMemset(buffer, 0, 16);
+   osMemcpy(buffer, key, keyLen);
+
+   //Load the key
+   context->km[0] = LOAD32BE(buffer);
+   context->km[1] = LOAD32BE(buffer + 4);
+   context->km[2] = LOAD32BE(buffer + 8);
+   context->km[3] = LOAD32BE(buffer + 12);
 
    //The key schedule assumes an input key of 128 bits
-   x0 = betoh32(context->km[0]);
-   x1 = betoh32(context->km[1]);
-   x2 = betoh32(context->km[2]);
-   x3 = betoh32(context->km[3]);
+   x0 = context->km[0];
+   x1 = context->km[1];
+   x2 = context->km[2];
+   x3 = context->km[3];
 
    //Key schedule
    for(i = 0; i < 32; i += 16)
@@ -485,12 +492,12 @@ error_t cast128Init(Cast128Context *context, const uint8_t *key, size_t keyLen)
 
    //Only the least significant 5 bits of the rotate subkeys are used in each
    //round (refer to RFC 2144, section 2.4.1)
-   for(i = 16; i < 32; i++)
+   for(i = 0; i < 16; i++)
    {
       context->kr[i] &= 0x1F;
    }
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -509,7 +516,7 @@ void cast128EncryptBlock(Cast128Context *context, const uint8_t *input,
    uint32_t r;
 
    //Split the plaintext into left and right 32-bit halves
-   l = LOAD32BE(input + 0);
+   l = LOAD32BE(input);
    r = LOAD32BE(input + 4);
 
    //For key sizes up to and including 80 bits, the algorithm uses 12 rounds
@@ -536,7 +543,7 @@ void cast128EncryptBlock(Cast128Context *context, const uint8_t *input,
    }
 
    //Concatenate left and right halves to form the ciphertext
-   STORE32BE(r, output + 0);
+   STORE32BE(r, output);
    STORE32BE(l, output + 4);
 }
 
@@ -555,7 +562,7 @@ void cast128DecryptBlock(Cast128Context *context, const uint8_t *input,
    uint32_t r;
 
    //Split the ciphertext into left and right 32-bit halves
-   r = LOAD32BE(input + 0);
+   r = LOAD32BE(input);
    l = LOAD32BE(input + 4);
 
    //Decryption is identical to the encryption algorithm given above, except
@@ -582,7 +589,7 @@ void cast128DecryptBlock(Cast128Context *context, const uint8_t *input,
    F1(l, r, context->kr[0], context->km[0]);
 
    //Concatenate left and right halves to form the plaintext
-   STORE32BE(l, output + 0);
+   STORE32BE(l, output);
    STORE32BE(r, output + 4);
 }
 

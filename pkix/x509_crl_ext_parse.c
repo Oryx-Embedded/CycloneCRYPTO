@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -129,29 +129,29 @@ error_t x509ParseCrlExtensions(const uint8_t *data, size_t length,
          return error;
 
       //Check extension identifier
-      if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_CRL_NUMBER_OID, sizeof(X509_CRL_NUMBER_OID)))
+      if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_CRL_NUMBER_OID) == 0)
       {
          //Parse CRLNumber extension
          error = x509ParseCrlNumber(extension.critical, extension.data.value,
             extension.data.length, &crlExtensions->crlNumber);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_DELTA_CRL_INDICATOR_OID, sizeof(X509_DELTA_CRL_INDICATOR_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_DELTA_CRL_INDICATOR_OID) == 0)
       {
          //Parse DeltaCRLIndicator extension
          error = x509ParseDeltaCrlIndicator(extension.critical, extension.data.value,
             extension.data.length, &crlExtensions->deltaCrlIndicator);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_ISSUING_DISTR_POINT_OID, sizeof(X509_ISSUING_DISTR_POINT_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_ISSUING_DISTR_POINT_OID) == 0)
       {
          //Parse IssuingDistributionPoint extension
          error = x509ParseIssuingDistrPoint(extension.critical, extension.data.value,
             extension.data.length, &crlExtensions->issuingDistrPoint);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_AUTHORITY_KEY_ID_OID, sizeof(X509_AUTHORITY_KEY_ID_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_AUTHORITY_KEY_ID_OID) == 0)
       {
          //Parse AuthorityKeyIdentifier extension
          error = x509ParseAuthKeyId(extension.critical, extension.data.value,
@@ -446,22 +446,22 @@ error_t x509ParseCrlEntryExtensions(const uint8_t *data, size_t length,
          return error;
 
       //Check extension identifier
-      if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_REASON_CODE_OID, sizeof(X509_REASON_CODE_OID)))
+      if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_REASON_CODE_OID) == 0)
       {
          //Parse ReasonCode extension
          error = x509ParseReasonCode(extension.critical, extension.data.value,
             extension.data.length, &crlEntryExtensions->reasonCode);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_INVALIDITY_DATE_OID, sizeof(X509_INVALIDITY_DATE_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_INVALIDITY_DATE_OID) == 0)
       {
          //Parse InvalidityDate extension
          error = x509ParseInvalidityDate(extension.critical, extension.data.value,
             extension.data.length, &crlEntryExtensions->invalidityDate);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_CERTIFICATE_ISSUER_OID, sizeof(X509_CERTIFICATE_ISSUER_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_CERTIFICATE_ISSUER_OID) == 0)
       {
          //Parse CertificateIssuer extension
          error = x509ParseCertificateIssuer(extension.critical, extension.data.value,

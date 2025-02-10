@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -159,19 +159,18 @@ __weak_func void sha384Update(Sha384Context *context, const void *data, size_t l
 /**
  * @brief Finish the SHA-384 message digest
  * @param[in] context Pointer to the SHA-384 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 __weak_func void sha384Final(Sha384Context *context, uint8_t *digest)
 {
+   uint8_t temp[SHA512_DIGEST_SIZE];
+
    //The function is defined in the exact same manner as SHA-512
-   sha512Final(context, NULL);
+   sha512Final(context, temp);
 
    //Copy the resulting digest
-   if(digest != NULL)
-   {
-      osMemcpy(digest, context->digest, SHA384_DIGEST_SIZE);
-   }
+   osMemcpy(digest, temp, SHA384_DIGEST_SIZE);
 }
 
 
@@ -185,19 +184,10 @@ __weak_func void sha384FinalRaw(Sha384Context *context, uint8_t *digest)
 {
    uint_t i;
 
-   //Convert from host byte order to big-endian byte order
-   for(i = 0; i < 8; i++)
-   {
-      context->h[i] = htobe64(context->h[i]);
-   }
-
    //Copy the resulting digest
-   osMemcpy(digest, context->digest, SHA384_DIGEST_SIZE);
-
-   //Convert from big-endian byte order to host byte order
-   for(i = 0; i < 8; i++)
+   for(i = 0; i < (SHA384_DIGEST_SIZE / 8); i++)
    {
-      context->h[i] = betoh64(context->h[i]);
+      STORE64BE(context->h[i], digest + i * 8);
    }
 }
 

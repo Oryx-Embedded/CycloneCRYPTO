@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -618,14 +618,14 @@ error_t pemExportDsaPrivateKey(const DsaPrivateKey *privateKey,
 
 /**
  * @brief Export EC domain parameters to PEM format
- * @param[in] curveInfo Elliptic curve parameters
+ * @param[in] curve Elliptic curve parameters
  * @param[out] output Buffer where to store the PEM encoding
  * @param[out] written Length of the resulting PEM encoding
  * @return Error code
  **/
 
-error_t pemExportEcParameters(const EcCurveInfo *curveInfo,
-   char_t *output, size_t *written)
+error_t pemExportEcParameters(const EcCurve *curve, char_t *output,
+   size_t *written)
 {
 #if (EC_SUPPORT == ENABLED)
    error_t error;
@@ -633,15 +633,15 @@ error_t pemExportEcParameters(const EcCurveInfo *curveInfo,
    Asn1Tag tag;
 
    //Check parameters
-   if(curveInfo == NULL || written == NULL)
+   if(curve == NULL || written == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Format ECParameters field
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
-   tag.length = curveInfo->oidSize;
-   tag.value = curveInfo->oid;
+   tag.length = curve->oidSize;
+   tag.value = curve->oid;
 
    //Write the corresponding ASN.1 tag
    error = asn1WriteTag(&tag, FALSE, (uint8_t *) output, &n);
@@ -669,15 +669,14 @@ error_t pemExportEcParameters(const EcCurveInfo *curveInfo,
 
 /**
  * @brief Export an EC public key to PEM format
- * @param[in] curveInfo Elliptic curve parameters
  * @param[in] publicKey EC public key
  * @param[out] output Buffer where to store the PEM encoding
  * @param[out] written Length of the resulting PEM encoding
  * @return Error code
  **/
 
-error_t pemExportEcPublicKey(const EcCurveInfo *curveInfo,
-   const EcPublicKey *publicKey, char_t *output, size_t *written)
+error_t pemExportEcPublicKey(const EcPublicKey *publicKey,
+   char_t *output, size_t *written)
 {
 #if (EC_SUPPORT == ENABLED)
    error_t error;
@@ -685,8 +684,12 @@ error_t pemExportEcPublicKey(const EcCurveInfo *curveInfo,
    X509SubjectPublicKeyInfo publicKeyInfo;
 
    //Check parameters
-   if(curveInfo == NULL || publicKey == NULL || written == NULL)
+   if(publicKey == NULL || written == NULL)
       return ERROR_INVALID_PARAMETER;
+
+   //Invalid elliptic curve?
+   if(publicKey->curve == NULL)
+      return ERROR_INVALID_ELLIPTIC_CURVE;
 
    //Clear the SubjectPublicKeyInfo structure
    osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
@@ -695,8 +698,8 @@ error_t pemExportEcPublicKey(const EcCurveInfo *curveInfo,
    //structure (refer to RFC 7468, section 13)
    publicKeyInfo.oid.value = EC_PUBLIC_KEY_OID;
    publicKeyInfo.oid.length = sizeof(EC_PUBLIC_KEY_OID);
-   publicKeyInfo.ecParams.namedCurve.value = curveInfo->oid;
-   publicKeyInfo.ecParams.namedCurve.length = curveInfo->oidSize;
+   publicKeyInfo.ecParams.namedCurve.value = publicKey->curve->oid;
+   publicKeyInfo.ecParams.namedCurve.length = publicKey->curve->oidSize;
 
    //Format the SubjectPublicKeyInfo structure
    error = x509FormatSubjectPublicKeyInfo(&publicKeyInfo, publicKey, NULL,
@@ -725,16 +728,13 @@ error_t pemExportEcPublicKey(const EcCurveInfo *curveInfo,
 
 /**
  * @brief Export an EC private key to PEM format
- * @param[in] curveInfo Elliptic curve parameters
  * @param[in] privateKey EC private key
- * @param[in] publicKey EC public key (optional parameter)
  * @param[out] output Buffer where to store the PEM encoding
  * @param[out] written Length of the resulting PEM encoding
  * @return Error code
  **/
 
-error_t pemExportEcPrivateKey(const EcCurveInfo *curveInfo,
-   const EcPrivateKey *privateKey, const EcPublicKey *publicKey,
+error_t pemExportEcPrivateKey(const EcPrivateKey *privateKey,
    char_t *output, size_t *written)
 {
 #if (EC_SUPPORT == ENABLED)
@@ -746,8 +746,12 @@ error_t pemExportEcPrivateKey(const EcCurveInfo *curveInfo,
    X509SubjectPublicKeyInfo publicKeyInfo;
 
    //Check parameters
-   if(curveInfo == NULL || privateKey == NULL || written == NULL)
+   if(privateKey == NULL || written == NULL)
       return ERROR_INVALID_PARAMETER;
+
+   //Invalid elliptic curve?
+   if(privateKey->curve == NULL)
+      return ERROR_INVALID_ELLIPTIC_CURVE;
 
    //Clear the SubjectPublicKeyInfo structure
    osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
@@ -773,8 +777,8 @@ error_t pemExportEcPrivateKey(const EcCurveInfo *curveInfo,
    //The PrivateKeyAlgorithm identifies the private-key algorithm
    publicKeyInfo.oid.value = EC_PUBLIC_KEY_OID;
    publicKeyInfo.oid.length = sizeof(EC_PUBLIC_KEY_OID);
-   publicKeyInfo.ecParams.namedCurve.value = curveInfo->oid;
-   publicKeyInfo.ecParams.namedCurve.length = curveInfo->oidSize;
+   publicKeyInfo.ecParams.namedCurve.value = privateKey->curve->oid;
+   publicKeyInfo.ecParams.namedCurve.length = privateKey->curve->oidSize;
 
    //Format PrivateKeyAlgorithm field
    error = x509FormatAlgoId(&publicKeyInfo, NULL, p, &n);
@@ -790,7 +794,7 @@ error_t pemExportEcPrivateKey(const EcCurveInfo *curveInfo,
       p += n;
 
    //Format PrivateKey field
-   error = pkcs8FormatEcPrivateKey(curveInfo, privateKey, publicKey, p, &n);
+   error = pkcs8FormatEcPrivateKey(privateKey, p, &n);
    //Any error to report?
    if(error)
       return error;
@@ -834,15 +838,14 @@ error_t pemExportEcPrivateKey(const EcCurveInfo *curveInfo,
 
 /**
  * @brief Export an EdDSA public key to PEM format
- * @param[in] curveInfo Elliptic curve parameters
  * @param[in] publicKey EdDSA public key
  * @param[out] output Buffer where to store the PEM encoding
  * @param[out] written Length of the resulting PEM encoding
  * @return Error code
  **/
 
-error_t pemExportEddsaPublicKey(const EcCurveInfo *curveInfo,
-   const EddsaPublicKey *publicKey, char_t *output, size_t *written)
+error_t pemExportEddsaPublicKey(const EddsaPublicKey *publicKey,
+   char_t *output, size_t *written)
 {
 #if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
    error_t error;
@@ -850,16 +853,20 @@ error_t pemExportEddsaPublicKey(const EcCurveInfo *curveInfo,
    X509SubjectPublicKeyInfo publicKeyInfo;
 
    //Check parameters
-   if(curveInfo == NULL || publicKey == NULL || written == NULL)
+   if(publicKey == NULL || written == NULL)
       return ERROR_INVALID_PARAMETER;
+
+   //Invalid elliptic curve?
+   if(publicKey->curve == NULL)
+      return ERROR_INVALID_ELLIPTIC_CURVE;
 
    //Clear the SubjectPublicKeyInfo structure
    osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
 
    //The ASN.1 encoded data of the public key is the SubjectPublicKeyInfo
    //structure (refer to RFC 7468, section 13)
-   publicKeyInfo.oid.value = curveInfo->oid;
-   publicKeyInfo.oid.length = curveInfo->oidSize;
+   publicKeyInfo.oid.value = publicKey->curve->oid;
+   publicKeyInfo.oid.length = publicKey->curve->oidSize;
 
    //Format the SubjectPublicKeyInfo structure
    error = x509FormatSubjectPublicKeyInfo(&publicKeyInfo, publicKey, NULL,
@@ -888,15 +895,14 @@ error_t pemExportEddsaPublicKey(const EcCurveInfo *curveInfo,
 
 /**
  * @brief Export an EdDSA private key to PEM format
- * @param[in] curveInfo Elliptic curve parameters
  * @param[in] privateKey EdDSA private key
  * @param[out] output Buffer where to store the PEM encoding
  * @param[out] written Length of the resulting PEM encoding
  * @return Error code
  **/
 
-error_t pemExportEddsaPrivateKey(const EcCurveInfo *curveInfo,
-   const EddsaPrivateKey *privateKey, char_t *output, size_t *written)
+error_t pemExportEddsaPrivateKey(const EddsaPrivateKey *privateKey,
+   char_t *output, size_t *written)
 {
 #if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
    error_t error;
@@ -907,8 +913,12 @@ error_t pemExportEddsaPrivateKey(const EcCurveInfo *curveInfo,
    X509SubjectPublicKeyInfo publicKeyInfo;
 
    //Check parameters
-   if(curveInfo == NULL || privateKey == NULL || written == NULL)
+   if(privateKey == NULL || written == NULL)
       return ERROR_INVALID_PARAMETER;
+
+   //Invalid elliptic curve?
+   if(privateKey->curve == NULL)
+      return ERROR_INVALID_ELLIPTIC_CURVE;
 
    //Clear the SubjectPublicKeyInfo structure
    osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
@@ -932,8 +942,8 @@ error_t pemExportEddsaPrivateKey(const EcCurveInfo *curveInfo,
       p += n;
 
    //The PrivateKeyAlgorithm identifies the private-key algorithm
-   publicKeyInfo.oid.value = curveInfo->oid;
-   publicKeyInfo.oid.length = curveInfo->oidSize;
+   publicKeyInfo.oid.value = privateKey->curve->oid;
+   publicKeyInfo.oid.length = privateKey->curve->oidSize;
 
    //Format PrivateKeyAlgorithm field
    error = x509FormatAlgoId(&publicKeyInfo, NULL, p, &n);
@@ -949,13 +959,30 @@ error_t pemExportEddsaPrivateKey(const EcCurveInfo *curveInfo,
       p += n;
 
    //Format PrivateKey field
-   error = pkcs8FormatEddsaPrivateKey(curveInfo, privateKey, p, &n);
+   error = pkcs8FormatEddsaPrivateKey(privateKey, p, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Update the length of the PrivateKeyInfo structure
    length += n;
+
+   //Advance data pointer
+   if(output != NULL)
+      p += n;
+
+   //The public key is optional
+   if(privateKey->q.curve != NULL)
+   {
+      //Format PublicKey field
+      error = pkcs8FormatEddsaPublicKey(&privateKey->q, p, &n);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //Update the length of the PrivateKeyInfo structure
+      length += n;
+   }
 
    //The PrivateKeyInfo structure is encapsulated within a sequence
    tag.constructed = TRUE;

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -323,6 +323,7 @@ void yarrowFastReseed(YarrowContext *context)
 void yarrowSlowReseed(YarrowContext *context)
 {
    size_t i;
+   uint8_t digest[SHA256_DIGEST_SIZE];
 
    //Erase AES context
    if(context->ready)
@@ -331,12 +332,12 @@ void yarrowSlowReseed(YarrowContext *context)
    }
 
    //Compute the hash of all inputs to the fast pool
-   sha256Final(&context->fastPool, NULL);
+   sha256Final(&context->fastPool, digest);
 
    //Reseeding from the slow pool use the current key, the hash of all inputs to the
    //fast pool and the hash of all inputs to the slow pool, to generate a new key
    sha256Update(&context->slowPool, context->key, sizeof(context->key));
-   sha256Update(&context->slowPool, context->fastPool.digest, SHA256_DIGEST_SIZE);
+   sha256Update(&context->slowPool, digest, SHA256_DIGEST_SIZE);
    sha256Final(&context->slowPool, context->key);
 
    //Set the new key

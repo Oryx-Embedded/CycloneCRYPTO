@@ -1,12 +1,12 @@
 /**
- * @file blake2b.h
- * @brief BLAKE2 cryptographic hash and MAC (BLAKE2b variant)
+ * @file gd32h7xx_crypto_cipher.h
+ * @brief GD32H7 cipher hardware accelerator
  *
  * @section License
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,56 +25,29 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
-#ifndef _BLAKE2B_H
-#define _BLAKE2B_H
+#ifndef _GD32H7XX_CRYPTO_CIPHER_H
+#define _GD32H7XX_CRYPTO_CIPHER_H
 
 //Dependencies
 #include "core/crypto.h"
 
-//BLAKE2b block size
-#define BLAKE2B_BLOCK_SIZE 128
+//Cipher hardware accelerator
+#ifndef GD32H7XX_CRYPTO_CIPHER_SUPPORT
+   #define GD32H7XX_CRYPTO_CIPHER_SUPPORT DISABLED
+#elif (GD32H7XX_CRYPTO_CIPHER_SUPPORT != ENABLED && GD32H7XX_CRYPTO_CIPHER_SUPPORT != DISABLED)
+   #error GD32H7XX_CRYPTO_CIPHER_SUPPORT parameter is not valid
+#endif
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-/**
- * @brief BLAKE2b algorithm context
- **/
-
-typedef struct
-{
-   union
-   {
-      uint64_t h[8];
-      uint8_t digest[64];
-   };
-   union
-   {
-      uint64_t m[16];
-      uint8_t buffer[128];
-   };
-   size_t size;
-   uint64_t totalSize[2];
-   size_t digestSize;
-} Blake2bContext;
-
-
-//BLAKE2b related functions
-error_t blake2bCompute(const void *key, size_t keyLen, const void *data,
-   size_t dataLen, uint8_t *digest, size_t digestLen);
-
-error_t blake2bInit(Blake2bContext *context, const void *key,
-   size_t keyLen, size_t digestLen);
-
-void blake2bUpdate(Blake2bContext *context, const void *data, size_t length);
-void blake2bFinal(Blake2bContext *context, uint8_t *digest);
-void blake2bProcessBlock(Blake2bContext *context, bool_t last);
+//Cipher related functions
+error_t cauInit(void);
 
 //C++ guard
 #ifdef __cplusplus

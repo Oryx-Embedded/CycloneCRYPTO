@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -148,15 +148,15 @@ static uint32_t GF_MUL(uint8_t a, uint8_t b, uint8_t p)
       }
       else
       {
-         a = a << 1;
+         a <<= 1;
       }
 
       //Process next bit
-      b = b >> 1;
+      b >>= 1;
    }
 
    //Return the resulting value
-   return r;
+   return r & 0xFF;
 }
 
 
@@ -320,7 +320,7 @@ error_t twofishInit(TwofishContext *context, const uint8_t *key, size_t keyLen)
       context->k[2 * i + 1] = ROL32(a, 9);
    }
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -344,7 +344,7 @@ void twofishEncryptBlock(TwofishContext *context, const uint8_t *input,
    uint32_t t1;
 
    //The 16 bytes of plaintext are split into 4 words
-   r0 = LOAD32LE(input + 0);
+   r0 = LOAD32LE(input);
    r1 = LOAD32LE(input + 4);
    r2 = LOAD32LE(input + 8);
    r3 = LOAD32LE(input + 12);
@@ -400,7 +400,7 @@ void twofishEncryptBlock(TwofishContext *context, const uint8_t *input,
    r1 ^= context->k[7];
 
    //The 4 words of ciphertext are then written as 16 bytes
-   STORE32LE(r2, output + 0);
+   STORE32LE(r2, output);
    STORE32LE(r3, output + 4);
    STORE32LE(r0, output + 8);
    STORE32LE(r1, output + 12);
@@ -426,7 +426,7 @@ void twofishDecryptBlock(TwofishContext *context, const uint8_t *input,
    uint32_t t1;
 
    //The 16 bytes of ciphertext are split into 4 words
-   r2 = LOAD32LE(input + 0);
+   r2 = LOAD32LE(input);
    r3 = LOAD32LE(input + 4);
    r0 = LOAD32LE(input + 8);
    r1 = LOAD32LE(input + 12);
@@ -482,7 +482,7 @@ void twofishDecryptBlock(TwofishContext *context, const uint8_t *input,
    r3 ^= context->k[3];
 
    //The 4 words of plaintext are then written as 16 bytes
-   STORE32LE(r0, output + 0);
+   STORE32LE(r0, output);
    STORE32LE(r1, output + 4);
    STORE32LE(r2, output + 8);
    STORE32LE(r3, output + 12);

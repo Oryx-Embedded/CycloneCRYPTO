@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,7 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "ecc/ec_curves.h"
+#include "ecc/ec.h"
 #include "ecc/curve448.h"
 #include "ecc/x448.h"
 #include "debug.h"
@@ -74,7 +74,10 @@ error_t x448(uint8_t *r, const uint8_t *k, const uint8_t *u)
 #endif
 
    //Copy scalar
-   curve448Import(state->k, k);
+   for(i = 0; i < 14; i++)
+   {
+      state->k[i] = LOAD32LE(k + i * 4);
+   }
 
    //Set the two least significant bits of the first byte to 0, and the most
    //significant bit of the last byte to 1
@@ -87,7 +90,7 @@ error_t x448(uint8_t *r, const uint8_t *k, const uint8_t *u)
    //Implementations must accept non-canonical values and process them as
    //if they had been reduced modulo the field prime (refer to RFC 7748,
    //section 5)
-   curve448Red(state->u, state->u, 0);
+   curve448Canonicalize(state->u, state->u);
 
    //Set X1 = 1
    curve448SetInt(state->x1, 1);
@@ -159,6 +162,9 @@ error_t x448(uint8_t *r, const uint8_t *k, const uint8_t *u)
    //Retrieve affine representation
    curve448Inv(state->u, state->z1);
    curve448Mul(state->u, state->u, state->x1);
+
+   //Reduce non-canonical values
+   curve448Canonicalize(state->u, state->u);
 
    //Copy output u-coordinate
    curve448Export(state->u, r);

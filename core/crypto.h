@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.4.4"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.5.0"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
-#define CYCLONE_CRYPTO_MINOR_VERSION 4
+#define CYCLONE_CRYPTO_MINOR_VERSION 5
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 4
+#define CYCLONE_CRYPTO_REV_NUMBER 0
 
 //Static memory allocation
 #ifndef CRYPTO_STATIC_MEM_SUPPORT
@@ -228,25 +228,11 @@
    #error SHA3_512_SUPPORT parameter is not valid
 #endif
 
-//SHAKE support
-#ifndef SHAKE_SUPPORT
-   #define SHAKE_SUPPORT DISABLED
-#elif (SHAKE_SUPPORT != ENABLED && SHAKE_SUPPORT != DISABLED)
-   #error SHAKE_SUPPORT parameter is not valid
-#endif
-
-//cSHAKE support
-#ifndef CSHAKE_SUPPORT
-   #define CSHAKE_SUPPORT DISABLED
-#elif (CSHAKE_SUPPORT != ENABLED && CSHAKE_SUPPORT != DISABLED)
-   #error CSHAKE_SUPPORT parameter is not valid
-#endif
-
-//Keccak support
-#ifndef KECCAK_SUPPORT
-   #define KECCAK_SUPPORT DISABLED
-#elif (KECCAK_SUPPORT != ENABLED && KECCAK_SUPPORT != DISABLED)
-   #error KECCAK_SUPPORT parameter is not valid
+//Ascon-Hash256 hash support
+#ifndef ASCON_HASH256_SUPPORT
+   #define ASCON_HASH256_SUPPORT DISABLED
+#elif (ASCON_HASH256_SUPPORT != ENABLED && ASCON_HASH256_SUPPORT != DISABLED)
+   #error ASCON_HASH256_SUPPORT parameter is not valid
 #endif
 
 //BLAKE2b support
@@ -340,6 +326,41 @@
    #error WHIRLPOOL_SUPPORT parameter is not valid
 #endif
 
+//Keccak support
+#ifndef KECCAK_SUPPORT
+   #define KECCAK_SUPPORT DISABLED
+#elif (KECCAK_SUPPORT != ENABLED && KECCAK_SUPPORT != DISABLED)
+   #error KECCAK_SUPPORT parameter is not valid
+#endif
+
+//SHAKE support
+#ifndef SHAKE_SUPPORT
+   #define SHAKE_SUPPORT DISABLED
+#elif (SHAKE_SUPPORT != ENABLED && SHAKE_SUPPORT != DISABLED)
+   #error SHAKE_SUPPORT parameter is not valid
+#endif
+
+//cSHAKE support
+#ifndef CSHAKE_SUPPORT
+   #define CSHAKE_SUPPORT DISABLED
+#elif (CSHAKE_SUPPORT != ENABLED && CSHAKE_SUPPORT != DISABLED)
+   #error CSHAKE_SUPPORT parameter is not valid
+#endif
+
+//Ascon-XOF128 support
+#ifndef ASCON_XOF128_SUPPORT
+   #define ASCON_XOF128_SUPPORT DISABLED
+#elif (ASCON_XOF128_SUPPORT != ENABLED && ASCON_XOF128_SUPPORT != DISABLED)
+   #error ASCON_XOF128_SUPPORT parameter is not valid
+#endif
+
+//Ascon-CXOF128 support
+#ifndef ASCON_CXOF128_SUPPORT
+   #define ASCON_CXOF128_SUPPORT DISABLED
+#elif (ASCON_CXOF128_SUPPORT != ENABLED && ASCON_CXOF128_SUPPORT != DISABLED)
+   #error ASCON_CXOF128_SUPPORT parameter is not valid
+#endif
+
 //CMAC support
 #ifndef CMAC_SUPPORT
    #define CMAC_SUPPORT DISABLED
@@ -373,6 +394,13 @@
    #define XCBC_MAC_SUPPORT DISABLED
 #elif (XCBC_MAC_SUPPORT != ENABLED && XCBC_MAC_SUPPORT != DISABLED)
    #error XCBC_MAC_SUPPORT parameter is not valid
+#endif
+
+//Poly1305 support
+#ifndef POLY1305_SUPPORT
+   #define POLY1305_SUPPORT DISABLED
+#elif (POLY1305_SUPPORT != ENABLED && POLY1305_SUPPORT != DISABLED)
+   #error POLY1305_SUPPORT parameter is not valid
 #endif
 
 //RC2 block cipher support
@@ -515,6 +543,20 @@
    #error XTEA_SUPPORT parameter is not valid
 #endif
 
+//ChaCha stream cipher support
+#ifndef CHACHA_SUPPORT
+   #define CHACHA_SUPPORT DISABLED
+#elif (CHACHA_SUPPORT != ENABLED && CHACHA_SUPPORT != DISABLED)
+   #error CHACHA_SUPPORT parameter is not valid
+#endif
+
+//Salsa20 stream cipher support
+#ifndef SALSA20_SUPPORT
+   #define SALSA20_SUPPORT DISABLED
+#elif (SALSA20_SUPPORT != ENABLED && SALSA20_SUPPORT != DISABLED)
+   #error SALSA20_SUPPORT parameter is not valid
+#endif
+
 //Trivium stream cipher support
 #ifndef TRIVIUM_SUPPORT
    #define TRIVIUM_SUPPORT DISABLED
@@ -592,25 +634,11 @@
    #error SIV_SUPPORT parameter is not valid
 #endif
 
-//Salsa20 stream cipher support
-#ifndef SALSA20_SUPPORT
-   #define SALSA20_SUPPORT DISABLED
-#elif (SALSA20_SUPPORT != ENABLED && SALSA20_SUPPORT != DISABLED)
-   #error SALSA20_SUPPORT parameter is not valid
-#endif
-
-//ChaCha stream cipher support
-#ifndef CHACHA_SUPPORT
-   #define CHACHA_SUPPORT DISABLED
-#elif (CHACHA_SUPPORT != ENABLED && CHACHA_SUPPORT != DISABLED)
-   #error CHACHA_SUPPORT parameter is not valid
-#endif
-
-//Poly1305 support
-#ifndef POLY1305_SUPPORT
-   #define POLY1305_SUPPORT DISABLED
-#elif (POLY1305_SUPPORT != ENABLED && POLY1305_SUPPORT != DISABLED)
-   #error POLY1305_SUPPORT parameter is not valid
+//Ascon-AEAD128 support
+#ifndef ASCON_AEAD128_SUPPORT
+   #define ASCON_AEAD128_SUPPORT DISABLED
+#elif (ASCON_AEAD128_SUPPORT != ENABLED && ASCON_AEAD128_SUPPORT != DISABLED)
+   #error ASCON_AEAD128_SUPPORT parameter is not valid
 #endif
 
 //ChaCha20Poly1305 support
@@ -662,28 +690,35 @@
    #error ECDSA_SUPPORT parameter is not valid
 #endif
 
-//ML-KEM-512 key encapsulation mechanism support
+//Key encapsulation mechanism support
+#ifndef KEM_SUPPORT
+   #define KEM_SUPPORT DISABLED
+#elif (KEM_SUPPORT != ENABLED && KEM_SUPPORT != DISABLED)
+   #error KEM_SUPPORT parameter is not valid
+#endif
+
+//ML-KEM-512 support
 #ifndef MLKEM512_SUPPORT
    #define MLKEM512_SUPPORT DISABLED
 #elif (MLKEM512_SUPPORT != ENABLED && MLKEM512_SUPPORT != DISABLED)
    #error MLKEM512_SUPPORT parameter is not valid
 #endif
 
-//ML-KEM-768 key encapsulation mechanism support
+//ML-KEM-768 support
 #ifndef MLKEM768_SUPPORT
    #define MLKEM768_SUPPORT DISABLED
 #elif (MLKEM768_SUPPORT != ENABLED && MLKEM768_SUPPORT != DISABLED)
    #error MLKEM768_SUPPORT parameter is not valid
 #endif
 
-//ML-KEM-1024 key encapsulation mechanism support
+//ML-KEM-1024 support
 #ifndef MLKEM1024_SUPPORT
    #define MLKEM1024_SUPPORT DISABLED
 #elif (MLKEM1024_SUPPORT != ENABLED && MLKEM1024_SUPPORT != DISABLED)
    #error MLKEM1024_SUPPORT parameter is not valid
 #endif
 
-//Streamlined NTRU Prime 761 key encapsulation mechanism support
+//Streamlined NTRU Prime 761 support
 #ifndef SNTRUP761_SUPPORT
    #define SNTRUP761_SUPPORT DISABLED
 #elif (SNTRUP761_SUPPORT != ENABLED && SNTRUP761_SUPPORT != DISABLED)
@@ -969,7 +1004,8 @@ typedef enum
    CIPHER_MODE_CTR               = 6,
    CIPHER_MODE_CCM               = 7,
    CIPHER_MODE_GCM               = 8,
-   CIPHER_MODE_CHACHA20_POLY1305 = 9,
+   CIPHER_MODE_ASCON_AEAD128     = 9,
+   CIPHER_MODE_CHACHA20_POLY1305 = 10
 } CipherMode;
 
 

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -210,7 +210,7 @@ __weak_func void sha1Update(Sha1Context *context, const void *data, size_t lengt
 /**
  * @brief Finish the SHA-1 message digest
  * @param[in] context Pointer to the SHA-1 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 __weak_func void sha1Final(Sha1Context *context, uint8_t *digest)
@@ -236,22 +236,19 @@ __weak_func void sha1Final(Sha1Context *context, uint8_t *digest)
    sha1Update(context, padding, paddingSize);
 
    //Append the length of the original message
-   context->w[14] = htobe32((uint32_t) (totalSize >> 32));
-   context->w[15] = htobe32((uint32_t) totalSize);
+   for(i = 0; i < 8; i++)
+   {
+      context->buffer[63 - i] = totalSize & 0xFF;
+      totalSize >>= 8;
+   }
 
    //Calculate the message digest
    sha1ProcessBlock(context);
 
-   //Convert from host byte order to big-endian byte order
-   for(i = 0; i < 5; i++)
-   {
-      context->h[i] = htobe32(context->h[i]);
-   }
-
    //Copy the resulting digest
-   if(digest != NULL)
+   for(i = 0; i < (SHA1_DIGEST_SIZE / 4); i++)
    {
-      osMemcpy(digest, context->digest, SHA1_DIGEST_SIZE);
+      STORE32BE(context->h[i], digest + i * 4);
    }
 }
 
@@ -266,19 +263,10 @@ __weak_func void sha1FinalRaw(Sha1Context *context, uint8_t *digest)
 {
    uint_t i;
 
-   //Convert from host byte order to big-endian byte order
-   for(i = 0; i < 5; i++)
-   {
-      context->h[i] = htobe32(context->h[i]);
-   }
-
    //Copy the resulting digest
-   osMemcpy(digest, context->digest, SHA1_DIGEST_SIZE);
-
-   //Convert from big-endian byte order to host byte order
-   for(i = 0; i < 5; i++)
+   for(i = 0; i < (SHA1_DIGEST_SIZE / 4); i++)
    {
-      context->h[i] = betoh32(context->h[i]);
+      STORE32BE(context->h[i], digest + i * 4);
    }
 }
 
@@ -306,7 +294,7 @@ __weak_func void sha1ProcessBlock(Sha1Context *context)
    //Convert from big-endian byte order to host byte order
    for(i = 0; i < 16; i++)
    {
-      w[i] = betoh32(w[i]);
+      w[i] = LOAD32BE(context->buffer + i * 4);
    }
 
    //SHA-1 hash computation (alternate method)

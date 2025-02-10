@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -154,19 +154,18 @@ __weak_func void sha224Update(Sha224Context *context, const void *data, size_t l
 /**
  * @brief Finish the SHA-224 message digest
  * @param[in] context Pointer to the SHA-224 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 __weak_func void sha224Final(Sha224Context *context, uint8_t *digest)
 {
+   uint8_t temp[SHA256_DIGEST_SIZE];
+
    //The function is defined in the exact same manner as SHA-256
-   sha256Final(context, NULL);
+   sha256Final(context, temp);
 
    //Copy the resulting digest
-   if(digest != NULL)
-   {
-      osMemcpy(digest, context->digest, SHA224_DIGEST_SIZE);
-   }
+   osMemcpy(digest, temp, SHA224_DIGEST_SIZE);
 }
 
 #endif

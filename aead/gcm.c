@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -31,7 +31,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -102,7 +102,8 @@ __weak_func error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
    uint_t i;
    uint_t j;
    uint32_t c;
-   uint32_t h[4];
+   uint32_t m[4];
+   uint8_t h[16];
 
    //Check parameters
    if(context == NULL || cipherAlgo == NULL || cipherContext == NULL)
@@ -117,14 +118,9 @@ __weak_func error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
    context->cipherContext = cipherContext;
 
    //Let H = 0
-   h[0] = 0;
-   h[1] = 0;
-   h[2] = 0;
-   h[3] = 0;
-
+   osMemset(h, 0, 16);
    //Generate the hash subkey H
-   context->cipherAlgo->encryptBlock(context->cipherContext, (uint8_t *) h,
-      (uint8_t *) h);
+   context->cipherAlgo->encryptBlock(context->cipherContext, h, h);
 
    //Pre-compute M(0) = H * 0
    j = GCM_REVERSE_BITS(0);
@@ -135,10 +131,10 @@ __weak_func error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
 
    //Pre-compute M(1) = H * 1
    j = GCM_REVERSE_BITS(1);
-   context->m[j][0] = betoh32(h[3]);
-   context->m[j][1] = betoh32(h[2]);
-   context->m[j][2] = betoh32(h[1]);
-   context->m[j][3] = betoh32(h[0]);
+   context->m[j][0] = LOAD32BE(h + 12);
+   context->m[j][1] = LOAD32BE(h + 8);
+   context->m[j][2] = LOAD32BE(h + 4);
+   context->m[j][3] = LOAD32BE(h);
 
    //Pre-compute all multiples of H (Shoup's method)
    for(i = 2; i < GCM_TABLE_N; i++)
@@ -148,47 +144,46 @@ __weak_func error_t gcmInit(GcmContext *context, const CipherAlgo *cipherAlgo,
       {
          //Compute M(i) = M(i - 1) + H
          j = GCM_REVERSE_BITS(i - 1);
-         h[0] = context->m[j][0];
-         h[1] = context->m[j][1];
-         h[2] = context->m[j][2];
-         h[3] = context->m[j][3];
+         m[0] = context->m[j][0];
+         m[1] = context->m[j][1];
+         m[2] = context->m[j][2];
+         m[3] = context->m[j][3];
 
          //An addition in GF(2^128) is identical to a bitwise exclusive-OR
          //operation
-         j = GCM_REVERSE_BITS(1);
-         h[0] ^= context->m[j][0];
-         h[1] ^= context->m[j][1];
-         h[2] ^= context->m[j][2];
-         h[3] ^= context->m[j][3];
+         m[0] ^= LOAD32BE(h + 12);
+         m[1] ^= LOAD32BE(h + 8);
+         m[2] ^= LOAD32BE(h + 4);
+         m[3] ^= LOAD32BE(h);
       }
       else
       {
          //Compute M(i) = M(i / 2) * x
          j = GCM_REVERSE_BITS(i / 2);
-         h[0] = context->m[j][0];
-         h[1] = context->m[j][1];
-         h[2] = context->m[j][2];
-         h[3] = context->m[j][3];
+         m[0] = context->m[j][0];
+         m[1] = context->m[j][1];
+         m[2] = context->m[j][2];
+         m[3] = context->m[j][3];
 
          //The multiplication of a polynomial by x in GF(2^128) corresponds
          //to a shift of indices
-         c = h[0] & 0x01;
-         h[0] = (h[0] >> 1) | (h[1] << 31);
-         h[1] = (h[1] >> 1) | (h[2] << 31);
-         h[2] = (h[2] >> 1) | (h[3] << 31);
-         h[3] >>= 1;
+         c = m[0] & 0x01;
+         m[0] = (m[0] >> 1) | (m[1] << 31);
+         m[1] = (m[1] >> 1) | (m[2] << 31);
+         m[2] = (m[2] >> 1) | (m[3] << 31);
+         m[3] >>= 1;
 
          //If the highest term of the result is equal to one, then perform
          //reduction
-         h[3] ^= r[GCM_REVERSE_BITS(1)] & ~(c - 1);
+         m[3] ^= r[GCM_REVERSE_BITS(1)] & ~(c - 1);
       }
 
       //Save M(i)
       j = GCM_REVERSE_BITS(i);
-      context->m[j][0] = h[0];
-      context->m[j][1] = h[1];
-      context->m[j][2] = h[2];
-      context->m[j][3] = h[3];
+      context->m[j][0] = m[0];
+      context->m[j][1] = m[1];
+      context->m[j][2] = m[2];
+      context->m[j][3] = m[3];
    }
 
    //Successful initialization

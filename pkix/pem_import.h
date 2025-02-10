@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _PEM_IMPORT_H
@@ -56,41 +56,35 @@ error_t pemImportCrl(const char_t *input, size_t inputLen,
 error_t pemImportCsr(const char_t *input, size_t inputLen,
    uint8_t *output, size_t *outputLen);
 
-error_t pemImportDhParameters(const char_t *input, size_t length,
-   DhParameters *params);
+error_t pemImportDhParameters(DhParameters *params, const char_t *input,
+   size_t length);
 
-error_t pemImportRsaPublicKey(const char_t *input, size_t length,
-   RsaPublicKey *publicKey);
+error_t pemImportRsaPublicKey(RsaPublicKey *publicKey, const char_t *input,
+   size_t length);
 
-error_t pemImportRsaPrivateKey(const char_t *input, size_t length,
-   const char_t *password, RsaPrivateKey *privateKey);
+error_t pemImportRsaPrivateKey(RsaPrivateKey *privateKey, const char_t *input,
+   size_t length, const char_t *password);
 
-error_t pemImportDsaPublicKey(const char_t *input, size_t length,
-   DsaPublicKey *publicKey);
+error_t pemImportDsaPublicKey(DsaPublicKey *publicKey, const char_t *input,
+   size_t length);
 
-error_t pemImportDsaPrivateKey(const char_t *input, size_t length,
-   const char_t *password, DsaPrivateKey *privateKey);
+error_t pemImportDsaPrivateKey(DsaPrivateKey *privateKey, const char_t *input,
+   size_t length, const char_t *password);
 
-error_t pemImportEcParameters(const char_t *input, size_t length,
-   EcDomainParameters *params);
+error_t pemImportEcPublicKey(EcPublicKey *publicKey, const char_t *input,
+   size_t length);
 
-error_t pemImportEcPublicKey(const char_t *input, size_t length,
-   EcPublicKey *publicKey);
+error_t pemImportEcPrivateKey(EcPrivateKey *privateKey, const char_t *input,
+   size_t length, const char_t *password);
 
-error_t pemImportEcPrivateKey(const char_t *input, size_t length,
-   const char_t *password, EcPrivateKey *privateKey);
+error_t pemImportEddsaPublicKey(EddsaPublicKey *publicKey, const char_t *input,
+   size_t length);
 
-error_t pemImportEddsaPublicKey(const char_t *input, size_t length,
-   EddsaPublicKey *publicKey);
+error_t pemImportEddsaPrivateKey(EddsaPrivateKey *privateKey,
+   const char_t *input, size_t length, const char_t *password);
 
-error_t pemImportEddsaPrivateKey(const char_t *input, size_t length,
-   const char_t *password, EddsaPrivateKey *privateKey);
-
-error_t pemGetPublicKeyType(const char_t *input, size_t length,
-   X509KeyType *keyType);
-
-error_t pemGetPrivateKeyType(const char_t *input, size_t length,
-   X509KeyType *keyType);
+X509KeyType pemGetPublicKeyType(const char_t *input, size_t length);
+const EcCurve *pemGetPublicKeyCurve(const char_t *input, size_t length);
 
 //C++ guard
 #ifdef __cplusplus

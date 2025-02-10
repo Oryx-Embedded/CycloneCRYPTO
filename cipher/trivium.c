@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -101,7 +101,7 @@ error_t triviumInit(TriviumContext *context, const uint8_t *key,
       triviumGenerateBit(context);
    }
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -192,7 +192,7 @@ uint8_t triviumGenerateBit(TriviumContext *context)
       context->s[i] = (context->s[i] << 1) | (context->s[i - 1] >> 7);
    }
 
-   context->s[0] = context->s[0] << 1;
+   context->s[0] <<= 1;
 
    //Let s1 = t3
    TRIVIUM_SET_BIT(context->s, 1, t3);

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -43,8 +43,29 @@
 //Check crypto library configuration
 #if (MIMXRT1160_CRYPTO_HASH_SUPPORT == ENABLED)
 
+//IAR EWARM compiler?
+#if defined(__ICCARM__)
+
 //CAAM hash context
-static caam_hash_ctx_t caamHashContext;
+#pragma data_alignment = 16
+caam_hash_ctx_t caamHashContext;
+
+//CAAM digest output
+#pragma data_alignment = 16
+uint8_t caamDigestOut[64];
+
+//ARM or GCC compiler?
+#else
+
+//CAAM hash context
+caam_hash_ctx_t caamHashContext
+   __attribute__((aligned(16)));
+
+//CAAM digest output
+uint8_t caamDigestOut[64]
+   __attribute__((aligned(16)));
+
+#endif
 
 
 #if (SHA1_SUPPORT == ENABLED)
@@ -86,7 +107,14 @@ error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
       //Specify the size of the output buffer
       n = SHA1_DIGEST_SIZE;
       //Finalize hash computation
-      status = CAAM_HASH_Finish(&caamHashContext, digest, &n);
+      status = CAAM_HASH_Finish(&caamHashContext, caamDigestOut, &n);
+   }
+
+   //Check status code
+   if(status == kStatus_Success)
+   {
+      //Copy the resulting digest
+      osMemcpy(digest, caamDigestOut, SHA1_DIGEST_SIZE);
    }
 
    //Release exclusive access to the CAAM module
@@ -151,7 +179,7 @@ void sha1Update(Sha1Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SHA-1 message digest
  * @param[in] context Pointer to the SHA-1 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha1Final(Sha1Context *context, uint8_t *digest)
@@ -167,16 +195,13 @@ void sha1Final(Sha1Context *context, uint8_t *digest)
    //Restore hash context
    osMemcpy(&caamHashContext, context->caamContext, sizeof(caam_hash_ctx_t));
    //Finalize hash computation
-   CAAM_HASH_Finish(&caamHashContext, context->digest, &n);
+   CAAM_HASH_Finish(&caamHashContext, caamDigestOut, &n);
+
+   //Save the resulting digest
+   osMemcpy(digest, caamDigestOut, SHA1_DIGEST_SIZE);
 
    //Release exclusive access to the CAAM module
    osReleaseMutex(&mimxrt1160CryptoMutex);
-
-   //Copy the resulting digest
-   if(digest != NULL)
-   {
-      osMemcpy(digest, context->digest, SHA1_DIGEST_SIZE);
-   }
 }
 
 #endif
@@ -219,7 +244,14 @@ error_t sha224Compute(const void *data, size_t length, uint8_t *digest)
       //Specify the size of the output buffer
       n = SHA224_DIGEST_SIZE;
       //Finalize hash computation
-      status = CAAM_HASH_Finish(&caamHashContext, digest, &n);
+      status = CAAM_HASH_Finish(&caamHashContext, caamDigestOut, &n);
+   }
+
+   //Check status code
+   if(status == kStatus_Success)
+   {
+      //Copy the resulting digest
+      osMemcpy(digest, caamDigestOut, SHA224_DIGEST_SIZE);
    }
 
    //Release exclusive access to the CAAM module
@@ -284,7 +316,7 @@ void sha224Update(Sha224Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SHA-224 message digest
  * @param[in] context Pointer to the SHA-224 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha224Final(Sha224Context *context, uint8_t *digest)
@@ -300,16 +332,13 @@ void sha224Final(Sha224Context *context, uint8_t *digest)
    //Restore hash context
    osMemcpy(&caamHashContext, context->caamContext, sizeof(caam_hash_ctx_t));
    //Finalize hash computation
-   CAAM_HASH_Finish(&caamHashContext, context->digest, &n);
+   CAAM_HASH_Finish(&caamHashContext, caamDigestOut, &n);
+
+   //Save the resulting digest
+   osMemcpy(digest, caamDigestOut, SHA224_DIGEST_SIZE);
 
    //Release exclusive access to the CAAM module
    osReleaseMutex(&mimxrt1160CryptoMutex);
-
-   //Copy the resulting digest
-   if(digest != NULL)
-   {
-      osMemcpy(digest, context->digest, SHA224_DIGEST_SIZE);
-   }
 }
 
 #endif
@@ -352,7 +381,14 @@ error_t sha256Compute(const void *data, size_t length, uint8_t *digest)
       //Specify the size of the output buffer
       n = SHA256_DIGEST_SIZE;
       //Finalize hash computation
-      status = CAAM_HASH_Finish(&caamHashContext, digest, &n);
+      status = CAAM_HASH_Finish(&caamHashContext, caamDigestOut, &n);
+   }
+
+   //Check status code
+   if(status == kStatus_Success)
+   {
+      //Copy the resulting digest
+      osMemcpy(digest, caamDigestOut, SHA256_DIGEST_SIZE);
    }
 
    //Release exclusive access to the CAAM module
@@ -417,7 +453,7 @@ void sha256Update(Sha256Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SHA-256 message digest
  * @param[in] context Pointer to the SHA-256 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha256Final(Sha256Context *context, uint8_t *digest)
@@ -433,16 +469,13 @@ void sha256Final(Sha256Context *context, uint8_t *digest)
    //Restore hash context
    osMemcpy(&caamHashContext, context->caamContext, sizeof(caam_hash_ctx_t));
    //Finalize hash computation
-   CAAM_HASH_Finish(&caamHashContext, context->digest, &n);
+   CAAM_HASH_Finish(&caamHashContext, caamDigestOut, &n);
+
+   //Save the resulting digest
+   osMemcpy(digest, caamDigestOut, SHA256_DIGEST_SIZE);
 
    //Release exclusive access to the CAAM module
    osReleaseMutex(&mimxrt1160CryptoMutex);
-
-   //Copy the resulting digest
-   if(digest != NULL)
-   {
-      osMemcpy(digest, context->digest, SHA256_DIGEST_SIZE);
-   }
 }
 
 #endif
@@ -485,7 +518,14 @@ error_t sha384Compute(const void *data, size_t length, uint8_t *digest)
       //Specify the size of the output buffer
       n = SHA384_DIGEST_SIZE;
       //Finalize hash computation
-      status = CAAM_HASH_Finish(&caamHashContext, digest, &n);
+      status = CAAM_HASH_Finish(&caamHashContext, caamDigestOut, &n);
+   }
+
+   //Check status code
+   if(status == kStatus_Success)
+   {
+      //Copy the resulting digest
+      osMemcpy(digest, caamDigestOut, SHA384_DIGEST_SIZE);
    }
 
    //Release exclusive access to the CAAM module
@@ -550,7 +590,7 @@ void sha384Update(Sha384Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SHA-384 message digest
  * @param[in] context Pointer to the SHA-384 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha384Final(Sha384Context *context, uint8_t *digest)
@@ -566,16 +606,13 @@ void sha384Final(Sha384Context *context, uint8_t *digest)
    //Restore hash context
    osMemcpy(&caamHashContext, context->caamContext, sizeof(caam_hash_ctx_t));
    //Finalize hash computation
-   CAAM_HASH_Finish(&caamHashContext, context->digest, &n);
+   CAAM_HASH_Finish(&caamHashContext, caamDigestOut, &n);
+
+   //Save the resulting digest
+   osMemcpy(digest, caamDigestOut, SHA384_DIGEST_SIZE);
 
    //Release exclusive access to the CAAM module
    osReleaseMutex(&mimxrt1160CryptoMutex);
-
-   //Copy the resulting digest
-   if(digest != NULL)
-   {
-      osMemcpy(digest, context->digest, SHA384_DIGEST_SIZE);
-   }
 }
 
 #endif
@@ -618,7 +655,14 @@ error_t sha512Compute(const void *data, size_t length, uint8_t *digest)
       //Specify the size of the output buffer
       n = SHA512_DIGEST_SIZE;
       //Finalize hash computation
-      status = CAAM_HASH_Finish(&caamHashContext, digest, &n);
+      status = CAAM_HASH_Finish(&caamHashContext, caamDigestOut, &n);
+   }
+
+   //Check status code
+   if(status == kStatus_Success)
+   {
+      //Copy the resulting digest
+      osMemcpy(digest, caamDigestOut, SHA512_DIGEST_SIZE);
    }
 
    //Release exclusive access to the CAAM module
@@ -683,7 +727,7 @@ void sha512Update(Sha512Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SHA-512 message digest
  * @param[in] context Pointer to the SHA-512 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha512Final(Sha512Context *context, uint8_t *digest)
@@ -699,16 +743,13 @@ void sha512Final(Sha512Context *context, uint8_t *digest)
    //Restore hash context
    osMemcpy(&caamHashContext, context->caamContext, sizeof(caam_hash_ctx_t));
    //Finalize hash computation
-   CAAM_HASH_Finish(&caamHashContext, context->digest, &n);
+   CAAM_HASH_Finish(&caamHashContext, caamDigestOut, &n);
+
+   //Save the resulting digest
+   osMemcpy(digest, caamDigestOut, SHA512_DIGEST_SIZE);
 
    //Release exclusive access to the CAAM module
    osReleaseMutex(&mimxrt1160CryptoMutex);
-
-   //Copy the resulting digest
-   if(digest != NULL)
-   {
-      osMemcpy(digest, context->digest, SHA512_DIGEST_SIZE);
-   }
 }
 
 #endif

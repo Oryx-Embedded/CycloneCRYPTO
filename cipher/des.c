@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * 64 bits under control of a 64-bit key. Refer to FIPS 46-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -310,7 +310,7 @@ __weak_func error_t desInit(DesContext *context, const uint8_t *key,
       return ERROR_INVALID_KEY_LENGTH;
 
    //Copy the key
-   c = LOAD32BE(key + 0);
+   c = LOAD32BE(key);
    d = LOAD32BE(key + 4);
 
    //Permuted choice 1
@@ -336,7 +336,7 @@ __weak_func error_t desInit(DesContext *context, const uint8_t *key,
       context->ks[2 * i + 1] = PC2_R(c, d);
    }
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -357,7 +357,7 @@ __weak_func void desEncryptBlock(DesContext *context, const uint8_t *input,
    uint32_t t;
 
    //Copy the plaintext from the input buffer
-   l = LOAD32BE(input + 0);
+   l = LOAD32BE(input);
    r = LOAD32BE(input + 4);
 
    //Initial permutation
@@ -376,7 +376,7 @@ __weak_func void desEncryptBlock(DesContext *context, const uint8_t *input,
    IP_INV(r, l);
 
    //Copy the resulting ciphertext
-   STORE32BE(r, output + 0);
+   STORE32BE(r, output);
    STORE32BE(l, output + 4);
 }
 
@@ -397,7 +397,7 @@ __weak_func void desDecryptBlock(DesContext *context, const uint8_t *input,
    uint32_t t;
 
    //Copy the ciphertext from the input buffer
-   r = LOAD32BE(input + 0);
+   r = LOAD32BE(input);
    l = LOAD32BE(input + 4);
 
    //Initial permutation
@@ -416,7 +416,7 @@ __weak_func void desDecryptBlock(DesContext *context, const uint8_t *input,
    IP_INV(l, r);
 
    //Copy the resulting plaintext
-   STORE32BE(l, output + 0);
+   STORE32BE(l, output);
    STORE32BE(r, output + 4);
 }
 

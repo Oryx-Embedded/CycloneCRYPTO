@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -915,12 +915,16 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    //Initialize status code
    status = SSP_SUCCESS;
 
-#if (DES3_SUPPORT == ENABLED)
-   //Triple DES cipher algorithm?
-   if(cipher == DES3_CIPHER_ALGO)
+   //Check the value of the parameter
+   if((m % 8) == 0 && m <= (cipher->blockSize * 8))
    {
-      //Check the value of the parameter
-      if(m == (DES3_BLOCK_SIZE * 8))
+      //Determine the size, in bytes, of the specific part of the block to be
+      //incremented
+      m = m / 8;
+
+#if (DES3_SUPPORT == ENABLED)
+      //Triple DES cipher algorithm?
+      if(cipher == DES3_CIPHER_ALGO)
       {
          //Check the length of the payload
          if(length == 0)
@@ -929,7 +933,10 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
          }
          else if((length % DES3_BLOCK_SIZE) == 0)
          {
+            size_t k;
+            size_t n;
             Des3Context *des3Context;
+            uint32_t temp[DES3_BLOCK_SIZE];
 
             //Point to the Triple DES context
             des3Context = (Des3Context *) context;
@@ -937,10 +944,27 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             //Acquire exclusive access to the SCE7 module
             osAcquireMutex(&s7g2CryptoMutex);
 
-            //Perform 3DES-CTR encryption
-            status = HW_SCE_TDES_192CtrEncrypt(des3Context->k1.ks,
-               (const uint32_t *) t, length / 4, (const uint32_t *) p,
-               (uint32_t *) c, (uint32_t *) t);
+            //Process plaintext
+            while(length > 0 && status == SSP_SUCCESS)
+            {
+               //Limit the number of blocks to process at a time
+               k = 256 - t[DES3_BLOCK_SIZE - 1];
+               n = MIN(length, k * DES3_BLOCK_SIZE);
+               k = (n + DES3_BLOCK_SIZE - 1) / DES3_BLOCK_SIZE;
+
+               //Perform 3DES-CTR encryption
+               status = HW_SCE_TDES_192CtrEncrypt(des3Context->k1.ks,
+                  (const uint32_t *) t, n / 4, (const uint32_t *) p,
+                  (uint32_t *) c, (uint32_t *) temp);
+
+               //Standard incrementing function
+               ctrIncBlock(t, k, DES3_BLOCK_SIZE, m);
+
+               //Next block
+               p += n;
+               c += n;
+               length -= n;
+            }
 
             //Release exclusive access to the SCE7 module
             osReleaseMutex(&s7g2CryptoMutex);
@@ -952,19 +976,10 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
          }
       }
       else
-      {
-         //The value of the parameter is not valid
-         status = SSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-      }
-   }
-   else
 #endif
 #if (AES_SUPPORT == ENABLED)
-   //AES cipher algorithm?
-   if(cipher == AES_CIPHER_ALGO)
-   {
-      //Check the value of the parameter
-      if(m == (AES_BLOCK_SIZE * 8))
+      //AES cipher algorithm?
+      if(cipher == AES_CIPHER_ALGO)
       {
          //Check the length of the payload
          if(length == 0)
@@ -973,7 +988,10 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
          }
          else if((length % AES_BLOCK_SIZE) == 0)
          {
+            size_t k;
+            size_t n;
             AesContext *aesContext;
+            uint32_t temp[AES_BLOCK_SIZE];
 
             //Point to the AES context
             aesContext = (AesContext *) context;
@@ -981,32 +999,49 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             //Acquire exclusive access to the SCE7 module
             osAcquireMutex(&s7g2CryptoMutex);
 
-            //Check the length of the key
-            if(aesContext->nr == 10)
+            //Process plaintext
+            while(length > 0 && status == SSP_SUCCESS)
             {
-               //Perform AES-CTR encryption (128-bit key)
-               status = HW_SCE_AES_128CtrEncrypt(aesContext->ek,
-                  (const uint32_t *) t, length / 4, (const uint32_t *) p,
-                  (uint32_t *) c, (uint32_t *) t);
-            }
-            else if(aesContext->nr == 12)
-            {
-               //Perform AES-CTR encryption (192-bit key)
-               status = HW_SCE_AES_192CtrEncrypt(aesContext->ek,
-                  (const uint32_t *) t, length / 4, (const uint32_t *) p,
-                  (uint32_t *) c, (uint32_t *) t);
-            }
-            else if(aesContext->nr == 14)
-            {
-               //Perform AES-CTR encryption (256-bit key)
-               status = HW_SCE_AES_256CtrEncrypt(aesContext->ek,
-                  (const uint32_t *) t, length / 4, (const uint32_t *) p,
-                  (uint32_t *) c, (uint32_t *) t);
-            }
-            else
-            {
-               //Invalid key length
-               status = SSP_ERR_CRYPTO_NOT_IMPLEMENTED;
+               //Limit the number of blocks to process at a time
+               k = 256 - t[AES_BLOCK_SIZE - 1];
+               n = MIN(length, k * AES_BLOCK_SIZE);
+               k = (n + AES_BLOCK_SIZE - 1) / AES_BLOCK_SIZE;
+
+               //Check the length of the key
+               if(aesContext->nr == 10)
+               {
+                  //Perform AES-CTR encryption (128-bit key)
+                  status = HW_SCE_AES_128CtrEncrypt(aesContext->ek,
+                     (const uint32_t *) t, n / 4, (const uint32_t *) p,
+                     (uint32_t *) c, (uint32_t *) temp);
+               }
+               else if(aesContext->nr == 12)
+               {
+                  //Perform AES-CTR encryption (192-bit key)
+                  status = HW_SCE_AES_192CtrEncrypt(aesContext->ek,
+                     (const uint32_t *) t, n / 4, (const uint32_t *) p,
+                     (uint32_t *) c, (uint32_t *) temp);
+               }
+               else if(aesContext->nr == 14)
+               {
+                  //Perform AES-CTR encryption (256-bit key)
+                  status = HW_SCE_AES_256CtrEncrypt(aesContext->ek,
+                     (const uint32_t *) t, n / 4, (const uint32_t *) p,
+                     (uint32_t *) c, (uint32_t *) temp);
+               }
+               else
+               {
+                  //Invalid key length
+                  status = SSP_ERR_CRYPTO_NOT_IMPLEMENTED;
+               }
+
+               //Standard incrementing function
+               ctrIncBlock(t, k, AES_BLOCK_SIZE, m);
+
+               //Next block
+               p += n;
+               c += n;
+               length -= n;
             }
 
             //Release exclusive access to the SCE7 module
@@ -1019,25 +1054,12 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
          }
       }
       else
-      {
-         //The value of the parameter is not valid
-         status = SSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-      }
-   }
-   else
 #endif
-   //Unknown cipher algorithm?
-   {
-      //Check the value of the parameter
-      if((m % 8) == 0 && m <= (cipher->blockSize * 8))
+      //Unknown cipher algorithm?
       {
          size_t i;
          size_t n;
          uint8_t o[16];
-
-         //Determine the size, in bytes, of the specific part of the block
-         //to be incremented
-         m = m / 8;
 
          //Process plaintext
          while(length > 0)
@@ -1063,11 +1085,11 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             length -= n;
          }
       }
-      else
-      {
-         //The value of the parameter is not valid
-         status = SSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-      }
+   }
+   else
+   {
+      //The value of the parameter is not valid
+      status = SSP_ERR_CRYPTO_NOT_IMPLEMENTED;
    }
 
    //Return status code

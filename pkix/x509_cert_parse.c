@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -303,7 +303,7 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
          return ERROR_INVALID_VERSION;
    }
 
-   //No error to report
+   //Successful processing
    return NO_ERROR;
 }
 
@@ -364,7 +364,7 @@ error_t x509ParseVersion(const uint8_t *data, size_t length,
    //Save certificate version
    *version = (X509Version) value;
 
-   //No error to report
+   //Successful processing
    return NO_ERROR;
 }
 
@@ -412,7 +412,7 @@ error_t x509ParseSerialNumber(const uint8_t *data, size_t length,
    serialNumber->value = tag.value;
    serialNumber->length = tag.length;
 
-   //No error to report
+   //Successful processing
    return NO_ERROR;
 }
 
@@ -577,120 +577,120 @@ error_t x509ParseName(const uint8_t *data, size_t length,
          return error;
 
       //Check attribute type
-      if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_COMMON_NAME_OID, sizeof(X509_COMMON_NAME_OID)))
+      if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_COMMON_NAME_OID) == 0)
       {
          //Save Common Name attribute
          name->commonName.value = nameAttribute.data.value;
          name->commonName.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_SURNAME_OID, sizeof(X509_SURNAME_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_SURNAME_OID) == 0)
       {
          //Save Surname attribute
          name->surname.value = nameAttribute.data.value;
          name->surname.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_SERIAL_NUMBER_OID, sizeof(X509_SERIAL_NUMBER_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_SERIAL_NUMBER_OID) == 0)
       {
          //Save Serial Number attribute
          name->serialNumber.value = nameAttribute.data.value;
          name->serialNumber.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_COUNTRY_NAME_OID, sizeof(X509_COUNTRY_NAME_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_COUNTRY_NAME_OID) == 0)
       {
          //Save Country Name attribute
          name->countryName.value = nameAttribute.data.value;
          name->countryName.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_LOCALITY_NAME_OID, sizeof(X509_LOCALITY_NAME_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_LOCALITY_NAME_OID) == 0)
       {
          //Save Locality Name attribute
          name->localityName.value = nameAttribute.data.value;
          name->localityName.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_STATE_OR_PROVINCE_NAME_OID, sizeof(X509_STATE_OR_PROVINCE_NAME_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_STATE_OR_PROVINCE_NAME_OID) == 0)
       {
          //Save State Or Province Name attribute
          name->stateOrProvinceName.value = nameAttribute.data.value;
          name->stateOrProvinceName.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_ORGANIZATION_NAME_OID, sizeof(X509_ORGANIZATION_NAME_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_ORGANIZATION_NAME_OID) == 0)
       {
          //Save Organization Name attribute
          name->organizationName.value = nameAttribute.data.value;
          name->organizationName.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_ORGANIZATIONAL_UNIT_NAME_OID, sizeof(X509_ORGANIZATIONAL_UNIT_NAME_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_ORGANIZATIONAL_UNIT_NAME_OID) == 0)
       {
          //Save Organizational Unit Name attribute
          name->organizationalUnitName.value = nameAttribute.data.value;
          name->organizationalUnitName.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_TITLE_OID, sizeof(X509_TITLE_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_TITLE_OID) == 0)
       {
          //Save Title attribute
          name->title.value = nameAttribute.data.value;
          name->title.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_NAME_OID, sizeof(X509_NAME_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_NAME_OID) == 0)
       {
          //Save Name attribute
          name->name.value = nameAttribute.data.value;
          name->name.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_GIVEN_NAME_OID, sizeof(X509_GIVEN_NAME_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_GIVEN_NAME_OID) == 0)
       {
          //Save Given Name attribute
          name->givenName.value = nameAttribute.data.value;
          name->givenName.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_INITIALS_OID, sizeof(X509_INITIALS_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_INITIALS_OID) == 0)
       {
          //Save Initials attribute
          name->initials.value = nameAttribute.data.value;
          name->initials.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_GENERATION_QUALIFIER_OID, sizeof(X509_GENERATION_QUALIFIER_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_GENERATION_QUALIFIER_OID) == 0)
       {
          //Save Generation Qualifier attribute
          name->generationQualifier.value = nameAttribute.data.value;
          name->generationQualifier.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_DN_QUALIFIER_OID, sizeof(X509_DN_QUALIFIER_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_DN_QUALIFIER_OID) == 0)
       {
          //Save DN Qualifier attribute
          name->dnQualifier.value = nameAttribute.data.value;
          name->dnQualifier.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_PSEUDONYM_OID, sizeof(X509_PSEUDONYM_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_PSEUDONYM_OID) == 0)
       {
          //Save Pseudonym attribute
          name->pseudonym.value = nameAttribute.data.value;
          name->pseudonym.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_EMAIL_ADDRESS_OID, sizeof(X509_EMAIL_ADDRESS_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_EMAIL_ADDRESS_OID) == 0)
       {
          //Save E-mail Address attribute
          name->emailAddress.value = nameAttribute.data.value;
          name->emailAddress.length = nameAttribute.data.length;
       }
-      else if(!oidComp(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_DOMAIN_COMPONENT_OID, sizeof(X509_DOMAIN_COMPONENT_OID)))
+      else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
+         X509_DOMAIN_COMPONENT_OID) == 0)
       {
          //Save Domain Component attribute
          if(i < X509_MAX_DOMAIN_COMPONENTS)

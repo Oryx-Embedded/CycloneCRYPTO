@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -41,6 +41,7 @@
 #include "hardware/ra6/ra6_crypto_pkc.h"
 #include "pkc/rsa.h"
 #include "ecc/ec.h"
+#include "ecc/ec_misc.h"
 #include "ecc/ecdsa.h"
 #include "debug.h"
 
@@ -51,6 +52,7 @@
 static Ra6RsaArgs rsaArgs;
 static Ra6EcArgs ecArgs;
 
+#if (MPI_SUPPORT == ENABLED)
 
 /**
  * @brief Modular exponentiation (fast calculation)
@@ -70,11 +72,11 @@ error_t mpiExpModFast(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    size_t eLen;
    size_t pLen;
 
-   //Retrieve the length of the integer, in bytes
+   //Get the length of the integer, in bytes
    aLen = mpiGetByteLength(a);
-   //Retrieve the length of the exponent, in bytes
+   //Get the length of the exponent, in bytes
    eLen = mpiGetByteLength(e);
-   //Retrieve the length of the modulus, in bytes
+   //Get the length of the modulus, in bytes
    pLen = mpiGetByteLength(p);
 
 #if (BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
@@ -227,11 +229,11 @@ error_t mpiExpModRegular(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    size_t eLen;
    size_t pLen;
 
-   //Retrieve the length of the integer, in bytes
+   //Get the length of the integer, in bytes
    aLen = mpiGetByteLength(a);
-   //Retrieve the length of the exponent, in bytes
+   //Get the length of the exponent, in bytes
    eLen = mpiGetByteLength(e);
-   //Retrieve the length of the modulus, in bytes
+   //Get the length of the modulus, in bytes
    pLen = mpiGetByteLength(p);
 
    //The accelerator supports operand lengths up to 2048 bits
@@ -285,6 +287,8 @@ error_t mpiExpModRegular(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    return error;
 }
 
+#endif
+#if (RSA_SUPPORT == ENABLED)
 
 /**
  * @brief RSA decryption primitive
@@ -309,7 +313,7 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    size_t dqLen;
    size_t qinvLen;
 
-   //Retrieve the length of the private key
+   //Get the length of the private key
    nLen = mpiGetByteLength(&key->n);
    dLen = mpiGetByteLength(&key->d);
    pLen = mpiGetByteLength(&key->p);
@@ -405,18 +409,37 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    return error;
 }
 
+#endif
+#if (EC_SUPPORT == ENABLED)
 
 /**
- * @brief Scalar multiplication
- * @param[in] params EC domain parameters
+ * @brief Scalar multiplication (fast calculation)
+ * @param[in] curve Elliptic curve parameters
  * @param[out] r Resulting point R = d.S
  * @param[in] d An integer d such as 0 <= d < p
  * @param[in] s EC point
  * @return Error code
  **/
 
-error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
-   const EcPoint *s)
+error_t ecMulFast(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
+   const EcPoint3 *s)
+{
+   //Compute R = d.S
+   return ecMulRegular(curve, r, d, s);
+}
+
+
+/**
+ * @brief Scalar multiplication (regular calculation)
+ * @param[in] curve Elliptic curve parameters
+ * @param[out] r Resulting point R = d.S
+ * @param[in] d An integer d such as 0 <= d < q
+ * @param[in] s EC point
+ * @return Error code
+ **/
+
+error_t ecMulRegular(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
+   const EcPoint3 *s)
 {
    error_t error;
    fsp_err_t status;
@@ -426,35 +449,35 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    sce_oem_cmd_t oemCommand;
 
    //Check elliptic curve parameters
-   if(osStrcmp(params->name, "secp256k1") == 0)
+   if(osStrcmp(curve->name, "secp256k1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_KOBLITZ;
       oemCommand = SCE_OEM_CMD_ECC_SECP256K1_PRIVATE;
       command = 0;
       n = 32;
    }
-   else if(osStrcmp(params->name, "secp256r1") == 0)
+   else if(osStrcmp(curve->name, "secp256r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_NIST;
       oemCommand = SCE_OEM_CMD_ECC_P256_PRIVATE;
       command = 0;
       n = 32;
    }
-   else if(osStrcmp(params->name, "secp384r1") == 0)
+   else if(osStrcmp(curve->name, "secp384r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_NIST;
       oemCommand = SCE_OEM_CMD_ECC_P384_PRIVATE;
       command = 0;
       n = 48;
    }
-   else if(osStrcmp(params->name, "brainpoolP256r1") == 0)
+   else if(osStrcmp(curve->name, "brainpoolP256r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_BRAINPOOL;
       oemCommand = SCE_OEM_CMD_ECC_P256R1_PRIVATE;
       command = 0;
       n = 32;
    }
-   else if(osStrcmp(params->name, "brainpoolP384r1") == 0)
+   else if(osStrcmp(curve->name, "brainpoolP384r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_BRAINPOOL;
       oemCommand = SCE_OEM_CMD_ECC_P384R1_PRIVATE;
@@ -470,11 +493,15 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    osAcquireMutex(&ra6CryptoMutex);
 
    //Set scalar value
-   mpiWriteRaw(d, (uint8_t *) ecArgs.d, n);
+   ecScalarExport(d, n / 4, (uint8_t *) ecArgs.d, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Set input point
-   mpiWriteRaw(&s->x, (uint8_t *) ecArgs.g, n);
-   mpiWriteRaw(&s->y, (uint8_t *) ecArgs.g + n, n);
+   ecScalarExport(s->x, n / 4, (uint8_t *) ecArgs.g, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(s->y, n / 4, (uint8_t *) ecArgs.g + n, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Install the plaintext private key and get the wrapped key
    status = HW_SCE_GenerateOemKeyIndexPrivate(SCE_OEM_KEY_TYPE_PLAIN,
@@ -484,12 +511,12 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    if(status == FSP_SUCCESS)
    {
       //Perform scalar multiplication
-      if(n == 32)
+      if(curve->fieldSize == 256)
       {
          status = HW_SCE_Ecc256ScalarMultiplicationSub(&curveType,
             &command, ecArgs.wrappedKey, ecArgs.g, ecArgs.q);
       }
-      else if(n == 48)
+      else if(curve->fieldSize == 384)
       {
          status = HW_SCE_Ecc384ScalarMultiplicationSub(&curveType,
             ecArgs.wrappedKey, ecArgs.g, ecArgs.q);
@@ -504,20 +531,22 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    if(status == FSP_SUCCESS)
    {
       //Copy the x-coordinate of the result
-      error = mpiReadRaw(&r->x, (uint8_t *) ecArgs.q, n);
+      error = ecScalarImport(r->x, EC_MAX_MODULUS_SIZE, (uint8_t *) ecArgs.q,
+         n, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
       //Check status code
       if(!error)
       {
          //Copy the y-coordinate of the result
-         error = mpiReadRaw(&r->y, (uint8_t *) ecArgs.q + n, n);
+         error = ecScalarImport(r->y, EC_MAX_MODULUS_SIZE,
+            (uint8_t *) ecArgs.q + n, n, EC_SCALAR_FORMAT_BIG_ENDIAN);
       }
 
       //Check status code
       if(!error)
       {
          //Set the z-coordinate of the result
-         error = mpiSetValue(&r->z, 1);
+         ecScalarSetInt(r->z, 1, EC_MAX_MODULUS_SIZE);
       }
    }
    else
@@ -533,12 +562,13 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    return error;
 }
 
+#endif
+#if (ECDSA_SUPPORT == ENABLED)
 
 /**
  * @brief ECDSA signature generation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] params EC domain parameters
  * @param[in] privateKey Signer's EC private key
  * @param[in] digest Digest of the message to be signed
  * @param[in] digestLen Length in octets of the digest
@@ -547,8 +577,8 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
  **/
 
 error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, const EcPrivateKey *privateKey,
-   const uint8_t *digest, size_t digestLen, EcdsaSignature *signature)
+   const EcPrivateKey *privateKey, const uint8_t *digest, size_t digestLen,
+   EcdsaSignature *signature)
 {
    error_t error;
    fsp_err_t status;
@@ -557,44 +587,52 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    uint32_t curveType;
    uint32_t command;
    sce_oem_cmd_t oemCommand;
+   const EcCurve *curve;
 
    //Check parameters
-   if(params == NULL || privateKey == NULL || digest == NULL || signature == NULL)
+   if(privateKey == NULL || digest == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //Retrieve the length of the base point order, in bytes
-   orderLen = mpiGetByteLength(&params->q);
+   //Invalid elliptic curve?
+   if(privateKey->curve == NULL)
+      return ERROR_INVALID_ELLIPTIC_CURVE;
+
+   //Get elliptic curve parameters
+   curve = privateKey->curve;
+
+   //Get the length of the order, in bytes
+   orderLen = (curve->orderSize + 7) / 8;
 
    //Check elliptic curve parameters
-   if(osStrcmp(params->name, "secp256k1") == 0)
+   if(osStrcmp(curve->name, "secp256k1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_KOBLITZ;
       oemCommand = SCE_OEM_CMD_ECC_SECP256K1_PRIVATE;
       command = 0;
       n = 32;
    }
-   else if(osStrcmp(params->name, "secp256r1") == 0)
+   else if(osStrcmp(curve->name, "secp256r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_NIST;
       oemCommand = SCE_OEM_CMD_ECC_P256_PRIVATE;
       command = 0;
       n = 32;
    }
-   else if(osStrcmp(params->name, "secp384r1") == 0)
+   else if(osStrcmp(curve->name, "secp384r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_NIST;
       oemCommand = SCE_OEM_CMD_ECC_P384_PRIVATE;
       command = 0;
       n = 48;
    }
-   else if(osStrcmp(params->name, "brainpoolP256r1") == 0)
+   else if(osStrcmp(curve->name, "brainpoolP256r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_BRAINPOOL;
       oemCommand = SCE_OEM_CMD_ECC_P256R1_PRIVATE;
       command = 0;
       n = 32;
    }
-   else if(osStrcmp(params->name, "brainpoolP384r1") == 0)
+   else if(osStrcmp(curve->name, "brainpoolP384r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_BRAINPOOL;
       oemCommand = SCE_OEM_CMD_ECC_P384R1_PRIVATE;
@@ -617,7 +655,8 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    osMemcpy((uint8_t *) ecArgs.digest + n - digestLen, digest, digestLen);
 
    //Set private key
-   mpiWriteRaw(&privateKey->d, (uint8_t *) ecArgs.d, n);
+   ecScalarExport(privateKey->d, n / 4, (uint8_t *) ecArgs.d, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Install the plaintext private key and get the wrapped key
    status = HW_SCE_GenerateOemKeyIndexPrivate(SCE_OEM_KEY_TYPE_PLAIN,
@@ -626,13 +665,13 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    //Check status code
    if(status == FSP_SUCCESS)
    {
-      //Verify ECDSA signature
-      if(n == 32)
+      //Generate ECDSA signature
+      if(curve->fieldSize == 256)
       {
          status = HW_SCE_EcdsaSignatureGenerateSub(&curveType, &command,
             ecArgs.wrappedKey, ecArgs.digest, ecArgs.signature);
       }
-      else if(n == 48)
+      else if(curve->fieldSize == 384)
       {
          status = HW_SCE_EcdsaP384SignatureGenerateSub(&curveType,
             ecArgs.wrappedKey, ecArgs.digest, ecArgs.signature);
@@ -646,14 +685,19 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    //Check status code
    if(status == FSP_SUCCESS)
    {
+      //Save elliptic curve parameters
+      signature->curve = curve;
+
       //Copy integer R
-      error = mpiReadRaw(&signature->r, (uint8_t *) ecArgs.signature, n);
+      error = ecScalarImport(signature->r, EC_MAX_ORDER_SIZE,
+         (uint8_t *) ecArgs.signature, n, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
       //Check status code
       if(!error)
       {
          //Copy integer S
-         error = mpiReadRaw(&signature->s, (uint8_t *) ecArgs.signature + n, n);
+         error = ecScalarImport(signature->s, EC_MAX_ORDER_SIZE,
+            (uint8_t *) ecArgs.signature + n, n, EC_SCALAR_FORMAT_BIG_ENDIAN);
       }
    }
    else
@@ -672,7 +716,6 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
 
 /**
  * @brief ECDSA signature verification
- * @param[in] params EC domain parameters
  * @param[in] publicKey Signer's EC public key
  * @param[in] digest Digest of the message whose signature is to be verified
  * @param[in] digestLen Length in octets of the digest
@@ -680,9 +723,8 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t ecdsaVerifySignature(const EcDomainParameters *params,
-   const EcPublicKey *publicKey, const uint8_t *digest, size_t digestLen,
-   const EcdsaSignature *signature)
+error_t ecdsaVerifySignature(const EcPublicKey *publicKey,
+   const uint8_t *digest, size_t digestLen, const EcdsaSignature *signature)
 {
    fsp_err_t status;
    size_t n;
@@ -690,60 +732,74 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    uint32_t curveType;
    uint32_t command;
    sce_oem_cmd_t oemCommand;
+   const EcCurve *curve;
 
    //Check parameters
-   if(params == NULL || publicKey == NULL || digest == NULL || signature == NULL)
+   if(publicKey == NULL || digest == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
 
+   //Invalid elliptic curve?
+   if(publicKey->curve == NULL)
+      return ERROR_INVALID_ELLIPTIC_CURVE;
+
+   //Verify that the public key is on the curve
+   if(!ecIsPointAffine(publicKey->curve, &publicKey->q))
+   {
+      return ERROR_INVALID_SIGNATURE;
+   }
+
    //The verifier shall check that 0 < r < q
-   if(mpiCompInt(&signature->r, 0) <= 0 ||
-      mpiComp(&signature->r, &params->q) >= 0)
+   if(ecScalarCompInt(signature->r, 0, EC_MAX_ORDER_SIZE) <= 0 ||
+      ecScalarComp(signature->r, publicKey->curve->q, EC_MAX_ORDER_SIZE) >= 0)
    {
       //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
    }
 
    //The verifier shall check that 0 < s < q
-   if(mpiCompInt(&signature->s, 0) <= 0 ||
-      mpiComp(&signature->s, &params->q) >= 0)
+   if(ecScalarCompInt(signature->s, 0, EC_MAX_ORDER_SIZE) <= 0 ||
+      ecScalarComp(signature->s, publicKey->curve->q, EC_MAX_ORDER_SIZE) >= 0)
    {
       //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
    }
 
-   //Retrieve the length of the base point order, in bytes
-   orderLen = mpiGetByteLength(&params->q);
+   //Get elliptic curve parameters
+   curve = publicKey->curve;
+
+   //Get the length of the order, in bytes
+   orderLen = (curve->orderSize + 7) / 8;
 
    //Check elliptic curve parameters
-   if(osStrcmp(params->name, "secp256k1") == 0)
+   if(osStrcmp(curve->name, "secp256k1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_KOBLITZ;
       oemCommand = SCE_OEM_CMD_ECC_SECP256K1_PUBLIC;
       command = 0;
       n = 32;
    }
-   else if(osStrcmp(params->name, "secp256r1") == 0)
+   else if(osStrcmp(curve->name, "secp256r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_NIST;
       oemCommand = SCE_OEM_CMD_ECC_P256_PUBLIC;
       command = 0;
       n = 32;
    }
-   else if(osStrcmp(params->name, "secp384r1") == 0)
+   else if(osStrcmp(curve->name, "secp384r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_NIST;
       oemCommand = SCE_OEM_CMD_ECC_P384_PUBLIC;
       command = 0;
       n = 48;
    }
-   else if(osStrcmp(params->name, "brainpoolP256r1") == 0)
+   else if(osStrcmp(curve->name, "brainpoolP256r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_BRAINPOOL;
       oemCommand = SCE_OEM_CMD_ECC_P256R1_PUBLIC;
       command = 0;
       n = 32;
    }
-   else if(osStrcmp(params->name, "brainpoolP384r1") == 0)
+   else if(osStrcmp(curve->name, "brainpoolP384r1") == 0)
    {
       curveType = SCE_ECC_CURVE_TYPE_BRAINPOOL;
       oemCommand = SCE_OEM_CMD_ECC_P384R1_PUBLIC;
@@ -766,12 +822,18 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    osMemcpy((uint8_t *) ecArgs.digest + n - digestLen, digest, digestLen);
 
    //Set public key
-   mpiWriteRaw(&publicKey->q.x, (uint8_t *) ecArgs.q, n);
-   mpiWriteRaw(&publicKey->q.y, (uint8_t *) ecArgs.q + n, n);
+   ecScalarExport(publicKey->q.x, n / 4, (uint8_t *) ecArgs.q, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(publicKey->q.y, n / 4, (uint8_t *) ecArgs.q + n, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Set signature
-   mpiWriteRaw(&signature->r, (uint8_t *) ecArgs.signature, n);
-   mpiWriteRaw(&signature->s, (uint8_t *) ecArgs.signature + n, n);
+   ecScalarExport(signature->r, n / 4, (uint8_t *) ecArgs.signature, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(signature->s, n / 4, (uint8_t *) ecArgs.signature + n, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Install the plaintext public key and get the wrapped key
    status = HW_SCE_GenerateOemKeyIndexPrivate(SCE_OEM_KEY_TYPE_PLAIN,
@@ -781,12 +843,12 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    if(status == FSP_SUCCESS)
    {
       //Verify ECDSA signature
-      if(n == 32)
+      if(curve->fieldSize == 256)
       {
          status = HW_SCE_EcdsaSignatureVerificationSub(&curveType, &command,
             ecArgs.wrappedKey, ecArgs.digest, ecArgs.signature);
       }
-      else if(n == 48)
+      else if(curve->fieldSize == 384)
       {
          status = HW_SCE_EcdsaP384SignatureVerificationSub(&curveType,
             ecArgs.wrappedKey, ecArgs.digest, ecArgs.signature);
@@ -804,4 +866,5 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    return (status == FSP_SUCCESS) ? NO_ERROR : ERROR_INVALID_SIGNATURE;
 }
 
+#endif
 #endif

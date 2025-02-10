@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -250,7 +250,7 @@ error_t marsInit(MarsContext *context, const uint8_t *key, size_t keyLen)
    //Initialize T with the original key data
    for(i = 0; i < n; i++)
    {
-      t[i] = LOAD32LE(key + 4 * i);
+      t[i] = LOAD32LE(key + i * 4);
    }
 
    //Let T[n] = n
@@ -319,7 +319,7 @@ error_t marsInit(MarsContext *context, const uint8_t *key, size_t keyLen)
       context->k[i] = w ^ (p & m);
    }
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -340,7 +340,7 @@ void marsEncryptBlock(MarsContext *context, const uint8_t *input,
    uint32_t d;
 
    //The 16 bytes of plaintext are split into 4 words
-   a = LOAD32LE(input + 0);
+   a = LOAD32LE(input);
    b = LOAD32LE(input + 4);
    c = LOAD32LE(input + 8);
    d = LOAD32LE(input + 12);
@@ -404,7 +404,7 @@ void marsEncryptBlock(MarsContext *context, const uint8_t *input,
    d -= context->k[39];
 
    //The 4 words of ciphertext are then written as 16 bytes
-   STORE32LE(a, output + 0);
+   STORE32LE(a, output);
    STORE32LE(b, output + 4);
    STORE32LE(c, output + 8);
    STORE32LE(d, output + 12);
@@ -427,7 +427,7 @@ void marsDecryptBlock(MarsContext *context, const uint8_t *input,
    uint32_t a;
 
    //The 16 bytes of ciphertext are split into 4 words
-   a = LOAD32LE(input + 0);
+   a = LOAD32LE(input);
    b = LOAD32LE(input + 4);
    c = LOAD32LE(input + 8);
    d = LOAD32LE(input + 12);
@@ -491,7 +491,7 @@ void marsDecryptBlock(MarsContext *context, const uint8_t *input,
    d -= context->k[3];
 
    //The 4 words of plaintext are then written as 16 bytes
-   STORE32LE(a, output + 0);
+   STORE32LE(a, output);
    STORE32LE(b, output + 4);
    STORE32LE(c, output + 8);
    STORE32LE(d, output + 12);

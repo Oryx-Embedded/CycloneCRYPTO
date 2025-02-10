@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _PEM_EXPORT_H
@@ -73,21 +73,20 @@ error_t pemExportDsaPublicKey(const DsaPublicKey *publicKey,
 error_t pemExportDsaPrivateKey(const DsaPrivateKey *privateKey,
    char_t *output, size_t *written);
 
-error_t pemExportEcParameters(const EcCurveInfo *curveInfo,
+error_t pemExportEcParameters(const EcCurve *curve, char_t *output,
+   size_t *written);
+
+error_t pemExportEcPublicKey(const EcPublicKey *publicKey,
    char_t *output, size_t *written);
 
-error_t pemExportEcPublicKey(const EcCurveInfo *curveInfo,
-   const EcPublicKey *publicKey, char_t *output, size_t *written);
-
-error_t pemExportEcPrivateKey(const EcCurveInfo *curveInfo,
-   const EcPrivateKey *privateKey, const EcPublicKey *publicKey,
+error_t pemExportEcPrivateKey(const EcPrivateKey *privateKey,
    char_t *output, size_t *written);
 
-error_t pemExportEddsaPublicKey(const EcCurveInfo *curveInfo,
-   const EddsaPublicKey *publicKey, char_t *output, size_t *written);
+error_t pemExportEddsaPublicKey(const EddsaPublicKey *publicKey,
+   char_t *output, size_t *written);
 
-error_t pemExportEddsaPrivateKey(const EcCurveInfo *curveInfo,
-   const EddsaPrivateKey *privateKey, char_t *output, size_t *written);
+error_t pemExportEddsaPrivateKey(const EddsaPrivateKey *privateKey,
+   char_t *output, size_t *written);
 
 //C++ guard
 #ifdef __cplusplus

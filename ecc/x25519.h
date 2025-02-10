@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _X25519_H
@@ -48,13 +48,13 @@ extern "C" {
 typedef struct
 {
    uint32_t k[8];
-   uint32_t u[8];
-   uint32_t x1[8];
-   uint32_t z1[8];
-   uint32_t x2[8];
-   uint32_t z2[8];
-   uint32_t t1[8];
-   uint32_t t2[8];
+   int32_t u[9];
+   int32_t x1[9];
+   int32_t z1[9];
+   int32_t x2[9];
+   int32_t z2[9];
+   int32_t t1[9];
+   int32_t t2[9];
 } X25519State;
 
 

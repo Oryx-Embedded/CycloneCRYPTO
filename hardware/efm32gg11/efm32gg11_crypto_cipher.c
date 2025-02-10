@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -1026,15 +1026,15 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
 void ctrIncCounter(uint8_t *t)
 {
    uint_t i;
+   uint16_t temp;
 
    //Increment the counter block
-   for(i = 0; i < AES_BLOCK_SIZE; i++)
+   for(temp = 1, i = 0; i < 16; i++)
    {
-      //Increment the current byte and propagate the carry if necessary
-      if(++(t[AES_BLOCK_SIZE - 1 - i]) != 0)
-      {
-         break;
-      }
+      //Increment the current byte and propagate the carry
+      temp += t[15 - i];
+      t[15 - i] = temp & 0xFF;
+      temp >>= 8;
    }
 }
 
@@ -1059,12 +1059,17 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
    //Initialize status code
    error = NO_ERROR;
 
-   //AES cipher algorithm?
-   if(cipher == AES_CIPHER_ALGO)
+   //Check the value of the parameter
+   if((m % 8) == 0 && m <= (cipher->blockSize * 8))
    {
-      //Check the value of the parameter
-      if(m == (AES_BLOCK_SIZE * 8))
+      //Determine the size, in bytes, of the specific part of the block to be
+      //incremented
+      m = m / 8;
+
+      //AES cipher algorithm?
+      if(cipher == AES_CIPHER_ALGO)
       {
+
          //Check the length of the payload
          if(length == 0)
          {
@@ -1072,7 +1077,10 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
          }
          else if((length % AES_BLOCK_SIZE) == 0)
          {
+            size_t k;
+            size_t n;
             AesContext *aesContext;
+            uint8_t iv[AES_BLOCK_SIZE];
 
             //Point to the AES context
             aesContext = (AesContext *) context;
@@ -1080,23 +1088,43 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             //Acquire exclusive access to the CRYPTO module
             osAcquireMutex(&efm32gg11CryptoMutex);
 
-            //Check the length of the key
-            if(aesContext->nr == 10)
+            //Process plaintext
+            while(length > 0 && !error)
             {
-               //Perform AES-CTR encryption (128-bit key)
-               CRYPTO_AES_CTR128(CRYPTO0, c, p, length,
-                  (const uint8_t *) aesContext->ek, t, ctrIncCounter);
-            }
-            else if(aesContext->nr == 14)
-            {
-               //Perform AES-CTR encryption (256-bit key)
-               CRYPTO_AES_CTR256(CRYPTO0, c, p, length,
-                  (const uint8_t *) aesContext->ek, t, ctrIncCounter);
-            }
-            else
-            {
-               //192-bit keys are not supported
-               error = ERROR_INVALID_KEY_LENGTH;
+               //Limit the number of blocks to process at a time
+               k = 256 - t[AES_BLOCK_SIZE - 1];
+               n = MIN(length, k * AES_BLOCK_SIZE);
+               k = (n + AES_BLOCK_SIZE - 1) / AES_BLOCK_SIZE;
+
+               //Copy initial counter value
+               osMemcpy(iv, t, AES_BLOCK_SIZE);
+
+               //Check the length of the key
+               if(aesContext->nr == 10)
+               {
+                  //Perform AES-CTR encryption (128-bit key)
+                  CRYPTO_AES_CTR128(CRYPTO0, c, p, n,
+                     (const uint8_t *) aesContext->ek, iv, ctrIncCounter);
+               }
+               else if(aesContext->nr == 14)
+               {
+                  //Perform AES-CTR encryption (256-bit key)
+                  CRYPTO_AES_CTR256(CRYPTO0, c, p, n,
+                     (const uint8_t *) aesContext->ek, iv, ctrIncCounter);
+               }
+               else
+               {
+                  //192-bit keys are not supported
+                  error = ERROR_INVALID_KEY_LENGTH;
+               }
+
+               //Standard incrementing function
+               ctrIncBlock(t, k, AES_BLOCK_SIZE, m);
+
+               //Next block
+               p += n;
+               c += n;
+               length -= n;
             }
 
             //Release exclusive access to the CRYPTO module
@@ -1110,22 +1138,9 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
       }
       else
       {
-         //The value of the parameter is not valid
-         error = ERROR_INVALID_PARAMETER;
-      }
-   }
-   else
-   {
-      //Check the value of the parameter
-      if((m % 8) == 0 && m <= (cipher->blockSize * 8))
-      {
          size_t i;
          size_t n;
          uint8_t o[16];
-
-         //Determine the size, in bytes, of the specific part of the block
-         //to be incremented
-         m = m / 8;
 
          //Process plaintext
          while(length > 0)
@@ -1151,11 +1166,11 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             length -= n;
          }
       }
-      else
-      {
-         //The value of the parameter is not valid
-         error = ERROR_INVALID_PARAMETER;
-      }
+   }
+   else
+   {
+      //The value of the parameter is not valid
+      error = ERROR_INVALID_PARAMETER;
    }
 
    //Return status code

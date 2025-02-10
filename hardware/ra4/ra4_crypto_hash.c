@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -175,11 +175,12 @@ void sha256Update(Sha256Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SHA-256 message digest
  * @param[in] context Pointer to the SHA-256 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha256Final(Sha256Context *context, uint8_t *digest)
 {
+   uint_t i;
    size_t paddingSize;
    uint64_t totalSize;
 
@@ -200,16 +201,19 @@ void sha256Final(Sha256Context *context, uint8_t *digest)
    sha256Update(context, padding, paddingSize);
 
    //Append the length of the original message
-   context->w[14] = htobe32((uint32_t) (totalSize >> 32));
-   context->w[15] = htobe32((uint32_t) totalSize);
+   for(i = 0; i < 8; i++)
+   {
+      context->buffer[63 - i] = totalSize & 0xFF;
+      totalSize >>= 8;
+   }
 
    //Calculate the message digest
    sha256ProcessBlock(context);
 
    //Copy the resulting digest
-   if(digest != NULL)
+   for(i = 0; i < (SHA256_DIGEST_SIZE / 4); i++)
    {
-      osMemcpy(digest, context->digest, SHA256_DIGEST_SIZE);
+      STORE32LE(context->h[i], digest + i * 4);
    }
 }
 
@@ -222,8 +226,13 @@ void sha256Final(Sha256Context *context, uint8_t *digest)
 
 void sha256FinalRaw(Sha256Context *context, uint8_t *digest)
 {
+   uint_t i;
+
    //Copy the resulting digest
-   osMemcpy(digest, context->digest, SHA256_DIGEST_SIZE);
+   for(i = 0; i < (SHA256_DIGEST_SIZE / 4); i++)
+   {
+      STORE32LE(context->h[i], digest + i * 4);
+   }
 }
 
 

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -38,6 +38,7 @@
 #include "hardware/pic32cx_mt/pic32cx_mt_crypto_trng.h"
 #include "hardware/pic32cx_mt/pic32cx_mt_crypto_hash.h"
 #include "hardware/pic32cx_mt/pic32cx_mt_crypto_cipher.h"
+#include "hardware/pic32cx_mt/pic32cx_mt_crypto_pkc.h"
 #include "debug.h"
 
 //Global variables
@@ -95,6 +96,15 @@ error_t pic32cxmtCryptoInit(void)
       PMC_REGS->PMC_PCR = PMC_PCR_PID(ID_AES);
       temp = PMC_REGS->PMC_PCR;
       PMC_REGS->PMC_PCR = temp | PMC_PCR_CMD_Msk | PMC_PCR_EN_Msk;
+   }
+#endif
+
+#if (PIC32CX_MT_CRYPTO_PKC_SUPPORT == ENABLED)
+   //Check status code
+   if(!error)
+   {
+      //Initialize public key accelerator
+      error = cpkccInit();
    }
 #endif
 

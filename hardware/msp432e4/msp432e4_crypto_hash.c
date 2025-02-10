@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -72,15 +72,14 @@ void hashReset(void)
  * @brief Update hash value
  * @param[in] data Pointer to the input buffer
  * @param[in] length Length of the input buffer
- * @param[out] digest Resulting digest value
- * @param[in] digestSize Size of the digest, in bytes
+ * @param[out] h Resulting hash value
+ * @param[in] hLen Length of the hash value, in words
  **/
 
-void hashProcessData(const uint8_t *data, size_t length, uint8_t *digest,
-   size_t digestSize)
+void hashProcessData(const uint8_t *data, size_t length, uint32_t *h,
+   size_t hLen)
 {
    size_t i;
-   uint32_t temp;
 
    //Specify the length
    SHAMD5->LENGTH = length;
@@ -140,10 +139,9 @@ void hashProcessData(const uint8_t *data, size_t length, uint8_t *digest,
    }
 
    //Read the resulting output value
-   for(i = 0; i < digestSize; i += 4)
+   for(i = 0; i < hLen; i++)
    {
-      temp = HWREG(SHAMD5_BASE + SHAMD5_O_IDIGEST_A + i);
-      STORE32LE(temp, digest + i);
+      h[i] = HWREG(SHAMD5_BASE + SHAMD5_O_IDIGEST_A + i * 4);
    }
 }
 
@@ -160,6 +158,9 @@ void hashProcessData(const uint8_t *data, size_t length, uint8_t *digest,
 
 error_t md5Compute(const void *data, size_t length, uint8_t *digest)
 {
+   uint_t i;
+   uint32_t h[4];
+
    //Acquire exclusive access to the SHA/MD5 module
    osAcquireMutex(&msp432e4CryptoMutex);
 
@@ -171,10 +172,16 @@ error_t md5Compute(const void *data, size_t length, uint8_t *digest)
       SHAMD5_MODE_CLOSE_HASH;
 
    //Digest the message
-   hashProcessData(data, length, digest, MD5_DIGEST_SIZE);
+   hashProcessData(data, length, h, MD5_DIGEST_SIZE / 4);
 
    //Release exclusive access to the SHA/MD5 module
    osReleaseMutex(&msp432e4CryptoMutex);
+
+   //Copy the resulting digest
+   for(i = 0; i < (MD5_DIGEST_SIZE / 4); i++)
+   {
+      STORE32LE(h[i], digest + i * 4);
+   }
 
    //Sucessful processing
    return NO_ERROR;
@@ -240,7 +247,7 @@ void md5Update(Md5Context *context, const void *data, size_t length)
          n = length - (length % 64);
 
          //Update hash value
-         hashProcessData(data, n, context->digest, MD5_DIGEST_SIZE);
+         hashProcessData(data, n, context->h, MD5_DIGEST_SIZE / 4);
 
          //Advance the data pointer
          data = (uint8_t *) data + n;
@@ -266,8 +273,8 @@ void md5Update(Md5Context *context, const void *data, size_t length)
          if(context->size == 64)
          {
             //Update hash value
-            hashProcessData(context->buffer, context->size, context->digest,
-               MD5_DIGEST_SIZE);
+            hashProcessData(context->buffer, context->size, context->h,
+               MD5_DIGEST_SIZE / 4);
 
             //Empty the buffer
             context->size = 0;
@@ -286,11 +293,13 @@ void md5Update(Md5Context *context, const void *data, size_t length)
 /**
  * @brief Finish the MD5 message digest
  * @param[in] context Pointer to the MD5 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void md5Final(Md5Context *context, uint8_t *digest)
 {
+   uint_t i;
+
    //Acquire exclusive access to the SHA/MD5 module
    osAcquireMutex(&msp432e4CryptoMutex);
 
@@ -310,16 +319,16 @@ void md5Final(Md5Context *context, uint8_t *digest)
    SHAMD5->DIGEST_COUNT = context->totalSize;
 
    //Finish digest calculation
-   hashProcessData(context->buffer, context->size, context->digest,
-      MD5_DIGEST_SIZE);
+   hashProcessData(context->buffer, context->size, context->h,
+      MD5_DIGEST_SIZE / 4);
 
    //Release exclusive access to the SHA/MD5 module
    osReleaseMutex(&msp432e4CryptoMutex);
 
    //Copy the resulting digest
-   if(digest != NULL)
+   for(i = 0; i < (MD5_DIGEST_SIZE / 4); i++)
    {
-      osMemcpy(digest, context->digest, MD5_DIGEST_SIZE);
+      STORE32LE(context->h[i], digest + i * 4);
    }
 }
 
@@ -332,8 +341,13 @@ void md5Final(Md5Context *context, uint8_t *digest)
 
 void md5FinalRaw(Md5Context *context, uint8_t *digest)
 {
+   uint_t i;
+
    //Copy the resulting digest
-   osMemcpy(digest, context->digest, MD5_DIGEST_SIZE);
+   for(i = 0; i < (MD5_DIGEST_SIZE / 4); i++)
+   {
+      STORE32LE(context->h[i], digest + i * 4);
+   }
 }
 
 #endif
@@ -349,6 +363,9 @@ void md5FinalRaw(Md5Context *context, uint8_t *digest)
 
 error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
 {
+   uint_t i;
+   uint32_t h[5];
+
    //Acquire exclusive access to the SHA/MD5 module
    osAcquireMutex(&msp432e4CryptoMutex);
 
@@ -360,10 +377,16 @@ error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
       SHAMD5_MODE_CLOSE_HASH;
 
    //Digest the message
-   hashProcessData(data, length, digest, SHA1_DIGEST_SIZE);
+   hashProcessData(data, length, h, SHA1_DIGEST_SIZE / 4);
 
    //Release exclusive access to the SHA/MD5 module
    osReleaseMutex(&msp432e4CryptoMutex);
+
+   //Copy the resulting digest
+   for(i = 0; i < (SHA1_DIGEST_SIZE / 4); i++)
+   {
+      STORE32LE(h[i], digest + i * 4);
+   }
 
    //Sucessful processing
    return NO_ERROR;
@@ -431,7 +454,7 @@ void sha1Update(Sha1Context *context, const void *data, size_t length)
          n = length - (length % 64);
 
          //Update hash value
-         hashProcessData(data, n, context->digest, SHA1_DIGEST_SIZE);
+         hashProcessData(data, n, context->h, SHA1_DIGEST_SIZE / 4);
 
          //Advance the data pointer
          data = (uint8_t *) data + n;
@@ -457,8 +480,8 @@ void sha1Update(Sha1Context *context, const void *data, size_t length)
          if(context->size == 64)
          {
             //Update hash value
-            hashProcessData(context->buffer, context->size, context->digest,
-               SHA1_DIGEST_SIZE);
+            hashProcessData(context->buffer, context->size, context->h,
+               SHA1_DIGEST_SIZE / 4);
 
             //Empty the buffer
             context->size = 0;
@@ -477,11 +500,13 @@ void sha1Update(Sha1Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SHA-1 message digest
  * @param[in] context Pointer to the SHA-1 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha1Final(Sha1Context *context, uint8_t *digest)
 {
+   uint_t i;
+
    //Acquire exclusive access to the SHA/MD5 module
    osAcquireMutex(&msp432e4CryptoMutex);
 
@@ -502,16 +527,16 @@ void sha1Final(Sha1Context *context, uint8_t *digest)
    SHAMD5->DIGEST_COUNT = context->totalSize;
 
    //Finish digest calculation
-   hashProcessData(context->buffer, context->size, context->digest,
-      SHA1_DIGEST_SIZE);
+   hashProcessData(context->buffer, context->size, context->h,
+      SHA1_DIGEST_SIZE / 4);
 
    //Release exclusive access to the SHA/MD5 module
    osReleaseMutex(&msp432e4CryptoMutex);
 
    //Copy the resulting digest
-   if(digest != NULL)
+   for(i = 0; i < (SHA1_DIGEST_SIZE / 4); i++)
    {
-      osMemcpy(digest, context->digest, SHA1_DIGEST_SIZE);
+      STORE32LE(context->h[i], digest + i * 4);
    }
 }
 
@@ -524,8 +549,13 @@ void sha1Final(Sha1Context *context, uint8_t *digest)
 
 void sha1FinalRaw(Sha1Context *context, uint8_t *digest)
 {
+   uint_t i;
+
    //Copy the resulting digest
-   osMemcpy(digest, context->digest, SHA1_DIGEST_SIZE);
+   for(i = 0; i < (SHA1_DIGEST_SIZE / 4); i++)
+   {
+      STORE32LE(context->h[i], digest + i * 4);
+   }
 }
 
 #endif
@@ -541,6 +571,9 @@ void sha1FinalRaw(Sha1Context *context, uint8_t *digest)
 
 error_t sha224Compute(const void *data, size_t length, uint8_t *digest)
 {
+   uint_t i;
+   uint32_t h[7];
+
    //Acquire exclusive access to the SHA/MD5 module
    osAcquireMutex(&msp432e4CryptoMutex);
 
@@ -552,10 +585,16 @@ error_t sha224Compute(const void *data, size_t length, uint8_t *digest)
       SHAMD5_MODE_CLOSE_HASH;
 
    //Digest the message
-   hashProcessData(data, length, digest, SHA224_DIGEST_SIZE);
+   hashProcessData(data, length, h, SHA224_DIGEST_SIZE / 4);
 
    //Release exclusive access to the SHA/MD5 module
    osReleaseMutex(&msp432e4CryptoMutex);
+
+   //Copy the resulting digest
+   for(i = 0; i < (SHA224_DIGEST_SIZE / 4); i++)
+   {
+      STORE32LE(h[i], digest + i * 4);
+   }
 
    //Sucessful processing
    return NO_ERROR;
@@ -589,11 +628,13 @@ void sha224Init(Sha224Context *context)
 /**
  * @brief Finish the SHA-224 message digest
  * @param[in] context Pointer to the SHA-224 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha224Final(Sha224Context *context, uint8_t *digest)
 {
+   uint_t i;
+
    //Acquire exclusive access to the SHA/MD5 module
    osAcquireMutex(&msp432e4CryptoMutex);
 
@@ -617,16 +658,16 @@ void sha224Final(Sha224Context *context, uint8_t *digest)
    SHAMD5->DIGEST_COUNT = context->totalSize;
 
    //Finish digest calculation
-   hashProcessData(context->buffer, context->size, context->digest,
-      SHA224_DIGEST_SIZE);
+   hashProcessData(context->buffer, context->size, context->h,
+      SHA224_DIGEST_SIZE / 4);
 
    //Release exclusive access to the SHA/MD5 module
    osReleaseMutex(&msp432e4CryptoMutex);
 
    //Copy the resulting digest
-   if(digest != NULL)
+   for(i = 0; i < (SHA224_DIGEST_SIZE / 4); i++)
    {
-      osMemcpy(digest, context->digest, SHA224_DIGEST_SIZE);
+      STORE32LE(context->h[i], digest + i * 4);
    }
 }
 
@@ -643,6 +684,9 @@ void sha224Final(Sha224Context *context, uint8_t *digest)
 
 error_t sha256Compute(const void *data, size_t length, uint8_t *digest)
 {
+   uint_t i;
+   uint32_t h[8];
+
    //Acquire exclusive access to the SHA/MD5 module
    osAcquireMutex(&msp432e4CryptoMutex);
 
@@ -654,10 +698,16 @@ error_t sha256Compute(const void *data, size_t length, uint8_t *digest)
       SHAMD5_MODE_CLOSE_HASH;
 
    //Digest the message
-   hashProcessData(data, length, digest, SHA256_DIGEST_SIZE);
+   hashProcessData(data, length, h, SHA256_DIGEST_SIZE / 4);
 
    //Release exclusive access to the SHA/MD5 module
    osReleaseMutex(&msp432e4CryptoMutex);
+
+   //Copy the resulting digest
+   for(i = 0; i < (SHA256_DIGEST_SIZE / 4); i++)
+   {
+      STORE32LE(h[i], digest + i * 4);
+   }
 
    //Sucessful processing
    return NO_ERROR;
@@ -731,7 +781,7 @@ void sha256Update(Sha256Context *context, const void *data, size_t length)
          n = length - (length % 64);
 
          //Update hash value
-         hashProcessData(data, n, context->digest, SHA256_DIGEST_SIZE);
+         hashProcessData(data, n, context->h, SHA256_DIGEST_SIZE / 4);
 
          //Advance the data pointer
          data = (uint8_t *) data + n;
@@ -757,8 +807,8 @@ void sha256Update(Sha256Context *context, const void *data, size_t length)
          if(context->size == 64)
          {
             //Update hash value
-            hashProcessData(context->buffer, context->size, context->digest,
-               SHA256_DIGEST_SIZE);
+            hashProcessData(context->buffer, context->size, context->h,
+               SHA256_DIGEST_SIZE / 4);
 
             //Empty the buffer
             context->size = 0;
@@ -777,11 +827,13 @@ void sha256Update(Sha256Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SHA-256 message digest
  * @param[in] context Pointer to the SHA-256 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha256Final(Sha256Context *context, uint8_t *digest)
 {
+   uint_t i;
+
    //Acquire exclusive access to the SHA/MD5 module
    osAcquireMutex(&msp432e4CryptoMutex);
 
@@ -805,16 +857,16 @@ void sha256Final(Sha256Context *context, uint8_t *digest)
    SHAMD5->DIGEST_COUNT = context->totalSize;
 
    //Finish digest calculation
-   hashProcessData(context->buffer, context->size, context->digest,
-      SHA256_DIGEST_SIZE);
+   hashProcessData(context->buffer, context->size, context->h,
+      SHA256_DIGEST_SIZE / 4);
 
    //Release exclusive access to the SHA/MD5 module
    osReleaseMutex(&msp432e4CryptoMutex);
 
    //Copy the resulting digest
-   if(digest != NULL)
+   for(i = 0; i < (SHA256_DIGEST_SIZE / 4); i++)
    {
-      osMemcpy(digest, context->digest, SHA256_DIGEST_SIZE);
+      STORE32LE(context->h[i], digest + i * 4);
    }
 }
 
@@ -827,8 +879,13 @@ void sha256Final(Sha256Context *context, uint8_t *digest)
 
 void sha256FinalRaw(Sha256Context *context, uint8_t *digest)
 {
+   uint_t i;
+
    //Copy the resulting digest
-   osMemcpy(digest, context->digest, SHA256_DIGEST_SIZE);
+   for(i = 0; i < (SHA256_DIGEST_SIZE / 4); i++)
+   {
+      STORE32LE(context->h[i], digest + i * 4);
+   }
 }
 
 #endif

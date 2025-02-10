@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -35,6 +35,7 @@
 #include "core/crypto.h"
 #include "hash/hash_algorithms.h"
 #include "ecc/sm2.h"
+#include "ecc/ec_misc.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -48,7 +49,6 @@ const uint8_t SM2_WITH_SM3_OID[8] = {0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x83, 0
  * @brief SM2 signature generation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] params EC domain parameters
  * @param[in] privateKey Signer's EC private key
  * @param[in] hashAlgo Underlying hash function
  * @param[in] id User's identity
@@ -60,140 +60,199 @@ const uint8_t SM2_WITH_SM3_OID[8] = {0x2A, 0x81, 0x1C, 0xCF, 0x55, 0x01, 0x83, 0
  **/
 
 error_t sm2GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, const EcPrivateKey *privateKey,
-   const HashAlgo *hashAlgo, const char_t *id, size_t idLen,
-   const void *message, size_t messageLen, EcdsaSignature *signature)
+   const EcPrivateKey *privateKey, const HashAlgo *hashAlgo, const char_t *id,
+   size_t idLen, const void *message, size_t messageLen,
+   EcdsaSignature *signature)
 {
    error_t error;
-   Mpi e;
-   Mpi k;
-   Mpi t;
-   EcPoint p1;
-   EcPublicKey pa;
-   uint8_t buffer[32];
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
-   HashContext *hashContext;
+   Sm2GenerateSignatureState *state;
 #else
-   HashContext hashContext[1];
+   Sm2GenerateSignatureState state[1];
 #endif
 
    //Check parameters
-   if(params == NULL || privateKey == NULL || hashAlgo == NULL || id == NULL ||
+   if(privateKey == NULL || hashAlgo == NULL || id == NULL ||
       message == NULL || signature == NULL)
    {
       return ERROR_INVALID_PARAMETER;
    }
 
-   //Sanity check
-   if(hashAlgo->digestSize > sizeof(buffer))
+   //Invalid elliptic curve?
+   if(privateKey->curve == NULL ||
+      privateKey->curve->fieldSize != 256 ||
+      privateKey->curve->orderSize != 256)
+   {
+      return ERROR_INVALID_ELLIPTIC_CURVE;
+   }
+
+   //Invalid hash algorithm?
+   if(hashAlgo->digestSize != 32)
       return ERROR_INVALID_PARAMETER;
 
    //Debug message
    TRACE_DEBUG("SM2 signature generation...\r\n");
    TRACE_DEBUG("  private key:\r\n");
-   TRACE_DEBUG_MPI("    ", &privateKey->d);
+   TRACE_DEBUG_EC_SCALAR("    ", privateKey->d, 8);
    TRACE_DEBUG("  identifier:\r\n");
    TRACE_DEBUG_ARRAY("    ", id, idLen);
    TRACE_DEBUG("  message:\r\n");
    TRACE_DEBUG_ARRAY("    ", message, messageLen);
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
-   //Allocate a memory buffer to hold the hash context
-   hashContext = cryptoAllocMem(hashAlgo->contextSize);
+   //Allocate working state
+   state = cryptoAllocMem(sizeof(Sm2GenerateSignatureState));
    //Failed to allocate memory?
-   if(hashContext == NULL)
+   if(state == NULL)
       return ERROR_OUT_OF_MEMORY;
 #endif
 
-   //Initialize multiple precision integers
-   mpiInit(&e);
-   mpiInit(&k);
-   mpiInit(&t);
-   //Initialize EC points
-   ecInit(&p1);
-   //Initialize EC public key
-   ecInitPublicKey(&pa);
+   //Initialize working state
+   osMemset(state, 0, sizeof(Sm2GenerateSignatureState));
 
-   //Derive the public key from the signer's EC private key
-   EC_CHECK(ecGeneratePublicKey(params, privateKey, &pa));
+   //Initialize (R, S) integer pair
+   ecScalarSetInt(signature->r, 0, EC_MAX_ORDER_SIZE);
+   ecScalarSetInt(signature->s, 0, EC_MAX_ORDER_SIZE);
 
-   //Calculate ZA = H256(ENTLA || IDA || a || b || xG || yG || xA || yA)
-   EC_CHECK(sm2ComputeZa(hashAlgo, hashContext, params, &pa, id, idLen,
-      buffer));
+   //Initialize status code
+   error = NO_ERROR;
 
-   //Let M~ = ZA || M and calculate Hv(M~)
-   hashAlgo->init(hashContext);
-   hashAlgo->update(hashContext, buffer, hashAlgo->digestSize);
-   hashAlgo->update(hashContext, message, messageLen);
-   hashAlgo->final(hashContext, buffer);
-
-   //Let e = Hv(M~)
-   MPI_CHECK(mpiImport(&e, buffer, hashAlgo->digestSize,
-      MPI_FORMAT_BIG_ENDIAN));
-
-   //SM2 signature generation process
-   do
+   //Valid public key?
+   if(privateKey->q.curve != NULL)
    {
-      do
+      //Let PA be the public key
+      ecProjectify(privateKey->curve, &state->pa, &privateKey->q.q);
+   }
+   else
+   {
+      //Derive the public key from the signer's EC private key
+      error = ecMulRegular(privateKey->curve, &state->pa, privateKey->d,
+         &privateKey->curve->g);
+
+      //Check status code
+      if(!error)
       {
-         //Pick a random number k in [1, q-1]
-         MPI_CHECK(mpiRandRange(&k, &params->q, prngAlgo, prngContext));
+         //Convert PA to affine representation
+         error = ecAffinify(privateKey->curve, &state->pa, &state->pa);
+      }
+   }
 
-         //Debug message
-         TRACE_DEBUG("  k:\r\n");
-         TRACE_DEBUG_MPI("    ", &k);
+   //Check status code
+   if(!error)
+   {
+      //Calculate ZA = H256(ENTLA || IDA || a || b || xG || yG || xA || yA)
+      error = sm2ComputeZa(hashAlgo, &state->hashContext, privateKey->curve,
+         &state->pa, id, idLen, state->buffer);
+   }
 
-         //Calculate the elliptic curve point (x1, y1) = [k]G
-         EC_CHECK(ecMult(params, &p1, &k, &params->g));
-         EC_CHECK(ecAffinify(params, &p1, &p1));
+   //Check status code
+   if(!error)
+   {
+      //Let M~ = ZA || M and calculate Hv(M~)
+      hashAlgo->init(&state->hashContext);
+      hashAlgo->update(&state->hashContext, state->buffer, hashAlgo->digestSize);
+      hashAlgo->update(&state->hashContext, message, messageLen);
+      hashAlgo->final(&state->hashContext, state->buffer);
 
-         //Calculate r = (e + x1) mod q
-         MPI_CHECK(mpiAddMod(&signature->r, &e, &p1.x, &params->q));
+      //Let e = Hv(M~)
+      error = ecScalarImport(state->e, 8, state->buffer, hashAlgo->digestSize,
+         EC_SCALAR_FORMAT_BIG_ENDIAN);
+   }
 
-         //Calculate r + k
-         MPI_CHECK(mpiAdd(&t, &signature->r, &k));
+   //Check status code
+   if(!error)
+   {
+      //Initialize status code
+      error = ERROR_INVALID_VALUE;
 
-         //If r = 0 or r + k = n, then generate a new random number
-      } while(mpiCompInt(&signature->r, 0) == 0 || mpiComp(&t, &params->q) == 0);
+      //SM2 signature generation process
+      while(error == ERROR_INVALID_VALUE)
+      {
+         //Inner loop
+         while(error == ERROR_INVALID_VALUE)
+         {
+            //Pick a random number k in range 0 < k < q - 1
+            error = ecScalarRand(privateKey->curve, state->k, prngAlgo,
+               prngContext);
 
-      //Calculate s = ((1 + dA)^-1 * (k - r * dA)) mod q
-      MPI_CHECK(mpiAddInt(&t, &privateKey->d, 1));
-      MPI_CHECK(mpiInvMod(&signature->s, &t, &params->q));
-      MPI_CHECK(mpiMulMod(&t, &signature->r, &privateKey->d, &params->q));
-      MPI_CHECK(mpiSubMod(&t, &k, &t, &params->q));
-      MPI_CHECK(mpiMulMod(&signature->s, &signature->s, &t, &params->q));
+            //Check status code
+            if(!error)
+            {
+               //Debug message
+               TRACE_DEBUG("  k:\r\n");
+               TRACE_DEBUG_EC_SCALAR("    ", state->k, 8);
 
-      //If s = 0, then generate a new random number
-   } while(mpiCompInt(&signature->s, 0) == 0);
+               //Calculate the elliptic curve point (x1, y1) = [k]G
+               error = ecMulRegular(privateKey->curve, &state->p1, state->k,
+                  &privateKey->curve->g);
+            }
 
-   //Debug message
-   TRACE_DEBUG("  r:\r\n");
-   TRACE_DEBUG_MPI("    ", &signature->r);
-   TRACE_DEBUG("  s:\r\n");
-   TRACE_DEBUG_MPI("    ", &signature->s);
+            //Check status code
+            if(!error)
+            {
+               //Convert P1 to affine representation
+               error = ecAffinify(privateKey->curve, &state->p1, &state->p1);
+            }
 
-end:
-   //Release multiple precision integers
-   mpiFree(&e);
-   mpiFree(&k);
-   mpiFree(&t);
-   //Release EC points
-   ecFree(&p1);
-   //Release EC public key
-   ecFreePublicKey(&pa);
+            //Check status code
+            if(!error)
+            {
+               //Calculate r = (e + x1) mod q
+               ecScalarMod(signature->r, state->p1.x, 8, privateKey->curve->q, 8);
+               ecScalarAddMod(privateKey->curve, signature->r, signature->r, state->e);
+
+               //Calculate r + k
+               ecScalarAdd(state->t, signature->r, state->k, 8);
+
+               //If r = 0 or r + k = n, then generate a new random number
+               if(ecScalarCompInt(signature->r, 0, 8) == 0 ||
+                  ecScalarComp(state->t, privateKey->curve->q, 8) == 0)
+               {
+                  error = ERROR_INVALID_VALUE;
+               }
+            }
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Calculate s = ((1 + dA)^-1 * (k - r * dA)) mod q
+            ecScalarSetInt(state->t, 1, 8);
+            ecScalarAddMod(privateKey->curve, state->t, state->t, privateKey->d);
+            ecScalarInvMod(privateKey->curve, signature->s, state->t);
+            ecScalarMulMod(privateKey->curve, state->t, signature->r, privateKey->d);
+            ecScalarSubMod(privateKey->curve, state->t, state->k, state->t);
+            ecScalarMulMod(privateKey->curve, signature->s, signature->s, state->t);
+
+            //If s = 0, then generate a new random number
+            if(ecScalarCompInt(signature->s, 0, 8) == 0)
+            {
+               error = ERROR_INVALID_VALUE;
+            }
+         }
+      }
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Save elliptic curve parameters
+      signature->curve = privateKey->curve;
+
+      //Debug message
+      TRACE_DEBUG("  r:\r\n");
+      TRACE_DEBUG_EC_SCALAR("    ", signature->r, 8);
+      TRACE_DEBUG("  s:\r\n");
+      TRACE_DEBUG_EC_SCALAR("    ", signature->s, 8);
+   }
+
+   //Erase working state
+   osMemset(state, 0, sizeof(Sm2GenerateSignatureState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
-   //Release hash context
-   cryptoFreeMem(hashContext);
+   //Release working state
+   cryptoFreeMem(state);
 #endif
-
-   //Clean up side effects if necessary
-   if(error)
-   {
-      //Release (r, r) integer pair
-      mpiFree(&signature->r);
-      mpiFree(&signature->s);
-   }
 
    //Return status code
    return error;
@@ -202,7 +261,6 @@ end:
 
 /**
  * @brief SM2 signature verification
- * @param[in] params EC domain parameters
  * @param[in] publicKey Signer's SM2 public key
  * @param[in] hashAlgo Underlying hash function
  * @param[in] id User's identity
@@ -213,117 +271,148 @@ end:
  * @return Error code
  **/
 
-error_t sm2VerifySignature(const EcDomainParameters *params,
-   const EcPublicKey *publicKey, const HashAlgo *hashAlgo,
-   const char_t *id, size_t idLen, const void *message, size_t messageLen,
-   const EcdsaSignature *signature)
+error_t sm2VerifySignature(const EcPublicKey *publicKey,
+   const HashAlgo *hashAlgo, const char_t *id, size_t idLen,
+   const void *message, size_t messageLen, const EcdsaSignature *signature)
 {
    error_t error;
-   Mpi e;
-   Mpi t;
-   Mpi r;
-   EcPoint pa;
-   EcPoint p1;
-   uint8_t buffer[32];
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
-   HashContext *hashContext;
+   Sm2VerifySignatureState *state;
 #else
-   HashContext hashContext[1];
+   Sm2VerifySignatureState state[1];
 #endif
 
    //Check parameters
-   if(params == NULL || publicKey == NULL || hashAlgo == NULL || id == NULL ||
-      message == NULL || signature == NULL)
+   if(publicKey == NULL || hashAlgo == NULL || id == NULL || message == NULL ||
+      signature == NULL)
    {
       return ERROR_INVALID_PARAMETER;
    }
 
-   //Sanity check
-   if(hashAlgo->digestSize > sizeof(buffer))
+   //Invalid elliptic curve?
+   if(publicKey->curve == NULL ||
+      publicKey->curve->fieldSize != 256 ||
+      publicKey->curve->orderSize != 256)
+   {
+      return ERROR_INVALID_ELLIPTIC_CURVE;
+   }
+
+   //Invalid hash algorithm?
+   if(hashAlgo->digestSize != 32)
       return ERROR_INVALID_PARAMETER;
 
    //Debug message
    TRACE_DEBUG("SM2 signature verification...\r\n");
    TRACE_DEBUG("  public key X:\r\n");
-   TRACE_DEBUG_MPI("    ", &publicKey->q.x);
+   TRACE_DEBUG_EC_SCALAR("    ", publicKey->q.x, 8);
    TRACE_DEBUG("  public key Y:\r\n");
-   TRACE_DEBUG_MPI("    ", &publicKey->q.y);
+   TRACE_DEBUG_EC_SCALAR("    ", publicKey->q.y, 8);
    TRACE_DEBUG("  identifier:\r\n");
    TRACE_DEBUG_ARRAY("    ", id, idLen);
    TRACE_DEBUG("  message:\r\n");
    TRACE_DEBUG_ARRAY("    ", message, messageLen);
    TRACE_DEBUG("  r:\r\n");
-   TRACE_DEBUG_MPI("    ", &signature->r);
+   TRACE_DEBUG_EC_SCALAR("    ", signature->r, 8);
    TRACE_DEBUG("  s:\r\n");
-   TRACE_DEBUG_MPI("    ", &signature->s);
+   TRACE_DEBUG_EC_SCALAR("    ", signature->s, 8);
+
+   //Verify that the public key is on the curve
+   if(!ecIsPointAffine(publicKey->curve, &publicKey->q))
+   {
+      return ERROR_INVALID_SIGNATURE;
+   }
 
    //The verifier shall check that 0 < r < q
-   if(mpiCompInt(&signature->r, 0) <= 0 ||
-      mpiComp(&signature->r, &params->q) >= 0)
+   if(ecScalarCompInt(signature->r, 0, EC_MAX_ORDER_SIZE) <= 0 ||
+      ecScalarComp(signature->r, publicKey->curve->q, EC_MAX_ORDER_SIZE) >= 0)
    {
       //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
    }
 
    //The verifier shall check that 0 < s < q
-   if(mpiCompInt(&signature->s, 0) <= 0 ||
-      mpiComp(&signature->s, &params->q) >= 0)
+   if(ecScalarCompInt(signature->s, 0, EC_MAX_ORDER_SIZE) <= 0 ||
+      ecScalarComp(signature->s, publicKey->curve->q, EC_MAX_ORDER_SIZE) >= 0)
    {
       //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
    }
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
-   //Allocate a memory buffer to hold the hash context
-   hashContext = cryptoAllocMem(hashAlgo->contextSize);
+   //Allocate working state
+   state = cryptoAllocMem(sizeof(Sm2VerifySignatureState));
    //Failed to allocate memory?
-   if(hashContext == NULL)
+   if(state == NULL)
       return ERROR_OUT_OF_MEMORY;
 #endif
 
-   //Initialize multiple precision integers
-   mpiInit(&e);
-   mpiInit(&t);
-   mpiInit(&r);
-   //Initialize EC points
-   ecInit(&pa);
-   ecInit(&p1);
+   //Initialize working state
+   osMemset(state, 0, sizeof(Sm2VerifySignatureState));
+
+   //Let PA be the public key
+   ecProjectify(publicKey->curve, &state->pa, &publicKey->q);
 
    //Calculate ZA = H256(ENTLA || IDA || a || b || xG || yG || xA || yA)
-   EC_CHECK(sm2ComputeZa(hashAlgo, hashContext, params, publicKey, id, idLen,
-      buffer));
+   error = sm2ComputeZa(hashAlgo, &state->hashContext, publicKey->curve,
+      &state->pa, id, idLen, state->buffer);
 
-   //Let M~ = ZA || M and calculate Hv(M~)
-   hashAlgo->init(hashContext);
-   hashAlgo->update(hashContext, buffer, hashAlgo->digestSize);
-   hashAlgo->update(hashContext, message, messageLen);
-   hashAlgo->final(hashContext, buffer);
-
-   //Let e = Hv(M~)
-   MPI_CHECK(mpiImport(&e, buffer, hashAlgo->digestSize,
-      MPI_FORMAT_BIG_ENDIAN));
-
-   //Calculate t = (r + s) mod q
-   MPI_CHECK(mpiAddMod(&t, &signature->r, &signature->s, &params->q));
-
-   //Test if t = 0
-   if(mpiCompInt(&t, 0) == 0)
+   //Check status code
+   if(!error)
    {
-      //Verification failed
-      error = ERROR_INVALID_SIGNATURE;
+      //Let M~ = ZA || M and calculate Hv(M~)
+      hashAlgo->init(&state->hashContext);
+      hashAlgo->update(&state->hashContext, state->buffer, hashAlgo->digestSize);
+      hashAlgo->update(&state->hashContext, message, messageLen);
+      hashAlgo->final(&state->hashContext, state->buffer);
+
+      //Let e = Hv(M~)
+      error = ecScalarImport(state->e, 8, state->buffer, hashAlgo->digestSize,
+         EC_SCALAR_FORMAT_BIG_ENDIAN);
    }
-   else
-   {
-      //Calculate the point (x1, y1)=[s]G + [t]PA
-      EC_CHECK(ecProjectify(params, &pa, &publicKey->q));
-      EC_CHECK(ecTwinMult(params, &p1, &signature->s, &params->g, &t, &pa));
-      EC_CHECK(ecAffinify(params, &p1, &p1));
 
+   //Check status code
+   if(!error)
+   {
+      //Calculate t = (r + s) mod q
+      ecScalarAddMod(publicKey->curve, state->t, signature->r, signature->s);
+
+      //Test if t = 0
+      if(ecScalarCompInt(state->t, 0, 8) == 0)
+      {
+         //Verification failed
+         error = ERROR_INVALID_SIGNATURE;
+      }
+      else
+      {
+         //Convert the public key to projective representation
+         ecProjectify(publicKey->curve, &state->pa, &publicKey->q);
+
+         //Calculate the point (x1, y1)=[s]G + [t]PA
+         error = ecTwinMul(publicKey->curve, &state->p1, signature->s,
+            &publicKey->curve->g, state->t, &state->pa);
+      }
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Convert P1 to affine representation
+      error = ecAffinify(publicKey->curve, &state->p1, &state->p1);
+   }
+
+   //Check status code
+   if(!error)
+   {
       //Calculate R = (e + x1) mod q
-      MPI_CHECK(mpiAddMod(&r, &e, &p1.x, &params->q));
+      ecScalarMod(state->r, state->p1.x, 8, publicKey->curve->q, 8);
+      ecScalarAddMod(publicKey->curve, state->r, state->r, state->e);
+
+      //Debug message
+      TRACE_DEBUG("  R:\r\n");
+      TRACE_DEBUG_EC_SCALAR("    ", state->r, 8);
 
       //Verify that R = r
-      if(mpiComp(&r, &signature->r) == 0)
+      if(ecScalarComp(state->r, signature->r, 8) == 0)
       {
          //Verification succeeded
          error = NO_ERROR;
@@ -335,18 +424,12 @@ error_t sm2VerifySignature(const EcDomainParameters *params,
       }
    }
 
-end:
-   //Release multiple precision integers
-   mpiFree(&e);
-   mpiFree(&t);
-   mpiFree(&r);
-   //Release EC points
-   ecFree(&pa);
-   ecFree(&p1);
+   //Erase working state
+   osMemset(state, 0, sizeof(Sm2VerifySignatureState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
-   //Release hash context
-   cryptoFreeMem(hashContext);
+   //Release working state
+   cryptoFreeMem(state);
 #endif
 
    //Return status code
@@ -358,7 +441,7 @@ end:
  * @brief Calculate ZA
  * @param[in] hashAlgo Hash function
  * @param[in] hashContext Hash function context
- * @param[in] params EC domain parameters
+ * @param[in] curve EC domain parameters
  * @param[in] pa Public key of user A
  * @param[in] ida Distinguishing identifier of user A
  * @param[in] idaLen Length of the identifier
@@ -366,15 +449,15 @@ end:
  **/
 
 error_t sm2ComputeZa(const HashAlgo *hashAlgo, HashContext *hashContext,
-   const EcDomainParameters *params, const EcPublicKey *pa, const char_t *ida,
-   size_t idaLen, uint8_t *za)
+   const EcCurve *curve, const EcPoint3 *pa, const char_t *ida, size_t idaLen,
+   uint8_t *za)
 {
    error_t error;
    size_t n;
    uint8_t buffer[32];
 
    //Get the length in octets of the prime modulus
-   n = mpiGetByteLength(&params->p);
+   n = (curve->fieldSize + 7) / 8;
 
    //Sanity check
    if(n > sizeof(buffer))
@@ -391,7 +474,8 @@ error_t sm2ComputeZa(const HashAlgo *hashAlgo, HashContext *hashContext,
    hashAlgo->update(hashContext, ida, idaLen);
 
    //Convert the parameter a to bit string
-   error = mpiExport(&params->a, buffer, n, MPI_FORMAT_BIG_ENDIAN);
+   error = ecScalarExport(curve->a, (n + 3) / 4, buffer, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
    //Any error to report?
    if(error)
       return error;
@@ -400,7 +484,8 @@ error_t sm2ComputeZa(const HashAlgo *hashAlgo, HashContext *hashContext,
    hashAlgo->update(hashContext, buffer, n);
 
    //Convert the parameter b to bit string
-   error = mpiExport(&params->b, buffer, n, MPI_FORMAT_BIG_ENDIAN);
+   error = ecScalarExport(curve->b, (n + 3) / 4, buffer, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
    //Any error to report?
    if(error)
       return error;
@@ -409,7 +494,8 @@ error_t sm2ComputeZa(const HashAlgo *hashAlgo, HashContext *hashContext,
    hashAlgo->update(hashContext, buffer, n);
 
    //Convert the coordinate xG to bit string
-   error = mpiExport(&params->g.x, buffer, n, MPI_FORMAT_BIG_ENDIAN);
+   error = ecScalarExport(curve->g.x, (n + 3) / 4, buffer, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
    //Any error to report?
    if(error)
       return error;
@@ -418,7 +504,8 @@ error_t sm2ComputeZa(const HashAlgo *hashAlgo, HashContext *hashContext,
    hashAlgo->update(hashContext, buffer, n);
 
    //Convert the coordinate yG to bit string
-   error = mpiExport(&params->g.y, buffer, n, MPI_FORMAT_BIG_ENDIAN);
+   error = ecScalarExport(curve->g.y, (n + 3) / 4, buffer, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
    //Any error to report?
    if(error)
       return error;
@@ -427,7 +514,8 @@ error_t sm2ComputeZa(const HashAlgo *hashAlgo, HashContext *hashContext,
    hashAlgo->update(hashContext, buffer, n);
 
    //Convert the public key's coordinate xA to bit string
-   error = mpiExport(&pa->q.x, buffer, n, MPI_FORMAT_BIG_ENDIAN);
+   error = ecScalarExport(pa->x, (n + 3) / 4, buffer, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
    //Any error to report?
    if(error)
       return error;
@@ -436,7 +524,8 @@ error_t sm2ComputeZa(const HashAlgo *hashAlgo, HashContext *hashContext,
    hashAlgo->update(hashContext, buffer, n);
 
    //Convert the public key's coordinate yA to bit string
-   error = mpiExport(&pa->q.y, buffer, n, MPI_FORMAT_BIG_ENDIAN);
+   error = ecScalarExport(pa->y, (n + 3) / 4, buffer, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
    //Any error to report?
    if(error)
       return error;

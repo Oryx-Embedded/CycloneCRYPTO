@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _KECCAK_H
@@ -45,45 +45,51 @@
    typedef uint8_t keccak_lane_t;
    //Rotate left operation
    #define KECCAK_ROL(a, n) ROL8(a, (n) % 8)
-   //Host byte order to little-endian byte order
-   #define KECCAK_HTOLE(a) (a)
-   //Little-endian byte order to host byte order
-   #define KECCAK_LETOH(a) (a)
+   //String to lane conversion
+   #define KECCAK_LOAD_LANE(p) p[0]
+   //Lane to string conversion
+   #define KECCAK_STORE_LANE(a, p) p[0] = a
 #elif (KECCAK_L == 4)
    //Base type that represents a lane
    #define keccak_lane_t uint16_t
    //Rotate left operation
    #define KECCAK_ROL(a, n) ROL16(a, (n) % 16)
-   //Host byte order to little-endian byte order
-   #define KECCAK_HTOLE(a) htole16(a)
-   //Little-endian byte order to host byte order
-   #define KECCAK_LETOH(a) letoh16(a)
+   //String to lane conversion
+   #define KECCAK_LOAD_LANE(p) LOAD16LE(p)
+   //Lane to string conversion
+   #define KECCAK_STORE_LANE(a, p) STORE16LE(a, p)
 #elif (KECCAK_L == 5)
    //Base type that represents a lane
    #define keccak_lane_t uint32_t
    //Rotate left operation
    #define KECCAK_ROL(a, n) ROL32(a, (n) % 32)
-   //Host byte order to little-endian byte order
-   #define KECCAK_HTOLE(a) htole32(a)
-   //Little-endian byte order to host byte order
-   #define KECCAK_LETOH(a) letoh32(a)
+   //String to lane conversion
+   #define KECCAK_LOAD_LANE(p) LOAD32LE(p)
+   //Lane to string conversion
+   #define KECCAK_STORE_LANE(a, p) STORE32LE(a, p)
 #elif (KECCAK_L == 6)
    //Base type that represents a lane
    #define keccak_lane_t uint64_t
    //Rotate left operation
    #define KECCAK_ROL(a, n) ROL64(a, (n) % 64)
-   //Host byte order to little-endian byte order
-   #define KECCAK_HTOLE(a) htole64(a)
-   //Little-endian byte order to host byte order
-   #define KECCAK_LETOH(a) letoh64(a)
+   //String to lane conversion
+   #define KECCAK_LOAD_LANE(p) LOAD64LE(p)
+   //Lane to string conversion
+   #define KECCAK_STORE_LANE(a, p) STORE64LE(a, p)
 #else
    #error KECCAK_L parameter is not valid
 #endif
 
-//The lane size of a Keccak-p permutation in bits
-#define KECCAK_W (1 << KECCAK_L)
-//The width of a Keccak-p permutation
-#define KECCAK_B (KECCAK_W * 25)
+//The lane size of a Keccak-p permutation, in bits
+#define KECCAK_W_BITS (1 << KECCAK_L)
+//The lane size of a Keccak-p permutation, in bytes
+#define KECCAK_W_BYTES ((1 << KECCAK_L) / 8)
+
+//The width of a Keccak-p permutation, in bits
+#define KECCAK_B_BITS (KECCAK_W_BITS * 25)
+//The width of a Keccak-p permutation, in bytes
+#define KECCAK_B_BYTES (KECCAK_W_BYTES * 25)
+
 //The number of rounds for a Keccak-p permutation
 #define KECCAK_NR (12 + 2 * KECCAK_L)
 
@@ -108,16 +114,8 @@ extern "C" {
 
 typedef struct
 {
-   union
-   {
-      keccak_lane_t a[5][5];
-      uint8_t digest[1];
-   };
-   union
-   {
-      keccak_lane_t block[24];
-      uint8_t buffer[1];
-   };
+   keccak_lane_t a[5][5];
+   uint8_t buffer[24 * KECCAK_W_BYTES];
    uint_t blockSize;
    size_t length;
 } KeccakContext;

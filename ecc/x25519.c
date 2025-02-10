@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,7 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "ecc/ec_curves.h"
+#include "ecc/ec.h"
 #include "ecc/curve25519.h"
 #include "ecc/x25519.h"
 #include "debug.h"
@@ -50,7 +50,7 @@
  * @return Error code
  **/
 
-error_t x25519(uint8_t *r, const uint8_t *k, const uint8_t *u)
+__weak_func error_t x25519(uint8_t *r, const uint8_t *k, const uint8_t *u)
 {
    int_t i;
    uint32_t b;
@@ -74,7 +74,10 @@ error_t x25519(uint8_t *r, const uint8_t *k, const uint8_t *u)
 #endif
 
    //Copy scalar
-   curve25519Import(state->k, k);
+   for(i = 0; i < 8; i++)
+   {
+      state->k[i] = LOAD32LE(k + i * 4);
+   }
 
    //Set the three least significant bits of the first byte and the most
    //significant bit of the last to zero, set the second most significant
@@ -87,12 +90,12 @@ error_t x25519(uint8_t *r, const uint8_t *k, const uint8_t *u)
    curve25519Import(state->u, u);
 
    //Implementations must mask the most significant bit in the final byte
-   state->u[7] &= 0x7FFFFFFF;
+   state->u[8] &= 0x007FFFFF;
 
    //Implementations must accept non-canonical values and process them as
    //if they had been reduced modulo the field prime (refer to RFC 7748,
    //section 5)
-   curve25519Red(state->u, state->u);
+   curve25519Canonicalize(state->u, state->u);
 
    //Set X1 = 1
    curve25519SetInt(state->x1, 1);
@@ -164,6 +167,9 @@ error_t x25519(uint8_t *r, const uint8_t *k, const uint8_t *u)
    //Retrieve affine representation
    curve25519Inv(state->u, state->z1);
    curve25519Mul(state->u, state->u, state->x1);
+
+   //Reduce non-canonical values
+   curve25519Canonicalize(state->u, state->u);
 
    //Copy output u-coordinate
    curve25519Export(state->u, r);

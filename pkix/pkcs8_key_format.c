@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -37,6 +37,7 @@
 #include "pkix/x509_key_format.h"
 #include "encoding/asn1.h"
 #include "encoding/oid.h"
+#include "ecc/ec_misc.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -60,28 +61,23 @@ error_t pkcs8FormatRsaPrivateKey(const RsaPrivateKey *privateKey,
 
    //Export the RSA private key to ASN.1 format
    error = x509ExportRsaPrivateKey(privateKey, output, &n);
-   //Any error to report?
-   if(error)
-      return error;
 
-   //The RSAPrivateKey structure is encapsulated within an octet string
-   tag.constructed = FALSE;
-   tag.objClass = ASN1_CLASS_UNIVERSAL;
-   tag.objType = ASN1_TYPE_OCTET_STRING;
-   tag.length = n;
-   tag.value = output;
+   //Check status code
+   if(!error)
+   {
+      //The RSAPrivateKey structure is encapsulated within an octet string
+      tag.constructed = FALSE;
+      tag.objClass = ASN1_CLASS_UNIVERSAL;
+      tag.objType = ASN1_TYPE_OCTET_STRING;
+      tag.length = n;
+      tag.value = output;
 
-   //Write PrivateKey structure
-   error = asn1WriteTag(&tag, FALSE, output, &n);
-   //Any error to report?
-   if(error)
-      return error;
+      //Write PrivateKey structure
+      error = asn1WriteTag(&tag, FALSE, output, written);
+   }
 
-   //Total number of bytes that have been written
-   *written = tag.totalLength;
-
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 }
 
 
@@ -102,45 +98,38 @@ error_t pkcs8FormatDsaPrivateKey(const DsaPrivateKey *privateKey,
 
    //Export the DSA private key to ASN.1 format
    error = x509ExportDsaPrivateKey(privateKey, output, &n);
-   //Any error to report?
-   if(error)
-      return error;
 
-   //The DSAPrivateKey structure is encapsulated within an octet string
-   tag.constructed = FALSE;
-   tag.objClass = ASN1_CLASS_UNIVERSAL;
-   tag.objType = ASN1_TYPE_OCTET_STRING;
-   tag.length = n;
-   tag.value = output;
+   //Check status code
+   if(!error)
+   {
+      //The DSAPrivateKey structure is encapsulated within an octet string
+      tag.constructed = FALSE;
+      tag.objClass = ASN1_CLASS_UNIVERSAL;
+      tag.objType = ASN1_TYPE_OCTET_STRING;
+      tag.length = n;
+      tag.value = output;
 
-   //Write PrivateKey structure
-   error = asn1WriteTag(&tag, FALSE, output, &n);
-   //Any error to report?
-   if(error)
-      return error;
+      //Write PrivateKey structure
+      error = asn1WriteTag(&tag, FALSE, output, written);
+   }
 
-   //Total number of bytes that have been written
-   *written = tag.totalLength;
-
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 }
 
 
 /**
  * @brief Format an EC private key
- * @param[in] curveInfo Elliptic curve parameters
  * @param[in] privateKey EC private key
- * @param[in] publicKey EC public key (optional parameter)
  * @param[out] output Buffer where to format the ASN.1 structure
  * @param[out] written Length of the resulting ASN.1 structure
  * @return Error code
  **/
 
-error_t pkcs8FormatEcPrivateKey(const EcCurveInfo *curveInfo,
-   const EcPrivateKey *privateKey, const EcPublicKey *publicKey,
+error_t pkcs8FormatEcPrivateKey(const EcPrivateKey *privateKey,
    uint8_t *output, size_t *written)
 {
+#if (EC_SUPPORT == ENABLED)
    error_t error;
    size_t n;
    size_t length;
@@ -168,8 +157,9 @@ error_t pkcs8FormatEcPrivateKey(const EcCurveInfo *curveInfo,
       //Advance data pointer
       p += n;
 
-      //Write the EC private key
-      error = mpiWriteRaw(&privateKey->d, p, curveInfo->pLen);
+      //The PrivateKey field is an octet string of length ceiling (log2(n)/8)
+      //(refer to RFC 5915, section 3)
+      error = ecExportPrivateKey(privateKey, p, &n);
       //Any error to report?
       if(error)
          return error;
@@ -179,7 +169,7 @@ error_t pkcs8FormatEcPrivateKey(const EcCurveInfo *curveInfo,
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_OCTET_STRING;
-   tag.length = curveInfo->pLen;
+   tag.length = n;
    tag.value = p;
 
    //Write the corresponding ASN.1 tag
@@ -197,20 +187,16 @@ error_t pkcs8FormatEcPrivateKey(const EcCurveInfo *curveInfo,
       p += n;
 
    //The public key is optional
-   if(publicKey != NULL)
+   if(privateKey->q.curve != NULL)
    {
       //Format PublicKey field
-      error = pkcs8FormatEcPublicKey(curveInfo, publicKey, p, &n);
+      error = pkcs8FormatEcPublicKey(&privateKey->q, p, &n);
       //Any error to report?
       if(error)
          return error;
 
       //Update the length of the ECPrivateKey structure
       length += n;
-
-      //Advance data pointer
-      if(output != NULL)
-         p += n;
    }
 
    //Format ECPrivateKey field
@@ -248,43 +234,36 @@ error_t pkcs8FormatEcPrivateKey(const EcCurveInfo *curveInfo,
 
    //Successful processing
    return NO_ERROR;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 
 /**
  * @brief Format an EC public key
- * @param[in] curveInfo Elliptic curve parameters
  * @param[in] publicKey EC public key
  * @param[out] output Buffer where to format the ASN.1 structure
  * @param[out] written Length of the resulting ASN.1 structure
  * @return Error code
  **/
 
-error_t pkcs8FormatEcPublicKey(const EcCurveInfo *curveInfo,
-   const EcPublicKey *publicKey, uint8_t *output, size_t *written)
+error_t pkcs8FormatEcPublicKey(const EcPublicKey *publicKey,
+   uint8_t *output, size_t *written)
 {
 #if (EC_SUPPORT == ENABLED)
    error_t error;
    size_t n;
-   EcDomainParameters params;
    Asn1Tag tag;
-
-   //Initialize EC domain parameters
-   ecInitDomainParameters(&params);
 
    //The bit string shall contain an initial octet which encodes the number
    //of unused bits in the final subsequent octet
    output[0] = 0;
 
-   //Load EC domain parameters
-   error = ecLoadDomainParameters(&params, curveInfo);
-
-   //Check status code
-   if(!error)
-   {
-      //Format ECPublicKey structure
-      error = ecExport(&params, &publicKey->q, output + 1, &n);
-   }
+   //Format ECPublicKey structure
+   error = ecExportPublicKey(publicKey, output + 1, &n,
+      EC_PUBLIC_KEY_FORMAT_X963);
 
    //Check status code
    if(!error)
@@ -314,9 +293,6 @@ error_t pkcs8FormatEcPublicKey(const EcCurveInfo *curveInfo,
       error = asn1WriteTag(&tag, FALSE, output, written);
    }
 
-   //Release EC domain parameters
-   ecFreeDomainParameters(&params);
-
    //Return status code
    return error;
 #else
@@ -328,73 +304,89 @@ error_t pkcs8FormatEcPublicKey(const EcCurveInfo *curveInfo,
 
 /**
  * @brief Format an EdDSA private key
- * @param[in] curveInfo Elliptic curve parameters
  * @param[in] privateKey EdDSA private key
  * @param[out] output Buffer where to format the ASN.1 structure
  * @param[out] written Length of the resulting ASN.1 structure
  * @return Error code
  **/
 
-error_t pkcs8FormatEddsaPrivateKey(const EcCurveInfo *curveInfo,
-   const EddsaPrivateKey *privateKey, uint8_t *output, size_t *written)
+error_t pkcs8FormatEddsaPrivateKey(const EddsaPrivateKey *privateKey,
+   uint8_t *output, size_t *written)
 {
+#if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
    error_t error;
    size_t n;
    Asn1Tag tag;
 
-   //Length of the ASN.1 structure
-   n = 0;
+   //Export the EdDSA private key to ASN.1 format
+   error = x509ExportEddsaPrivateKey(privateKey, output, &n);
 
-#if (ED25519_SUPPORT == ENABLED)
-   //Ed25519 curve identifier?
-   if(!oidComp(curveInfo->oid, curveInfo->oidSize, ED25519_OID,
-      sizeof(ED25519_OID)))
+   //Check status code
+   if(!error)
    {
-      //Export the EdDSA private key to ASN.1 format
-      error = x509ExportEddsaPrivateKey(privateKey, ED25519_PRIVATE_KEY_LEN,
-         output, &n);
+      //The CurvePrivateKey structure is encapsulated within an octet string
+      tag.constructed = FALSE;
+      tag.objClass = ASN1_CLASS_UNIVERSAL;
+      tag.objType = ASN1_TYPE_OCTET_STRING;
+      tag.length = n;
+      tag.value = output;
+
+      //Write PrivateKey structure
+      error = asn1WriteTag(&tag, FALSE, output, written);
    }
-   else
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
 #endif
-#if (ED448_SUPPORT == ENABLED)
-   //Ed448 curve identifier?
-   if(!oidComp(curveInfo->oid, curveInfo->oidSize, ED448_OID,
-      sizeof(ED448_OID)))
+}
+
+
+/**
+ * @brief Format an EdDSA public key
+ * @param[in] publicKey EdDSA public key
+ * @param[out] output Buffer where to format the ASN.1 structure
+ * @param[out] written Length of the resulting ASN.1 structure
+ * @return Error code
+ **/
+
+error_t pkcs8FormatEddsaPublicKey(const EddsaPublicKey *publicKey,
+   uint8_t *output, size_t *written)
+{
+#if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
+   error_t error;
+   size_t n;
+   Asn1Tag tag;
+
+   //The bit string shall contain an initial octet which encodes the number
+   //of unused bits in the final subsequent octet
+   output[0] = 0;
+
+   //Format EdDSA public key
+   error = eddsaExportPublicKey(publicKey, output + 1, &n);
+
+   //Check status code
+   if(!error)
    {
-      //Export the EdDSA private key to ASN.1 format
-      error = x509ExportEddsaPrivateKey(privateKey, ED448_PRIVATE_KEY_LEN,
-         output, &n);
+      //Explicit tagging shall be used to encode the public key
+      tag.constructed = TRUE;
+      tag.objClass = ASN1_CLASS_CONTEXT_SPECIFIC;
+      tag.objType = 1;
+      tag.length = n + 1;
+      tag.value = output;
+
+      //Write the corresponding ASN.1 tag
+      error = asn1WriteTag(&tag, FALSE, output, written);
    }
-   else
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
 #endif
-   //Unknown curve identifier?
-   {
-      //Report an error
-      error = ERROR_INVALID_PARAMETER;
-   }
-
-   //Any error to report?
-   if(error)
-      return error;
-
-   //The CurvePrivateKey structure is encapsulated within an octet string
-   tag.constructed = FALSE;
-   tag.objClass = ASN1_CLASS_UNIVERSAL;
-   tag.objType = ASN1_TYPE_OCTET_STRING;
-   tag.length = n;
-   tag.value = output;
-
-   //Write PrivateKey structure
-   error = asn1WriteTag(&tag, FALSE, output, &n);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Total number of bytes that have been written
-   *written = tag.totalLength;
-
-   //Successful processing
-   return NO_ERROR;
 }
 
 #endif

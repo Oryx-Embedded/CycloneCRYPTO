@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -69,8 +69,8 @@ error_t pkcs5Decrypt(const X509AlgoId *encryptionAlgoId,
       plaintext != NULL && plaintextLen != NULL)
    {
       //Check encryption algorithm identifier
-      if(!oidComp(encryptionAlgoId->oid.value, encryptionAlgoId->oid.length,
-         PBES2_OID, sizeof(PBES2_OID)))
+      if(OID_COMP(encryptionAlgoId->oid.value, encryptionAlgoId->oid.length,
+         PBES2_OID) == 0)
       {
          //Perform PBES2 decryption operation
          error = pkcs5DecryptPbes2(encryptionAlgoId, password, ciphertext,
@@ -534,8 +534,8 @@ error_t pkcs5ParseKeyDerivationFunc(const uint8_t *data, size_t length,
    keyDerivationFunc->kdfAlgoId.length = tag.length;
 
    //Check KDF algorithm identifier
-   if(oidComp(keyDerivationFunc->kdfAlgoId.value,
-      keyDerivationFunc->kdfAlgoId.length, PBKDF2_OID, arraysize(PBKDF2_OID)))
+   if(OID_COMP(keyDerivationFunc->kdfAlgoId.value,
+      keyDerivationFunc->kdfAlgoId.length, PBKDF2_OID) != 0)
    {
       return ERROR_WRONG_IDENTIFIER;
    }

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -31,7 +31,7 @@
  * for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -181,7 +181,7 @@ error_t sivDecrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
    //T = S2V(K1, AD1, ..., ADn, P)
    s2v(cipher, k1, kLen, ad, adLen, p, length, t);
 
-   //The calculated syntetic IV is bitwise compared to the received IV. The
+   //The calculated synthetic IV is bitwise compared to the received IV. The
    //message is authenticated if and only if the IVs match
    for(mask = 0, i = 0; i < 16; i++)
    {
@@ -196,7 +196,7 @@ error_t sivDecrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
 /**
  * @brief S2V operation
  * @param[in] cipher Cipher algorithm
- * @param[in] key Pointer to the S2V key
+ * @param[in] k Pointer to the S2V key
  * @param[in] kLen Length of the S2V key
  * @param[in] ad Vector of associated data
  * @param[in] adLen Number of components in the vector of associated data

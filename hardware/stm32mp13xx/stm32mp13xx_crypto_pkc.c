@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -39,6 +39,7 @@
 #include "hardware/stm32mp13xx/stm32mp13xx_crypto_pkc.h"
 #include "pkc/rsa.h"
 #include "ecc/ec.h"
+#include "ecc/ec_misc.h"
 #include "ecc/ecdsa.h"
 #include "debug.h"
 
@@ -88,7 +89,7 @@ void pkaImportArray(const uint8_t *src, size_t srcLen, uint_t destLen,
    uint_t j;
    uint32_t temp;
 
-   //Retrieve the length of the operand, in 64-bit words
+   //Get the length of the operand, in 64-bit words
    destLen = (destLen + 63) / 64;
 
    //Copy the array to the PKA RAM
@@ -137,27 +138,60 @@ void pkaImportArray(const uint8_t *src, size_t srcLen, uint_t destLen,
 
 
 /**
- * @brief Import multiple-precision integer
- * @param[in] a Pointer to the multiple-precision integer
+ * @brief Import scalar
+ * @param[in] src Pointer to the scalar
  * @param[in] length Length of the operand, in bits
  * @param[in] offset PKA ram offset
  **/
 
-void pkaImportMpi(const Mpi *a, uint_t length, uint_t offset)
+void pkaImportScalar(const uint32_t *src, uint_t length, uint_t offset)
+{
+   uint_t i;
+
+   //Get the length of the operand, in 32-bit words
+   length = (length + 31) / 32;
+
+   //Copy the scalar to the PKA RAM
+   for(i = 0; i < length; i++)
+   {
+      PKA->RAM[offset + i] = src[i];
+   }
+
+   //Pad the operand with zeroes
+   if((i % 2) != 0)
+   {
+      PKA->RAM[offset + i] = 0;
+      i++;
+   }
+
+   //An additional 64-bit word with all bits equal to zero must be added
+   PKA->RAM[offset + i] = 0;
+   PKA->RAM[offset + i + 1] = 0;
+}
+
+
+/**
+ * @brief Import multiple-precision integer
+ * @param[in] src Pointer to the multiple-precision integer
+ * @param[in] length Length of the operand, in bits
+ * @param[in] offset PKA ram offset
+ **/
+
+void pkaImportMpi(const Mpi *src, uint_t length, uint_t offset)
 {
    uint_t i;
    uint_t n;
 
-   //Retrieve the length of the operand, in 64-bit words
+   //Get the length of the operand, in 64-bit words
    length = (length + 63) / 64;
 
    //Get the actual length of the multiple-precision integer, in words
-   n = mpiGetLength(a);
+   n = mpiGetLength(src);
 
    //Copy the multiple-precision integer to the PKA RAM
    for(i = 0; i < n && i < (length * 2); i++)
    {
-      PKA->RAM[offset + i] = a->data[i];
+      PKA->RAM[offset + i] = src->data[i];
    }
 
    //Pad the operand with zeroes
@@ -173,19 +207,41 @@ void pkaImportMpi(const Mpi *a, uint_t length, uint_t offset)
 
 
 /**
+ * @brief Export scalar
+ * @param[out] dest Pointer to the scalar
+ * @param[in] length Length of the operand, in bits
+ * @param[in] offset PKA ram offset
+ **/
+
+void pkaExportScalar(uint32_t *dest, uint_t length, uint_t offset)
+{
+   uint_t i;
+
+   //Get the length of the operand, in 32-bit words
+   length = (length + 31) / 32;
+
+   //Copy the scalar from the PKA RAM
+   for(i = 0; i < length; i++)
+   {
+      dest[i] = PKA->RAM[offset + i];
+   }
+}
+
+
+/**
  * @brief Export multiple-precision integer
- * @param[out] r Pointer to the multiple-precision integer
+ * @param[out] dest Pointer to the multiple-precision integer
  * @param[in] length Length of the operand, in bits
  * @param[in] offset PKA ram offset
  * @return Error code
  **/
 
-error_t pkaExportMpi(Mpi *r, uint_t length, uint_t offset)
+error_t pkaExportMpi(Mpi *dest, uint_t length, uint_t offset)
 {
    error_t error;
    uint_t i;
 
-   //Retrieve the length of the operand, in 32-bit words
+   //Get the length of the operand, in 32-bit words
    length = (length + 31) / 32;
 
    //Skip trailing zeroes
@@ -195,7 +251,7 @@ error_t pkaExportMpi(Mpi *r, uint_t length, uint_t offset)
    }
 
    //Ajust the size of the multiple precision integer
-   error = mpiGrow(r, length);
+   error = mpiGrow(dest, length);
 
    //Check status code
    if(!error)
@@ -203,23 +259,25 @@ error_t pkaExportMpi(Mpi *r, uint_t length, uint_t offset)
       //Copy the multiple-precision integer from the PKA RAM
       for(i = 0; i < length; i++)
       {
-         r->data[i] = PKA->RAM[offset + i];
+         dest->data[i] = PKA->RAM[offset + i];
       }
 
       //Pad the resulting value with zeroes
-      for(; i < r->size; i++)
+      for(; i < dest->size; i++)
       {
-         r->data[i] = 0;
+         dest->data[i] = 0;
       }
 
       //Set the sign
-      r->sign = 1;
+      dest->sign = 1;
    }
 
    //Return status code
    return error;
 }
 
+
+#if (MPI_SUPPORT == ENABLED)
 
 /**
  * @brief Modular exponentiation
@@ -237,9 +295,9 @@ error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    uint_t expLen;
    uint32_t temp;
 
-   //Retrieve the length of the modulus, in bits
+   //Get the length of the modulus, in bits
    modLen = mpiGetBitLength(p);
-   //Retrieve the length of the exponent, in bits
+   //Get the length of the exponent, in bits
    expLen = mpiGetBitLength(e);
 
    //Check the length of the operands
@@ -304,6 +362,8 @@ error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    return error;
 }
 
+#endif
+#if (RSA_SUPPORT == ENABLED)
 
 /**
  * @brief Modular exponentiation with CRT
@@ -324,7 +384,7 @@ error_t pkaRsaCrtExp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    uint_t qinvLen;
    uint32_t temp;
 
-   //Retrieve the length of the private key
+   //Get the length of the private key
    nLen = mpiGetBitLength(&key->n);
    pLen = mpiGetBitLength(&key->p);
    qLen = mpiGetBitLength(&key->q);
@@ -427,36 +487,50 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    return error;
 }
 
+#endif
+#if (EC_SUPPORT == ENABLED)
 
 /**
- * @brief Scalar multiplication
- * @param[in] params EC domain parameters
+ * @brief Scalar multiplication (fast calculation)
+ * @param[in] curve Elliptic curve parameters
  * @param[out] r Resulting point R = d.S
  * @param[in] d An integer d such as 0 <= d < p
  * @param[in] s EC point
  * @return Error code
  **/
 
-error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
-   const EcPoint *s)
+error_t ecMulFast(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
+   const EcPoint3 *s)
+{
+   //Compute R = d.S
+   return ecMulRegular(curve, r, d, s);
+}
+
+
+/**
+ * @brief Scalar multiplication (regular calculation)
+ * @param[in] curve Elliptic curve parameters
+ * @param[out] r Resulting point R = d.S
+ * @param[in] d An integer d such as 0 <= d < q
+ * @param[in] s EC point
+ * @return Error code
+ **/
+
+error_t ecMulRegular(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
+   const EcPoint3 *s)
 {
    error_t error;
-   size_t modLen;
-   size_t orderLen;
-   size_t scalarLen;
+   uint_t modLen;
+   uint_t orderLen;
    uint32_t temp;
 
-   //Retrieve the length of the modulus, in bits
-   modLen = mpiGetBitLength(&params->p);
-   //Retrieve the length of the base point order, in bits
-   orderLen = mpiGetBitLength(&params->q);
-
-   //Retrieve the length of the scalar, in bits
-   scalarLen = mpiGetBitLength(d);
-   scalarLen = MAX(scalarLen, orderLen);
+   //Get the length of the modulus, in bits
+   modLen = curve->fieldSize;
+   //Get the length of the order, in bits
+   orderLen = curve->orderSize;
 
    //Check the length of the operands
-   if(modLen <= PKA_MAX_EOS && scalarLen <= PKA_MAX_EOS)
+   if(modLen <= PKA_MAX_EOS && orderLen <= PKA_MAX_EOS)
    {
       //Acquire exclusive access to the PKA module
       osAcquireMutex(&stm32mp13xxCryptoMutex);
@@ -466,7 +540,7 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
       PKA->RAM[PKA_ECC_SCALAR_MUL_IN_OP_NB_BITS + 1] = 0;
 
       //Specify the length of the scalar, in bits
-      PKA->RAM[PKA_ECC_SCALAR_MUL_IN_EXP_NB_BITS] = scalarLen;
+      PKA->RAM[PKA_ECC_SCALAR_MUL_IN_EXP_NB_BITS] = orderLen;
       PKA->RAM[PKA_ECC_SCALAR_MUL_IN_EXP_NB_BITS + 1] = 0;
 
       //Set the sign of the coefficient A
@@ -474,13 +548,13 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
       PKA->RAM[PKA_ECC_SCALAR_MUL_IN_A_COEFF_SIGN + 1] = 0;
 
       //Load input arguments into the PKA internal RAM
-      pkaImportMpi(&params->p, modLen, PKA_ECC_SCALAR_MUL_IN_MOD_GF);
-      pkaImportMpi(&params->a, modLen, PKA_ECC_SCALAR_MUL_IN_A_COEFF);
-      pkaImportMpi(&params->b, modLen, PKA_ECC_SCALAR_MUL_IN_B_COEFF);
-      pkaImportMpi(&params->q, scalarLen, PKA_ECC_SCALAR_MUL_IN_N_PRIME_ORDER);
-      pkaImportMpi(d, scalarLen, PKA_ECC_SCALAR_MUL_IN_K);
-      pkaImportMpi(&s->x, modLen, PKA_ECC_SCALAR_MUL_IN_INITIAL_POINT_X);
-      pkaImportMpi(&s->y, modLen, PKA_ECC_SCALAR_MUL_IN_INITIAL_POINT_Y);
+      pkaImportScalar(curve->p, modLen, PKA_ECC_SCALAR_MUL_IN_MOD_GF);
+      pkaImportScalar(curve->a, modLen, PKA_ECC_SCALAR_MUL_IN_A_COEFF);
+      pkaImportScalar(curve->b, modLen, PKA_ECC_SCALAR_MUL_IN_B_COEFF);
+      pkaImportScalar(curve->q, orderLen, PKA_ECC_SCALAR_MUL_IN_N_PRIME_ORDER);
+      pkaImportScalar(d, orderLen, PKA_ECC_SCALAR_MUL_IN_K);
+      pkaImportScalar(s->x, modLen, PKA_ECC_SCALAR_MUL_IN_INITIAL_POINT_X);
+      pkaImportScalar(s->y, modLen, PKA_ECC_SCALAR_MUL_IN_INITIAL_POINT_Y);
 
       //Clear error code
       PKA->RAM[PKA_ECC_SCALAR_MUL_OUT_ERROR] = PKA_STATUS_INVALID;
@@ -516,21 +590,15 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
       if(!error)
       {
          //Copy the x-coordinate of the result
-         error = pkaExportMpi(&r->x, modLen, PKA_ECC_SCALAR_MUL_OUT_RESULT_X);
-      }
+         ecScalarSetInt(r->x, 0, EC_MAX_MODULUS_SIZE);
+         pkaExportScalar(r->x, modLen, PKA_ECC_SCALAR_MUL_OUT_RESULT_X);
 
-      //Check status code
-      if(!error)
-      {
          //Copy the y-coordinate of the result
-         error = pkaExportMpi(&r->y, modLen, PKA_ECC_SCALAR_MUL_OUT_RESULT_Y);
-      }
+         ecScalarSetInt(r->y, 0, EC_MAX_MODULUS_SIZE);
+         pkaExportScalar(r->y, modLen, PKA_ECC_SCALAR_MUL_OUT_RESULT_Y);
 
-      //Check status code
-      if(!error)
-      {
          //Set the z-coordinate of the result
-         error = mpiSetValue(&r->z, 1);
+         ecScalarSetInt(r->z, 1, EC_MAX_MODULUS_SIZE);
       }
 
       //Then clear PROCENDF bit by setting PROCENDFC bit in PKA_CLRFR
@@ -549,12 +617,13 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    return error;
 }
 
+#endif
+#if (ECDSA_SUPPORT == ENABLED)
 
 /**
  * @brief ECDSA signature generation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] params EC domain parameters
  * @param[in] privateKey Signer's EC private key
  * @param[in] digest Digest of the message to be signed
  * @param[in] digestLen Length in octets of the digest
@@ -563,33 +632,38 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
  **/
 
 error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, const EcPrivateKey *privateKey,
-   const uint8_t *digest, size_t digestLen, EcdsaSignature *signature)
+   const EcPrivateKey *privateKey, const uint8_t *digest, size_t digestLen,
+   EcdsaSignature *signature)
 {
    error_t error;
-   size_t modLen;
-   size_t orderLen;
+   uint_t modLen;
+   uint_t orderLen;
    uint32_t temp;
-   Mpi k;
+   uint32_t k[EC_MAX_ORDER_SIZE];
+   const EcCurve *curve;
 
    //Check parameters
-   if(params == NULL || privateKey == NULL || digest == NULL || signature == NULL)
+   if(privateKey == NULL || digest == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //Retrieve the length of the modulus, in bits
-   modLen = mpiGetBitLength(&params->p);
-   //Retrieve the length of the base point order, in bits
-   orderLen = mpiGetBitLength(&params->q);
+   //Invalid elliptic curve?
+   if(privateKey->curve == NULL)
+      return ERROR_INVALID_ELLIPTIC_CURVE;
+
+   //Get elliptic curve parameters
+   curve = privateKey->curve;
+
+   //Get the length of the modulus, in bits
+   modLen = curve->fieldSize;
+   //Get the length of the order, in bits
+   orderLen = curve->orderSize;
 
    //Check the length of the operands
    if(modLen > PKA_MAX_EOS || orderLen > PKA_MAX_EOS)
       return ERROR_FAILURE;
 
-   //Initialize multiple precision integers
-   mpiInit(&k);
-
    //Generate a random number k such as 0 < k < q - 1
-   error = mpiRandRange(&k, &params->q, prngAlgo, prngContext);
+   error = ecScalarRand(curve, k, prngAlgo, prngContext);
 
    //Check status code
    if(!error)
@@ -610,14 +684,14 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
       PKA->RAM[PKA_ECDSA_SIGN_IN_A_COEFF_SIGN + 1] = 0;
 
       //Load input arguments into the PKA internal RAM
-      pkaImportMpi(&params->p, modLen, PKA_ECDSA_SIGN_IN_MOD_GF);
-      pkaImportMpi(&params->a, modLen, PKA_ECDSA_SIGN_IN_A_COEFF);
-      pkaImportMpi(&params->b, modLen, PKA_ECDSA_SIGN_IN_B_COEFF);
-      pkaImportMpi(&params->g.x, modLen, PKA_ECDSA_SIGN_IN_INITIAL_POINT_X);
-      pkaImportMpi(&params->g.y, modLen, PKA_ECDSA_SIGN_IN_INITIAL_POINT_Y);
-      pkaImportMpi(&params->q, orderLen, PKA_ECDSA_SIGN_IN_ORDER_N);
-      pkaImportMpi(&privateKey->d, orderLen, PKA_ECDSA_SIGN_IN_PRIVATE_KEY_D);
-      pkaImportMpi(&k, orderLen, PKA_ECDSA_SIGN_IN_K);
+      pkaImportScalar(curve->p, modLen, PKA_ECDSA_SIGN_IN_MOD_GF);
+      pkaImportScalar(curve->a, modLen, PKA_ECDSA_SIGN_IN_A_COEFF);
+      pkaImportScalar(curve->b, modLen, PKA_ECDSA_SIGN_IN_B_COEFF);
+      pkaImportScalar(curve->g.x, modLen, PKA_ECDSA_SIGN_IN_INITIAL_POINT_X);
+      pkaImportScalar(curve->g.y, modLen, PKA_ECDSA_SIGN_IN_INITIAL_POINT_Y);
+      pkaImportScalar(curve->q, orderLen, PKA_ECDSA_SIGN_IN_ORDER_N);
+      pkaImportScalar(privateKey->d, orderLen, PKA_ECDSA_SIGN_IN_PRIVATE_KEY_D);
+      pkaImportScalar(k, orderLen, PKA_ECDSA_SIGN_IN_K);
 
       //Keep the leftmost bits of the hash value
       digestLen = MIN(digestLen, (orderLen + 7) / 8);
@@ -657,15 +731,16 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
       //Check status code
       if(!error)
       {
-         //Copy integer R
-         error = pkaExportMpi(&signature->r, orderLen, PKA_ECDSA_SIGN_OUT_SIGNATURE_R);
-      }
+         //Save elliptic curve parameters
+         signature->curve = curve;
 
-      //Check status code
-      if(!error)
-      {
+         //Copy integer R
+         ecScalarSetInt(signature->r, 0, EC_MAX_ORDER_SIZE);
+         pkaExportScalar(signature->r, orderLen, PKA_ECDSA_SIGN_OUT_SIGNATURE_R);
+
          //Copy integer S
-         error = pkaExportMpi(&signature->s, orderLen, PKA_ECDSA_SIGN_OUT_SIGNATURE_S);
+         ecScalarSetInt(signature->s, 0, EC_MAX_ORDER_SIZE);
+         pkaExportScalar(signature->s, orderLen, PKA_ECDSA_SIGN_OUT_SIGNATURE_S);
       }
 
       //Then clear PROCENDF bit by setting PROCENDFC bit in PKA_CLRFR
@@ -675,9 +750,6 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
       osReleaseMutex(&stm32mp13xxCryptoMutex);
    }
 
-   //Release multiple precision integer
-   mpiFree(&k);
-
    //Return status code
    return error;
 }
@@ -685,7 +757,6 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
 
 /**
  * @brief ECDSA signature verification
- * @param[in] params EC domain parameters
  * @param[in] publicKey Signer's EC public key
  * @param[in] digest Digest of the message whose signature is to be verified
  * @param[in] digestLen Length in octets of the digest
@@ -693,39 +764,52 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t ecdsaVerifySignature(const EcDomainParameters *params,
-   const EcPublicKey *publicKey, const uint8_t *digest, size_t digestLen,
-   const EcdsaSignature *signature)
+error_t ecdsaVerifySignature(const EcPublicKey *publicKey,
+   const uint8_t *digest, size_t digestLen, const EcdsaSignature *signature)
 {
    error_t error;
-   size_t modLen;
-   size_t orderLen;
+   uint_t modLen;
+   uint_t orderLen;
    uint32_t temp;
+   const EcCurve *curve;
 
    //Check parameters
-   if(params == NULL || publicKey == NULL || digest == NULL || signature == NULL)
+   if(publicKey == NULL || digest == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
 
+   //Invalid elliptic curve?
+   if(publicKey->curve == NULL)
+      return ERROR_INVALID_ELLIPTIC_CURVE;
+
+   //Verify that the public key is on the curve
+   if(!ecIsPointAffine(publicKey->curve, &publicKey->q))
+   {
+      return ERROR_INVALID_SIGNATURE;
+   }
+
    //The verifier shall check that 0 < r < q
-   if(mpiCompInt(&signature->r, 0) <= 0 ||
-      mpiComp(&signature->r, &params->q) >= 0)
+   if(ecScalarCompInt(signature->r, 0, EC_MAX_ORDER_SIZE) <= 0 ||
+      ecScalarComp(signature->r, publicKey->curve->q, EC_MAX_ORDER_SIZE) >= 0)
    {
       //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
    }
 
    //The verifier shall check that 0 < s < q
-   if(mpiCompInt(&signature->s, 0) <= 0 ||
-      mpiComp(&signature->s, &params->q) >= 0)
+   if(ecScalarCompInt(signature->s, 0, EC_MAX_ORDER_SIZE) <= 0 ||
+      ecScalarComp(signature->s, publicKey->curve->q, EC_MAX_ORDER_SIZE) >= 0)
    {
       //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
    }
 
-   //Retrieve the length of the modulus, in bits
-   modLen = mpiGetBitLength(&params->p);
-   //Retrieve the length of the base point order, in bits
-   orderLen = mpiGetBitLength(&params->q);
+   //Get elliptic curve parameters
+   curve = publicKey->curve;
+
+   //Get the length of the modulus, in bits
+   modLen = curve->fieldSize;
+   //Get the length of the order, in bits
+   orderLen = curve->orderSize;
 
    //Check the length of the operands
    if(modLen > PKA_MAX_EOS || orderLen > PKA_MAX_EOS)
@@ -747,15 +831,15 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    PKA->RAM[PKA_ECDSA_VERIF_IN_A_COEFF_SIGN + 1] = 0;
 
    //Load input arguments into the PKA internal RAM
-   pkaImportMpi(&params->p, modLen, PKA_ECDSA_VERIF_IN_MOD_GF);
-   pkaImportMpi(&params->a, modLen, PKA_ECDSA_VERIF_IN_A_COEFF);
-   pkaImportMpi(&params->g.x, modLen, PKA_ECDSA_VERIF_IN_INITIAL_POINT_X);
-   pkaImportMpi(&params->g.y, modLen, PKA_ECDSA_VERIF_IN_INITIAL_POINT_Y);
-   pkaImportMpi(&params->q, orderLen, PKA_ECDSA_VERIF_IN_ORDER_N);
-   pkaImportMpi(&publicKey->q.x, modLen, PKA_ECDSA_VERIF_IN_PUBLIC_KEY_POINT_X);
-   pkaImportMpi(&publicKey->q.y, modLen, PKA_ECDSA_VERIF_IN_PUBLIC_KEY_POINT_Y);
-   pkaImportMpi(&signature->r, orderLen, PKA_ECDSA_VERIF_IN_SIGNATURE_R);
-   pkaImportMpi(&signature->s, orderLen, PKA_ECDSA_VERIF_IN_SIGNATURE_S);
+   pkaImportScalar(curve->p, modLen, PKA_ECDSA_VERIF_IN_MOD_GF);
+   pkaImportScalar(curve->a, modLen, PKA_ECDSA_VERIF_IN_A_COEFF);
+   pkaImportScalar(curve->g.x, modLen, PKA_ECDSA_VERIF_IN_INITIAL_POINT_X);
+   pkaImportScalar(curve->g.y, modLen, PKA_ECDSA_VERIF_IN_INITIAL_POINT_Y);
+   pkaImportScalar(curve->q, orderLen, PKA_ECDSA_VERIF_IN_ORDER_N);
+   pkaImportScalar(publicKey->q.x, modLen, PKA_ECDSA_VERIF_IN_PUBLIC_KEY_POINT_X);
+   pkaImportScalar(publicKey->q.y, modLen, PKA_ECDSA_VERIF_IN_PUBLIC_KEY_POINT_Y);
+   pkaImportScalar(signature->r, orderLen, PKA_ECDSA_VERIF_IN_SIGNATURE_R);
+   pkaImportScalar(signature->s, orderLen, PKA_ECDSA_VERIF_IN_SIGNATURE_S);
 
    //Keep the leftmost bits of the hash value
    digestLen = MIN(digestLen, (orderLen + 7) / 8);

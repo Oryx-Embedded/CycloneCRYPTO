@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _EDDSA_H
@@ -34,6 +34,21 @@
 //Dependencies
 #include "core/crypto.h"
 #include "ecc/ec.h"
+#include "ecc/ec_curves.h"
+
+//Maximum size of EdDSA public keys
+#if (ED448_SUPPORT == ENABLED)
+   #define EDDSA_MAX_PUBLIC_KEY_LEN 57
+#else
+   #define EDDSA_MAX_PUBLIC_KEY_LEN 32
+#endif
+
+//Maximum size of EdDSA private keys
+#if (ED448_SUPPORT == ENABLED)
+   #define EDDSA_MAX_PRIVATE_KEY_LEN 57
+#else
+   #define EDDSA_MAX_PRIVATE_KEY_LEN 32
+#endif
 
 //C++ guard
 #ifdef __cplusplus
@@ -47,7 +62,8 @@ extern "C" {
 
 typedef struct
 {
-   Mpi q; ///<Public key
+   const EcCurve *curve;                ///<Elliptic curve parameters
+   uint8_t q[EDDSA_MAX_PUBLIC_KEY_LEN]; ///<Public key
 } EddsaPublicKey;
 
 
@@ -57,9 +73,10 @@ typedef struct
 
 typedef struct
 {
-   Mpi d;      ///<Private key
-   Mpi q;      ///<Public key
-   int_t slot; ///<Private key slot
+   const EcCurve *curve;                 ///<Elliptic curve parameters
+   uint8_t d[EDDSA_MAX_PRIVATE_KEY_LEN]; ///<Private key
+   int_t slot;                           ///<Private key slot
+   EddsaPublicKey q;                     ///<Public key
 } EddsaPrivateKey;
 
 
@@ -71,14 +88,26 @@ void eddsaInitPrivateKey(EddsaPrivateKey *key);
 void eddsaFreePrivateKey(EddsaPrivateKey *key);
 
 error_t eddsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcCurveInfo *curveInfo, EddsaPrivateKey *privateKey,
+   const EcCurve *curve, EddsaPrivateKey *privateKey,
    EddsaPublicKey *publicKey);
 
 error_t eddsaGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcCurveInfo *curveInfo, EddsaPrivateKey *privateKey);
+   const EcCurve *curve, EddsaPrivateKey *privateKey);
 
-error_t eddsaGeneratePublicKey(const EcCurveInfo *curveInfo,
-   const EddsaPrivateKey *privateKey, EddsaPublicKey *publicKey);
+error_t eddsaGeneratePublicKey(const EddsaPrivateKey *privateKey,
+   EddsaPublicKey *publicKey);
+
+error_t eddsaImportPublicKey(EddsaPublicKey *key, const EcCurve *curve,
+   const uint8_t *data, size_t length);
+
+error_t eddsaExportPublicKey(const EddsaPublicKey *key, uint8_t *data,
+   size_t *length);
+
+error_t eddsaImportPrivateKey(EddsaPrivateKey *key, const EcCurve *curve,
+   const uint8_t *data, size_t length);
+
+error_t eddsaExportPrivateKey(const EddsaPrivateKey *key, uint8_t *data,
+   size_t *length);
 
 //C++ guard
 #ifdef __cplusplus

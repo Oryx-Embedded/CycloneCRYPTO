@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -80,7 +80,7 @@ const HashAlgo sm3HashAlgo =
    (HashAlgoInit) sm3Init,
    (HashAlgoUpdate) sm3Update,
    (HashAlgoFinal) sm3Final,
-   (HashAlgoFinalRaw) sm3FinalRaw
+   NULL
 };
 
 
@@ -163,7 +163,7 @@ void sm3Init(Sm3Context *context)
  * @param[in] length Length of the buffer
  **/
 
-void sm3Update(Sm3Context *context, const void *data, size_t length)
+__weak_func void sm3Update(Sm3Context *context, const void *data, size_t length)
 {
    size_t n;
 
@@ -199,7 +199,7 @@ void sm3Update(Sm3Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SM3 message digest
  * @param[in] context Pointer to the SM3 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sm3Final(Sm3Context *context, uint8_t *digest)
@@ -225,49 +225,19 @@ void sm3Final(Sm3Context *context, uint8_t *digest)
    sm3Update(context, padding, paddingSize);
 
    //Append the length of the original message
-   context->w[14] = htobe32((uint32_t) (totalSize >> 32));
-   context->w[15] = htobe32((uint32_t) totalSize);
+   for(i = 0; i < 8; i++)
+   {
+      context->buffer[63 - i] = totalSize & 0xFF;
+      totalSize >>= 8;
+   }
 
    //Calculate the message digest
    sm3ProcessBlock(context);
 
-   //Convert from host byte order to big-endian byte order
-   for(i = 0; i < 8; i++)
-   {
-      context->h[i] = htobe32(context->h[i]);
-   }
-
    //Copy the resulting digest
-   if(digest != NULL)
+   for(i = 0; i < (SM3_DIGEST_SIZE / 4); i++)
    {
-      osMemcpy(digest, context->digest, SM3_DIGEST_SIZE);
-   }
-}
-
-
-/**
- * @brief Finish the SM3 message digest (no padding added)
- * @param[in] context Pointer to the SM3 context
- * @param[out] digest Calculated digest
- **/
-
-void sm3FinalRaw(Sm3Context *context, uint8_t *digest)
-{
-   uint_t i;
-
-   //Convert from host byte order to big-endian byte order
-   for(i = 0; i < 8; i++)
-   {
-      context->h[i] = htobe32(context->h[i]);
-   }
-
-   //Copy the resulting digest
-   osMemcpy(digest, context->digest, SM3_DIGEST_SIZE);
-
-   //Convert from big-endian byte order to host byte order
-   for(i = 0; i < 8; i++)
-   {
-      context->h[i] = betoh32(context->h[i]);
+      STORE32BE(context->h[i], digest + i * 4);
    }
 }
 
@@ -277,7 +247,7 @@ void sm3FinalRaw(Sm3Context *context, uint8_t *digest)
  * @param[in] context Pointer to the SM3 context
  **/
 
-void sm3ProcessBlock(Sm3Context *context)
+__weak_func void sm3ProcessBlock(Sm3Context *context)
 {
    uint_t i;
    uint32_t ss1;
@@ -302,7 +272,7 @@ void sm3ProcessBlock(Sm3Context *context)
    //Convert from big-endian byte order to host byte order
    for(i = 0; i < 16; i++)
    {
-      w[i] = betoh32(w[i]);
+      w[i] = LOAD32BE(context->buffer + i * 4);
    }
 
    //SM3 compression function

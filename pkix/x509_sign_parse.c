@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -286,7 +286,7 @@ error_t x509ParseRsaPssHashAlgo(const uint8_t *data, size_t length,
    rsaPssParams->hashAlgo.value = tag.value;
    rsaPssParams->hashAlgo.length = tag.length;
 
-   //No error to report
+   //Successful processing
    return NO_ERROR;
 }
 
@@ -336,7 +336,7 @@ error_t x509ParseRsaPssMaskGenAlgo(const uint8_t *data, size_t length,
    if(error)
       return error;
 
-   //No error to report
+   //Successful processing
    return NO_ERROR;
 }
 
@@ -376,7 +376,7 @@ error_t x509ParseRsaPssMaskGenHashAlgo(const uint8_t *data, size_t length,
    rsaPssParams->maskGenHashAlgo.value = tag.value;
    rsaPssParams->maskGenHashAlgo.length = tag.length;
 
-   //No error to report
+   //Successful processing
    return NO_ERROR;
 }
 
@@ -409,7 +409,7 @@ error_t x509ParseRsaPssSaltLength(const uint8_t *data, size_t length,
    //Save the length of the salt
    rsaPssParams->saltLen = (size_t) saltLen;
 
-   //No error to report
+   //Successful processing
    return NO_ERROR;
 }
 

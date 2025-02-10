@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * revision 1, section 5.8.1
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -63,6 +63,7 @@ error_t concatKdf(const HashAlgo *hash, const uint8_t *z, size_t zLen,
    size_t n;
    uint32_t i;
    uint8_t counter[4];
+   uint8_t digest[MAX_HASH_DIGEST_SIZE];
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    HashContext *hashContext;
 #else
@@ -103,12 +104,12 @@ error_t concatKdf(const HashAlgo *hash, const uint8_t *z, size_t zLen,
       }
 
       //Finalize hash calculation
-      hash->final(hashContext, NULL);
+      hash->final(hashContext, digest);
 
       //Number of octets in the current block
       n = MIN(dkLen, hash->digestSize);
       //Save the resulting block
-      osMemcpy(dk, hashContext->digest, n);
+      osMemcpy(dk, digest, n);
 
       //Point to the next block
       dk += n;

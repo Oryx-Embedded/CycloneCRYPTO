@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _SM2_H
@@ -34,6 +34,7 @@
 //Dependencies
 #include "core/crypto.h"
 #include "ecc/ecdsa.h"
+#include "hash/hash_algorithms.h"
 
 //SM2 identifiers
 #define SM2_DEFAULT_ID "1234567812345678"
@@ -44,23 +45,56 @@
 extern "C" {
 #endif
 
+
+/**
+ * @brief Working state (SM2 signature generation)
+ **/
+
+typedef struct
+{
+   HashContext hashContext;
+   uint8_t buffer[32];
+   uint32_t e[8];
+   uint32_t k[8];
+   uint32_t r[8];
+   uint32_t t[8];
+   EcPoint3 pa;
+   EcPoint3 p1;
+} Sm2GenerateSignatureState;
+
+
+/**
+ * @brief Working state (SM2 signature verification)
+ **/
+
+typedef struct
+{
+   HashContext hashContext;
+   uint8_t buffer[32];
+   uint32_t e[8];
+   uint32_t r[8];
+   uint32_t t[8];
+   EcPoint3 pa;
+   EcPoint3 p1;
+} Sm2VerifySignatureState;
+
+
 //SM2 related constants
 extern const uint8_t SM2_WITH_SM3_OID[8];
 
 //SM2 related functions
 error_t sm2GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, const EcPrivateKey *privateKey,
-   const HashAlgo *hashAlgo, const char_t *id, size_t idLen,
-   const void *message, size_t messageLen, EcdsaSignature *signature);
+   const EcPrivateKey *privateKey, const HashAlgo *hashAlgo, const char_t *id,
+   size_t idLen, const void *message, size_t messageLen,
+   EcdsaSignature *signature);
 
-error_t sm2VerifySignature(const EcDomainParameters *params,
-   const EcPublicKey *publicKey, const HashAlgo *hashAlgo,
-   const char_t *id, size_t idLen, const void *message, size_t messageLen,
-   const EcdsaSignature *signature);
+error_t sm2VerifySignature(const EcPublicKey *publicKey,
+   const HashAlgo *hashAlgo, const char_t *id, size_t idLen,
+   const void *message, size_t messageLen, const EcdsaSignature *signature);
 
 error_t sm2ComputeZa(const HashAlgo *hashAlgo, HashContext *hashContext,
-   const EcDomainParameters *params, const EcPublicKey *pa, const char_t *ida,
-   size_t idaLen, uint8_t *za);
+   const EcCurve *curve, const EcPoint3 *pa, const char_t *ida, size_t idaLen,
+   uint8_t *za);
 
 //C++ guard
 #ifdef __cplusplus

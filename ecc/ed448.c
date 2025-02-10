@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,7 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "ecc/ec_curves.h"
+#include "ecc/ec.h"
 #include "ecc/curve448.h"
 #include "ecc/ed448.h"
 #include "debug.h"
@@ -45,31 +45,31 @@
 static const Ed448Point ED448_B =
 {
    {
-      0xC70CC05E, 0x2626A82B, 0x8B00938E, 0x433B80E1, 0x2AB66511, 0x12AE1AF7, 0xA3D3A464,
-      0xEA6DE324, 0x470F1767, 0x9E146570, 0x22BF36DA, 0x221D15A6, 0x6BED0DED, 0x4F1970C6
+      0x070CC05E, 0x026A82BC, 0x00938E26, 0x080E18B0, 0x0511433B, 0x0F72AB66, 0x0412AE1A, 0x0A3D3A46,
+      0x0A6DE324, 0x00F1767E, 0x04657047, 0x036DA9E1, 0x05A622BF, 0x0ED221D1, 0x066BED0D, 0x04F1970C
    },
    {
-      0xF230FA14, 0x9808795B, 0x4ED7C8AD, 0xFDBD132C, 0xE67C39C4, 0x3AD3FF1C, 0x05A0C2D7,
-      0x87789C1E, 0x6CA39840, 0x4BEA7373, 0x56C9C762, 0x88762037, 0x6EB6BC24, 0x693F4671
+      0x0230FA14, 0x008795BF, 0x07C8AD98, 0x0132C4ED, 0x09C4FDBD, 0x01CE67C3, 0x073AD3FF, 0x005A0C2D,
+      0x07789C1E, 0x0A398408, 0x0A73736C, 0x0C7624BE, 0x003756C9, 0x02488762, 0x016EB6BC, 0x0693F467
    },
    {
-      0x00000001, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-      0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+      0x00000001, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+      0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
    }
 };
 
 //Zero (constant)
-static const uint32_t ED448_ZERO[14] =
+static const int32_t ED448_ZERO[16] =
 {
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+   0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
 };
 
 //Curve parameter d
-static const uint32_t ED448_D[14] =
+static const int32_t ED448_D[16] =
 {
-   0xFFFF6756, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-   0xFFFFFFFE, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF
+   0x0FFF6756, 0x0FFFFFFF, 0x0FFFFFFF, 0x0FFFFFFF, 0x0FFFFFFF, 0x0FFFFFFF, 0x0FFFFFFF, 0x0FFFFFFF,
+   0x0FFFFFFE, 0x0FFFFFFF, 0x0FFFFFFF, 0x0FFFFFFF, 0x0FFFFFFF, 0x0FFFFFFF, 0x0FFFFFFF, 0x0FFFFFFF
 };
 
 //Order of the base point L
@@ -156,9 +156,9 @@ error_t ed448GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey)
 {
    uint8_t s[57];
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
-   Ed448State *state;
+   Ed448GeneratePublicKeyState *state;
 #else
-   Ed448State state[1];
+   Ed448GeneratePublicKeyState state[1];
 #endif
 
    //Check parameters
@@ -167,7 +167,7 @@ error_t ed448GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey)
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate working state
-   state = cryptoAllocMem(sizeof(Ed448State));
+   state = cryptoAllocMem(sizeof(Ed448GeneratePublicKeyState));
    //Failed to allocate memory?
    if(state == NULL)
       return ERROR_OUT_OF_MEMORY;
@@ -190,12 +190,12 @@ error_t ed448GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey)
    s[55] |= 0x80;
 
    //Perform a fixed-base scalar multiplication s * B
-   ed448Mul(state, &state->sb, s, &ED448_B);
+   ed448Mul(&state->subState, &state->a, s, &ED448_B);
    //The public key A is the encoding of the point s * B
-   ed448Encode(&state->sb, publicKey);
+   ed448Encode(&state->a, publicKey);
 
    //Erase working state
-   osMemset(state, 0, sizeof(Ed448State));
+   osMemset(state, 0, sizeof(Ed448GeneratePublicKeyState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
@@ -225,17 +225,15 @@ error_t ed448GenerateSignature(const uint8_t *privateKey,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature)
 {
    error_t error;
-   DataChunk messageChunks[2];
+   DataChunk messageChunks[1];
 
    //The message fits in a single chunk
    messageChunks[0].buffer = message;
    messageChunks[0].length = messageLen;
-   messageChunks[1].buffer = NULL;
-   messageChunks[1].length = 0;
 
    //Ed448 signature generation
    error = ed448GenerateSignatureEx(privateKey, publicKey, messageChunks,
-      context, contextLen, flag, signature);
+      arraysize(messageChunks), context, contextLen, flag, signature);
 
    //Return status code
    return error;
@@ -246,8 +244,9 @@ error_t ed448GenerateSignature(const uint8_t *privateKey,
  * @brief EdDSA signature generation
  * @param[in] privateKey Signer's EdDSA private key (57 bytes)
  * @param[in] publicKey Signer's EdDSA public key (57 bytes)
- * @param[in] messageChunks Array of data chunks representing the message
- *   to be signed
+ * @param[in] message Array of data chunks representing the message to be
+ *   signed
+ * @param[in] messageLen Number of data chunks representing the message
  * @param[in] context Constant string specified by the protocol using it
  * @param[in] contextLen Length of the context, in bytes
  * @param[in] flag Prehash flag for Ed448ph scheme
@@ -256,28 +255,29 @@ error_t ed448GenerateSignature(const uint8_t *privateKey,
  **/
 
 error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
-   const uint8_t *publicKey, const DataChunk *messageChunks,
+   const uint8_t *publicKey, const DataChunk *message, uint_t messageLen,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature)
 {
    uint_t i;
    uint8_t c;
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
-   Ed448State *state;
+   Ed448GenerateSignatureState *state;
 #else
-   Ed448State state[1];
+   Ed448GenerateSignatureState state[1];
 #endif
 
    //Check parameters
-   if(privateKey == NULL || signature == NULL)
+   if(privateKey == NULL || message == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
-   if(messageChunks == NULL)
-      return ERROR_INVALID_PARAMETER;
+
+   //The context is an optional constant string specified by the protocol using
+   //it (refer to RFC 8032, section 8.3)
    if(context == NULL && contextLen != 0)
       return ERROR_INVALID_PARAMETER;
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate working state
-   state = cryptoAllocMem(sizeof(Ed448State));
+   state = cryptoAllocMem(sizeof(Ed448GenerateSignatureState));
    //Failed to allocate memory?
    if(state == NULL)
       return ERROR_OUT_OF_MEMORY;
@@ -303,9 +303,9 @@ error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
    if(publicKey == NULL)
    {
       //Perform a fixed-base scalar multiplication s * B
-      ed448Mul(state, &state->sb, state->s, &ED448_B);
+      ed448Mul(&state->subState, &state->a, state->s, &ED448_B);
       //The public key A is the encoding of the point s * B
-      ed448Encode(&state->sb, state->t);
+      ed448Encode(&state->a, state->t);
       //Point to the resulting public key
       publicKey = state->t;
    }
@@ -324,11 +324,11 @@ error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
    shakeAbsorb(&state->shakeContext, state->p, 57);
 
    //The message is split over multiple chunks
-   for(i = 0; messageChunks[i].buffer != NULL; i++)
+   for(i = 0; i < messageLen; i++)
    {
       //Absorb current chunk
-      shakeAbsorb(&state->shakeContext, messageChunks[i].buffer,
-         messageChunks[i].length);
+      shakeAbsorb(&state->shakeContext, message[i].buffer,
+         message[i].length);
    }
 
    //Compute SHAKE256(dom4(F, C) || prefix || PH(M), 114)
@@ -338,9 +338,9 @@ error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
    //Reduce the 114-octet digest as a little-endian integer r
    ed448RedInt(state->r, state->k);
    //Compute the point r * B
-   ed448Mul(state, &state->rb, state->r, &ED448_B);
+   ed448Mul(&state->subState, &state->a, state->r, &ED448_B);
    //Let the string R be the encoding of this point
-   ed448Encode(&state->rb, signature);
+   ed448Encode(&state->a, signature);
 
    //Initialize SHAKE256 context
    shakeInit(&state->shakeContext, 256);
@@ -354,11 +354,11 @@ error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
    shakeAbsorb(&state->shakeContext, publicKey, ED448_PUBLIC_KEY_LEN);
 
    //The message is split over multiple chunks
-   for(i = 0; messageChunks[i].buffer != NULL; i++)
+   for(i = 0; i < messageLen; i++)
    {
       //Absorb current chunk
-      shakeAbsorb(&state->shakeContext, messageChunks[i].buffer,
-         messageChunks[i].length);
+      shakeAbsorb(&state->shakeContext, message[i].buffer,
+         message[i].length);
    }
 
    //Compute SHAKE256(dom4(F, C) || R || A || PH(M), 114) and interpret the
@@ -377,7 +377,7 @@ error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
    ed448SelectInt(signature + 57, state->p, state->s, c, 57);
 
    //Erase working state
-   osMemset(state, 0, sizeof(Ed448State));
+   osMemset(state, 0, sizeof(Ed448GenerateSignatureState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
@@ -406,17 +406,15 @@ error_t ed448VerifySignature(const uint8_t *publicKey, const void *message,
    const uint8_t *signature)
 {
    error_t error;
-   DataChunk messageChunks[2];
+   DataChunk messageChunks[1];
 
    //The message fits in a single chunk
    messageChunks[0].buffer = message;
    messageChunks[0].length = messageLen;
-   messageChunks[1].buffer = NULL;
-   messageChunks[1].length = 0;
 
    //Ed448 signature verification
-   error = ed448VerifySignatureEx(publicKey, messageChunks, context,
-      contextLen, flag, signature);
+   error = ed448VerifySignatureEx(publicKey, messageChunks,
+      arraysize(messageChunks), context, contextLen, flag, signature);
 
    //Return status code
    return error;
@@ -426,8 +424,9 @@ error_t ed448VerifySignature(const uint8_t *publicKey, const void *message,
 /**
  * @brief EdDSA signature verification
  * @param[in] publicKey Signer's EdDSA public key (57 bytes)
- * @param[in] messageChunks Array of data chunks representing the message
- *   whose signature is to be verified
+ * @param[in] message Array of data chunks representing the message whose
+ *   signature is to be verified
+ * @param[in] messageLen Number of data chunks representing the message
  * @param[in] context Constant string specified by the protocol using it
  * @param[in] contextLen Length of the context, in bytes
  * @param[in] flag Prehash flag for Ed448ph scheme
@@ -436,28 +435,29 @@ error_t ed448VerifySignature(const uint8_t *publicKey, const void *message,
  **/
 
 error_t ed448VerifySignatureEx(const uint8_t *publicKey,
-   const DataChunk *messageChunks, const void *context,
+   const DataChunk *message, uint_t messageLen, const void *context,
    uint8_t contextLen, uint8_t flag, const uint8_t *signature)
 {
    uint_t i;
    uint32_t ret;
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
-   Ed448State *state;
+   Ed448VerifySignatureState *state;
 #else
-   Ed448State state[1];
+   Ed448VerifySignatureState state[1];
 #endif
 
    //Check parameters
-   if(publicKey == NULL || signature == NULL)
+   if(publicKey == NULL || message == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
-   if(messageChunks == NULL)
-      return ERROR_INVALID_PARAMETER;
+
+   //The context is an optional constant string specified by the protocol using
+   //it (refer to RFC 8032, section 8.3)
    if(context == NULL && contextLen != 0)
       return ERROR_INVALID_PARAMETER;
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate working state
-   state = cryptoAllocMem(sizeof(Ed448State));
+   state = cryptoAllocMem(sizeof(Ed448VerifySignatureState));
    //Failed to allocate memory?
    if(state == NULL)
       return ERROR_OUT_OF_MEMORY;
@@ -476,7 +476,7 @@ error_t ed448VerifySignatureEx(const uint8_t *publicKey,
    ret = 1 ^ ed448SubInt(state->p, state->s, ED448_L, ED448_SIGNATURE_LEN / 2);
 
    //Decode the public key A as point A'
-   ret |= ed448Decode(&state->ka, publicKey);
+   ret |= ed448Decode(&state->a, publicKey);
 
    //Initialize SHAKE256 context
    shakeInit(&state->shakeContext, 256);
@@ -490,11 +490,11 @@ error_t ed448VerifySignatureEx(const uint8_t *publicKey,
    shakeAbsorb(&state->shakeContext, publicKey, ED448_PUBLIC_KEY_LEN);
 
    //The message is split over multiple chunks
-   for(i = 0; messageChunks[i].buffer != NULL; i++)
+   for(i = 0; i < messageLen; i++)
    {
       //Absorb current chunk
-      shakeAbsorb(&state->shakeContext, messageChunks[i].buffer,
-         messageChunks[i].length);
+      shakeAbsorb(&state->shakeContext, message[i].buffer,
+         message[i].length);
    }
 
    //Compute SHAKE256(dom4(F, C) || R || A || PH(M), 114) and interpret the
@@ -505,21 +505,22 @@ error_t ed448VerifySignatureEx(const uint8_t *publicKey,
    //For efficiency, reduce k modulo L first
    ed448RedInt(state->k, state->k);
 
+   //Compute -A'
+   curve448Sub(state->a.x, ED448_ZERO, state->a.x);
+
    //Compute the point P = s * B - k * A'
-   curve448Sub(state->ka.x, ED448_ZERO, state->ka.x);
-   ed448Mul(state, &state->sb, state->s, &ED448_B);
-   ed448Mul(state, &state->ka, state->k, &state->ka);
-   ed448Add(state, &state->ka, &state->sb, &state->ka);
+   ed448TwinMul(&state->subState, &state->a, state->s, &ED448_B, state->k,
+      &state->a);
 
    //Encode of the resulting point P
-   ed448Encode(&state->ka, state->p);
+   ed448Encode(&state->a, state->p);
 
    //If P = R, then the signature is verified. If P does not equal R,
    //then the message or the signature may have been modified
    ret |= ed448CompInt(state->p, signature, ED448_SIGNATURE_LEN / 2);
 
    //Erase working state
-   osMemset(state, 0, sizeof(Ed448State));
+   osMemset(state, 0, sizeof(Ed448VerifySignatureState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
@@ -532,14 +533,14 @@ error_t ed448VerifySignatureEx(const uint8_t *publicKey,
 
 
 /**
- * @brief Scalar multiplication on Ed448 curve
+ * @brief Scalar multiplication (regular calculation)
  * @param[in] state Pointer to the working state
  * @param[out] r Resulting point R = k * P
  * @param[in] k Input scalar
  * @param[in] p Input point
  **/
 
-void ed448Mul(Ed448State *state, Ed448Point *r, const uint8_t *k,
+void ed448Mul(Ed448SubState *state, Ed448Point *r, const uint8_t *k,
    const Ed448Point *p)
 {
    int_t i;
@@ -575,6 +576,69 @@ void ed448Mul(Ed448State *state, Ed448Point *r, const uint8_t *k,
 
 
 /**
+ * @brief Twin multiplication
+ * @param[in] state Pointer to the working state
+ * @param[out] r Resulting point R = k1 * P + k2 * Q
+ * @param[in] k1 First input scalar
+ * @param[in] p First input point
+ * @param[in] k2 Second input scalar
+ * @param[in] q Second input point
+ **/
+
+void ed448TwinMul(Ed448SubState *state, Ed448Point *r, const uint8_t *k1,
+   const Ed448Point *p, const uint8_t *k2, const Ed448Point *q)
+{
+   int_t i;
+   uint8_t b1;
+   uint8_t b2;
+
+   //Pre-compute V = P + Q
+   ed448Add(state, &state->v, p, q);
+
+   //The neutral element is represented by (0, 1, 1)
+   curve448SetInt(state->u.x, 0);
+   curve448SetInt(state->u.y, 1);
+   curve448SetInt(state->u.z, 1);
+
+   //Calculate both multiplications at the same time
+   for(i = CURVE448_BIT_LEN - 1; i >= 0; i--)
+   {
+      //The scalars are processed in a left-to-right fashion
+      b1 = (k1[i / 8] >> (i % 8)) & 1;
+      b2 = (k2[i / 8] >> (i % 8)) & 1;
+
+      //Compute U = 2 * U
+      ed448Double(state, &state->u, &state->u);
+
+      //Check k1(i) and k2(i)
+      if(b1 == 1 && b2 == 0)
+      {
+         //Compute U = U + P
+         ed448Add(state, &state->u, &state->u, p);
+      }
+      else if(b1 == 0 && b2 == 1)
+      {
+         //Compute U = U + Q
+         ed448Add(state, &state->u, &state->u, q);
+      }
+      else if(b1 == 1 && b2 == 1)
+      {
+         //Compute U = U + V
+         ed448Add(state, &state->u, &state->u, &state->v);
+      }
+      else
+      {
+      }
+   }
+
+   //Copy result
+   curve448Copy(r->x, state->u.x);
+   curve448Copy(r->y, state->u.y);
+   curve448Copy(r->z, state->u.z);
+}
+
+
+/**
  * @brief Point addition
  * @param[in] state Pointer to the working state
  * @param[out] r Resulting point R = P + Q
@@ -582,7 +646,7 @@ void ed448Mul(Ed448State *state, Ed448Point *r, const uint8_t *k,
  * @param[in] q Second operand
  **/
 
-void ed448Add(Ed448State *state, Ed448Point *r, const Ed448Point *p,
+void ed448Add(Ed448SubState *state, Ed448Point *r, const Ed448Point *p,
    const Ed448Point *q)
 {
    //Compute A = X1 * X2
@@ -593,26 +657,32 @@ void ed448Add(Ed448State *state, Ed448Point *r, const Ed448Point *p,
    curve448Mul(state->c, p->z, q->z);
    //Compute D = C^2
    curve448Sqr(state->d, state->c);
+
    //Compute E = d * A * B
    curve448Mul(state->e, state->a, state->b);
    curve448Mul(state->e, state->e, ED448_D);
+
    //Compute F = D + E
    curve448Add(state->f, state->d, state->e);
    //Compute G = D - E
    curve448Sub(state->g, state->d, state->e);
+
    //Compute D = (X1 + Y1) * (X2 + Y2)
    curve448Add(state->d, p->x, p->y);
    curve448Add(state->e, q->x, q->y);
    curve448Mul(state->d, state->d, state->e);
+
    //Compute X3 = C * G * (D - A - B)
    curve448Sub(state->d, state->d, state->a);
    curve448Sub(state->d, state->d, state->b);
    curve448Mul(state->d, state->d, state->c);
    curve448Mul(r->x, state->d, state->g);
+
    //Compute Y3 = C * F * (B - A)
    curve448Sub(state->b, state->b, state->a);
    curve448Mul(state->b, state->b, state->c);
    curve448Mul(r->y, state->b, state->f);
+
    //Compute Z3 = F * G
    curve448Mul(r->z, state->f, state->g);
 }
@@ -625,7 +695,7 @@ void ed448Add(Ed448State *state, Ed448Point *r, const Ed448Point *p,
  * @param[in] p Input point P
  **/
 
-void ed448Double(Ed448State *state, Ed448Point *r, const Ed448Point *p)
+void ed448Double(Ed448SubState *state, Ed448Point *r, const Ed448Point *p)
 {
    //Compute A = X1 * X2
    curve448Mul(state->a, p->x, p->x);
@@ -635,18 +705,23 @@ void ed448Double(Ed448State *state, Ed448Point *r, const Ed448Point *p)
    curve448Mul(state->c, p->z, p->z);
    //Compute F = A + B
    curve448Add(state->f, state->a, state->b);
+
    //Compute G = F - 2 * C
    curve448Add(state->c, state->c, state->c);
    curve448Sub(state->g, state->f, state->c);
+
    //Compute D = (X1 + Y1)^2
    curve448Add(state->d, p->x, p->y);
    curve448Sqr(state->d, state->d);
+
    //Compute X3 = G * (D - F)
    curve448Sub(state->d, state->d, state->f);
    curve448Mul(r->x, state->d, state->g);
+
    //Compute Y3 = F * (A - B)
    curve448Sub(state->a, state->a, state->b);
    curve448Mul(r->y, state->a, state->f);
+
    //Compute Z3 = F * G
    curve448Mul(r->z, state->f, state->g);
 }
@@ -666,6 +741,10 @@ void ed448Encode(Ed448Point *p, uint8_t *data)
    curve448Mul(p->y, p->y, p->z);
    curve448SetInt(p->z, 1);
 
+   //Reduce non-canonical values
+   curve448Canonicalize(p->x, p->x);
+   curve448Canonicalize(p->y, p->y);
+
    //Encode the y-coordinate as a little-endian string of 57 octets. The final
    //octet is always zero
    curve448Export(p->y, data);
@@ -679,8 +758,8 @@ void ed448Encode(Ed448Point *p, uint8_t *data)
 
 /**
  * @brief Point decoding
- * @param[in] p Point representation
- * @param[out] data Octet string to be converted
+ * @param[out] p Point representation
+ * @param[in] data Octet string to be converted
  **/
 
 uint32_t ed448Decode(Ed448Point *p, const uint8_t *data)
@@ -688,9 +767,9 @@ uint32_t ed448Decode(Ed448Point *p, const uint8_t *data)
    uint_t i;
    uint8_t x0;
    uint32_t ret;
-   uint64_t temp;
-   uint32_t u[14];
-   uint32_t v[14];
+   int32_t temp;
+   int32_t u[16];
+   int32_t v[16];
 
    //First, interpret the string as an integer in little-endian representation.
    //Bit 455 of this number is the least significant bit of the x-coordinate
@@ -701,25 +780,24 @@ uint32_t ed448Decode(Ed448Point *p, const uint8_t *data)
    curve448Import(p->y, data);
 
    //Compute u = y + 2^224 + 1
-   for(temp = 1, i = 0; i < 7; i++)
+   for(temp = 1, i = 0; i < 8; i++)
    {
       temp += p->y[i];
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
+      u[i] = temp & 0x0FFFFFFF;
+      temp >>= 28;
    }
 
-   for(temp += 1, i = 7; i < 14; i++)
+   for(temp += 1, i = 8; i < 16; i++)
    {
       temp += p->y[i];
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
+      u[i] = temp & 0x0FFFFFFF;
+      temp >>= 28;
    }
 
    temp += data[56] & 0x7F;
-   ret = temp & 0xFFFFFFFF;
 
    //If the y-coordinate is >= p, decoding fails
-   ret = (ret | (~ret + 1)) >> 31;
+   ret = CRYPTO_TEST_NZ_32(temp);
 
    //The curve equation implies x^2 = (y^2 - 1) / (d * y^2 - 1) mod p
    //Let u = y^2 - 1 and v = d * y^2 - 1
@@ -839,8 +917,8 @@ uint8_t ed448SubInt(uint8_t *r, const uint8_t *a, const uint8_t *b, uint_t n)
 
 /**
  * @brief Multiplication of two integers
- * @param[out] rl Low part of the result R = (A + B) mod (2^8)^n
- * @param[out] rh High part of the result R = (A + B) / (2^8)^n
+ * @param[out] rl Low part of the result R = (A * B) mod (2^8)^n
+ * @param[out] rh High part of the result R = (A * B) / (2^8)^n
  * @param[in] a An integer such as 0 <= A < (2^8)^n
  * @param[in] b An integer such as 0 <= B < (2^8)^n
  * @param[in] n Size of the operands, in bytes

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -481,9 +481,6 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
          //Encrypt payload data
          aesProcessData(context, iv, p, c, length, CRPT_AES_CTL_OPMODE_CBC |
             CRPT_AES_CTL_ENCRPT_Msk);
-
-         //Update the value of the initialization vector
-         osMemcpy(iv, c + length - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
       }
       else
       {
@@ -558,16 +555,8 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
       }
       else if((length % AES_BLOCK_SIZE) == 0)
       {
-         uint8_t block[AES_BLOCK_SIZE];
-
-         //Save the last input block
-         osMemcpy(block, c + length - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
-
          //Decrypt payload data
          aesProcessData(context, iv, c, p, length, CRPT_AES_CTL_OPMODE_CBC);
-
-         //Update the value of the initialization vector
-         osMemcpy(iv, block, AES_BLOCK_SIZE);
       }
       else
       {

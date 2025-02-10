@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _MD2_H
@@ -55,12 +55,7 @@ extern "C" {
 
 typedef struct
 {
-
-   union
-   {
-      uint8_t x[48];
-      uint8_t digest[16];
-   };
+   uint8_t x[48];
    uint8_t m[16];
    uint8_t c[16];
    size_t size;

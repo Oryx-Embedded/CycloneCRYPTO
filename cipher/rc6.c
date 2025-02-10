@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -29,7 +29,7 @@
  * RC6 is a symmetric key block cipher derived from RC5
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -79,6 +79,7 @@ error_t rc6Init(Rc6Context *context, const uint8_t *key, size_t keyLen)
    uint_t v;
    uint32_t a;
    uint32_t b;
+   uint8_t buffer[RC6_MAX_KEY_SIZE];
 
    //Check parameters
    if(context == NULL || key == NULL)
@@ -88,9 +89,16 @@ error_t rc6Init(Rc6Context *context, const uint8_t *key, size_t keyLen)
    if(keyLen > RC6_MAX_KEY_SIZE)
       return ERROR_INVALID_KEY_LENGTH;
 
-   //Convert the secret key from bytes to words
-   osMemset(context->l, 0, RC6_MAX_KEY_SIZE);
-   osMemcpy(context->l, key, keyLen);
+   //The key is padded with high-order zero bytes if necessary
+   osMemset(buffer, 0, RC6_MAX_KEY_SIZE);
+   osMemcpy(buffer, key, keyLen);
+
+   //The key bytes are then loaded in little-endian fashion into an array of
+   //words
+   for(i = 0; i < (RC6_MAX_KEY_SIZE / 4); i++)
+   {
+      context->l[i] = LOAD32LE(buffer + i * 4);
+   }
 
    //Calculate the length of the key in words
    c = (keyLen > 0) ? (keyLen + 3) / 4 : 1;
@@ -135,7 +143,7 @@ error_t rc6Init(Rc6Context *context, const uint8_t *key, size_t keyLen)
       }
    }
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -155,7 +163,7 @@ void rc6EncryptBlock(Rc6Context *context, const uint8_t *input,
    uint32_t u;
 
    //Load the 4 working registers with the plaintext
-   uint32_t a = LOAD32LE(input + 0);
+   uint32_t a = LOAD32LE(input);
    uint32_t b = LOAD32LE(input + 4);
    uint32_t c = LOAD32LE(input + 8);
    uint32_t d = LOAD32LE(input + 12);
@@ -191,7 +199,7 @@ void rc6EncryptBlock(Rc6Context *context, const uint8_t *input,
    c += context->s[2 * RC6_NB_ROUNDS + 3];
 
    //The resulting value is the ciphertext
-   STORE32LE(a, output + 0);
+   STORE32LE(a, output);
    STORE32LE(b, output + 4);
    STORE32LE(c, output + 8);
    STORE32LE(d, output + 12);
@@ -213,7 +221,7 @@ void rc6DecryptBlock(Rc6Context *context, const uint8_t *input,
    uint32_t u;
 
    //Load the 4 working registers with the ciphertext
-   uint32_t a = LOAD32LE(input + 0);
+   uint32_t a = LOAD32LE(input);
    uint32_t b = LOAD32LE(input + 4);
    uint32_t c = LOAD32LE(input + 8);
    uint32_t d = LOAD32LE(input + 12);
@@ -249,7 +257,7 @@ void rc6DecryptBlock(Rc6Context *context, const uint8_t *input,
    b -= context->s[0];
 
    //The resulting value is the plaintext
-   STORE32LE(a, output + 0);
+   STORE32LE(a, output);
    STORE32LE(b, output + 4);
    STORE32LE(c, output + 8);
    STORE32LE(d, output + 12);

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -31,7 +31,7 @@
  * PKCS #3 (Diffie-Hellman Key-Agreement Standard)
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -163,7 +163,7 @@ error_t dhGenerateKeyPair(DhContext *context, const PrngAlgo *prngAlgo,
    TRACE_DEBUG_MPI("    ", &context->ya);
 
    //Check public value
-   error = dhCheckPublicKey(&context->params, &context->ya);
+   error = dhCheckPublicKey(context, &context->ya);
    //Weak public value?
    if(error)
       return error;
@@ -175,12 +175,12 @@ error_t dhGenerateKeyPair(DhContext *context, const PrngAlgo *prngAlgo,
 
 /**
  * @brief Check Diffie-Hellman public value
- * @param[in] params Pointer to the Diffie-Hellman parameters
+ * @param[in] context Pointer to the Diffie-Hellman context
  * @param[in] publicKey Public value to be checked
  * @return Error code
  **/
 
-error_t dhCheckPublicKey(DhParameters *params, const Mpi *publicKey)
+error_t dhCheckPublicKey(DhContext *context, const Mpi *publicKey)
 {
    error_t error;
    Mpi a;
@@ -188,7 +188,7 @@ error_t dhCheckPublicKey(DhParameters *params, const Mpi *publicKey)
    //Initialize multiple precision integer
    mpiInit(&a);
    //Precompute p - 1
-   error = mpiSubInt(&a, &params->p, 1);
+   error = mpiSubInt(&a, &context->params.p, 1);
 
    //Check status
    if(!error)
@@ -201,6 +201,9 @@ error_t dhCheckPublicKey(DhParameters *params, const Mpi *publicKey)
       else if(mpiComp(publicKey, &a) >= 0)
       {
          error = ERROR_ILLEGAL_PARAMETER;
+      }
+      else
+      {
       }
    }
 
@@ -251,7 +254,7 @@ error_t dhComputeSharedSecret(DhContext *context, uint8_t *output,
          break;
 
       //Convert the resulting integer to an octet string
-      error = mpiWriteRaw(&z, output, k);
+      error = mpiExport(&z, output, k, MPI_FORMAT_BIG_ENDIAN);
       //Conversion failed?
       if(error)
          break;

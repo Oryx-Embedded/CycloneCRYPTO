@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -221,8 +221,8 @@ error_t ocspParseResponseBytes(const uint8_t *data, size_t length,
 
    //OCSP clients shall be capable of receiving and processing responses of
    //the id-pkix-ocsp-basic response type (refer to RFC 6960, section 4.2.1)
-   if(!oidComp(response->responseType.value, response->responseType.length,
-      PKIX_OCSP_BASIC_OID, sizeof(PKIX_OCSP_BASIC_OID)))
+   if(OID_COMP(response->responseType.value, response->responseType.length,
+      PKIX_OCSP_BASIC_OID) == 0)
    {
       //The value for response shall be the DER encoding of BasicOCSPResponse
       error = ocspParseBasicResponse(data, length,
@@ -1112,8 +1112,8 @@ error_t ocspParseResponseExtensions(const uint8_t *data, size_t length,
          return error;
 
       //Check extension identifier
-      if(!oidComp(extension.oid.value, extension.oid.length,
-         PKIX_OCSP_NONCE_OID, sizeof(PKIX_OCSP_NONCE_OID)))
+      if(OID_COMP(extension.oid.value, extension.oid.length,
+         PKIX_OCSP_NONCE_OID) == 0)
       {
          //Parse Nonce extension
          error = ocspParseNonceExtension(extension.critical,

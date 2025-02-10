@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -35,6 +35,7 @@
 #include "core/crypto.h"
 #include "pkix/pkcs8_key_parse.h"
 #include "pkix/x509_key_parse.h"
+#include "ecc/ec_misc.h"
 #include "encoding/asn1.h"
 #include "encoding/oid.h"
 #include "debug.h"
@@ -99,63 +100,60 @@ error_t pkcs8ParsePrivateKeyInfo(const uint8_t *data, size_t length,
    if(error)
       return error;
 
-   //Point to the private key
-   data = tag.value;
-   length = tag.length;
-
    //Get the private key algorithm identifier
    oid = privateKeyInfo->oid.value;
    oidLen = privateKeyInfo->oid.length;
 
 #if (RSA_SUPPORT == ENABLED)
    //RSA or RSA-PSS algorithm identifier?
-   if(!oidComp(oid, oidLen, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)) ||
-      !oidComp(oid, oidLen, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
+   if(OID_COMP(oid, oidLen, RSA_ENCRYPTION_OID) == 0 ||
+      OID_COMP(oid, oidLen, RSASSA_PSS_OID) == 0)
    {
       //Read RSAPrivateKey structure
-      error = pkcs8ParseRsaPrivateKey(data, length,
+      error = pkcs8ParseRsaPrivateKey(tag.value, tag.length,
          &privateKeyInfo->rsaPrivateKey);
    }
    else
 #endif
 #if (DSA_SUPPORT == ENABLED)
    //DSA algorithm identifier?
-   if(!oidComp(oid, oidLen, DSA_OID, sizeof(DSA_OID)))
+   if(OID_COMP(oid, oidLen, DSA_OID) == 0)
    {
       //Read DSAPrivateKey structure
-      error = pkcs8ParseDsaPrivateKey(data, length, NULL,
-         &privateKeyInfo->dsaPrivateKey);
+      error = pkcs8ParseDsaPrivateKey(tag.value, tag.length, NULL,
+         &privateKeyInfo->dsaPrivateKey, NULL);
    }
    else
 #endif
 #if (EC_SUPPORT == ENABLED)
    //EC public key identifier?
-   if(!oidComp(oid, oidLen, EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
+   if(OID_COMP(oid, oidLen, EC_PUBLIC_KEY_OID) == 0)
    {
       //Read ECPrivateKey structure
-      error = pkcs8ParseEcPrivateKey(data, length, &privateKeyInfo->ecParams,
-         &privateKeyInfo->ecPrivateKey);
+      error = pkcs8ParseEcPrivateKey(tag.value, tag.length,
+         &privateKeyInfo->ecParams, &privateKeyInfo->ecPrivateKey,
+         &privateKeyInfo->ecPublicKey);
    }
    else
 #endif
 #if (ED25519_SUPPORT == ENABLED)
    //X25519 or Ed25519 algorithm identifier?
-   if(!oidComp(oid, oidLen, X25519_OID, sizeof(X25519_OID)) ||
-      !oidComp(oid, oidLen, ED25519_OID, sizeof(ED25519_OID)))
+   if(OID_COMP(oid, oidLen, X25519_OID) == 0 ||
+      OID_COMP(oid, oidLen, ED25519_OID) == 0)
    {
       //Read CurvePrivateKey structure
-      error = pkcs8ParseEddsaPrivateKey(data, length,
+      error = pkcs8ParseEddsaPrivateKey(tag.value, tag.length,
          &privateKeyInfo->eddsaPrivateKey);
    }
    else
 #endif
 #if (ED448_SUPPORT == ENABLED)
    //X448 or Ed448 algorithm identifier?
-   if(!oidComp(oid, oidLen, X448_OID, sizeof(X448_OID)) ||
-      !oidComp(oid, oidLen, ED448_OID, sizeof(ED448_OID)))
+   if(OID_COMP(oid, oidLen, X448_OID) == 0 ||
+      OID_COMP(oid, oidLen, ED448_OID) == 0)
    {
       //Read CurvePrivateKey structure
-      error = pkcs8ParseEddsaPrivateKey(data, length,
+      error = pkcs8ParseEddsaPrivateKey(tag.value, tag.length,
          &privateKeyInfo->eddsaPrivateKey);
    }
    else
@@ -166,8 +164,57 @@ error_t pkcs8ParsePrivateKeyInfo(const uint8_t *data, size_t length,
       error = ERROR_WRONG_IDENTIFIER;
    }
 
-   //Return status code
-   return error;
+   //Any error to report?
+   if(error)
+      return error;
+
+   //Point to the next field
+   data += tag.totalLength;
+   length -= tag.totalLength;
+
+#if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
+   //X25519, Ed25519, X448 or Ed448 algorithm identifier?
+   if(OID_COMP(oid, oidLen, X25519_OID) == 0 ||
+      OID_COMP(oid, oidLen, ED25519_OID) == 0 ||
+      OID_COMP(oid, oidLen, X448_OID) == 0 ||
+      OID_COMP(oid, oidLen, ED448_OID) == 0)
+   {
+      //The OneAsymmetricKey structure allows for the public key and additional
+      //attributes about the key to be included as well (refer to RFC 8410,
+      //section 7)
+      while(length > 0)
+      {
+         //Read current attribute
+         error = asn1ReadTag(data, length, &tag);
+         //Failed to decode ASN.1 tag?
+         if(error)
+            return error;
+
+         //Explicit tagging shall be used to encode each optional attribute
+         if(tag.objClass != ASN1_CLASS_CONTEXT_SPECIFIC)
+            return ERROR_INVALID_CLASS;
+
+         //Check attribute type
+         if(tag.objType == 1)
+         {
+            //The publicKey field contains the elliptic curve public key
+            //associated with the private key in question
+            error = pkcs8ParseEddsaPublicKey(tag.value, tag.length,
+               &privateKeyInfo->eddsaPublicKey);
+            //Any error to report?
+            if(error)
+               return error;
+         }
+
+         //Next attribute
+         data += tag.totalLength;
+         length -= tag.totalLength;
+      }
+   }
+#endif
+
+   //Successful processing
+   return NO_ERROR;
 }
 
 
@@ -235,8 +282,7 @@ error_t pkcs8ParsePrivateKeyAlgo(const uint8_t *data, size_t length,
    if(!asn1CheckOid(&tag, DSA_OID, sizeof(DSA_OID)))
    {
       //Read DsaParameters structure
-      error = x509ParseDsaParameters(data, length,
-         &privateKeyInfo->dsaParams);
+      error = x509ParseDsaParameters(data, length, &privateKeyInfo->dsaParams);
    }
    else
 #endif
@@ -245,8 +291,7 @@ error_t pkcs8ParsePrivateKeyAlgo(const uint8_t *data, size_t length,
    if(!asn1CheckOid(&tag, EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
    {
       //Read ECParameters structure
-      error = x509ParseEcParameters(data, length,
-         &privateKeyInfo->ecParams);
+      error = x509ParseEcParameters(data, length, &privateKeyInfo->ecParams);
    }
    else
 #endif
@@ -484,18 +529,20 @@ error_t pkcs8ParseRsaPrivateKey(const uint8_t *data, size_t length,
  * @param[in] length Length of the ASN.1 structure
  * @param[out] dsaParams DSA domain parameters
  * @param[out] dsaPrivateKey DSA private key
+ * @param[out] dsaPublicKey DSA public key
  * @return Error code
  **/
 
 error_t pkcs8ParseDsaPrivateKey(const uint8_t *data, size_t length,
-   X509DsaParameters *dsaParams, Pkcs8DsaPrivateKey *dsaPrivateKey)
+   X509DsaParameters *dsaParams, Pkcs8DsaPrivateKey *dsaPrivateKey,
+   X509DsaPublicKey *dsaPublicKey)
 {
    error_t error;
    int32_t version;
    Asn1Tag tag;
 
    //The DSA domain parameters can be optionally parsed
-   if(dsaParams != NULL)
+   if(dsaParams != NULL && dsaPublicKey != NULL)
    {
       //Read DSAPrivateKey structure
       error = asn1ReadSequence(data, length, &tag);
@@ -593,6 +640,10 @@ error_t pkcs8ParseDsaPrivateKey(const uint8_t *data, size_t length,
       if(error)
          return error;
 
+      //Save the public value y
+      dsaPublicKey->y.value = tag.value;
+      dsaPublicKey->y.length = tag.length;
+
       //Point to the next field
       data += tag.totalLength;
       length -= tag.totalLength;
@@ -625,11 +676,13 @@ error_t pkcs8ParseDsaPrivateKey(const uint8_t *data, size_t length,
  * @param[in] length Length of the ASN.1 structure
  * @param[out] ecParams EC domain parameters
  * @param[out] ecPrivateKey EC private key
+ * @param[out] ecPublicKey EC public key
  * @return Error code
  **/
 
 error_t pkcs8ParseEcPrivateKey(const uint8_t *data, size_t length,
-   X509EcParameters *ecParams, Pkcs8EcPrivateKey *ecPrivateKey)
+   X509EcParameters *ecParams, Pkcs8EcPrivateKey *ecPrivateKey,
+   X509EcPublicKey *ecPublicKey)
 {
    error_t error;
    Asn1Tag tag;
@@ -681,14 +734,28 @@ error_t pkcs8ParseEcPrivateKey(const uint8_t *data, size_t length,
       if(tag.objClass != ASN1_CLASS_CONTEXT_SPECIFIC)
          return ERROR_INVALID_CLASS;
 
-      //Parameters attribute?
+      //Check attribute type
       if(tag.objType == 0)
       {
-         //Parse ECParameters structure
+         //The parameters field specifies the elliptic curve domain parameters
+         //associated to the private key
          error = x509ParseEcParameters(tag.value, tag.length, ecParams);
          //Any error to report?
          if(error)
             return error;
+      }
+      else if(tag.objType == 1)
+      {
+         //The publicKey field contains the elliptic curve public key associated
+         //with the private key in question
+         error = pkcs8ParseEcPublicKey(tag.value, tag.length, ecPublicKey);
+         //Any error to report?
+         if(error)
+            return error;
+      }
+      else
+      {
+         //Ignore unknown attribute
       }
 
       //Next attribute
@@ -702,10 +769,51 @@ error_t pkcs8ParseEcPrivateKey(const uint8_t *data, size_t length,
 
 
 /**
+ * @brief Parse publicKey structure
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] ecPublicKey EC public key
+ * @return Error code
+ **/
+
+error_t pkcs8ParseEcPublicKey(const uint8_t *data, size_t length,
+   X509EcPublicKey *ecPublicKey)
+{
+   error_t error;
+   Asn1Tag tag;
+
+   //The public key is encapsulated within a bit string
+   error = asn1ReadTag(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //Enforce encoding, class and type
+   error = asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL,
+      ASN1_TYPE_BIT_STRING);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //The bit string shall contain an initial octet which encodes the number
+   //of unused bits in the final subsequent octet
+   if(tag.length < 1 || tag.value[0] != 0)
+      return ERROR_INVALID_SYNTAX;
+
+   //Save the EC public key
+   ecPublicKey->q.value = tag.value + 1;
+   ecPublicKey->q.length = tag.length - 1;
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
  * @brief Parse CurvePrivateKey structure
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
- * @param[out] eddsaPrivateKey Information resulting from the parsing process
+ * @param[out] eddsaPrivateKey EdDSA private key
  * @return Error code
  **/
 
@@ -724,6 +832,31 @@ error_t pkcs8ParseEddsaPrivateKey(const uint8_t *data, size_t length,
    //Save the EdDSA private key
    eddsaPrivateKey->d.value = tag.value;
    eddsaPrivateKey->d.length = tag.length;
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Parse publicKey structure
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] eddsaPublicKey EdDSA public key
+ * @return Error code
+ **/
+
+error_t pkcs8ParseEddsaPublicKey(const uint8_t *data, size_t length,
+   Pkcs8EddsaPublicKey *eddsaPublicKey)
+{
+   //The bit string shall contain an initial octet which encodes the number
+   //of unused bits in the final subsequent octet
+   if(length < 1 || data[0] != 0)
+      return ERROR_INVALID_SYNTAX;
+
+   //Save the EdDSA public key
+   eddsaPublicKey->q.value = data + 1;
+   eddsaPublicKey->q.length = length - 1;
 
    //Successful processing
    return NO_ERROR;
@@ -835,13 +968,13 @@ error_t pkcs8ParseEncryptionAlgoId(const uint8_t *data, size_t length,
 
 /**
  * @brief Import an RSA private key
- * @param[in] privateKeyInfo Private key information
  * @param[out] privateKey RSA private key
+ * @param[in] privateKeyInfo Private key information
  * @return Error code
  **/
 
-error_t pkcs8ImportRsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
-   RsaPrivateKey *privateKey)
+error_t pkcs8ImportRsaPrivateKey(RsaPrivateKey *privateKey,
+   const Pkcs8PrivateKeyInfo *privateKeyInfo)
 {
    error_t error;
 
@@ -854,8 +987,8 @@ error_t pkcs8ImportRsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
    oidLen = privateKeyInfo->oid.length;
 
    //RSA or RSA-PSS algorithm identifier?
-   if(!oidComp(oid, oidLen, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)) ||
-      !oidComp(oid, oidLen, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
+   if(OID_COMP(oid, oidLen, RSA_ENCRYPTION_OID) == 0 ||
+      OID_COMP(oid, oidLen, RSASSA_PSS_OID) == 0)
    {
       //Sanity check
       if(privateKeyInfo->rsaPrivateKey.n.value != NULL &&
@@ -930,7 +1063,7 @@ error_t pkcs8ImportRsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
          //Check status code
          if(!error)
          {
-            //Debug message
+            //Dump RSA private key
             TRACE_DEBUG("RSA private key:\r\n");
             TRACE_DEBUG("  Modulus:\r\n");
             TRACE_DEBUG_MPI("    ", &privateKey->n);
@@ -971,20 +1104,20 @@ error_t pkcs8ImportRsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
 
 /**
  * @brief Import a DSA private key
- * @param[in] privateKeyInfo Private key information
  * @param[out] privateKey DSA private key
+ * @param[in] privateKeyInfo Private key information
  * @return Error code
  **/
 
-error_t pkcs8ImportDsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
-   DsaPrivateKey *privateKey)
+error_t pkcs8ImportDsaPrivateKey(DsaPrivateKey *privateKey,
+   const Pkcs8PrivateKeyInfo *privateKeyInfo)
 {
    error_t error;
 
 #if (DSA_SUPPORT == ENABLED)
    //DSA algorithm identifier?
-   if(!oidComp(privateKeyInfo->oid.value, privateKeyInfo->oid.length,
-      DSA_OID, sizeof(DSA_OID)))
+   if(OID_COMP(privateKeyInfo->oid.value, privateKeyInfo->oid.length,
+      DSA_OID) == 0)
    {
       //Sanity check
       if(privateKeyInfo->dsaParams.p.value != NULL &&
@@ -1023,7 +1156,15 @@ error_t pkcs8ImportDsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
          //Check status code
          if(!error)
          {
-            //Debug message
+            //Read public value
+            error = mpiImport(&privateKey->y, privateKeyInfo->dsaPublicKey.y.value,
+               privateKeyInfo->dsaPublicKey.y.length, MPI_FORMAT_BIG_ENDIAN);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Dump DSA private key
             TRACE_DEBUG("DSA private key:\r\n");
             TRACE_DEBUG("  Parameter p:\r\n");
             TRACE_DEBUG_MPI("    ", &privateKey->params.p);
@@ -1033,6 +1174,8 @@ error_t pkcs8ImportDsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
             TRACE_DEBUG_MPI("    ", &privateKey->params.g);
             TRACE_DEBUG("  Private value x:\r\n");
             TRACE_DEBUG_MPI("    ", &privateKey->x);
+            TRACE_DEBUG("  Public value y:\r\n");
+            TRACE_DEBUG_MPI("    ", &privateKey->y);
          }
       }
       else
@@ -1056,34 +1199,80 @@ error_t pkcs8ImportDsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
 
 /**
  * @brief Import an EC private key
- * @param[in] privateKeyInfo Private key information
  * @param[out] privateKey EC private key
+ * @param[in] privateKeyInfo Private key information
  * @return Error code
  **/
 
-error_t pkcs8ImportEcPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
-   EcPrivateKey *privateKey)
+error_t pkcs8ImportEcPrivateKey(EcPrivateKey *privateKey,
+   const Pkcs8PrivateKeyInfo *privateKeyInfo)
 {
    error_t error;
 
 #if (EC_SUPPORT == ENABLED)
    //EC public key algorithm identifier?
-   if(!oidComp(privateKeyInfo->oid.value, privateKeyInfo->oid.length,
-      EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
+   if(OID_COMP(privateKeyInfo->oid.value, privateKeyInfo->oid.length,
+      EC_PUBLIC_KEY_OID) == 0)
    {
       //Sanity check
-      if(privateKeyInfo->ecPrivateKey.d.value != NULL)
+      if(privateKeyInfo->ecParams.namedCurve.value != NULL &&
+         privateKeyInfo->ecPrivateKey.d.value != NULL)
       {
-         //Read the EC private key
-         error = mpiImport(&privateKey->d, privateKeyInfo->ecPrivateKey.d.value,
-            privateKeyInfo->ecPrivateKey.d.length, MPI_FORMAT_BIG_ENDIAN);
+         const EcCurve *curve;
+
+         //Get the elliptic curve that matches the OID
+         curve = ecGetCurve(privateKeyInfo->ecParams.namedCurve.value,
+            privateKeyInfo->ecParams.namedCurve.length);
+
+         //Make sure the specified elliptic curve is supported
+         if(curve != NULL)
+         {
+            //Read the EC private key
+            error = ecImportPrivateKey(privateKey, curve,
+               privateKeyInfo->ecPrivateKey.d.value,
+               privateKeyInfo->ecPrivateKey.d.length);
+
+            //Check status code
+            if(!error)
+            {
+               //The public key is optional
+               if(privateKeyInfo->ecPublicKey.q.value != NULL)
+               {
+                  //Read the EC public key
+                  error = ecImportPublicKey(&privateKey->q, curve,
+                     privateKeyInfo->ecPublicKey.q.value,
+                     privateKeyInfo->ecPublicKey.q.length,
+                     EC_PUBLIC_KEY_FORMAT_X963);
+               }
+               else
+               {
+                  //The EC public key is not present
+                  ecInitPublicKey(&privateKey->q);
+               }
+            }
+         }
+         else
+         {
+            //Invalid elliptic curve
+            error = ERROR_WRONG_IDENTIFIER;
+         }
 
          //Check status code
          if(!error)
          {
-            //Debug message
+            //Dump EC private key
             TRACE_DEBUG("EC private key:\r\n");
-            TRACE_DEBUG_MPI("  ", &privateKey->d);
+            TRACE_DEBUG_EC_SCALAR("  ", privateKey->d, (curve->orderSize + 31) / 32);
+
+            //Valid public key?
+            if(privateKey->q.curve != NULL)
+            {
+               //Dump EC public key
+               TRACE_DEBUG("EC public key X:\r\n");
+               TRACE_DEBUG_EC_SCALAR("  ", privateKey->q.q.x, (curve->fieldSize + 31) / 32);
+               TRACE_DEBUG("EC public key Y:\r\n");
+               TRACE_DEBUG_EC_SCALAR("  ", privateKey->q.q.y, (curve->fieldSize + 31) / 32);
+            }
          }
       }
       else
@@ -1107,59 +1296,48 @@ error_t pkcs8ImportEcPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
 
 /**
  * @brief Import an EdDSA private key
- * @param[in] privateKeyInfo Private key information
  * @param[out] privateKey EdDSA private key
+ * @param[in] privateKeyInfo Private key information
  * @return Error code
  **/
 
-error_t pkcs8ImportEddsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
-   EddsaPrivateKey *privateKey)
+error_t pkcs8ImportEddsaPrivateKey(EddsaPrivateKey *privateKey,
+   const Pkcs8PrivateKeyInfo *privateKeyInfo)
 {
+#if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
    error_t error;
+   const EcCurve *curve;
 
-#if (ED25519_SUPPORT == ENABLED)
-   //Ed25519 algorithm identifier?
-   if(!oidComp(privateKeyInfo->oid.value, privateKeyInfo->oid.length,
-      ED25519_OID, sizeof(ED25519_OID)))
+   //Get the elliptic curve that matches the OID
+   curve = ecGetCurve(privateKeyInfo->oid.value, privateKeyInfo->oid.length);
+
+   //Edwards elliptic curve?
+   if(curve != NULL && curve->type == EC_CURVE_TYPE_EDWARDS)
    {
-      //Check the length of the Ed25519 private key
-      if(privateKeyInfo->eddsaPrivateKey.d.value != NULL &&
-         privateKeyInfo->eddsaPrivateKey.d.length == ED25519_PRIVATE_KEY_LEN)
+      //Read the EdDSA private key
+      error = eddsaImportPrivateKey(privateKey, curve,
+         privateKeyInfo->eddsaPrivateKey.d.value,
+         privateKeyInfo->eddsaPrivateKey.d.length);
+
+      //Check status code
+      if(!error)
       {
-         //Read the Ed25519 private key
-         error = mpiImport(&privateKey->d, privateKeyInfo->eddsaPrivateKey.d.value,
-            privateKeyInfo->eddsaPrivateKey.d.length, MPI_FORMAT_LITTLE_ENDIAN);
-      }
-      else
-      {
-         //The private key is not valid
-         error = ERROR_INVALID_KEY;
+         //The public key is optional
+         if(privateKeyInfo->eddsaPublicKey.q.value != NULL)
+         {
+            //Read the EdDSA public key
+            error = eddsaImportPublicKey(&privateKey->q, curve,
+               privateKeyInfo->eddsaPublicKey.q.value,
+               privateKeyInfo->eddsaPublicKey.q.length);
+         }
+         else
+         {
+            //The EdDSA public key is not present
+            eddsaInitPublicKey(&privateKey->q);
+         }
       }
    }
    else
-#endif
-#if (ED448_SUPPORT == ENABLED)
-   //Ed448 algorithm identifier?
-   if(!oidComp(privateKeyInfo->oid.value, privateKeyInfo->oid.length,
-      ED448_OID, sizeof(ED448_OID)))
-   {
-      //Check the length of the Ed448 private key
-      if(privateKeyInfo->eddsaPrivateKey.d.value != NULL &&
-         privateKeyInfo->eddsaPrivateKey.d.length == ED448_PRIVATE_KEY_LEN)
-      {
-         //Read the Ed448 private key
-         error = mpiImport(&privateKey->d, privateKeyInfo->eddsaPrivateKey.d.value,
-            privateKeyInfo->eddsaPrivateKey.d.length, MPI_FORMAT_LITTLE_ENDIAN);
-      }
-      else
-      {
-         //The private key is not valid
-         error = ERROR_INVALID_KEY;
-      }
-   }
-   else
-#endif
-   //Invalid algorithm identifier?
    {
       //Report an error
       error = ERROR_WRONG_IDENTIFIER;
@@ -1168,13 +1346,25 @@ error_t pkcs8ImportEddsaPrivateKey(const Pkcs8PrivateKeyInfo *privateKeyInfo,
    //Check status code
    if(!error)
    {
-      //Debug message
+      //Dump EdDSA private key
       TRACE_DEBUG("EdDSA private key:\r\n");
-      TRACE_DEBUG_MPI("  ", &privateKey->d);
+      TRACE_DEBUG_ARRAY("  ", privateKey->d, privateKeyInfo->eddsaPrivateKey.d.length);
+
+      //Valid public key?
+      if(privateKey->q.curve != NULL)
+      {
+         //Dump EdDSA public key
+         TRACE_DEBUG("EdDSA public key:\r\n");
+         TRACE_DEBUG_ARRAY("  ", privateKey->q.q, privateKeyInfo->eddsaPublicKey.q.length);
+      }
    }
 
    //Return status code
    return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 #endif

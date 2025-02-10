@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _MAC_ALGORITHMS_H
@@ -57,6 +57,16 @@
 //XCBC-MAC support?
 #if (XCBC_MAC_SUPPORT == ENABLED)
    #include "mac/xcbc_mac.h"
+#endif
+
+//BLAKE2b support?
+#if (BLAKE2B_SUPPORT == ENABLED)
+   #include "mac/blake2b.h"
+#endif
+
+//BLAKE2s support?
+#if (BLAKE2S_SUPPORT == ENABLED)
+   #include "mac/blake2s.h"
 #endif
 
 //Poly1305 support?

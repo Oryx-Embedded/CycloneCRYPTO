@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -38,31 +38,26 @@
 #include "hardware/efm32gg11/efm32gg11_crypto.h"
 #include "hardware/efm32gg11/efm32gg11_crypto_pkc.h"
 #include "ecc/ec.h"
-#include "ecc/curve25519.h"
+#include "ecc/ec_misc.h"
 #include "debug.h"
 
 //Check crypto library configuration
 #if (EFM32GG11_CRYPTO_PKC_SUPPORT == ENABLED)
-
+#if (EC_SUPPORT == ENABLED)
 
 /**
- * @brief Fast modular multiplication
- * @param[in] params EC domain parameters
+ * @brief Modular multiplication
+ * @param[in] curve Elliptic curve parameters
  * @param[out] r Resulting integer R = (A * B) mod p
  * @param[in] a An integer such as 0 <= A < p
  * @param[in] b An integer such as 0 <= B < p
- * @return Error code
  **/
 
-error_t ecMulMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
-   const Mpi *b)
+void ecFieldMulMod(const EcCurve *curve, uint32_t *r, const uint32_t *a,
+   const uint32_t *b)
 {
-   error_t error;
-   uint_t i;
-   uint32_t temp[8];
-
    //Check elliptic curve
-   if(osStrcmp(params->name, "secp256r1") == 0)
+   if(osStrcmp(curve->name, "secp256r1") == 0)
    {
       //Acquire exclusive access to the CRYPTO module
       osAcquireMutex(&efm32gg11CryptoMutex);
@@ -77,30 +72,10 @@ error_t ecMulMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
       CRYPTO_ResultWidthSet(CRYPTO0, cryptoResult256Bits);
 
       //Copy the first operand
-      for(i = 0; i < a->size && i < 8; i++)
-      {
-         temp[i] = a->data[i];
-      }
-
-      while(i < 8)
-      {
-         temp[i++] = 0;
-      }
-
-      CRYPTO_DDataWrite(&CRYPTO0->DDATA1, temp);
+      CRYPTO_DDataWrite(&CRYPTO0->DDATA1, a);
 
       //Copy the second operand
-      for(i = 0; i < b->size && i < 8; i++)
-      {
-         temp[i] = b->data[i];
-      }
-
-      while(i < 8)
-      {
-         temp[i++] = 0;
-      }
-
-      CRYPTO_DDataWrite(&CRYPTO0->DDATA2, temp);
+      CRYPTO_DDataWrite(&CRYPTO0->DDATA2, b);
 
       //Compute R = (A * B) mod p
       CRYPTO_EXECUTE_2(CRYPTO0,
@@ -111,69 +86,37 @@ error_t ecMulMod(const EcDomainParameters *params, Mpi *r, const Mpi *a,
       CRYPTO_InstructionSequenceWait(CRYPTO0);
 
       //Copy the resulting value
-      CRYPTO_DDataRead(&CRYPTO0->DDATA0, temp);
-
-      //Adjust the size of the integer
-      error = mpiGrow(r, 8);
-
-      //Copy the result
-      for(i = 0; i < 8; i++)
-      {
-         r->data[i] = temp[i];
-      }
-
-      while(i < r->size)
-      {
-         r->data[i++] = 0;
-      }
-
-      //Set the sign of the result
-      r->sign = 1;
+      CRYPTO_DDataRead(&CRYPTO0->DDATA0, r);
 
       //Release exclusive access to the CRYPTO module
       osReleaseMutex(&efm32gg11CryptoMutex);
    }
    else
    {
-      //Compute R = A * B
-      error = mpiMul(r, a, b);
+      uint_t pLen;
+      uint32_t u[EC_MAX_MODULUS_SIZE * 2];
 
-      //Check status code
-      if(!error)
-      {
-         //Compute R = (A * B) mod p
-         if(params->mod != NULL)
-         {
-            error = params->mod(r, &params->p);
-         }
-         else
-         {
-            error = mpiMod(r, r, &params->p);
-         }
-      }
+      //Get the length of the modulus, in words
+      pLen = (curve->fieldSize + 31) / 32;
+
+      //Compute R = (A * B) mod p
+      ecScalarMul(u, u + pLen, a, b, pLen);
+      curve->fieldMod(curve, r, u);
    }
-
-   //Return status code
-   return error;
 }
 
 
 /**
- * @brief Fast modular squaring
- * @param[in] params EC domain parameters
- * @param[out] r Resulting integer R = (A ^ 2) mod p
+ * @brief Modular squaring
+ * @param[in] curve Elliptic curve parameters
+ * @param[out] r Resulting integer R = A^2 mod p
  * @param[in] a An integer such as 0 <= A < p
- * @return Error code
  **/
 
-error_t ecSqrMod(const EcDomainParameters *params, Mpi *r, const Mpi *a)
+void ecFieldSqrMod(const EcCurve *curve, uint32_t *r, const uint32_t *a)
 {
-   error_t error;
-   uint_t i;
-   uint32_t temp[8];
-
    //Check elliptic curve
-   if(osStrcmp(params->name, "secp256r1") == 0)
+   if(osStrcmp(curve->name, "secp256r1") == 0)
    {
       //Acquire exclusive access to the CRYPTO module
       osAcquireMutex(&efm32gg11CryptoMutex);
@@ -188,17 +131,7 @@ error_t ecSqrMod(const EcDomainParameters *params, Mpi *r, const Mpi *a)
       CRYPTO_ResultWidthSet(CRYPTO0, cryptoResult256Bits);
 
       //Copy the operand
-      for(i = 0; i < a->size && i < 8; i++)
-      {
-         temp[i] = a->data[i];
-      }
-
-      while(i < 8)
-      {
-         temp[i++] = 0;
-      }
-
-      CRYPTO_DDataWrite(&CRYPTO0->DDATA1, temp);
+      CRYPTO_DDataWrite(&CRYPTO0->DDATA1, a);
 
       //Compute R = (A ^ 2) mod p
       CRYPTO_EXECUTE_3(CRYPTO0,
@@ -210,206 +143,141 @@ error_t ecSqrMod(const EcDomainParameters *params, Mpi *r, const Mpi *a)
       CRYPTO_InstructionSequenceWait(CRYPTO0);
 
       //Copy the resulting value
-      CRYPTO_DDataRead(&CRYPTO0->DDATA0, temp);
-
-      //Adjust the size of the integer
-      error = mpiGrow(r, 8);
-
-      //Copy the result
-      for(i = 0; i < 8; i++)
-      {
-         r->data[i] = temp[i];
-      }
-
-      while(i < r->size)
-      {
-         r->data[i++] = 0;
-      }
-
-      //Set the sign of the result
-      r->sign = 1;
+      CRYPTO_DDataRead(&CRYPTO0->DDATA0, r);
 
       //Release exclusive access to the CRYPTO module
       osReleaseMutex(&efm32gg11CryptoMutex);
    }
    else
    {
-      //Compute R = A ^ 2
-      error = mpiMul(r, a, a);
+      uint_t pLen;
+      uint32_t u[EC_MAX_MODULUS_SIZE * 2];
 
-      //Check status code
-      if(!error)
-      {
-         //Compute R = (A ^ 2) mod p
-         if(params->mod != NULL)
-         {
-            error = params->mod(r, &params->p);
-         }
-         else
-         {
-            error = mpiMod(r, r, &params->p);
-         }
-      }
+      //Get the length of the modulus, in words
+      pLen = (curve->fieldSize + 31) / 32;
+
+      //Compute R = (A ^ 2) mod p
+      ecScalarSqr(u, a, pLen);
+      curve->fieldMod(curve, r, u);
    }
-
-   //Return status code
-   return error;
 }
 
 
-#if (X25519_SUPPORT == ENABLED || ED25519_SUPPORT == ENABLED)
-
 /**
  * @brief Modular multiplication
- * @param[out] r Resulting integer R = (A * B) mod p
- * @param[in] a An integer such as 0 <= A < p
- * @param[in] b An integer such as 0 <= B < p
+ * @param[in] curve Elliptic curve parameters
+ * @param[out] r Resulting integer R = (A * B) mod q
+ * @param[in] a An integer such as 0 <= A < q
+ * @param[in] b An integer such as 0 <= B < q
  **/
 
-void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
+void ecScalarMulMod(const EcCurve *curve, uint32_t *r, const uint32_t *a,
+   const uint32_t *b)
 {
-   uint_t i;
-   uint64_t temp;
-   uint32_t u[16];
-
-   //Acquire exclusive access to the CRYPTO module
-   osAcquireMutex(&efm32gg11CryptoMutex);
-
-   //Set wide arithmetic configuration
-   CRYPTO0->WAC = 0;
-   CRYPTO0->CTRL = 0;
-
-   //Set CRYPTO module parameters
-   CRYPTO_MulOperandWidthSet(CRYPTO0, cryptoMulOperand256Bits);
-   CRYPTO_ResultWidthSet(CRYPTO0, cryptoResult256Bits);
-
-   //Copy the first operand
-   CRYPTO_DDataWrite(&CRYPTO0->DDATA1, a);
-   //Copy the second operand
-   CRYPTO_DDataWrite(&CRYPTO0->DDATA2, b);
-
-   //Compute R = A * B
-   CRYPTO_EXECUTE_2(CRYPTO0,
-      CRYPTO_CMD_INSTR_SELDDATA0DDATA2,
-      CRYPTO_CMD_INSTR_LMUL);
-
-   //Wait for the instruction sequence to complete
-   CRYPTO_InstructionSequenceWait(CRYPTO0);
-
-   //Copy the resulting value
-   CRYPTO_DDataRead(&CRYPTO0->DDATA0, u);
-   CRYPTO_DDataRead(&CRYPTO0->DDATA1, u + 8);
-
-   //Release exclusive access to the CRYPTO module
-   osReleaseMutex(&efm32gg11CryptoMutex);
-
-   //Reduce bit 255 (2^255 = 19 mod p)
-   temp = (u[7] >> 31) * 19;
-   //Mask the most significant bit
-   u[7] &= 0x7FFFFFFF;
-
-   //Perform fast modular reduction (first pass)
-   for(i = 0; i < 8; i++)
+   //Check elliptic curve
+   if(osStrcmp(curve->name, "secp256r1") == 0)
    {
-      temp += u[i];
-      temp += (uint64_t) u[i + 8] * 38;
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
+      //Acquire exclusive access to the CRYPTO module
+      osAcquireMutex(&efm32gg11CryptoMutex);
+
+      //Set wide arithmetic configuration
+      CRYPTO0->WAC = 0;
+      CRYPTO0->CTRL = 0;
+
+      //Set CRYPTO module parameters
+      CRYPTO_ModulusSet(CRYPTO0, cryptoModulusEccP256Order);
+      CRYPTO_MulOperandWidthSet(CRYPTO0, cryptoMulOperandModulusBits);
+      CRYPTO_ResultWidthSet(CRYPTO0, cryptoResult256Bits);
+
+      //Copy the first operand
+      CRYPTO_DDataWrite(&CRYPTO0->DDATA1, a);
+
+      //Copy the second operand
+      CRYPTO_DDataWrite(&CRYPTO0->DDATA2, b);
+
+      //Compute R = (A * B) mod q
+      CRYPTO_EXECUTE_2(CRYPTO0,
+         CRYPTO_CMD_INSTR_SELDDATA0DDATA2,
+         CRYPTO_CMD_INSTR_MMUL);
+
+      //Wait for the instruction sequence to complete
+      CRYPTO_InstructionSequenceWait(CRYPTO0);
+
+      //Copy the resulting value
+      CRYPTO_DDataRead(&CRYPTO0->DDATA0, r);
+
+      //Release exclusive access to the CRYPTO module
+      osReleaseMutex(&efm32gg11CryptoMutex);
    }
-
-   //Reduce bit 256 (2^256 = 38 mod p)
-   temp *= 38;
-   //Reduce bit 255 (2^255 = 19 mod p)
-   temp += (u[7] >> 31) * 19;
-   //Mask the most significant bit
-   u[7] &= 0x7FFFFFFF;
-
-   //Perform fast modular reduction (second pass)
-   for(i = 0; i < 8; i++)
+   else
    {
-      temp += u[i];
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
-   }
+      uint_t qLen;
+      uint32_t u[EC_MAX_ORDER_SIZE * 2];
 
-   //Reduce non-canonical values
-   curve25519Red(r, u);
+      //Get the length of the order, in words
+      qLen = (curve->orderSize + 31) / 32;
+
+      //Compute R = (A * B) mod q
+      ecScalarMul(u, u + qLen, a, b, qLen);
+      curve->scalarMod(curve, r, u);
+   }
 }
 
 
 /**
  * @brief Modular squaring
- * @param[out] r Resulting integer R = (A ^ 2) mod p
- * @param[in] a An integer such as 0 <= A < p
+ * @param[in] curve Elliptic curve parameters
+ * @param[out] r Resulting integer R = A^2 mod q
+ * @param[in] a An integer such as 0 <= A < q
  **/
 
-void curve25519Sqr(uint32_t *r, const uint32_t *a)
+void ecScalarSqrMod(const EcCurve *curve, uint32_t *r, const uint32_t *a)
 {
-   uint_t i;
-   uint64_t temp;
-   uint32_t u[16];
-
-   //Acquire exclusive access to the CRYPTO module
-   osAcquireMutex(&efm32gg11CryptoMutex);
-
-   //Set wide arithmetic configuration
-   CRYPTO0->WAC = 0;
-   CRYPTO0->CTRL = 0;
-
-   //Set CRYPTO module parameters
-   CRYPTO_MulOperandWidthSet(CRYPTO0, cryptoMulOperand256Bits);
-   CRYPTO_ResultWidthSet(CRYPTO0, cryptoResult256Bits);
-
-   //Copy the operand
-   CRYPTO_DDataWrite(&CRYPTO0->DDATA1, a);
-
-   //Compute R = A ^ 2
-   CRYPTO_EXECUTE_3(CRYPTO0,
-      CRYPTO_CMD_INSTR_DDATA1TODDATA2,
-      CRYPTO_CMD_INSTR_SELDDATA0DDATA2,
-      CRYPTO_CMD_INSTR_LMUL);
-
-   //Wait for the instruction sequence to complete
-   CRYPTO_InstructionSequenceWait(CRYPTO0);
-
-   //Copy the resulting value
-   CRYPTO_DDataRead(&CRYPTO0->DDATA0, u);
-   CRYPTO_DDataRead(&CRYPTO0->DDATA1, u + 8);
-
-   //Release exclusive access to the CRYPTO module
-   osReleaseMutex(&efm32gg11CryptoMutex);
-
-   //Reduce bit 255 (2^255 = 19 mod p)
-   temp = (u[7] >> 31) * 19;
-   //Mask the most significant bit
-   u[7] &= 0x7FFFFFFF;
-
-   //Perform fast modular reduction (first pass)
-   for(i = 0; i < 8; i++)
+   //Check elliptic curve
+   if(osStrcmp(curve->name, "secp256r1") == 0)
    {
-      temp += u[i];
-      temp += (uint64_t) u[i + 8] * 38;
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
+      //Acquire exclusive access to the CRYPTO module
+      osAcquireMutex(&efm32gg11CryptoMutex);
+
+      //Set wide arithmetic configuration
+      CRYPTO0->WAC = 0;
+      CRYPTO0->CTRL = 0;
+
+      //Set CRYPTO module parameters
+      CRYPTO_ModulusSet(CRYPTO0, cryptoModulusEccP256Order);
+      CRYPTO_MulOperandWidthSet(CRYPTO0, cryptoMulOperandModulusBits);
+      CRYPTO_ResultWidthSet(CRYPTO0, cryptoResult256Bits);
+
+      //Copy the operand
+      CRYPTO_DDataWrite(&CRYPTO0->DDATA1, a);
+
+      //Compute R = (A ^ 2) mod q
+      CRYPTO_EXECUTE_3(CRYPTO0,
+         CRYPTO_CMD_INSTR_DDATA1TODDATA2,
+         CRYPTO_CMD_INSTR_SELDDATA0DDATA2,
+         CRYPTO_CMD_INSTR_MMUL);
+
+      //Wait for the instruction sequence to complete
+      CRYPTO_InstructionSequenceWait(CRYPTO0);
+
+      //Copy the resulting value
+      CRYPTO_DDataRead(&CRYPTO0->DDATA0, r);
+
+      //Release exclusive access to the CRYPTO module
+      osReleaseMutex(&efm32gg11CryptoMutex);
    }
-
-   //Reduce bit 256 (2^256 = 38 mod p)
-   temp *= 38;
-   //Reduce bit 255 (2^255 = 19 mod p)
-   temp += (u[7] >> 31) * 19;
-   //Mask the most significant bit
-   u[7] &= 0x7FFFFFFF;
-
-   //Perform fast modular reduction (second pass)
-   for(i = 0; i < 8; i++)
+   else
    {
-      temp += u[i];
-      u[i] = temp & 0xFFFFFFFF;
-      temp >>= 32;
-   }
+     uint_t qLen;
+     uint32_t u[EC_MAX_ORDER_SIZE * 2];
 
-   //Reduce non-canonical values
-   curve25519Red(r, u);
+     //Get the length of the order, in words
+     qLen = (curve->orderSize + 31) / 32;
+
+     //Compute R = (A ^ 2) mod q
+     ecScalarSqr(u, a, qLen);
+     curve->scalarMod(curve, r, u);
+   }
 }
 
 #endif

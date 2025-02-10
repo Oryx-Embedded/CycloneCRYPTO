@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,7 +34,6 @@
 //Dependencies
 #include "core/crypto.h"
 #include "ecc/eddsa.h"
-#include "mpi/mpi.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -48,8 +47,11 @@
 
 void eddsaInitPublicKey(EddsaPublicKey *key)
 {
-   //Initialize multiple precision integer
-   mpiInit(&key->q);
+   //Initialize elliptic curve parameters
+   key->curve = NULL;
+
+   //Initialize public key
+   osMemset(key->q, 0, EDDSA_MAX_PUBLIC_KEY_LEN);
 }
 
 
@@ -60,8 +62,8 @@ void eddsaInitPublicKey(EddsaPublicKey *key)
 
 void eddsaFreePublicKey(EddsaPublicKey *key)
 {
-   //Free multiple precision integer
-   mpiFree(&key->q);
+   //Clear public key
+   osMemset(key, 0, sizeof(EddsaPublicKey));
 }
 
 
@@ -72,12 +74,16 @@ void eddsaFreePublicKey(EddsaPublicKey *key)
 
 void eddsaInitPrivateKey(EddsaPrivateKey *key)
 {
-   //Initialize multiple precision integers
-   mpiInit(&key->d);
-   mpiInit(&key->q);
+   //Initialize elliptic curve parameters
+   key->curve = NULL;
 
+   //Initialize private key
+   osMemset(key->d, 0, EDDSA_MAX_PRIVATE_KEY_LEN);
    //Initialize private key slot
    key->slot = -1;
+
+   //Initialize public key
+   eddsaInitPublicKey(&key->q);
 }
 
 
@@ -88,9 +94,8 @@ void eddsaInitPrivateKey(EddsaPrivateKey *key)
 
 void eddsaFreePrivateKey(EddsaPrivateKey *key)
 {
-   //Free multiple precision integers
-   mpiFree(&key->d);
-   mpiFree(&key->q);
+   //Clear public key
+   osMemset(key, 0, sizeof(EddsaPrivateKey));
 }
 
 
@@ -98,27 +103,38 @@ void eddsaFreePrivateKey(EddsaPrivateKey *key)
  * @brief EdDSA key pair generation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] curveInfo Elliptic curve parameters
+ * @param[in] curve Elliptic curve parameters
  * @param[out] privateKey EdDSA private key
- * @param[out] publicKey EdDSA public key
+ * @param[out] publicKey EdDSA public key (optional parameter)
  * @return Error code
  **/
 
 error_t eddsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcCurveInfo *curveInfo, EddsaPrivateKey *privateKey,
+   const EcCurve *curve, EddsaPrivateKey *privateKey,
    EddsaPublicKey *publicKey)
 {
    error_t error;
 
    //Generate a private key
-   error = eddsaGeneratePrivateKey(prngAlgo, prngContext, curveInfo,
+   error = eddsaGeneratePrivateKey(prngAlgo, prngContext, curve,
       privateKey);
 
    //Check status code
    if(!error)
    {
       //Derive the public key from the private key
-      error = eddsaGeneratePublicKey(curveInfo, privateKey, publicKey);
+      error = eddsaGeneratePublicKey(privateKey, &privateKey->q);
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //The parameter is optional
+      if(publicKey != NULL)
+      {
+         //Copy the resulting public key
+         *publicKey = privateKey->q;
+      }
    }
 
    //Return status code
@@ -130,55 +146,57 @@ error_t eddsaGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
  * @brief EdDSA private key generation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] curveInfo Elliptic curve parameters
+ * @param[in] curve Elliptic curve parameters
  * @param[out] privateKey EdDSA private key
  * @return Error code
  **/
 
 error_t eddsaGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcCurveInfo *curveInfo, EddsaPrivateKey *privateKey)
+   const EcCurve *curve, EddsaPrivateKey *privateKey)
 {
    error_t error;
 
-#if (ED25519_SUPPORT == ENABLED)
-   //Ed25519 algorithm?
-   if(curveInfo == ED25519_CURVE)
+   //Check parameters
+   if(curve != NULL && privateKey != NULL)
    {
-      uint8_t rawPrivateKey[ED25519_PRIVATE_KEY_LEN];
+      //Initialize private key
+      osMemset(privateKey->d, 0, EDDSA_MAX_PRIVATE_KEY_LEN);
+      //Initialize public key
+      eddsaInitPublicKey(&privateKey->q);
 
-      //Generate an Ed25519 private key
-      error = ed25519GeneratePrivateKey(prngAlgo, prngContext, rawPrivateKey);
-
-      //Check status code
-      if(!error)
+#if (ED25519_SUPPORT == ENABLED)
+      //Ed25519 elliptic curve?
+      if(curve == ED25519_CURVE)
       {
-         //Import the Ed25519 private key
-         error = mpiImport(&privateKey->d, rawPrivateKey, ED25519_PRIVATE_KEY_LEN,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         //Save elliptic curve parameters
+         privateKey->curve = ED25519_CURVE;
+
+         //Generate an Ed25519 private key
+         error = ed25519GeneratePrivateKey(prngAlgo, prngContext,
+            privateKey->d);
       }
-   }
-   else
+      else
 #endif
 #if (ED448_SUPPORT == ENABLED)
-   //Ed448 algorithm?
-   if(curveInfo == ED448_CURVE)
-   {
-      uint8_t rawPrivateKey[ED448_PRIVATE_KEY_LEN];
-
-      //Generate an Ed448 private key
-      error = ed448GeneratePrivateKey(prngAlgo, prngContext, rawPrivateKey);
-
-      //Check status code
-      if(!error)
+      //Ed448 elliptic curve?
+      if(curve == ED448_CURVE)
       {
-         //Import the Ed448 private key
-         error = mpiImport(&privateKey->d, rawPrivateKey, ED448_PRIVATE_KEY_LEN,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         //Save elliptic curve parameters
+         privateKey->curve = ED448_CURVE;
+
+         //Generate an Ed448 private key
+         error = ed448GeneratePrivateKey(prngAlgo, prngContext,
+            privateKey->d);
+      }
+      else
+#endif
+      //Unknown algorithm?
+      {
+         //Report an error
+         error = ERROR_UNSUPPORTED_ELLIPTIC_CURVE;
       }
    }
    else
-#endif
-   //Unknown algorithm?
    {
       //Report an error
       error = ERROR_INVALID_PARAMETER;
@@ -191,74 +209,244 @@ error_t eddsaGeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
 
 /**
  * @brief Derive the public key from an EdDSA private key
- * @param[in] curveInfo Elliptic curve parameters
  * @param[in] privateKey EdDSA private key
  * @param[out] publicKey EdDSA public key
  * @return Error code
  **/
 
-error_t eddsaGeneratePublicKey(const EcCurveInfo *curveInfo,
-   const EddsaPrivateKey *privateKey, EddsaPublicKey *publicKey)
+error_t eddsaGeneratePublicKey(const EddsaPrivateKey *privateKey,
+   EddsaPublicKey *publicKey)
 {
    error_t error;
 
-#if (ED25519_SUPPORT == ENABLED)
-   //Ed25519 algorithm?
-   if(curveInfo == ED25519_CURVE)
+   //Check parameters
+   if(privateKey != NULL && publicKey != NULL)
    {
-      uint8_t rawPrivateKey[ED25519_PRIVATE_KEY_LEN];
-      uint8_t rawPublicKey[ED25519_PUBLIC_KEY_LEN];
-
-      //Export the Ed25519 private key
-      error = mpiExport(&privateKey->d, rawPrivateKey, ED25519_PRIVATE_KEY_LEN,
-         MPI_FORMAT_LITTLE_ENDIAN);
-
-      //Check status code
-      if(!error)
+#if (ED25519_SUPPORT == ENABLED)
+      //Ed25519 elliptic curve?
+      if(privateKey->curve == ED25519_CURVE)
       {
+         //Save elliptic curve parameters
+         publicKey->curve = ED25519_CURVE;
+
          //Derive the public key from the private key
-         error = ed25519GeneratePublicKey(rawPrivateKey, rawPublicKey);
+         error = ed25519GeneratePublicKey(privateKey->d, publicKey->q);
       }
-
-      //Check status code
-      if(!error)
-      {
-         //Import the Ed25519 public key
-         error = mpiImport(&publicKey->q, rawPublicKey, ED25519_PUBLIC_KEY_LEN,
-            MPI_FORMAT_LITTLE_ENDIAN);
-      }
-   }
-   else
+      else
 #endif
 #if (ED448_SUPPORT == ENABLED)
-   //Ed448 algorithm?
-   if(curveInfo == ED448_CURVE)
-   {
-      uint8_t rawPrivateKey[ED448_PRIVATE_KEY_LEN];
-      uint8_t rawPublicKey[ED448_PUBLIC_KEY_LEN];
-
-      //Export the Ed448 private key
-      error = mpiExport(&privateKey->d, rawPrivateKey, ED448_PRIVATE_KEY_LEN,
-         MPI_FORMAT_LITTLE_ENDIAN);
-
-      //Check status code
-      if(!error)
+      //Ed448 elliptic curve?
+      if(privateKey->curve == ED448_CURVE)
       {
+         //Save elliptic curve parameters
+         publicKey->curve = ED448_CURVE;
+
          //Derive the public key from the private key
-         error = ed448GeneratePublicKey(rawPrivateKey, rawPublicKey);
+         error = ed448GeneratePublicKey(privateKey->d, publicKey->q);
       }
-
-      //Check status code
-      if(!error)
+      else
+#endif
+      //Unknown algorithm?
       {
-         //Import the Ed448 public key
-         error = mpiImport(&publicKey->q, rawPublicKey, ED448_PUBLIC_KEY_LEN,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         //Report an error
+         error = ERROR_UNSUPPORTED_ELLIPTIC_CURVE;
       }
    }
    else
-#endif
-   //Unknown algorithm?
+   {
+      //Report an error
+      error = ERROR_INVALID_PARAMETER;
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Import an EdDSA public key
+ * @param[out] key EdDSA public key
+ * @param[in] data Pointer to the octet string
+ * @param[in] length Length of the octet string, in bytes
+ * @return Error code
+ **/
+
+error_t eddsaImportPublicKey(EddsaPublicKey *key, const EcCurve *curve,
+   const uint8_t *data, size_t length)
+{
+   error_t error;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Check parameters
+   if(key != NULL && curve != NULL && data != NULL)
+   {
+      //Edwards elliptic curve?
+      if(curve->type == EC_CURVE_TYPE_EDWARDS)
+      {
+         //Check the length of the public key
+         if(length == ((curve->fieldSize / 8) + 1))
+         {
+            //Save elliptic curve parameters
+            key->curve = curve;
+            //Copy the public key
+            osMemcpy(key->q, data, length);
+         }
+         else
+         {
+            //The length of the public key is not acceptable
+            error = ERROR_INVALID_KEY_LENGTH;
+         }
+      }
+      else
+      {
+         //Invalid elliptic curve
+         error = ERROR_UNSUPPORTED_ELLIPTIC_CURVE;
+      }
+   }
+   else
+   {
+      //Report an error
+      error = ERROR_INVALID_PARAMETER;
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Export an EdDSA public key
+ * @param[in] key EdDSA public key
+ * @param[out] data Pointer to the octet string
+ * @param[out] length Length of the octet string, in bytes
+ * @return Error code
+ **/
+
+error_t eddsaExportPublicKey(const EddsaPublicKey *key, uint8_t *data,
+   size_t *length)
+{
+   error_t error;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Check parameters
+   if(key != NULL && data != NULL && length != NULL)
+   {
+      //Edwards elliptic curve?
+      if(key->curve != NULL && key->curve->type == EC_CURVE_TYPE_EDWARDS)
+      {
+         //Determine the length of the public key
+         *length = (key->curve->fieldSize / 8) + 1;
+         //Copy the public key
+         osMemcpy(data, key->q, *length);
+      }
+      else
+      {
+         //Invalid elliptic curve
+         error = ERROR_UNSUPPORTED_ELLIPTIC_CURVE;
+      }
+   }
+   else
+   {
+      //Report an error
+      error = ERROR_INVALID_PARAMETER;
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Import an EdDSA private key
+ * @param[out] key EdDSA private key
+ * @param[in] data Pointer to the octet string
+ * @param[in] length Length of the octet string, in bytes
+ * @return Error code
+ **/
+
+error_t eddsaImportPrivateKey(EddsaPrivateKey *key, const EcCurve *curve,
+   const uint8_t *data, size_t length)
+{
+   error_t error;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Check parameters
+   if(key != NULL && curve != NULL && data != NULL)
+   {
+      //Edwards elliptic curve?
+      if(curve->type == EC_CURVE_TYPE_EDWARDS)
+      {
+         //Check the length of the private key
+         if(length == ((curve->fieldSize / 8) + 1))
+         {
+            //Save elliptic curve parameters
+            key->curve = curve;
+            //Copy the private key
+            osMemcpy(key->d, data, length);
+         }
+         else
+         {
+            //The length of the public key is not acceptable
+            error = ERROR_INVALID_KEY_LENGTH;
+         }
+      }
+      else
+      {
+         //Invalid elliptic curve
+         error = ERROR_UNSUPPORTED_ELLIPTIC_CURVE;
+      }
+   }
+   else
+   {
+      //Report an error
+      error = ERROR_INVALID_PARAMETER;
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Export an EdDSA private key
+ * @param[in] key EdDSA private key
+ * @param[out] data Pointer to the octet string
+ * @param[out] length Length of the octet string, in bytes
+ * @return Error code
+ **/
+
+error_t eddsaExportPrivateKey(const EddsaPrivateKey *key, uint8_t *data,
+   size_t *length)
+{
+   error_t error;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Check parameters
+   if(key != NULL && data != NULL && length != NULL)
+   {
+      //Edwards elliptic curve?
+      if(key->curve != NULL && key->curve->type == EC_CURVE_TYPE_EDWARDS)
+      {
+         //Determine the length of the private key
+         *length = (key->curve->fieldSize / 8) + 1;
+         //Copy the private key
+         osMemcpy(data, key->d, *length);
+      }
+      else
+      {
+         //Invalid elliptic curve
+         error = ERROR_UNSUPPORTED_ELLIPTIC_CURVE;
+      }
+   }
+   else
    {
       //Report an error
       error = ERROR_INVALID_PARAMETER;

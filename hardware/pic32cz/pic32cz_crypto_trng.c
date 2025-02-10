@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -49,10 +49,18 @@
 
 error_t trngInit(void)
 {
+#if defined(__PIC32CZ2051CA70064__) || defined(__PIC32CZ2051CA70100__) || \
+   defined(__PIC32CZ2051CA70144__)
+   //Enable TRNG peripheral clock
+   PMC_REGS->PMC_PCER1 = (1U << (ID_TRNG - 32));
+   //Enable TRNG
+   TRNG_REGS->TRNG_CR = TRNG_CR_KEY_PASSWD | TRNG_CR_ENABLE_Msk;
+#else
    //Enable TRNG bus clock (CLK_TRNG_APB)
    MCLK_REGS->MCLK_CLKMSK[TRNG_MCLK_ID_APB / 32]  |= (1U << (TRNG_MCLK_ID_APB % 32));
    //Enable TRNG
    TRNG_REGS->TRNG_CTRLA |= TRNG_CTRLA_ENABLE_Msk;
+#endif
 
    //Successful initialization
    return NO_ERROR;
@@ -82,6 +90,16 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
       //Generate a new 32-bit random value when necessary
       if((i % 4) == 0)
       {
+#if defined(__PIC32CZ2051CA70064__) || defined(__PIC32CZ2051CA70100__) || \
+   defined(__PIC32CZ2051CA70144__)
+         //Wait for the TRNG to contain a valid data
+         while((TRNG_REGS->TRNG_ISR & TRNG_ISR_DATRDY_Msk) == 0)
+         {
+         }
+
+         //Get the 32-bit random value
+         value = TRNG_REGS->TRNG_ODATA;
+#else
          //Wait for the TRNG to contain a valid data
          while((TRNG_REGS->TRNG_INTFLAG & TRNG_INTFLAG_DATARDY_Msk) == 0)
          {
@@ -89,6 +107,7 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
 
          //Get the 32-bit random value
          value = TRNG_REGS->TRNG_DATA;
+#endif
       }
 
       //Copy random byte

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -38,6 +38,7 @@
 #include "hardware/lpc55s6x/lpc55s6x_crypto.h"
 #include "hardware/lpc55s6x/lpc55s6x_crypto_pkc.h"
 #include "ecc/ec.h"
+#include "ecc/ec_misc.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -48,33 +49,57 @@ static Lpc55s6xEcArgs ecArgs;
 
 
 /**
- * @brief Scalar multiplication
- * @param[in] params EC domain parameters
+ * @brief Scalar multiplication (fast calculation)
+ * @param[in] curve Elliptic curve parameters
  * @param[out] r Resulting point R = d.S
  * @param[in] d An integer d such as 0 <= d < p
  * @param[in] s EC point
  * @return Error code
  **/
 
-error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
-   const EcPoint *s)
+error_t ecMulFast(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
+   const EcPoint3 *s)
+{
+   //Compute R = d.S
+   return ecMulRegular(curve, r, d, s);
+}
+
+
+/**
+ * @brief Scalar multiplication (regular calculation)
+ * @param[in] curve Elliptic curve parameters
+ * @param[out] r Resulting point R = d.S
+ * @param[in] d An integer d such as 0 <= d < q
+ * @param[in] s EC point
+ * @return Error code
+ **/
+
+error_t ecMulRegular(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
+   const EcPoint3 *s)
 {
    error_t error;
    size_t n;
+   uint_t modLen;
+   uint_t orderLen;
+
+   //Get the length of the modulus, in words
+   modLen = (curve->fieldSize + 31) / 32;
+   //Get the length of the order, in words
+   orderLen = (curve->orderSize + 31) / 32;
 
    //Initialize status code
    error = NO_ERROR;
 
    //Check elliptic curve parameters
-   if(osStrcmp(params->name, "secp256r1") == 0)
+   if(osStrcmp(curve->name, "secp256r1") == 0)
    {
       n = 32;
    }
-   else if(osStrcmp(params->name, "secp384r1") == 0)
+   else if(osStrcmp(curve->name, "secp384r1") == 0)
    {
       n = 48;
    }
-   else if(osStrcmp(params->name, "secp521r1") == 0)
+   else if(osStrcmp(curve->name, "secp521r1") == 0)
    {
       n = 72;
    }
@@ -87,11 +112,15 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    osAcquireMutex(&lpc55s6xCryptoMutex);
 
    //Set scalar value
-   mpiExport(d, (uint8_t *) ecArgs.d, n, MPI_FORMAT_LITTLE_ENDIAN);
+   ecScalarExport(d, orderLen, (uint8_t *) ecArgs.d, n,
+      EC_SCALAR_FORMAT_LITTLE_ENDIAN);
 
    //Set input point
-   mpiExport(&s->x, (uint8_t *) ecArgs.sx, n, MPI_FORMAT_LITTLE_ENDIAN);
-   mpiExport(&s->y, (uint8_t *) ecArgs.sy, n, MPI_FORMAT_LITTLE_ENDIAN);
+   ecScalarExport(s->x, modLen, (uint8_t *) ecArgs.sx, n,
+      EC_SCALAR_FORMAT_LITTLE_ENDIAN);
+
+   ecScalarExport(s->y, modLen, (uint8_t *) ecArgs.sy, n,
+      EC_SCALAR_FORMAT_LITTLE_ENDIAN);
 
    //Initialize curve parameters in CASPER memory
    if(n == 32)
@@ -125,22 +154,22 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    }
 
    //Copy the x-coordinate of the result
-   error = mpiImport(&r->x, (uint8_t *) ecArgs.rx, n,
-      MPI_FORMAT_LITTLE_ENDIAN);
+   error = ecScalarImport(r->x, EC_MAX_MODULUS_SIZE, (uint8_t *) ecArgs.rx, n,
+      EC_SCALAR_FORMAT_LITTLE_ENDIAN);
 
    //Check status code
    if(!error)
    {
       //Copy the y-coordinate of the result
-      error = mpiImport(&r->y, (uint8_t *) ecArgs.ry, n,
-         MPI_FORMAT_LITTLE_ENDIAN);
+      error = ecScalarImport(r->y, EC_MAX_MODULUS_SIZE, (uint8_t *) ecArgs.ry,
+         n, EC_SCALAR_FORMAT_LITTLE_ENDIAN);
    }
 
    //Check status code
    if(!error)
    {
       //Set the z-coordinate of the result
-      error = mpiSetValue(&r->z, 1);
+      ecScalarSetInt(r->z, 1, EC_MAX_MODULUS_SIZE);
    }
 
    //Release exclusive access to the CASPER module
@@ -153,7 +182,7 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
 
 /**
  * @brief Twin multiplication
- * @param[in] params EC domain parameters
+ * @param[in] curve Elliptic curve parameters
  * @param[out] r Resulting point R = d0.S + d1.T
  * @param[in] d0 An integer d such as 0 <= d0 < p
  * @param[in] s EC point
@@ -162,34 +191,46 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
  * @return Error code
  **/
 
-error_t ecTwinMult(const EcDomainParameters *params, EcPoint *r,
-   const Mpi *d0, const EcPoint *s, const Mpi *d1, const EcPoint *t)
+error_t ecTwinMul(const EcCurve *curve, EcPoint3 *r, const uint32_t *d0,
+   const EcPoint3 *s, const uint32_t *d1, const EcPoint3 *t)
 {
    error_t error;
-   EcPoint u;
+   EcPoint3 u;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   EcState *state;
+#else
+   EcState state[1];
+#endif
 
-   //Initialize EC point
-   ecInit(&u);
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Allocate working state
+   state = cryptoAllocMem(sizeof(EcState));
+   //Failed to allocate memory?
+   if(state == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
+
+   //Initialize working state
+   osMemset(state, 0, sizeof(EcState));
+   //Save elliptic curve parameters
+   state->curve = curve;
 
    //Compute d0.S
-   error = ecMult(params, r, d0, s);
+   error = ecMulFast(curve, r, d0, s);
 
    //Check status code
    if(!error)
    {
       //Compute d1.T
-      error = ecMult(params, &u, d1, t);
+      error = ecMulFast(curve, &u, d1, t);
    }
 
    //Check status code
    if(!error)
    {
       //Compute d0.S + d1.T
-      error = ecAdd(params, r, r, &u);
+      ecFullAdd(state, r, r, &u);
    }
-
-   //Release EC point
-   ecFree(&u);
 
    //Return status code
    return error;

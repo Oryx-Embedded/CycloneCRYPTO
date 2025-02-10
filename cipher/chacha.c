@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -167,7 +167,7 @@ error_t chachaInit(ChachaContext *context, uint_t nr, const uint8_t *key,
    //The keystream block is empty
    context->pos = 0;
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -217,7 +217,7 @@ void chachaCipher(ChachaContext *context, const uint8_t *input,
       if(output != NULL)
       {
          //Point to the keystream
-         k = (uint8_t *) context->block + context->pos;
+         k = context->keystream + context->pos;
 
          //Valid input pointer?
          if(input != NULL)
@@ -260,10 +260,7 @@ void chachaCipher(ChachaContext *context, const uint8_t *input,
 void chachaProcessBlock(ChachaContext *context)
 {
    uint_t i;
-   uint32_t *w;
-
-   //Point to the working state
-   w = (uint32_t *) context->block;
+   uint32_t w[16];
 
    //Copy the state to the working state
    for(i = 0; i < 16; i++)
@@ -301,7 +298,7 @@ void chachaProcessBlock(ChachaContext *context)
    //order
    for(i = 0; i < 16; i++)
    {
-      w[i] = htole32(w[i]);
+      STORE32LE(w[i], context->keystream + i * 4);
    }
 }
 

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -31,7 +31,7 @@
  * lengths of 128, 192, and 256 bits. Refer to FIPS 197 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -278,7 +278,7 @@ __weak_func error_t aesInit(AesContext *context, const uint8_t *key,
    //Copy the original key
    for(i = 0; i < keyLen; i++)
    {
-      context->ek[i] = LOAD32LE(key + (i * 4));
+      context->ek[i] = LOAD32LE(key + i * 4);
    }
 
    //The size of the key schedule depends on the number of rounds
@@ -293,18 +293,18 @@ __weak_func error_t aesInit(AesContext *context, const uint8_t *key,
       //Apply transformation
       if((i % keyLen) == 0)
       {
-         context->ek[i] = sbox[(temp >> 8) & 0xFF];
-         context->ek[i] |= (sbox[(temp >> 16) & 0xFF] << 8);
-         context->ek[i] |= (sbox[(temp >> 24) & 0xFF] << 16);
-         context->ek[i] |= (sbox[temp & 0xFF] << 24);
+         context->ek[i] = (uint32_t) sbox[(temp >> 8) & 0xFF];
+         context->ek[i] |= (uint32_t) sbox[(temp >> 16) & 0xFF] << 8;
+         context->ek[i] |= (uint32_t) sbox[(temp >> 24) & 0xFF] << 16;
+         context->ek[i] |= (uint32_t) sbox[temp & 0xFF] << 24;
          context->ek[i] ^= rcon[i / keyLen];
       }
       else if(keyLen > 6 && (i % keyLen) == 4)
       {
-         context->ek[i] = sbox[temp & 0xFF];
-         context->ek[i] |= (sbox[(temp >> 8) & 0xFF] << 8);
-         context->ek[i] |= (sbox[(temp >> 16) & 0xFF] << 16);
-         context->ek[i] |= (sbox[(temp >> 24) & 0xFF] << 24);
+         context->ek[i] = (uint32_t) sbox[temp & 0xFF];
+         context->ek[i] |= (uint32_t) sbox[(temp >> 8) & 0xFF] << 8;
+         context->ek[i] |= (uint32_t) sbox[(temp >> 16) & 0xFF] << 16;
+         context->ek[i] |= (uint32_t) sbox[(temp >> 24) & 0xFF] << 24;
       }
       else
       {
@@ -336,7 +336,7 @@ __weak_func error_t aesInit(AesContext *context, const uint8_t *key,
       }
    }
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -363,7 +363,7 @@ __weak_func void aesEncryptBlock(AesContext *context, const uint8_t *input,
    uint32_t temp;
 
    //Copy the plaintext to the state array
-   s0 = LOAD32LE(input + 0);
+   s0 = LOAD32LE(input);
    s1 = LOAD32LE(input + 4);
    s2 = LOAD32LE(input + 8);
    s3 = LOAD32LE(input + 12);
@@ -418,25 +418,25 @@ __weak_func void aesEncryptBlock(AesContext *context, const uint8_t *input,
    }
 
    //The last round differs slightly from the first rounds
-   t0 = sbox[s0 & 0xFF];
-   t0 |= sbox[(s1 >> 8) & 0xFF] << 8;
-   t0 |= sbox[(s2 >> 16) & 0xFF] << 16;
-   t0 |= sbox[(s3 >> 24) & 0xFF] << 24;
+   t0 = (uint32_t) sbox[s0 & 0xFF];
+   t0 |= (uint32_t) sbox[(s1 >> 8) & 0xFF] << 8;
+   t0 |= (uint32_t) sbox[(s2 >> 16) & 0xFF] << 16;
+   t0 |= (uint32_t) sbox[(s3 >> 24) & 0xFF] << 24;
 
-   t1 = sbox[s1 & 0xFF];
-   t1 |= sbox[(s2 >> 8) & 0xFF] << 8;
-   t1 |= sbox[(s3 >> 16) & 0xFF] << 16;
-   t1 |= sbox[(s0 >> 24) & 0xFF] << 24;
+   t1 = (uint32_t) sbox[s1 & 0xFF];
+   t1 |= (uint32_t) sbox[(s2 >> 8) & 0xFF] << 8;
+   t1 |= (uint32_t) sbox[(s3 >> 16) & 0xFF] << 16;
+   t1 |= (uint32_t) sbox[(s0 >> 24) & 0xFF] << 24;
 
-   t2 = sbox[s2 & 0xFF];
-   t2 |= sbox[(s3 >> 8) & 0xFF] << 8;
-   t2 |= sbox[(s0 >> 16) & 0xFF] << 16;
-   t2 |= sbox[(s1 >> 24) & 0xFF] << 24;
+   t2 = (uint32_t) sbox[s2 & 0xFF];
+   t2 |= (uint32_t) sbox[(s3 >> 8) & 0xFF] << 8;
+   t2 |= (uint32_t) sbox[(s0 >> 16) & 0xFF] << 16;
+   t2 |= (uint32_t) sbox[(s1 >> 24) & 0xFF] << 24;
 
-   t3 = sbox[s3 & 0xFF];
-   t3 |= sbox[(s0 >> 8) & 0xFF] << 8;
-   t3 |= sbox[(s1 >> 16) & 0xFF] << 16;
-   t3 |= sbox[(s2 >> 24) & 0xFF] << 24;
+   t3 = (uint32_t) sbox[s3 & 0xFF];
+   t3 |= (uint32_t) sbox[(s0 >> 8) & 0xFF] << 8;
+   t3 |= (uint32_t) sbox[(s1 >> 16) & 0xFF] << 16;
+   t3 |= (uint32_t) sbox[(s2 >> 24) & 0xFF] << 24;
 
    //Last round key addition
    s0 = t0 ^ context->ek[context->nr * 4];
@@ -445,7 +445,7 @@ __weak_func void aesEncryptBlock(AesContext *context, const uint8_t *input,
    s3 = t3 ^ context->ek[context->nr * 4 + 3];
 
    //The final state is then copied to the output
-   STORE32LE(s0, output + 0);
+   STORE32LE(s0, output);
    STORE32LE(s1, output + 4);
    STORE32LE(s2, output + 8);
    STORE32LE(s3, output + 12);
@@ -474,7 +474,7 @@ __weak_func void aesDecryptBlock(AesContext *context, const uint8_t *input,
    uint32_t temp;
 
    //Copy the ciphertext to the state array
-   s0 = LOAD32LE(input + 0);
+   s0 = LOAD32LE(input);
    s1 = LOAD32LE(input + 4);
    s2 = LOAD32LE(input + 8);
    s3 = LOAD32LE(input + 12);
@@ -529,25 +529,25 @@ __weak_func void aesDecryptBlock(AesContext *context, const uint8_t *input,
    }
 
    //The last round differs slightly from the first rounds
-   t0 = isbox[s0 & 0xFF];
-   t0 |= isbox[(s3 >> 8) & 0xFF] << 8;
-   t0 |= isbox[(s2 >> 16) & 0xFF] << 16;
-   t0 |= isbox[(s1 >> 24) & 0xFF] << 24;
+   t0 = (uint32_t) isbox[s0 & 0xFF];
+   t0 |= (uint32_t) isbox[(s3 >> 8) & 0xFF] << 8;
+   t0 |= (uint32_t) isbox[(s2 >> 16) & 0xFF] << 16;
+   t0 |= (uint32_t) isbox[(s1 >> 24) & 0xFF] << 24;
 
-   t1 = isbox[s1 & 0xFF];
-   t1 |= isbox[(s0 >> 8) & 0xFF] << 8;
-   t1 |= isbox[(s3 >> 16) & 0xFF] << 16;
-   t1 |= isbox[(s2 >> 24) & 0xFF] << 24;
+   t1 = (uint32_t) isbox[s1 & 0xFF];
+   t1 |= (uint32_t) isbox[(s0 >> 8) & 0xFF] << 8;
+   t1 |= (uint32_t) isbox[(s3 >> 16) & 0xFF] << 16;
+   t1 |= (uint32_t) isbox[(s2 >> 24) & 0xFF] << 24;
 
-   t2 = isbox[s2 & 0xFF];
-   t2 |= isbox[(s1 >> 8) & 0xFF] << 8;
-   t2 |= isbox[(s0 >> 16) & 0xFF] << 16;
-   t2 |= isbox[(s3 >> 24) & 0xFF] << 24;
+   t2 = (uint32_t) isbox[s2 & 0xFF];
+   t2 |= (uint32_t) isbox[(s1 >> 8) & 0xFF] << 8;
+   t2 |= (uint32_t) isbox[(s0 >> 16) & 0xFF] << 16;
+   t2 |= (uint32_t) isbox[(s3 >> 24) & 0xFF] << 24;
 
-   t3 = isbox[s3 & 0xFF];
-   t3 |= isbox[(s2 >> 8) & 0xFF] << 8;
-   t3 |= isbox[(s1 >> 16) & 0xFF] << 16;
-   t3 |= isbox[(s0 >> 24) & 0xFF] << 24;
+   t3 = (uint32_t) isbox[s3 & 0xFF];
+   t3 |= (uint32_t) isbox[(s2 >> 8) & 0xFF] << 8;
+   t3 |= (uint32_t) isbox[(s1 >> 16) & 0xFF] << 16;
+   t3 |= (uint32_t) isbox[(s0 >> 24) & 0xFF] << 24;
 
    //Last round key addition
    s0 = t0 ^ context->dk[0];
@@ -556,7 +556,7 @@ __weak_func void aesDecryptBlock(AesContext *context, const uint8_t *input,
    s3 = t3 ^ context->dk[3];
 
    //The final state is then copied to the output
-   STORE32LE(s0, output + 0);
+   STORE32LE(s0, output);
    STORE32LE(s1, output + 4);
    STORE32LE(s2, output + 8);
    STORE32LE(s3, output + 12);

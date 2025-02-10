@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _BLAKE2B256_H
@@ -33,7 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "hash/blake2b.h"
+#include "mac/blake2b.h"
 
 //BLAKE2b-256 block size
 #define BLAKE2B256_BLOCK_SIZE 128

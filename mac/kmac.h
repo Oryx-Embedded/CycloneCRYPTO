@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _KMAC_H
@@ -58,8 +58,8 @@ typedef struct
 
 
 //KMAC related constants
-extern const uint8_t kmac128Oid[9];
-extern const uint8_t kmac256Oid[9];
+extern const uint8_t KMAC128_OID[9];
+extern const uint8_t KMAC256_OID[9];
 
 //KMAC related functions
 error_t kmacCompute(uint_t strength, const void *key, size_t keyLen,

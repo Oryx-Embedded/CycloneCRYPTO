@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _X509_KEY_FORMAT_H
@@ -77,14 +77,8 @@ error_t x509ExportDsaPrivateKey(const DsaPrivateKey *privateKey,
 error_t x509ExportDsaParameters(const DsaDomainParameters *params,
    uint8_t *output, size_t *written);
 
-error_t x509ExportEcPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const EcPoint *publicKey, uint8_t *output, size_t *written);
-
-error_t x509ExportEddsaPublicKey(const EddsaPublicKey *publicKey,
-   size_t publicKeyLen, uint8_t *output, size_t *written);
-
 error_t x509ExportEddsaPrivateKey(const EddsaPrivateKey *privateKey,
-   size_t privateKeyLen, uint8_t *output, size_t *written);
+   uint8_t *output, size_t *written);
 
 //C++ guard
 #ifdef __cplusplus

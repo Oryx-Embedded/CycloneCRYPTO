@@ -1,12 +1,12 @@
 /**
- * @file blake2s.h
- * @brief BLAKE2 cryptographic hash and MAC (BLAKE2s variant)
+ * @file pem_cert_key_import.h
+ * @brief PEM certificate public key import functions
  *
  * @section License
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,56 +25,40 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
-#ifndef _BLAKE2S_H
-#define _BLAKE2S_H
+#ifndef _PEM_CERT_KEY_IMPORT_H
+#define _PEM_CERT_KEY_IMPORT_H
 
 //Dependencies
 #include "core/crypto.h"
-
-//BLAKE2s block size
-#define BLAKE2S_BLOCK_SIZE 64
+#include "pkix/pem_common.h"
+#include "pkix/x509_common.h"
+#include "pkc/rsa.h"
+#include "pkc/dsa.h"
+#include "ecc/ec.h"
+#include "ecc/eddsa.h"
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+//PEM related functions
+error_t pemImportRsaCertPublicKey(RsaPublicKey *publicKey, const char_t *input,
+   size_t length);
 
-/**
- * @brief BLAKE2s algorithm context
- **/
+error_t pemImportDsaCertPublicKey(DsaPublicKey *publicKey, const char_t *input,
+   size_t length);
 
-typedef struct
-{
-   union
-   {
-      uint32_t h[8];
-      uint8_t digest[32];
-   };
-   union
-   {
-      uint32_t m[16];
-      uint8_t buffer[64];
-   };
-   size_t size;
-   uint32_t totalSize[2];
-   size_t digestSize;
-} Blake2sContext;
+error_t pemImportEcCertPublicKey(EcPublicKey *publicKey, const char_t *input,
+   size_t length);
 
+error_t pemImportEddsaCertPublicKey(EddsaPublicKey *publicKey,
+   const char_t *input, size_t length);
 
-//BLAKE2s related functions
-error_t blake2sCompute(const void *key, size_t keyLen, const void *data,
-   size_t dataLen, uint8_t *digest, size_t digestLen);
-
-error_t blake2sInit(Blake2sContext *context, const void *key,
-   size_t keyLen, size_t digestLen);
-
-void blake2sUpdate(Blake2sContext *context, const void *data, size_t length);
-void blake2sFinal(Blake2sContext *context, uint8_t *digest);
-void blake2sProcessBlock(Blake2sContext *context, bool_t last);
+X509KeyType pemGetCertPublicKeyType(const char_t *input, size_t length);
 
 //C++ guard
 #ifdef __cplusplus

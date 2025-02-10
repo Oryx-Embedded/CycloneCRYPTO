@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -220,7 +220,7 @@ error_t x509VerifyRsaSignature(const X509OctetString *tbsData,
    if(!error)
    {
       //Import the RSA public key
-      error = x509ImportRsaPublicKey(publicKeyInfo, &rsaPublicKey);
+      error = x509ImportRsaPublicKey(&rsaPublicKey, publicKeyInfo);
    }
 
    //Check status code
@@ -288,7 +288,7 @@ error_t x509VerifyRsaPssSignature(const X509OctetString *tbsData,
    if(!error)
    {
       //Import the RSA public key
-      error = x509ImportRsaPublicKey(publicKeyInfo, &rsaPublicKey);
+      error = x509ImportRsaPublicKey(&rsaPublicKey, publicKeyInfo);
    }
 
    //Check status code
@@ -357,7 +357,7 @@ error_t x509VerifyDsaSignature(const X509OctetString *tbsData,
    if(!error)
    {
       //Import the DSA public key
-      error = x509ImportDsaPublicKey(publicKeyInfo, &dsaPublicKey);
+      error = x509ImportDsaPublicKey(&dsaPublicKey, publicKeyInfo);
    }
 
    //Check status code
@@ -378,8 +378,8 @@ error_t x509VerifyDsaSignature(const X509OctetString *tbsData,
    if(!error)
    {
       //Read the ASN.1 encoded signature
-      error = dsaReadSignature(signature->value, signature->length,
-         &dsaSignature);
+      error = dsaImportSignature(&dsaSignature, signature->value,
+         signature->length);
    }
 
    //Check status code
@@ -418,69 +418,58 @@ error_t x509VerifyEcdsaSignature(const X509OctetString *tbsData,
 {
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
    error_t error;
-   const EcCurveInfo *curveInfo;
-   EcDomainParameters ecParams;
+   const EcCurve *curve;
    EcPublicKey ecPublicKey;
    EcdsaSignature ecdsaSignature;
    uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
-   //Initialize EC domain parameters
-   ecInitDomainParameters(&ecParams);
    //Initialize EC public key
    ecInitPublicKey(&ecPublicKey);
    //Initialize ECDSA signature
    ecdsaInitSignature(&ecdsaSignature);
 
-   //Retrieve EC domain parameters
-   curveInfo = x509GetCurveInfo(publicKeyInfo->ecParams.namedCurve.value,
+   //Get the elliptic curve that matches the OID
+   curve = x509GetCurve(publicKeyInfo->ecParams.namedCurve.value,
       publicKeyInfo->ecParams.namedCurve.length);
 
    //Make sure the specified elliptic curve is supported
-   if(curveInfo != NULL)
-   {
-      //Load EC domain parameters
-      error = ecLoadDomainParameters(&ecParams, curveInfo);
-   }
-   else
-   {
-      //Invalid EC domain parameters
-      error = ERROR_BAD_CERTIFICATE;
-   }
-
-   //Check status code
-   if(!error)
+   if(curve != NULL)
    {
       //Digest the TBSCertificate structure using the specified hash algorithm
       error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
-   }
 
-   //Check status code
-   if(!error)
-   {
-      //Retrieve the EC public key
-      error = ecImport(&ecParams, &ecPublicKey.q,
-         publicKeyInfo->ecPublicKey.q.value,
-         publicKeyInfo->ecPublicKey.q.length);
-   }
+      //Check status code
+      if(!error)
+      {
+         //Import the EC public key
+         error = ecImportPublicKey(&ecPublicKey, curve,
+            publicKeyInfo->ecPublicKey.q.value,
+            publicKeyInfo->ecPublicKey.q.length, EC_PUBLIC_KEY_FORMAT_X963);
+      }
 
-   //Check status code
-   if(!error)
-   {
-      //Read the ASN.1 encoded signature
-      error = ecdsaReadSignature(signature->value, signature->length,
-         &ecdsaSignature);
-   }
+      //Check status code
+      if(!error)
+      {
+         //Read the ASN.1 encoded signature
+         error = ecdsaImportSignature(&ecdsaSignature, curve, signature->value,
+            signature->length, ECDSA_SIGNATURE_FORMAT_ASN1);
+      }
 
-   //Check status code
-   if(!error)
+      //Check status code
+      if(!error)
+      {
+         //Verify ECDSA signature
+         error = ecdsaVerifySignature(&ecPublicKey, digest,
+            hashAlgo->digestSize, &ecdsaSignature);
+      }
+   }
+   else
    {
-      //Verify ECDSA signature
-      error = ecdsaVerifySignature(&ecParams, &ecPublicKey, digest,
-         hashAlgo->digestSize, &ecdsaSignature);
+      //Invalid elliptic curve
+      error = ERROR_BAD_CERTIFICATE;
    }
 
    //Release previously allocated resources
-   ecFreeDomainParameters(&ecParams);
    ecFreePublicKey(&ecPublicKey);
    ecdsaFreeSignature(&ecdsaSignature);
 
@@ -508,48 +497,37 @@ error_t x509VerifySm2Signature(const X509OctetString *tbsData,
 {
 #if (X509_SM2_SUPPORT == ENABLED && SM2_SUPPORT == ENABLED)
    error_t error;
-   EcDomainParameters ecParams;
    EcPublicKey ecPublicKey;
    EcdsaSignature sm2Signature;
 
-   //Initialize EC domain parameters
-   ecInitDomainParameters(&ecParams);
    //Initialize EC public key
    ecInitPublicKey(&ecPublicKey);
    //Initialize SM2 signature
    ecdsaInitSignature(&sm2Signature);
 
-   //Load EC domain parameters
-   error = ecLoadDomainParameters(&ecParams, SM2_CURVE);
-
-   //Check status code
-   if(!error)
-   {
-      //Retrieve the EC public key
-      error = ecImport(&ecParams, &ecPublicKey.q,
-         publicKeyInfo->ecPublicKey.q.value,
-         publicKeyInfo->ecPublicKey.q.length);
-   }
+   //Import the EC public key
+   error = ecImportPublicKey(&ecPublicKey, SM2_CURVE,
+      publicKeyInfo->ecPublicKey.q.value,
+      publicKeyInfo->ecPublicKey.q.length, EC_PUBLIC_KEY_FORMAT_X963);
 
    //Check status code
    if(!error)
    {
       //Read the ASN.1 encoded signature
-      error = ecdsaReadSignature(signature->value, signature->length,
-         &sm2Signature);
+      error = ecdsaImportSignature(&sm2Signature, SM2_CURVE, signature->value,
+         signature->length, ECDSA_SIGNATURE_FORMAT_ASN1);
    }
 
    //Check status code
    if(!error)
    {
       //Verify SM2 signature
-      error = sm2VerifySignature(&ecParams, &ecPublicKey, hashAlgo,
-         SM2_DEFAULT_ID, osStrlen(SM2_DEFAULT_ID), tbsData->value,
-         tbsData->length, &sm2Signature);
+      error = sm2VerifySignature(&ecPublicKey, hashAlgo, SM2_DEFAULT_ID,
+         osStrlen(SM2_DEFAULT_ID), tbsData->value, tbsData->length,
+         &sm2Signature);
    }
 
    //Release previously allocated resources
-   ecFreeDomainParameters(&ecParams);
    ecFreePublicKey(&ecPublicKey);
    ecdsaFreeSignature(&sm2Signature);
 

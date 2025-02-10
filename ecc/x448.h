@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _X448_H
@@ -48,13 +48,13 @@ extern "C" {
 typedef struct
 {
    uint32_t k[14];
-   uint32_t u[14];
-   uint32_t x1[14];
-   uint32_t z1[14];
-   uint32_t x2[14];
-   uint32_t z2[14];
-   uint32_t t1[14];
-   uint32_t t2[14];
+   int32_t u[16];
+   int32_t x1[16];
+   int32_t z1[16];
+   int32_t x2[16];
+   int32_t z2[16];
+   int32_t t1[16];
+   int32_t t2[16];
 } X448State;
 
 

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -200,7 +200,7 @@ error_t ideaInit(IdeaContext *context, const uint8_t *key, size_t keyLen)
       }
    }
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -221,7 +221,7 @@ void ideaEncryptBlock(IdeaContext *context, const uint8_t *input,
    uint16_t *k;
 
    //The plaintext is divided into four 16-bit registers
-   uint16_t a = LOAD16BE(input + 0);
+   uint16_t a = LOAD16BE(input);
    uint16_t b = LOAD16BE(input + 2);
    uint16_t c = LOAD16BE(input + 4);
    uint16_t d = LOAD16BE(input + 6);
@@ -266,7 +266,7 @@ void ideaEncryptBlock(IdeaContext *context, const uint8_t *input,
    d = ideaMul(d, k[3]);
 
    //The resulting value is the ciphertext
-   STORE16BE(a, output + 0);
+   STORE16BE(a, output);
    STORE16BE(c, output + 2);
    STORE16BE(b, output + 4);
    STORE16BE(d, output + 6);
@@ -289,7 +289,7 @@ void ideaDecryptBlock(IdeaContext *context, const uint8_t *input,
    uint16_t *k;
 
    //The ciphertext is divided into four 16-bit registers
-   uint16_t a = LOAD16BE(input + 0);
+   uint16_t a = LOAD16BE(input);
    uint16_t b = LOAD16BE(input + 2);
    uint16_t c = LOAD16BE(input + 4);
    uint16_t d = LOAD16BE(input + 6);
@@ -335,7 +335,7 @@ void ideaDecryptBlock(IdeaContext *context, const uint8_t *input,
    d = ideaMul(d, k[3]);
 
    //The resulting value is the plaintext
-   STORE16BE(a, output + 0);
+   STORE16BE(a, output);
    STORE16BE(c, output + 2);
    STORE16BE(b, output + 4);
    STORE16BE(d, output + 6);

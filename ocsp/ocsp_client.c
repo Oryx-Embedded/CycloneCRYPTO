@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -33,7 +33,7 @@
  * - RFC 8954: Online Certificate Status Protocol (OCSP) Nonce Extension
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -630,7 +630,8 @@ error_t ocspClientValidateResponse(OcspClientContext *context,
          }
 
          //The second pass decodes the PEM certificate
-         error = pemImportCertificate(cert, certLen, derCert, &derCertLen, NULL);
+         error = pemImportCertificate(cert, certLen, derCert, &derCertLen,
+            NULL);
          //Any error to report?
          if(error)
             break;

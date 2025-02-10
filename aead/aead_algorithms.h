@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _AEAD_ALGORITHMS_H
@@ -47,6 +47,11 @@
 //SIV mode support?
 #if (SIV_SUPPORT == ENABLED)
    #include "aead/siv.h"
+#endif
+
+//Ascon-AEAD128 support?
+#if (ASCON_AEAD128_SUPPORT == ENABLED)
+   #include "lwc/ascon_aead128.h"
 #endif
 
 //ChaCha20Poly1305 support?

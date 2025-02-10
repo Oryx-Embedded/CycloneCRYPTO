@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -35,6 +35,7 @@
 #include "core/crypto.h"
 #include "hardware/pic32mz/pic32mz_crypto.h"
 #include "hardware/pic32mz/pic32mz_crypto_trng.h"
+#include "hardware/pic32mz/pic32mz_crypto_pkc.h"
 #include "debug.h"
 
 //Global variables
@@ -67,6 +68,15 @@ error_t pic32mzCryptoInit(void)
    {
       //Initialize TRNG module
       error = trngInit();
+   }
+#endif
+
+#if (PIC32MZ_CRYPTO_PKC_SUPPORT == ENABLED)
+   //Check status code
+   if(!error)
+   {
+      //Initialize BA414E public key accelerator
+      error = ba414eInit();
    }
 #endif
 

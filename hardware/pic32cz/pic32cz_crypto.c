@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -36,6 +36,8 @@
 #include "core/crypto.h"
 #include "hardware/pic32cz/pic32cz_crypto.h"
 #include "hardware/pic32cz/pic32cz_crypto_trng.h"
+#include "hardware/pic32cz/pic32cz_crypto_hash.h"
+#include "hardware/pic32cz/pic32cz_crypto_cipher.h"
 #include "debug.h"
 
 //Global variables
@@ -68,6 +70,24 @@ error_t pic32czCryptoInit(void)
    {
       //Initialize TRNG module
       error = trngInit();
+   }
+#endif
+
+#if (PIC32CZ_CRYPTO_HASH_SUPPORT == ENABLED)
+   //Check status code
+   if(!error)
+   {
+      //Enable ICM peripheral clock
+      PMC_REGS->PMC_PCER1 = (1U << (ID_ICM - 32));
+   }
+#endif
+
+#if (PIC32CZ_CRYPTO_CIPHER_SUPPORT == ENABLED)
+   //Check status code
+   if(!error)
+   {
+      //Enable AES peripheral clock
+      PMC_REGS->PMC_PCER1 = (1U << (ID_AES - 32));
    }
 #endif
 

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -255,8 +255,8 @@ error_t x509ParseAttributes(const uint8_t *data, size_t length,
          return error;
 
       //PKCS#9 Challenge Password attribute found?
-      if(!oidComp(attribute.oid.value, attribute.oid.length,
-         X509_CHALLENGE_PASSWORD_OID, sizeof(X509_CHALLENGE_PASSWORD_OID)))
+      if(OID_COMP(attribute.oid.value, attribute.oid.length,
+         X509_CHALLENGE_PASSWORD_OID) == 0)
       {
          //The interpretation of challenge passwords is intended to be specified
          //by certificate issuers
@@ -264,8 +264,8 @@ error_t x509ParseAttributes(const uint8_t *data, size_t length,
             attribute.data.length, &attributes->challengePwd);
       }
       //PKCS#9 Extension Request attribute found?
-      else if(!oidComp(attribute.oid.value, attribute.oid.length,
-         X509_EXTENSION_REQUEST_OID, sizeof(X509_EXTENSION_REQUEST_OID)))
+      else if(OID_COMP(attribute.oid.value, attribute.oid.length,
+         X509_EXTENSION_REQUEST_OID) == 0)
       {
          //This attribute may be used to carry information about certificate
          //extensions the requester wishes to be included in a certificate
@@ -442,57 +442,57 @@ error_t x509ParseExtensionRequest(const uint8_t *data, size_t length,
          return error;
 
       //Check extension identifier
-      if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_BASIC_CONSTRAINTS_OID, sizeof(X509_BASIC_CONSTRAINTS_OID)))
+      if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_BASIC_CONSTRAINTS_OID) == 0)
       {
          //Parse BasicConstraints extension
          error = x509ParseBasicConstraints(extension.critical, extension.data.value,
             extension.data.length, &extensionReq->basicConstraints);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_NAME_CONSTRAINTS_OID, sizeof(X509_NAME_CONSTRAINTS_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_NAME_CONSTRAINTS_OID) == 0)
       {
          //Parse NameConstraints extension
          error = x509ParseNameConstraints(extension.critical, extension.data.value,
             extension.data.length, &extensionReq->nameConstraints);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_KEY_USAGE_OID, sizeof(X509_KEY_USAGE_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_KEY_USAGE_OID) == 0)
       {
          //Parse KeyUsage extension
          error = x509ParseKeyUsage(extension.critical, extension.data.value,
             extension.data.length, &extensionReq->keyUsage);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_EXTENDED_KEY_USAGE_OID, sizeof(X509_EXTENDED_KEY_USAGE_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_EXTENDED_KEY_USAGE_OID) == 0)
       {
          //Parse ExtendedKeyUsage extension
          error = x509ParseExtendedKeyUsage(extension.critical, extension.data.value,
             extension.data.length, &extensionReq->extKeyUsage);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_SUBJECT_ALT_NAME_OID, sizeof(X509_SUBJECT_ALT_NAME_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_SUBJECT_ALT_NAME_OID) == 0)
       {
          //Parse SubjectAltName extension
          error = x509ParseSubjectAltName(extension.critical, extension.data.value,
             extension.data.length, &extensionReq->subjectAltName);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_SUBJECT_KEY_ID_OID, sizeof(X509_SUBJECT_KEY_ID_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_SUBJECT_KEY_ID_OID) == 0)
       {
          //Parse SubjectKeyIdentifier extension
          error = x509ParseSubjectKeyId(extension.critical, extension.data.value,
             extension.data.length, &extensionReq->subjectKeyId);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_AUTHORITY_KEY_ID_OID, sizeof(X509_AUTHORITY_KEY_ID_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_AUTHORITY_KEY_ID_OID) == 0)
       {
          //Parse AuthorityKeyIdentifier extension
          error = x509ParseAuthKeyId(extension.critical, extension.data.value,
             extension.data.length, &extensionReq->authKeyId);
       }
-      else if(!oidComp(extension.oid.value, extension.oid.length,
-         X509_NS_CERT_TYPE_OID, sizeof(X509_NS_CERT_TYPE_OID)))
+      else if(OID_COMP(extension.oid.value, extension.oid.length,
+         X509_NS_CERT_TYPE_OID) == 0)
       {
          //Parse NetscapeCertType extension
          error = x509ParseNsCertType(extension.critical, extension.data.value,

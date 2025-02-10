@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -40,6 +40,7 @@
 #include "hardware/s5d9/s5d9_crypto_pkc.h"
 #include "pkc/rsa.h"
 #include "ecc/ec.h"
+#include "ecc/ec_misc.h"
 #include "ecc/ecdsa.h"
 #include "debug.h"
 
@@ -50,6 +51,7 @@
 static Ra6RsaArgs rsaArgs;
 static Ra6EcArgs ecArgs;
 
+#if (MPI_SUPPORT == ENABLED)
 
 /**
  * @brief Modular exponentiation (fast calculation)
@@ -69,11 +71,11 @@ error_t mpiExpModFast(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    size_t eLen;
    size_t pLen;
 
-   //Retrieve the length of the integer, in bytes
+   //Get the length of the integer, in bytes
    aLen = mpiGetByteLength(a);
-   //Retrieve the length of the exponent, in bytes
+   //Get the length of the exponent, in bytes
    eLen = mpiGetByteLength(e);
-   //Retrieve the length of the modulus, in bytes
+   //Get the length of the modulus, in bytes
    pLen = mpiGetByteLength(p);
 
    //The accelerator supports operand lengths up to 2048 bits
@@ -153,11 +155,11 @@ error_t mpiExpModRegular(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    size_t eLen;
    size_t pLen;
 
-   //Retrieve the length of the integer, in bytes
+   //Get the length of the integer, in bytes
    aLen = mpiGetByteLength(a);
-   //Retrieve the length of the exponent, in bytes
+   //Get the length of the exponent, in bytes
    eLen = mpiGetByteLength(e);
-   //Retrieve the length of the modulus, in bytes
+   //Get the length of the modulus, in bytes
    pLen = mpiGetByteLength(p);
 
    //The accelerator supports operand lengths up to 2048 bits
@@ -218,6 +220,8 @@ error_t mpiExpModRegular(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    return error;
 }
 
+#endif
+#if (RSA_SUPPORT == ENABLED)
 
 /**
  * @brief RSA private key generation
@@ -364,7 +368,7 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    size_t dqLen;
    size_t qinvLen;
 
-   //Retrieve the length of the private key
+   //Get the length of the private key
    nLen = mpiGetByteLength(&key->n);
    dLen = mpiGetByteLength(&key->d);
    pLen = mpiGetByteLength(&key->p);
@@ -460,26 +464,29 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    return error;
 }
 
+#endif
+#if (EC_SUPPORT == ENABLED)
 
 /**
- * @brief Scalar multiplication
- * @param[in] params EC domain parameters
- * @param[out] r Resulting point R = d.S
- * @param[in] d An integer d such as 0 <= d < p
- * @param[in] s EC point
+ * @brief EC key pair generation
+ * @param[in] prngAlgo PRNG algorithm
+ * @param[in] prngContext Pointer to the PRNG context
+ * @param[in] curve Elliptic curve parameters
+ * @param[out] privateKey EC private key
+ * @param[out] publicKey EC public key (optional parameter)
  * @return Error code
  **/
 
-error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
-   const EcPoint *s)
+error_t ecGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
+   const EcCurve *curve, EcPrivateKey *privateKey, EcPublicKey *publicKey)
 {
    error_t error;
    ssp_err_t status;
    size_t n;
    size_t modLen;
 
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&params->p);
+   //Get the length of the modulus, in bytes
+   modLen = (curve->fieldSize + 7) / 8;
 
    //Compute the length of the scalar
    if(modLen <= 24)
@@ -507,17 +514,188 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    osAcquireMutex(&s5d9CryptoMutex);
 
    //Set domain parameters
-   mpiWriteRaw(&params->a, (uint8_t *) ecArgs.params, n);
-   mpiWriteRaw(&params->b, (uint8_t *) ecArgs.params + n, n);
-   mpiWriteRaw(&params->p, (uint8_t *) ecArgs.params + n * 2, n);
-   mpiWriteRaw(&params->q, (uint8_t *) ecArgs.params + n * 3, n);
+   ecScalarExport(curve->a, n / 4, (uint8_t *) ecArgs.params, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->b, n / 4, (uint8_t *) ecArgs.params + n, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->p, n / 4, (uint8_t *) ecArgs.params + n * 2, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->q, n / 4, (uint8_t *) ecArgs.params + n * 3, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   //Set base point
+   ecScalarExport(curve->g.x, n / 4, (uint8_t *) ecArgs.g, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->g.y, n / 4, (uint8_t *) ecArgs.g + n, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   //Generate an EC key pair
+   if(n == 24)
+   {
+      status = HW_SCE_ECC_192GenerateKey(ecArgs.params, ecArgs.g, ecArgs.d,
+         ecArgs.q);
+   }
+   else if(n == 28)
+   {
+      status = HW_SCE_ECC_224GenerateKey(ecArgs.params, ecArgs.g, ecArgs.d,
+         ecArgs.q);
+   }
+   else if(n == 32)
+   {
+      status = HW_SCE_ECC_256GenerateKey(ecArgs.params, ecArgs.g, ecArgs.d,
+         ecArgs.q);
+   }
+   else if(n == 48)
+   {
+      status = HW_SCE_ECC_384GenerateKey(ecArgs.params, ecArgs.g, ecArgs.d,
+         ecArgs.q);
+   }
+   else
+   {
+      status = SSP_ERR_CRYPTO_NOT_IMPLEMENTED;
+   }
+
+   //Check status code
+   if(status == SSP_SUCCESS)
+   {
+      //Save elliptic curve parameters
+      privateKey->curve = curve;
+      privateKey->q.curve = curve;
+
+      //Copy the private key
+      error = ecScalarImport(privateKey->d, EC_MAX_ORDER_SIZE,
+         (uint8_t *) ecArgs.d, n, EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+      //Check status code
+      if(!error)
+      {
+         //Copy the x-coordinate of the public key
+         error = ecScalarImport(privateKey->q.q.x, EC_MAX_MODULUS_SIZE,
+            (uint8_t *) ecArgs.q, n, EC_SCALAR_FORMAT_BIG_ENDIAN);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Copy the y-coordinate of the public key
+         error = ecScalarImport(privateKey->q.q.y, EC_MAX_MODULUS_SIZE,
+            (uint8_t *) ecArgs.q + n, n, EC_SCALAR_FORMAT_BIG_ENDIAN);
+      }
+   }
+   else
+   {
+      //Report an error
+      error = ERROR_FAILURE;
+   }
+
+   //Release exclusive access to the SCE7 module
+   osReleaseMutex(&s5d9CryptoMutex);
+
+   //Check status code
+   if(!error)
+   {
+      //The parameter is optional
+      if(publicKey != NULL)
+      {
+         //Copy the resulting public key
+         *publicKey = privateKey->q;
+      }
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Scalar multiplication (fast calculation)
+ * @param[in] curve Elliptic curve parameters
+ * @param[out] r Resulting point R = d.S
+ * @param[in] d An integer d such as 0 <= d < p
+ * @param[in] s EC point
+ * @return Error code
+ **/
+
+error_t ecMulFast(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
+   const EcPoint3 *s)
+{
+   //Compute R = d.S
+   return ecMulRegular(curve, r, d, s);
+}
+
+
+/**
+ * @brief Scalar multiplication (regular calculation)
+ * @param[in] curve Elliptic curve parameters
+ * @param[out] r Resulting point R = d.S
+ * @param[in] d An integer d such as 0 <= d < q
+ * @param[in] s EC point
+ * @return Error code
+ **/
+
+error_t ecMulRegular(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
+   const EcPoint3 *s)
+{
+   error_t error;
+   ssp_err_t status;
+   size_t n;
+   size_t modLen;
+
+   //Get the length of the modulus, in bytes
+   modLen = (curve->fieldSize + 7) / 8;
+
+   //Compute the length of the scalar
+   if(modLen <= 24)
+   {
+      n = 24;
+   }
+   else if(modLen <= 28)
+   {
+      n = 28;
+   }
+   else if(modLen <= 32)
+   {
+      n = 32;
+   }
+   else if(modLen <= 48)
+   {
+      n = 48;
+   }
+   else
+   {
+      return ERROR_FAILURE;
+   }
+
+   //Acquire exclusive access to the SCE7 module
+   osAcquireMutex(&s5d9CryptoMutex);
+
+   //Set domain parameters
+   ecScalarExport(curve->a, n / 4, (uint8_t *) ecArgs.params, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->b, n / 4, (uint8_t *) ecArgs.params + n, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->p, n / 4, (uint8_t *) ecArgs.params + n * 2, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->q, n / 4, (uint8_t *) ecArgs.params + n * 3, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Set scalar value
-   mpiWriteRaw(d, (uint8_t *) ecArgs.d, n);
+   ecScalarExport(d, n / 4, (uint8_t *) ecArgs.d, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Set input point
-   mpiWriteRaw(&s->x, (uint8_t *) ecArgs.g, n);
-   mpiWriteRaw(&s->y, (uint8_t *) ecArgs.g + n, n);
+   ecScalarExport(s->x, n / 4, (uint8_t *) ecArgs.g, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(s->y, n / 4, (uint8_t *) ecArgs.g + n, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Perform scalar multiplication
    if(n == 24)
@@ -549,20 +727,22 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    if(status == SSP_SUCCESS)
    {
       //Copy the x-coordinate of the result
-      error = mpiReadRaw(&r->x, (uint8_t *) ecArgs.q, n);
+      error = ecScalarImport(r->x, EC_MAX_MODULUS_SIZE, (uint8_t *) ecArgs.q,
+         n, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
       //Check status code
       if(!error)
       {
          //Copy the y-coordinate of the result
-         error = mpiReadRaw(&r->y, (uint8_t *) ecArgs.q + n, n);
+         error = ecScalarImport(r->y, EC_MAX_MODULUS_SIZE,
+            (uint8_t *) ecArgs.q + n, n, EC_SCALAR_FORMAT_BIG_ENDIAN);
       }
 
       //Check status code
       if(!error)
       {
          //Set the z-coordinate of the result
-         error = mpiSetValue(&r->z, 1);
+         ecScalarSetInt(r->z, 1, EC_MAX_MODULUS_SIZE);
       }
    }
    else
@@ -578,129 +758,13 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
    return error;
 }
 
-
-/**
- * @brief EC key pair generation
- * @param[in] prngAlgo PRNG algorithm
- * @param[in] prngContext Pointer to the PRNG context
- * @param[in] params EC domain parameters
- * @param[out] privateKey EC private key
- * @param[out] publicKey EC public key
- * @return Error code
- **/
-
-error_t ecGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, EcPrivateKey *privateKey,
-   EcPublicKey *publicKey)
-{
-   error_t error;
-   ssp_err_t status;
-   size_t n;
-   size_t modLen;
-
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&params->p);
-
-   //Compute the length of the scalar
-   if(modLen <= 24)
-   {
-      n = 24;
-   }
-   else if(modLen <= 28)
-   {
-      n = 28;
-   }
-   else if(modLen <= 32)
-   {
-      n = 32;
-   }
-   else if(modLen <= 48)
-   {
-      n = 48;
-   }
-   else
-   {
-      return ERROR_FAILURE;
-   }
-
-   //Acquire exclusive access to the SCE7 module
-   osAcquireMutex(&s5d9CryptoMutex);
-
-   //Set domain parameters
-   mpiWriteRaw(&params->a, (uint8_t *) ecArgs.params, n);
-   mpiWriteRaw(&params->b, (uint8_t *) ecArgs.params + n, n);
-   mpiWriteRaw(&params->p, (uint8_t *) ecArgs.params + n * 2, n);
-   mpiWriteRaw(&params->q, (uint8_t *) ecArgs.params + n * 3, n);
-
-   //Set base point
-   mpiWriteRaw(&params->g.x, (uint8_t *) ecArgs.g, n);
-   mpiWriteRaw(&params->g.y, (uint8_t *) ecArgs.g + n, n);
-
-   //Generate an EC key pair
-   if(n == 24)
-   {
-      status = HW_SCE_ECC_192GenerateKey(ecArgs.params, ecArgs.g, ecArgs.d,
-         ecArgs.q);
-   }
-   else if(n == 28)
-   {
-      status = HW_SCE_ECC_224GenerateKey(ecArgs.params, ecArgs.g, ecArgs.d,
-         ecArgs.q);
-   }
-   else if(n == 32)
-   {
-      status = HW_SCE_ECC_256GenerateKey(ecArgs.params, ecArgs.g, ecArgs.d,
-         ecArgs.q);
-   }
-   else if(n == 48)
-   {
-      status = HW_SCE_ECC_384GenerateKey(ecArgs.params, ecArgs.g, ecArgs.d,
-         ecArgs.q);
-   }
-   else
-   {
-      status = SSP_ERR_CRYPTO_NOT_IMPLEMENTED;
-   }
-
-   //Check status code
-   if(status == SSP_SUCCESS)
-   {
-      //Copy the private key
-      error = mpiReadRaw(&privateKey->d, (uint8_t *) ecArgs.d, n);
-
-      //Check status code
-      if(!error)
-      {
-         //Copy the x-coordinate of the public key
-         error = mpiReadRaw(&publicKey->q.x, (uint8_t *) ecArgs.q, n);
-      }
-
-      //Check status code
-      if(!error)
-      {
-         //Copy the y-coordinate of the public key
-         error = mpiReadRaw(&publicKey->q.y, (uint8_t *) ecArgs.q + n, n);
-      }
-   }
-   else
-   {
-      //Report an error
-      error = ERROR_FAILURE;
-   }
-
-   //Release exclusive access to the SCE7 module
-   osReleaseMutex(&s5d9CryptoMutex);
-
-   //Return status code
-   return error;
-}
-
+#endif
+#if (ECDSA_SUPPORT == ENABLED)
 
 /**
  * @brief ECDSA signature generation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] params EC domain parameters
  * @param[in] privateKey Signer's EC private key
  * @param[in] digest Digest of the message to be signed
  * @param[in] digestLen Length in octets of the digest
@@ -709,23 +773,31 @@ error_t ecGenerateKeyPair(const PrngAlgo *prngAlgo, void *prngContext,
  **/
 
 error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const EcDomainParameters *params, const EcPrivateKey *privateKey,
-   const uint8_t *digest, size_t digestLen, EcdsaSignature *signature)
+   const EcPrivateKey *privateKey, const uint8_t *digest, size_t digestLen,
+   EcdsaSignature *signature)
 {
    error_t error;
    ssp_err_t status;
    size_t n;
    size_t orderLen;
    size_t modLen;
+   const EcCurve *curve;
 
    //Check parameters
-   if(params == NULL || privateKey == NULL || digest == NULL || signature == NULL)
+   if(privateKey == NULL || digest == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //Retrieve the length of the base point order, in bytes
-   orderLen = mpiGetByteLength(&params->q);
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&params->p);
+   //Invalid elliptic curve?
+   if(privateKey->curve == NULL)
+      return ERROR_INVALID_ELLIPTIC_CURVE;
+
+   //Get elliptic curve parameters
+   curve = privateKey->curve;
+
+   //Get the length of the modulus, in bytes
+   modLen = (curve->fieldSize + 7) / 8;
+   //Get the length of the order, in bytes
+   orderLen = (curve->orderSize + 7) / 8;
 
    //Check elliptic curve parameters
    if(modLen <= 24)
@@ -760,17 +832,28 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    osMemcpy((uint8_t *) ecArgs.digest + n - digestLen, digest, digestLen);
 
    //Set domain parameters
-   mpiWriteRaw(&params->a, (uint8_t *) ecArgs.params, n);
-   mpiWriteRaw(&params->b, (uint8_t *) ecArgs.params + n, n);
-   mpiWriteRaw(&params->p, (uint8_t *) ecArgs.params + n * 2, n);
-   mpiWriteRaw(&params->q, (uint8_t *) ecArgs.params + n * 3, n);
+   ecScalarExport(curve->a, n / 4, (uint8_t *) ecArgs.params, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->b, n / 4, (uint8_t *) ecArgs.params + n, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->p, n / 4, (uint8_t *) ecArgs.params + n * 2, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->q, n / 4, (uint8_t *) ecArgs.params + n * 3, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Set base point
-   mpiWriteRaw(&params->g.x, (uint8_t *) ecArgs.g, n);
-   mpiWriteRaw(&params->g.y, (uint8_t *) ecArgs.g + n, n);
+   ecScalarExport(curve->g.x, n / 4, (uint8_t *) ecArgs.g, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->g.y, n / 4, (uint8_t *) ecArgs.g + n, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Set private key
-   mpiWriteRaw(&privateKey->d, (uint8_t *) ecArgs.d, n);
+   ecScalarExport(privateKey->d, n / 4, (uint8_t *) ecArgs.d, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Generate ECDSA signature
    if(n == 24)
@@ -801,14 +884,19 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    //Check status code
    if(status == SSP_SUCCESS)
    {
+      //Save elliptic curve parameters
+      signature->curve = curve;
+
       //Copy integer R
-      error = mpiReadRaw(&signature->r, (uint8_t *) ecArgs.r, n);
+      error = ecScalarImport(signature->r, EC_MAX_ORDER_SIZE,
+         (uint8_t *) ecArgs.r, n, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
       //Check status code
       if(!error)
       {
          //Copy integer S
-         error = mpiReadRaw(&signature->s, (uint8_t *) ecArgs.s, n);
+         error = ecScalarImport(signature->s, EC_MAX_ORDER_SIZE,
+            (uint8_t *) ecArgs.s, n, EC_SCALAR_FORMAT_BIG_ENDIAN);
       }
    }
    else
@@ -827,7 +915,6 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
 
 /**
  * @brief ECDSA signature verification
- * @param[in] params EC domain parameters
  * @param[in] publicKey Signer's EC public key
  * @param[in] digest Digest of the message whose signature is to be verified
  * @param[in] digestLen Length in octets of the digest
@@ -835,39 +922,52 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t ecdsaVerifySignature(const EcDomainParameters *params,
-   const EcPublicKey *publicKey, const uint8_t *digest, size_t digestLen,
-   const EcdsaSignature *signature)
+error_t ecdsaVerifySignature(const EcPublicKey *publicKey,
+   const uint8_t *digest, size_t digestLen, const EcdsaSignature *signature)
 {
    ssp_err_t status;
    size_t n;
    size_t orderLen;
    size_t modLen;
+   const EcCurve *curve;
 
    //Check parameters
-   if(params == NULL || publicKey == NULL || digest == NULL || signature == NULL)
+   if(publicKey == NULL || digest == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
 
+   //Invalid elliptic curve?
+   if(publicKey->curve == NULL)
+      return ERROR_INVALID_ELLIPTIC_CURVE;
+
+   //Verify that the public key is on the curve
+   if(!ecIsPointAffine(publicKey->curve, &publicKey->q))
+   {
+      return ERROR_INVALID_SIGNATURE;
+   }
+
    //The verifier shall check that 0 < r < q
-   if(mpiCompInt(&signature->r, 0) <= 0 ||
-      mpiComp(&signature->r, &params->q) >= 0)
+   if(ecScalarCompInt(signature->r, 0, EC_MAX_ORDER_SIZE) <= 0 ||
+      ecScalarComp(signature->r, publicKey->curve->q, EC_MAX_ORDER_SIZE) >= 0)
    {
       //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
    }
 
    //The verifier shall check that 0 < s < q
-   if(mpiCompInt(&signature->s, 0) <= 0 ||
-      mpiComp(&signature->s, &params->q) >= 0)
+   if(ecScalarCompInt(signature->s, 0, EC_MAX_ORDER_SIZE) <= 0 ||
+      ecScalarComp(signature->s, publicKey->curve->q, EC_MAX_ORDER_SIZE) >= 0)
    {
       //If the condition is violated, the signature shall be rejected as invalid
       return ERROR_INVALID_SIGNATURE;
    }
 
-   //Retrieve the length of the base point order, in bytes
-   orderLen = mpiGetByteLength(&params->q);
-   //Retrieve the length of the modulus, in bytes
-   modLen = mpiGetByteLength(&params->p);
+   //Get elliptic curve parameters
+   curve = publicKey->curve;
+
+   //Get the length of the modulus, in bytes
+   modLen = (curve->fieldSize + 7) / 8;
+   //Get the length of the order, in bytes
+   orderLen = (curve->orderSize + 7) / 8;
 
    //Check elliptic curve parameters
    if(modLen <= 24)
@@ -902,22 +1002,38 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    osMemcpy((uint8_t *) ecArgs.digest + n - digestLen, digest, digestLen);
 
    //Set domain parameters
-   mpiWriteRaw(&params->a, (uint8_t *) ecArgs.params, n);
-   mpiWriteRaw(&params->b, (uint8_t *) ecArgs.params + n, n);
-   mpiWriteRaw(&params->p, (uint8_t *) ecArgs.params + n * 2, n);
-   mpiWriteRaw(&params->q, (uint8_t *) ecArgs.params + n * 3, n);
+   ecScalarExport(curve->a, n / 4, (uint8_t *) ecArgs.params, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->b, n / 4, (uint8_t *) ecArgs.params + n, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->p, n / 4, (uint8_t *) ecArgs.params + n * 2, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->q, n / 4, (uint8_t *) ecArgs.params + n * 3, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Set base point
-   mpiWriteRaw(&params->g.x, (uint8_t *) ecArgs.g, n);
-   mpiWriteRaw(&params->g.y, (uint8_t *) ecArgs.g + n, n);
+   ecScalarExport(curve->g.x, n / 4, (uint8_t *) ecArgs.g, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(curve->g.y, n / 4, (uint8_t *) ecArgs.g + n, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Set public key
-   mpiWriteRaw(&publicKey->q.x, (uint8_t *) ecArgs.q, n);
-   mpiWriteRaw(&publicKey->q.y, (uint8_t *) ecArgs.q + n, n);
+   ecScalarExport(publicKey->q.x, n / 4, (uint8_t *) ecArgs.q, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(publicKey->q.y, n / 4, (uint8_t *) ecArgs.q + n, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Set signature
-   mpiWriteRaw(&signature->r, (uint8_t *) ecArgs.r, n);
-   mpiWriteRaw(&signature->s, (uint8_t *) ecArgs.s, n);
+   ecScalarExport(signature->r, n / 4, (uint8_t *) ecArgs.r, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   ecScalarExport(signature->s, n / 4, (uint8_t *) ecArgs.s, n,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Verify ECDSA signature
    if(n == 24)
@@ -952,4 +1068,5 @@ error_t ecdsaVerifySignature(const EcDomainParameters *params,
    return (status == SSP_SUCCESS) ? NO_ERROR : ERROR_INVALID_SIGNATURE;
 }
 
+#endif
 #endif

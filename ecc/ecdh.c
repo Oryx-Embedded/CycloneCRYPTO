@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,6 +34,7 @@
 //Dependencies
 #include "core/crypto.h"
 #include "ecc/ecdh.h"
+#include "ecc/ec_misc.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -47,12 +48,11 @@
 
 void ecdhInit(EcdhContext *context)
 {
-   //Initialize EC domain parameters
-   ecInitDomainParameters(&context->params);
+   //Initialize elliptic curve parameters
+   context->curve = NULL;
 
    //Initialize private and public keys
    ecInitPrivateKey(&context->da);
-   ecInitPublicKey(&context->qa);
    ecInitPublicKey(&context->qb);
 }
 
@@ -64,12 +64,11 @@ void ecdhInit(EcdhContext *context)
 
 void ecdhFree(EcdhContext *context)
 {
-   //Release EC domain parameters
-   ecFreeDomainParameters(&context->params);
+   //Release elliptic curve parameters
+   context->curve = NULL;
 
    //Release private and public keys
    ecFreePrivateKey(&context->da);
-   ecFreePublicKey(&context->qa);
    ecFreePublicKey(&context->qb);
 }
 
@@ -91,21 +90,18 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
    TRACE_DEBUG("Generating ECDH key pair...\r\n");
 
    //Weierstrass elliptic curve?
-   if(context->params.type == EC_CURVE_TYPE_SECT_K1 ||
-      context->params.type == EC_CURVE_TYPE_SECT_R1 ||
-      context->params.type == EC_CURVE_TYPE_SECT_R2 ||
-      context->params.type == EC_CURVE_TYPE_SECP_K1 ||
-      context->params.type == EC_CURVE_TYPE_SECP_R1 ||
-      context->params.type == EC_CURVE_TYPE_SECP_R2 ||
-      context->params.type == EC_CURVE_TYPE_BRAINPOOLP_R1)
+   if(context->curve->type == EC_CURVE_TYPE_WEIERSTRASS ||
+      context->curve->type == EC_CURVE_TYPE_WEIERSTRASS_A0 ||
+      context->curve->type == EC_CURVE_TYPE_WEIERSTRASS_A3)
    {
       //Generate an EC key pair
-      error = ecGenerateKeyPair(prngAlgo, prngContext, &context->params,
-         &context->da, &context->qa);
+      error = ecGenerateKeyPair(prngAlgo, prngContext, context->curve,
+         &context->da, NULL);
    }
 #if (X25519_SUPPORT == ENABLED)
    //Curve25519 elliptic curve?
-   else if(context->params.type == EC_CURVE_TYPE_X25519)
+   else if(context->curve->type == EC_CURVE_TYPE_MONTGOMERY &&
+      context->curve->fieldSize == CURVE25519_BIT_LEN)
    {
       uint8_t da[CURVE25519_BYTE_LEN];
       uint8_t qa[CURVE25519_BYTE_LEN];
@@ -122,8 +118,8 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
          TRACE_DEBUG_ARRAY("    ", da, CURVE25519_BYTE_LEN);
 
          //Get the u-coordinate of the base point
-         error = mpiExport(&context->params.g.x, g, CURVE25519_BYTE_LEN,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         error = ecScalarExport(context->curve->g.x, CURVE25519_WORD_LEN, g,
+            CURVE25519_BYTE_LEN, EC_SCALAR_FORMAT_LITTLE_ENDIAN);
       }
 
       //Check status code
@@ -137,8 +133,8 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
       if(!error)
       {
          //Save private key
-         error = mpiImport(&context->da.d, da, CURVE25519_BYTE_LEN,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         error = ecImportPrivateKey(&context->da, X25519_CURVE, da,
+            CURVE25519_BYTE_LEN);
       }
 
       //Check status code
@@ -149,14 +145,15 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
          TRACE_DEBUG_ARRAY("    ", qa, CURVE25519_BYTE_LEN);
 
          //Save public key
-         error = mpiImport(&context->qa.q.x, qa, CURVE25519_BYTE_LEN,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         error = ecImportPublicKey(&context->da.q, X25519_CURVE, qa,
+            CURVE25519_BYTE_LEN, EC_PUBLIC_KEY_FORMAT_RAW);
       }
    }
 #endif
 #if (X448_SUPPORT == ENABLED)
    //Curve448 elliptic curve?
-   else if(context->params.type == EC_CURVE_TYPE_X448)
+   else if(context->curve->type == EC_CURVE_TYPE_MONTGOMERY &&
+      context->curve->fieldSize == CURVE448_BIT_LEN)
    {
       uint8_t da[CURVE448_BYTE_LEN];
       uint8_t qa[CURVE448_BYTE_LEN];
@@ -173,8 +170,8 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
          TRACE_DEBUG_ARRAY("    ", da, CURVE448_BYTE_LEN);
 
          //Get the u-coordinate of the base point
-         error = mpiExport(&context->params.g.x, g, CURVE448_BYTE_LEN,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         error = ecScalarExport(context->curve->g.x, CURVE448_WORD_LEN, g,
+            CURVE448_BYTE_LEN, EC_SCALAR_FORMAT_LITTLE_ENDIAN);
       }
 
       //Check status code
@@ -188,8 +185,8 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
       if(!error)
       {
          //Save private key
-         error = mpiImport(&context->da.d, da, CURVE448_BYTE_LEN,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         error = ecImportPrivateKey(&context->da, X448_CURVE, da,
+            CURVE448_BYTE_LEN);
       }
 
       //Check status code
@@ -200,8 +197,8 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
          TRACE_DEBUG_ARRAY("    ", qa, CURVE448_BYTE_LEN);
 
          //Save public key
-         error = mpiImport(&context->qa.q.x, qa, CURVE448_BYTE_LEN,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         error = ecImportPublicKey(&context->da.q, X448_CURVE, qa,
+            CURVE448_BYTE_LEN, EC_PUBLIC_KEY_FORMAT_RAW);
       }
    }
 #endif
@@ -219,91 +216,92 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
 
 /**
  * @brief Check ECDH public key
- * @param[in] params EC domain parameters
+ * @param[in] context Pointer to the ECDH context
  * @param[in] publicKey Public key to be checked
  * @return Error code
  **/
 
-error_t ecdhCheckPublicKey(const EcDomainParameters *params, EcPoint *publicKey)
+error_t ecdhCheckPublicKey(EcdhContext *context, const EcPublicKey *publicKey)
 {
    bool_t valid;
 
-   //Initialize flag
-   valid = FALSE;
-
    //Weierstrass elliptic curve?
-   if(params->type == EC_CURVE_TYPE_SECT_K1 ||
-      params->type == EC_CURVE_TYPE_SECT_R1 ||
-      params->type == EC_CURVE_TYPE_SECT_R2 ||
-      params->type == EC_CURVE_TYPE_SECP_K1 ||
-      params->type == EC_CURVE_TYPE_SECP_R1 ||
-      params->type == EC_CURVE_TYPE_SECP_R2 ||
-      params->type == EC_CURVE_TYPE_BRAINPOOLP_R1)
+   if(context->curve->type == EC_CURVE_TYPE_WEIERSTRASS ||
+      context->curve->type == EC_CURVE_TYPE_WEIERSTRASS_A0 ||
+      context->curve->type == EC_CURVE_TYPE_WEIERSTRASS_A3)
    {
-      //Verify that 0 <= Qx < p
-      if(mpiCompInt(&publicKey->x, 0) >= 0 &&
-         mpiComp(&publicKey->x, &params->p) < 0)
+      //Initialize flag
+      valid = TRUE;
+
+      //Verify that the curve is valid
+      if(publicKey->curve != context->curve)
       {
-         //Verify that 0 <= Qy < p
-         if(mpiCompInt(&publicKey->y, 0) >= 0 &&
-            mpiComp(&publicKey->y, &params->p) < 0)
+         valid = FALSE;
+      }
+
+      //Verify that 0 <= Qx < p
+      if(valid)
+      {
+         if(ecScalarComp(publicKey->q.x, context->curve->p,
+            EC_MAX_MODULUS_SIZE) >= 0)
          {
-            //Check whether the point is on the curve
-            valid = ecIsPointAffine(params, publicKey);
+            valid = FALSE;
          }
       }
 
-      //Valid point?
+      //Verify that 0 <= Qy < p
       if(valid)
       {
-         //If the cofactor is not 1, the implementation must verify that n.Q
-         //is the point at the infinity
-         if(params->h != 1)
+         if(ecScalarComp(publicKey->q.y, context->curve->p,
+            EC_MAX_MODULUS_SIZE) >= 0)
+         {
+            valid = FALSE;
+         }
+      }
+
+      //Check whether the point is on the curve
+      if(valid)
+      {
+         valid = ecIsPointAffine(context->curve, &publicKey->q);
+      }
+
+      //If the cofactor is not 1, the implementation must verify that n.Q is
+      //the point at the infinity
+      if(valid)
+      {
+         if(context->curve->h != 1)
          {
             error_t error;
-            EcPoint r;
+            uint_t pLen;
+            EcPoint3 r;
 
             //Initialize flag
             valid = FALSE;
-            //Initialize EC points
-            ecInit(&r);
 
-            //Convert the peer's public key to projective representation
-            error = ecProjectify(params, publicKey, publicKey);
+            //Get the length of the modulus, in words
+            pLen = (context->curve->fieldSize + 31) / 32;
 
-            //Check status code
-            if(!error)
-            {
-               //Compute R = n.Q
-               error = ecMult(params, &r, &params->q, publicKey);
-            }
+            //Convert the public key to projective representation
+            ecProjectify(context->curve, &r, &publicKey->q);
+
+            //Compute R = n.Q
+            error = ecMulFast(context->curve, &r, context->curve->q, &r);
 
             //Check status code
             if(!error)
             {
                //Verify that the result is the point at the infinity
-               if(mpiCompInt(&r.z, 0) == 0)
+               if(ecScalarCompInt(r.z, 0, pLen) == 0)
                {
                   valid = TRUE;
                }
             }
-
-            //Release EC point
-            ecFree(&r);
          }
       }
    }
-#if (X25519_SUPPORT == ENABLED)
-   //Curve25519 elliptic curve?
-   else if(params->type == EC_CURVE_TYPE_X25519)
-   {
-      //The public key does not need to be validated
-      valid = TRUE;
-   }
-#endif
-#if (X448_SUPPORT == ENABLED)
-   //Curve448 elliptic curve?
-   else if(params->type == EC_CURVE_TYPE_X448)
+#if (X25519_SUPPORT == ENABLED || X448_SUPPORT == ENABLED)
+   //Curve25519 or Curve448 elliptic curve?
+   else if(context->curve->type == EC_CURVE_TYPE_MONTGOMERY)
    {
       //The public key does not need to be validated
       valid = TRUE;
@@ -337,8 +335,8 @@ error_t ecdhCheckPublicKey(const EcDomainParameters *params, EcPoint *publicKey)
  * @return Error code
  **/
 
-error_t ecdhComputeSharedSecret(EcdhContext *context,
-   uint8_t *output, size_t outputSize, size_t *outputLen)
+error_t ecdhComputeSharedSecret(EcdhContext *context, uint8_t *output,
+   size_t outputSize, size_t *outputLen)
 {
    error_t error;
 
@@ -346,19 +344,16 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
    TRACE_DEBUG("Computing Diffie-Hellman shared secret...\r\n");
 
    //Weierstrass elliptic curve?
-   if(context->params.type == EC_CURVE_TYPE_SECT_K1 ||
-      context->params.type == EC_CURVE_TYPE_SECT_R1 ||
-      context->params.type == EC_CURVE_TYPE_SECT_R2 ||
-      context->params.type == EC_CURVE_TYPE_SECP_K1 ||
-      context->params.type == EC_CURVE_TYPE_SECP_R1 ||
-      context->params.type == EC_CURVE_TYPE_SECP_R2 ||
-      context->params.type == EC_CURVE_TYPE_BRAINPOOLP_R1)
+   if(context->curve->type == EC_CURVE_TYPE_WEIERSTRASS ||
+      context->curve->type == EC_CURVE_TYPE_WEIERSTRASS_A0 ||
+      context->curve->type == EC_CURVE_TYPE_WEIERSTRASS_A3)
    {
       size_t k;
-      EcPoint z;
+      EcPoint3 q;
+      EcPoint3 z;
 
       //Get the length in octets of the prime modulus
-      k = mpiGetByteLength(&context->params.p);
+      k = (context->curve->fieldSize + 7) / 8;
 
       //Make sure that the output buffer is large enough
       if(outputSize >= k)
@@ -366,35 +361,26 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
          //Length of the resulting shared secret
          *outputLen = k;
 
-         //Initialize EC points
-         ecInit(&z);
-
          //Convert the peer's public key to projective representation
-         error = ecProjectify(&context->params, &context->qb.q, &context->qb.q);
+         ecProjectify(context->curve, &q, &context->qb.q);
 
-         //Check status code
-         if(!error)
-         {
-            //Compute Z = da.Qb
-            error = ecMult(&context->params, &z, &context->da.d, &context->qb.q);
-         }
+         //Compute Z = da.Qb
+         error = ecMulRegular(context->curve, &z, context->da.d, &q);
 
          //Check status code
          if(!error)
          {
             //Convert Z to affine representation
-            error = ecAffinify(&context->params, &z, &z);
+            error = ecAffinify(context->curve, &z, &z);
          }
 
          //Check status code
          if(!error)
          {
             //The shared secret is the x-coordinate of Z
-            error = mpiExport(&z.x, output, k, MPI_FORMAT_BIG_ENDIAN);
+            error = ecScalarExport(z.x, (k + 3) / 4, output, k,
+               EC_SCALAR_FORMAT_BIG_ENDIAN);
          }
-
-         //Release EC point
-         ecFree(&z);
       }
       else
       {
@@ -404,7 +390,8 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
    }
 #if (X25519_SUPPORT == ENABLED)
    //Curve25519 elliptic curve?
-   else if(context->params.type == EC_CURVE_TYPE_X25519)
+   else if(context->curve->type == EC_CURVE_TYPE_MONTGOMERY &&
+      context->curve->fieldSize == CURVE25519_BIT_LEN)
    {
       uint_t i;
       uint8_t mask;
@@ -417,16 +404,16 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
          //Length of the resulting shared secret
          *outputLen = CURVE25519_BYTE_LEN;
 
-         //Retrieve private key
-         error = mpiExport(&context->da.d, da, CURVE25519_BYTE_LEN,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         //Get private key
+         error = ecScalarExport(context->da.d, CURVE25519_WORD_LEN, da,
+            CURVE25519_BYTE_LEN, EC_SCALAR_FORMAT_LITTLE_ENDIAN);
 
          //Check status code
          if(!error)
          {
             //Get peer's public key
-            error = mpiExport(&context->qb.q.x, qb, CURVE25519_BYTE_LEN,
-               MPI_FORMAT_LITTLE_ENDIAN);
+            error = ecScalarExport(context->qb.q.x, CURVE25519_WORD_LEN, qb,
+               CURVE25519_BYTE_LEN, EC_SCALAR_FORMAT_LITTLE_ENDIAN);
          }
 
          //Check status code
@@ -463,7 +450,8 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
 #endif
 #if (X448_SUPPORT == ENABLED)
    //Curve448 elliptic curve?
-   else if(context->params.type == EC_CURVE_TYPE_X448)
+   else if(context->curve->type == EC_CURVE_TYPE_MONTGOMERY &&
+      context->curve->fieldSize == CURVE448_BIT_LEN)
    {
       uint_t i;
       uint8_t mask;
@@ -476,16 +464,16 @@ error_t ecdhComputeSharedSecret(EcdhContext *context,
          //Length of the resulting shared secret
          *outputLen = CURVE448_BYTE_LEN;
 
-         //Retrieve private key
-         error = mpiExport(&context->da.d, da, CURVE448_BYTE_LEN,
-            MPI_FORMAT_LITTLE_ENDIAN);
+         //Get private key
+         error = ecScalarExport(context->da.d, CURVE448_WORD_LEN, da,
+            CURVE448_BYTE_LEN, EC_SCALAR_FORMAT_LITTLE_ENDIAN);
 
          //Check status code
          if(!error)
          {
             //Get peer's public key
-            error = mpiExport(&context->qb.q.x, qb, CURVE448_BYTE_LEN,
-               MPI_FORMAT_LITTLE_ENDIAN);
+            error = ecScalarExport(context->qb.q.x, CURVE448_WORD_LEN, qb,
+               CURVE448_BYTE_LEN, EC_SCALAR_FORMAT_LITTLE_ENDIAN);
          }
 
          //Check status code

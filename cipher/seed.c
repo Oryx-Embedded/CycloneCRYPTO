@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -29,7 +29,7 @@
  * SEED is a 128-bit symmetric key block cipher. Refer to RFC 4269
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -257,7 +257,7 @@ error_t seedInit(SeedContext *context, const uint8_t *key, size_t keyLen)
       return ERROR_INVALID_KEY_LENGTH;
 
    //The 128-bit input key is divided into four 32-bit blocks
-   key0 = LOAD32BE(key + 0);
+   key0 = LOAD32BE(key);
    key1 = LOAD32BE(key + 4);
    key2 = LOAD32BE(key + 8);
    key3 = LOAD32BE(key + 12);
@@ -285,7 +285,7 @@ error_t seedInit(SeedContext *context, const uint8_t *key, size_t keyLen)
       }
    }
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -306,7 +306,7 @@ void seedEncryptBlock(SeedContext *context, const uint8_t *input,
    uint32_t *ks;
 
    //The 128-bit input is divided into two 64-bit blocks (L and R)
-   uint32_t l0 = LOAD32BE(input + 0);
+   uint32_t l0 = LOAD32BE(input);
    uint32_t l1 = LOAD32BE(input + 4);
    uint32_t r0 = LOAD32BE(input + 8);
    uint32_t r1 = LOAD32BE(input + 12);
@@ -332,7 +332,7 @@ void seedEncryptBlock(SeedContext *context, const uint8_t *input,
    }
 
    //The resulting value is the ciphertext
-   STORE32BE(r0, output + 0);
+   STORE32BE(r0, output);
    STORE32BE(r1, output + 4);
    STORE32BE(l0, output + 8);
    STORE32BE(l1, output + 12);
@@ -355,7 +355,7 @@ void seedDecryptBlock(SeedContext *context, const uint8_t *input,
    uint32_t *ks;
 
    //The 128-bit input is divided into two 64-bit blocks (L and R)
-   uint32_t l0 = LOAD32BE(input + 0);
+   uint32_t l0 = LOAD32BE(input);
    uint32_t l1 = LOAD32BE(input + 4);
    uint32_t r0 = LOAD32BE(input + 8);
    uint32_t r1 = LOAD32BE(input + 12);
@@ -381,7 +381,7 @@ void seedDecryptBlock(SeedContext *context, const uint8_t *input,
    }
 
    //The resulting value is the plaintext
-   STORE32BE(r0, output + 0);
+   STORE32BE(r0, output);
    STORE32BE(r1, output + 4);
    STORE32BE(l0, output + 8);
    STORE32BE(l1, output + 12);

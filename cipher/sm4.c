@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -164,7 +164,7 @@ __weak_func error_t sm4Init(Sm4Context *context, const uint8_t *key,
       context->rk[i] = k[i % 4];
    }
 
-   //No error to report
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -186,7 +186,7 @@ __weak_func void sm4EncryptBlock(Sm4Context *context, const uint8_t *input,
    uint32_t x3;
 
    //The 16 bytes of plaintext are split into 4 words
-   x0 = LOAD32BE(input + 0);
+   x0 = LOAD32BE(input);
    x1 = LOAD32BE(input + 4);
    x2 = LOAD32BE(input + 8);
    x3 = LOAD32BE(input + 12);
@@ -201,7 +201,7 @@ __weak_func void sm4EncryptBlock(Sm4Context *context, const uint8_t *input,
    }
 
    //The 4 words of ciphertext are then written as 16 bytes
-   STORE32BE(x3, output + 0);
+   STORE32BE(x3, output);
    STORE32BE(x2, output + 4);
    STORE32BE(x1, output + 8);
    STORE32BE(x0, output + 12);
@@ -225,7 +225,7 @@ __weak_func void sm4DecryptBlock(Sm4Context *context, const uint8_t *input,
    uint32_t x3;
 
    //The 16 bytes of ciphertext are split into 4 words
-   x0 = LOAD32BE(input + 0);
+   x0 = LOAD32BE(input);
    x1 = LOAD32BE(input + 4);
    x2 = LOAD32BE(input + 8);
    x3 = LOAD32BE(input + 12);
@@ -241,7 +241,7 @@ __weak_func void sm4DecryptBlock(Sm4Context *context, const uint8_t *input,
    }
 
    //The 4 words of plaintext are then written as 16 bytes
-   STORE32BE(x3, output + 0);
+   STORE32BE(x3, output);
    STORE32BE(x2, output + 4);
    STORE32BE(x1, output + 8);
    STORE32BE(x0, output + 12);

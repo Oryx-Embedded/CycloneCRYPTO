@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _PKCS8_KEY_FORMAT_H
@@ -50,15 +50,17 @@ error_t pkcs8FormatRsaPrivateKey(const RsaPrivateKey *privateKey,
 error_t pkcs8FormatDsaPrivateKey(const DsaPrivateKey *privateKey,
    uint8_t *output, size_t *written);
 
-error_t pkcs8FormatEcPrivateKey(const EcCurveInfo *curveInfo,
-   const EcPrivateKey *privateKey, const EcPublicKey *publicKey,
+error_t pkcs8FormatEcPrivateKey(const EcPrivateKey *privateKey,
    uint8_t *output, size_t *written);
 
-error_t pkcs8FormatEcPublicKey(const EcCurveInfo *curveInfo,
-   const EcPublicKey *publicKey, uint8_t *output, size_t *written);
+error_t pkcs8FormatEcPublicKey(const EcPublicKey *publicKey,
+   uint8_t *output, size_t *written);
 
-error_t pkcs8FormatEddsaPrivateKey(const EcCurveInfo *curveInfo,
-   const EddsaPrivateKey *privateKey, uint8_t *output, size_t *written);
+error_t pkcs8FormatEddsaPrivateKey(const EddsaPrivateKey *privateKey,
+   uint8_t *output, size_t *written);
+
+error_t pkcs8FormatEddsaPublicKey(const EddsaPublicKey *publicKey,
+   uint8_t *output, size_t *written);
 
 //C++ guard
 #ifdef __cplusplus

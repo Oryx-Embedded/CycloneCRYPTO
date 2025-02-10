@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 202 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -142,7 +142,7 @@ void sha3_512Update(Sha3_512Context *context, const void *data, size_t length)
 /**
  * @brief Finish the SHA3-512 message digest
  * @param[in] context Pointer to the SHA3-512 context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void sha3_512Final(Sha3_512Context *context, uint8_t *digest)

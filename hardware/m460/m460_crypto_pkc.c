@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -38,8 +38,7 @@
 #include "hardware/m460/m460_crypto_pkc.h"
 #include "pkc/rsa.h"
 #include "ecc/ec.h"
-#include "ecc/curve25519.h"
-#include "ecc/curve448.h"
+#include "ecc/ec_misc.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -62,7 +61,7 @@ void rsaImportMpi(uint32_t *dest, uint_t length, const Mpi *a)
    uint_t i;
    uint_t n;
 
-   //Retrieve the length of the operand, in words
+   //Get the length of the operand, in words
    length = (length + 3) / 4;
 
    //Get the actual length of the multiple-precision integer, in words
@@ -95,7 +94,7 @@ error_t rsaExportMpi(uint32_t *src, uint_t length, Mpi *r)
    error_t error;
    uint_t i;
 
-   //Retrieve the length of the operand, in words
+   //Get the length of the operand, in words
    length = (length + 3) / 4;
 
    //Skip trailing zeroes
@@ -110,7 +109,7 @@ error_t rsaExportMpi(uint32_t *src, uint_t length, Mpi *r)
    //Check status code
    if(!error)
    {
-      //Copy the multiple-precision integer from the PKA RAM
+      //Copy the multiple-precision integer from the CRYPTO peripheral
       for(i = 0; i < length; i++)
       {
          r->data[i] = src[i];
@@ -147,11 +146,11 @@ error_t mpiExpModFast(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    size_t eLen;
    size_t pLen;
 
-   //Retrieve the length of the integer, in bytes
+   //Get the length of the integer, in bytes
    aLen = mpiGetByteLength(a);
-   //Retrieve the length of the exponent, in bytes
+   //Get the length of the exponent, in bytes
    eLen = mpiGetByteLength(e);
-   //Retrieve the length of the modulus, in bytes
+   //Get the length of the modulus, in bytes
    pLen = mpiGetByteLength(p);
 
    //The accelerator supports operand lengths up to 4096 bits
@@ -212,7 +211,7 @@ error_t mpiExpModFast(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    return error;
 }
 
-   
+
 /**
  * @brief Modular exponentiation (regular calculation)
  * @param[out] r Resulting integer R = A ^ E mod P
@@ -229,18 +228,18 @@ error_t mpiExpModRegular(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    size_t eLen;
    size_t pLen;
 
-   //Retrieve the length of the integer, in bytes
+   //Get the length of the integer, in bytes
    aLen = mpiGetByteLength(a);
-   //Retrieve the length of the exponent, in bytes
+   //Get the length of the exponent, in bytes
    eLen = mpiGetByteLength(e);
-   //Retrieve the length of the modulus, in bytes
+   //Get the length of the modulus, in bytes
    pLen = mpiGetByteLength(p);
 
    //The accelerator supports operand lengths up to 4096 bits
-   if((aLen <= 128 && eLen <= 128 && pLen == 128) ||
-      (aLen <= 256 && eLen <= 256 && pLen == 256) ||
-      (aLen <= 384 && eLen <= 384 && pLen == 384) ||
-      (aLen <= 512 && eLen <= 512 && pLen == 512))
+   if((pLen == 128 && aLen <= 128 && eLen <= 128) ||
+      (pLen == 256 && aLen <= 256 && eLen <= 256) ||
+      (pLen == 384 && aLen <= 384 && eLen <= 384) ||
+      (pLen == 512 && aLen <= 512 && eLen <= 512))
    {
       //Acquire exclusive access to the CRYPTO module
       osAcquireMutex(&m460CryptoMutex);
@@ -320,7 +319,7 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    size_t dqLen;
    size_t qinvLen;
 
-   //Retrieve the length of the private key
+   //Get the length of the private key
    nLen = mpiGetByteLength(&key->n);
    dLen = mpiGetByteLength(&key->d);
    pLen = mpiGetByteLength(&key->p);
@@ -420,109 +419,89 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
 #if (EC_SUPPORT == ENABLED)
 
 /**
- * @brief Import multiple-precision integer
+ * @brief Import scalar
  * @param[in] dest Pointer to the operand
  * @param[in] length Length of the operand, in bits
- * @param[in] a Pointer to the multiple-precision integer
+ * @param[in] src Pointer to the scalar
  **/
 
-void eccImportMpi(volatile uint32_t *dest, uint_t length, const Mpi *a)
+void eccImportScalar(volatile uint32_t *dest, uint_t length, const uint32_t *src)
 {
    uint_t i;
-   uint_t n;
 
-   //Retrieve the length of the operand, in words
+   //Get the length of the operand, in words
    length = (length + 31) / 32;
 
-   //Get the actual length of the multiple-precision integer, in words
-   n = mpiGetLength(a);
-
-   //Copy the multiple-precision integer to the CRYPTO peripheral
-   for(i = 0; i < n && i < length; i++)
+   //Copy the scalar to the CRYPTO peripheral
+   for(i = 0; i < length; i++)
    {
-      dest[i] = a->data[i];
-   }
-
-   //Pad the operand with zeroes
-   for(; i < length; i++)
-   {
-      dest[i] = 0;
+      dest[i] = src[i];
    }
 }
 
 
 /**
- * @brief Export multiple-precision integer
+ * @brief Export scalar
  * @param[in] src Pointer to the operand
  * @param[in] length Length of the operand, in bits
- * @param[out] r Pointer to the multiple-precision integer
- * @return Error code
+ * @param[out] dest Pointer to the scalar
  **/
 
-error_t eccExportMpi(volatile uint32_t *src, uint_t length, Mpi *r)
+void eccExportScalar(volatile uint32_t *src, uint_t length, uint32_t *dest)
 {
-   error_t error;
    uint_t i;
 
-   //Retrieve the length of the operand, in words
+   //Get the length of the operand, in words
    length = (length + 31) / 32;
 
-   //Skip trailing zeroes
-   while(length > 0 && src[length - 1] == 0)
+   //Copy the scalar from the CRYPTO peripheral
+   for(i = 0; i < length; i++)
    {
-      length--;
+      dest[i] = src[i];
    }
-
-   //Ajust the size of the multiple precision integer
-   error = mpiGrow(r, length);
-
-   //Check status code
-   if(!error)
-   {
-      //Copy the multiple-precision integer from the PKA RAM
-      for(i = 0; i < length; i++)
-      {
-         r->data[i] = src[i];
-      }
-
-      //Pad the resulting value with zeroes
-      for(; i < r->size; i++)
-      {
-         r->data[i] = 0;
-      }
-
-      //Set the sign
-      r->sign = 1;
-   }
-
-   //Return status code
-   return error;
 }
 
 
 /**
- * @brief Scalar multiplication
- * @param[in] params EC domain parameters
+ * @brief Scalar multiplication (fast calculation)
+ * @param[in] curve Elliptic curve parameters
  * @param[out] r Resulting point R = d.S
  * @param[in] d An integer d such as 0 <= d < p
  * @param[in] s EC point
  * @return Error code
  **/
 
-error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
-   const EcPoint *s)
+error_t ecMulFast(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
+   const EcPoint3 *s)
+{
+   //Compute R = d.S
+   return ecMulRegular(curve, r, d, s);
+}
+
+
+/**
+ * @brief Scalar multiplication (regular calculation)
+ * @param[in] curve Elliptic curve parameters
+ * @param[out] r Resulting point R = d.S
+ * @param[in] d An integer d such as 0 <= d < q
+ * @param[in] s EC point
+ * @return Error code
+ **/
+
+error_t ecMulRegular(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
+   const EcPoint3 *s)
 {
    error_t error;
    uint_t modLen;
-   uint_t scalarLen;
+   uint_t orderLen;
 
-   //Retrieve the length of the modulus, in bits
-   modLen = mpiGetBitLength(&params->p);
-   //Retrieve the length of the scalar, in bits
-   scalarLen = mpiGetBitLength(d);
+   //Get the length of the modulus, in bits
+   modLen = curve->fieldSize;
+   //Get the length of the order, in bits
+   orderLen = curve->orderSize;
 
    //Check the length of the operands
-   if(modLen <= 576 && scalarLen <= 576)
+   if(modLen <= 576 && orderLen <= 576)
    {
       //Acquire exclusive access to the CRYPTO module
       osAcquireMutex(&m460CryptoMutex);
@@ -532,19 +511,19 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
       SYS->IPRST0 &= ~SYS_IPRST0_CRPTRST_Msk;
 
       //Load input arguments
-      eccImportMpi(CRPT->ECC_N, modLen, &params->p);
-      eccImportMpi(CRPT->ECC_A, modLen, &params->a);
-      eccImportMpi(CRPT->ECC_B, modLen, &params->b);
-      eccImportMpi(CRPT->ECC_K, scalarLen, d);
-      eccImportMpi(CRPT->ECC_X1, modLen, &s->x);
-      eccImportMpi(CRPT->ECC_Y1, modLen, &s->y);
-      eccImportMpi(CRPT->ECC_X2, modLen, &params->q);
+      eccImportScalar(CRPT->ECC_N, modLen, curve->p);
+      eccImportScalar(CRPT->ECC_A, modLen, curve->a);
+      eccImportScalar(CRPT->ECC_B, modLen, curve->b);
+      eccImportScalar(CRPT->ECC_K, orderLen, d);
+      eccImportScalar(CRPT->ECC_X1, modLen, s->x);
+      eccImportScalar(CRPT->ECC_Y1, modLen, s->y);
+      eccImportScalar(CRPT->ECC_X2, orderLen, curve->q);
 
       //Set up a point multiplication operation
       CRPT->ECC_CTL = (modLen << CRPT_ECC_CTL_CURVEM_Pos) |
          CRPT_ECC_CTL_SCAP_Msk | (0 << CRPT_ECC_CTL_ECCOP_Pos) |
          CRPT_ECC_CTL_FSEL_Msk;
- 
+
       //Clear ECC interrupt flag
       CRPT->INTSTS = CRPT_INTSTS_ECCIF_Msk;
       //Start operation
@@ -556,24 +535,21 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
       }
 
       //Copy the x-coordinate of the result
-      error = eccExportMpi(CRPT->ECC_X1, modLen, &r->x);
+      ecScalarSetInt(r->x, 0, EC_MAX_MODULUS_SIZE);
+      eccExportScalar(CRPT->ECC_X1, modLen, r->x);
 
-      //Check status code
-      if(!error)
-      {
-         //Copy the y-coordinate of the result
-         error = eccExportMpi(CRPT->ECC_Y1, modLen, &r->y);
-      }
+      //Copy the y-coordinate of the result
+      ecScalarSetInt(r->y, 0, EC_MAX_MODULUS_SIZE);
+      eccExportScalar(CRPT->ECC_Y1, modLen, r->y);
 
-      //Check status code
-      if(!error)
-      {
-         //Set the z-coordinate of the result
-         error = mpiSetValue(&r->z, 1);
-      }
+      //Set the z-coordinate of the result
+      ecScalarSetInt(r->z, 1, EC_MAX_MODULUS_SIZE);
 
       //Release exclusive access to the CRYPTO module
       osReleaseMutex(&m460CryptoMutex);
+
+      //Successful processing
+      error = NO_ERROR;
    }
    else
    {
@@ -588,7 +564,7 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
 
 /**
  * @brief Twin multiplication
- * @param[in] params EC domain parameters
+ * @param[in] curve Elliptic curve parameters
  * @param[out] r Resulting point R = d0.S + d1.T
  * @param[in] d0 An integer d such as 0 <= d0 < p
  * @param[in] s EC point
@@ -597,217 +573,49 @@ error_t ecMult(const EcDomainParameters *params, EcPoint *r, const Mpi *d,
  * @return Error code
  **/
 
-error_t ecTwinMult(const EcDomainParameters *params, EcPoint *r,
-   const Mpi *d0, const EcPoint *s, const Mpi *d1, const EcPoint *t)
+error_t ecTwinMul(const EcCurve *curve, EcPoint3 *r, const uint32_t *d0,
+   const EcPoint3 *s, const uint32_t *d1, const EcPoint3 *t)
 {
    error_t error;
-   EcPoint u;
+   EcPoint3 u;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   EcState *state;
+#else
+   EcState state[1];
+#endif
 
-   //Initialize EC point
-   ecInit(&u);
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Allocate working state
+   state = cryptoAllocMem(sizeof(EcState));
+   //Failed to allocate memory?
+   if(state == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
+
+   //Initialize working state
+   osMemset(state, 0, sizeof(EcState));
+   //Save elliptic curve parameters
+   state->curve = curve;
 
    //Compute d0.S
-   error = ecMult(params, r, d0, s);
+   error = ecMulFast(curve, r, d0, s);
 
    //Check status code
    if(!error)
    {
       //Compute d1.T
-      error = ecMult(params, &u, d1, t);
+      error = ecMulFast(curve, &u, d1, t);
    }
 
    //Check status code
    if(!error)
    {
       //Compute d0.S + d1.T
-      error = ecAdd(params, r, r, &u);
+      ecFullAdd(state, r, r, &u);
    }
-
-   //Release EC point
-   ecFree(&u);
 
    //Return status code
    return error;
-}
-
-#endif
-#if (X25519_SUPPORT == ENABLED || ED25519_SUPPORT == ENABLED)
-
-/**
- * @brief Modular multiplication
- * @param[out] r Resulting integer R = (A * B) mod p
- * @param[in] a An integer such as 0 <= A < p
- * @param[in] b An integer such as 0 <= B < p
- **/
-
-void curve25519Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
-{
-   //Acquire exclusive access to the CRYPTO module
-   osAcquireMutex(&m460CryptoMutex);
-
-   //Reset CRYPTO controller
-   SYS->IPRST0 |= SYS_IPRST0_CRPTRST_Msk;
-   SYS->IPRST0 &= ~SYS_IPRST0_CRPTRST_Msk;
-
-   //Copy the first operand
-   CRPT->ECC_X1[0] = a[0];
-   CRPT->ECC_X1[1] = a[1];
-   CRPT->ECC_X1[2] = a[2];
-   CRPT->ECC_X1[3] = a[3];
-   CRPT->ECC_X1[4] = a[4];
-   CRPT->ECC_X1[5] = a[5];
-   CRPT->ECC_X1[6] = a[6];
-   CRPT->ECC_X1[7] = a[7];
-
-   //Copy the second operand
-   CRPT->ECC_Y1[0] = b[0];
-   CRPT->ECC_Y1[1] = b[1];
-   CRPT->ECC_Y1[2] = b[2];
-   CRPT->ECC_Y1[3] = b[3];
-   CRPT->ECC_Y1[4] = b[4];
-   CRPT->ECC_Y1[5] = b[5];
-   CRPT->ECC_Y1[6] = b[6];
-   CRPT->ECC_Y1[7] = b[7];
-
-   //Copy the modulus
-   CRPT->ECC_N[0] = 0xFFFFFFED;
-   CRPT->ECC_N[1] = 0xFFFFFFFF;
-   CRPT->ECC_N[2] = 0xFFFFFFFF;
-   CRPT->ECC_N[3] = 0xFFFFFFFF;
-   CRPT->ECC_N[4] = 0xFFFFFFFF;
-   CRPT->ECC_N[5] = 0xFFFFFFFF;
-   CRPT->ECC_N[6] = 0xFFFFFFFF;
-   CRPT->ECC_N[7] = 0x7FFFFFFF;
-
-   //Set up a modular multiplication operation
-   CRPT->ECC_CTL = (255 << CRPT_ECC_CTL_CURVEM_Pos) | CRPT_ECC_CTL_SCAP_Msk |
-      (1 << CRPT_ECC_CTL_MODOP_Pos) | (1 << CRPT_ECC_CTL_ECCOP_Pos) |
-      CRPT_ECC_CTL_FSEL_Msk;
-
-   //Clear ECC interrupt flag
-   CRPT->INTSTS = CRPT_INTSTS_ECCIF_Msk;
-   //Start operation
-   CRPT->ECC_CTL |= CRPT_ECC_CTL_START_Msk;
-
-   //Wait for the operation to complete
-   while((CRPT->INTSTS & CRPT_INTSTS_ECCIF_Msk) == 0)
-   {
-   }
-
-   //Copy the result
-   r[0] = CRPT->ECC_X1[0];
-   r[1] = CRPT->ECC_X1[1];
-   r[2] = CRPT->ECC_X1[2];
-   r[3] = CRPT->ECC_X1[3];
-   r[4] = CRPT->ECC_X1[4];
-   r[5] = CRPT->ECC_X1[5];
-   r[6] = CRPT->ECC_X1[6];
-   r[7] = CRPT->ECC_X1[7];
-
-   //Release exclusive access to the CRYPTO module
-   osReleaseMutex(&m460CryptoMutex);
-}
-
-#endif
-#if (X448_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
-
-/**
- * @brief Modular multiplication
- * @param[out] r Resulting integer R = (A * B) mod p
- * @param[in] a An integer such as 0 <= A < p
- * @param[in] b An integer such as 0 <= B < p
- **/
-
-void curve448Mul(uint32_t *r, const uint32_t *a, const uint32_t *b)
-{
-   //Acquire exclusive access to the CRYPTO module
-   osAcquireMutex(&m460CryptoMutex);
-
-   //Reset CRYPTO controller
-   SYS->IPRST0 |= SYS_IPRST0_CRPTRST_Msk;
-   SYS->IPRST0 &= ~SYS_IPRST0_CRPTRST_Msk;
-
-   //Copy the first operand
-   CRPT->ECC_X1[0] = a[0];
-   CRPT->ECC_X1[1] = a[1];
-   CRPT->ECC_X1[2] = a[2];
-   CRPT->ECC_X1[3] = a[3];
-   CRPT->ECC_X1[4] = a[4];
-   CRPT->ECC_X1[5] = a[5];
-   CRPT->ECC_X1[6] = a[6];
-   CRPT->ECC_X1[7] = a[7];
-   CRPT->ECC_X1[8] = a[8];
-   CRPT->ECC_X1[9] = a[9];
-   CRPT->ECC_X1[10] = a[10];
-   CRPT->ECC_X1[11] = a[11];
-   CRPT->ECC_X1[12] = a[12];
-   CRPT->ECC_X1[13] = a[13];
-
-   //Copy the second operand
-   CRPT->ECC_Y1[0] = b[0];
-   CRPT->ECC_Y1[1] = b[1];
-   CRPT->ECC_Y1[2] = b[2];
-   CRPT->ECC_Y1[3] = b[3];
-   CRPT->ECC_Y1[4] = b[4];
-   CRPT->ECC_Y1[5] = b[5];
-   CRPT->ECC_Y1[6] = b[6];
-   CRPT->ECC_Y1[7] = b[7];
-   CRPT->ECC_Y1[8] = b[8];
-   CRPT->ECC_Y1[9] = b[9];
-   CRPT->ECC_Y1[10] = b[10];
-   CRPT->ECC_Y1[11] = b[11];
-   CRPT->ECC_Y1[12] = b[12];
-   CRPT->ECC_Y1[13] = b[13];
-
-   //Copy the modulus
-   CRPT->ECC_N[0] = 0xFFFFFFFF;
-   CRPT->ECC_N[1] = 0xFFFFFFFF;
-   CRPT->ECC_N[2] = 0xFFFFFFFF;
-   CRPT->ECC_N[3] = 0xFFFFFFFF;
-   CRPT->ECC_N[4] = 0xFFFFFFFF;
-   CRPT->ECC_N[5] = 0xFFFFFFFF;
-   CRPT->ECC_N[6] = 0xFFFFFFFF;
-   CRPT->ECC_N[7] = 0xFFFFFFFE;
-   CRPT->ECC_N[8] = 0xFFFFFFFF;
-   CRPT->ECC_N[9] = 0xFFFFFFFF;
-   CRPT->ECC_N[10] = 0xFFFFFFFF;
-   CRPT->ECC_N[11] = 0xFFFFFFFF;
-   CRPT->ECC_N[12] = 0xFFFFFFFF;
-   CRPT->ECC_N[13] = 0xFFFFFFFF;
-
-   //Set up a modular multiplication operation
-   CRPT->ECC_CTL = (448 << CRPT_ECC_CTL_CURVEM_Pos) | CRPT_ECC_CTL_SCAP_Msk |
-      (1 << CRPT_ECC_CTL_MODOP_Pos) | (1 << CRPT_ECC_CTL_ECCOP_Pos) |
-      CRPT_ECC_CTL_FSEL_Msk;
-
-   //Clear ECC interrupt flag
-   CRPT->INTSTS = CRPT_INTSTS_ECCIF_Msk;
-   //Start operation
-   CRPT->ECC_CTL |= CRPT_ECC_CTL_START_Msk;
-
-   //Wait for the operation to complete
-   while((CRPT->INTSTS & CRPT_INTSTS_ECCIF_Msk) == 0)
-   {
-   }
-
-   //Copy the result
-   r[0] = CRPT->ECC_X1[0];
-   r[1] = CRPT->ECC_X1[1];
-   r[2] = CRPT->ECC_X1[2];
-   r[3] = CRPT->ECC_X1[3];
-   r[4] = CRPT->ECC_X1[4];
-   r[5] = CRPT->ECC_X1[5];
-   r[6] = CRPT->ECC_X1[6];
-   r[7] = CRPT->ECC_X1[7];
-   r[8] = CRPT->ECC_X1[8];
-   r[9] = CRPT->ECC_X1[9];
-   r[10] = CRPT->ECC_X1[10];
-   r[11] = CRPT->ECC_X1[11];
-   r[12] = CRPT->ECC_X1[12];
-   r[13] = CRPT->ECC_X1[13];
-
-   //Release exclusive access to the CRYPTO module
-   osReleaseMutex(&m460CryptoMutex);
 }
 
 #endif

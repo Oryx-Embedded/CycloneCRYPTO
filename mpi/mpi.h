@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 #ifndef _MPI_H
@@ -35,18 +35,40 @@
 #include <stdio.h>
 #include "core/crypto.h"
 
-//Maximum size, in bits, of a multiple precision integer (static memory allocation)
-#ifndef MPI_MAX_BIT_SIZE
-   #define MPI_MAX_BIT_SIZE 4096
-#elif (MPI_MAX_BIT_SIZE < 0)
-   #error MPI_MAX_BIT_SIZE parameter is not valid
+//Maximum size of a multiple precision integer, in bits
+#ifndef MPI_MAX_BITS
+   #define MPI_MAX_BITS 4096
+#elif (MPI_MAX_BITS < 0)
+   #error MPI_MAX_BITS parameter is not valid
 #endif
 
-//Size of the sub data type
-#define MPI_INT_SIZE sizeof(uint_t)
+//Size of the MPI base type, in bits
+#ifndef MPI_BITS_PER_WORD
+   #define MPI_BITS_PER_WORD 32
+#elif (MPI_BITS_PER_WORD != 8 || MPI_BITS_PER_WORD != 16 || MPI_BITS_PER_WORD != 32)
+   #error MPI_BITS_PER_WORD parameter is not valid
+#endif
 
-//Maximum size, in words, of a multiple precision integer
-#define MPI_MAX_INT_SIZE ((MPI_MAX_BIT_SIZE + (MPI_INT_SIZE * 8) - 1) / (MPI_INT_SIZE * 8))
+//Maximum size of a multiple precision integer, in words
+#define MPI_MAX_WORDS ((MPI_MAX_BITS + MPI_BITS_PER_WORD - 1) / MPI_BITS_PER_WORD)
+
+//Size of the MPI base type, in bytes
+#define MPI_BYTES_PER_WORD (MPI_BITS_PER_WORD / 8)
+
+//MPI base types
+#if (MPI_BITS_PER_WORD == 8)
+   #define mpi_word_t uint8_t
+   #define mpi_sword_t int8_t
+   #define mpi_dword_t uint16_t
+#elif (MPI_BITS_PER_WORD == 16)
+   #define mpi_word_t uint16_t
+   #define mpi_sword_t int16_t
+   #define mpi_dword_t uint32_t
+#elif (MPI_BITS_PER_WORD == 32)
+   #define mpi_word_t uint32_t
+   #define mpi_sword_t int32_t
+   #define mpi_dword_t uint64_t
+#endif
 
 //Error code checking
 #define MPI_CHECK(f) if((error = f) != NO_ERROR) goto end
@@ -81,9 +103,9 @@ typedef struct
    int_t sign;
    uint_t size;
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
-   uint_t *data;
+   mpi_word_t *data;
 #else
-   uint_t data[MPI_MAX_INT_SIZE];
+   mpi_word_t data[MPI_MAX_WORDS];
 #endif
 } Mpi;
 
@@ -102,11 +124,11 @@ error_t mpiSetBitValue(Mpi *r, uint_t index, uint_t value);
 uint_t mpiGetBitValue(const Mpi *a, uint_t index);
 
 int_t mpiComp(const Mpi *a, const Mpi *b);
-int_t mpiCompInt(const Mpi *a, int_t b);
+int_t mpiCompInt(const Mpi *a, mpi_sword_t b);
 int_t mpiCompAbs(const Mpi *a, const Mpi *b);
 
 error_t mpiCopy(Mpi *r, const Mpi *a);
-error_t mpiSetValue(Mpi *a, int_t b);
+error_t mpiSetValue(Mpi *r, mpi_sword_t a);
 
 error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo,
    void *prngContext);
@@ -116,14 +138,17 @@ error_t mpiRandRange(Mpi *r, const Mpi *p, const PrngAlgo *prngAlgo,
 
 error_t mpiCheckProbablePrime(const Mpi *a);
 
-error_t mpiImport(Mpi *r, const uint8_t *data, uint_t length, MpiFormat format);
-error_t mpiExport(const Mpi *a, uint8_t *data, uint_t length, MpiFormat format);
+error_t mpiImport(Mpi *r, const uint8_t *input, size_t length,
+   MpiFormat format);
+
+error_t mpiExport(const Mpi *a, uint8_t *output, size_t length,
+   MpiFormat format);
 
 error_t mpiAdd(Mpi *r, const Mpi *a, const Mpi *b);
-error_t mpiAddInt(Mpi *r, const Mpi *a, int_t b);
+error_t mpiAddInt(Mpi *r, const Mpi *a, mpi_sword_t b);
 
 error_t mpiSub(Mpi *r, const Mpi *a, const Mpi *b);
-error_t mpiSubInt(Mpi *r, const Mpi *a, int_t b);
+error_t mpiSubInt(Mpi *r, const Mpi *a, mpi_sword_t b);
 
 error_t mpiAddAbs(Mpi *r, const Mpi *a, const Mpi *b);
 error_t mpiSubAbs(Mpi *r, const Mpi *a, const Mpi *b);
@@ -132,10 +157,10 @@ error_t mpiShiftLeft(Mpi *r, uint_t n);
 error_t mpiShiftRight(Mpi *r, uint_t n);
 
 error_t mpiMul(Mpi *r, const Mpi *a, const Mpi *b);
-error_t mpiMulInt(Mpi *r, const Mpi *a, int_t b);
+error_t mpiMulInt(Mpi *r, const Mpi *a, mpi_sword_t b);
 
 error_t mpiDiv(Mpi *q, Mpi *r, const Mpi *a, const Mpi *b);
-error_t mpiDivInt(Mpi *q, Mpi *r, const Mpi *a, int_t b);
+error_t mpiDivInt(Mpi *q, Mpi *r, const Mpi *a, mpi_sword_t b);
 
 error_t mpiMod(Mpi *r, const Mpi *a, const Mpi *p);
 error_t mpiAddMod(Mpi *r, const Mpi *a, const Mpi *b, const Mpi *p);
@@ -152,7 +177,8 @@ error_t mpiMontgomeryMul(Mpi *r, const Mpi *a, const Mpi *b, uint_t k,
 
 error_t mpiMontgomeryRed(Mpi *r, const Mpi *a, uint_t k, const Mpi *p, Mpi *t);
 
-void mpiMulAccCore(uint_t *r, const uint_t *a, int_t m, const uint_t b);
+void mpiMulAccCore(mpi_word_t *r, const mpi_word_t *a, int_t m,
+   const mpi_word_t b);
 
 void mpiDump(FILE *stream, const char_t *prepend, const Mpi *a);
 

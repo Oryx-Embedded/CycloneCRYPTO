@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -294,14 +294,14 @@ error_t keccakInit(KeccakContext *context, uint_t capacity)
    osMemset(context, 0, sizeof(KeccakContext));
 
    //The capacity cannot exceed the width of a Keccak-p permutation
-   if(capacity >= KECCAK_B)
+   if(capacity >= KECCAK_B_BITS)
       return ERROR_INVALID_PARAMETER;
 
    //The rate depends on the capacity of the sponge function
-   rate = KECCAK_B - capacity;
+   rate = KECCAK_B_BITS - capacity;
 
    //The rate must be multiple of the lane size
-   if((rate % KECCAK_W) != 0)
+   if((rate % KECCAK_W_BITS) != 0)
       return ERROR_INVALID_PARAMETER;
 
    //Save the block size, in bytes
@@ -337,8 +337,7 @@ __weak_func void keccakAbsorb(KeccakContext *context, const void *input,
 
       //Copy the data to the buffer
       osMemcpy(context->buffer + context->length, input, n);
-
-      //Number of data bytes that have been buffered
+      //Adjust the length of the buffer
       context->length += n;
 
       //Advance the data pointer
@@ -350,9 +349,9 @@ __weak_func void keccakAbsorb(KeccakContext *context, const void *input,
       if(context->length == context->blockSize)
       {
          //Absorb the current block
-         for(i = 0; i < context->blockSize / sizeof(keccak_lane_t); i++)
+         for(i = 0; i < context->blockSize / KECCAK_W_BYTES; i++)
          {
-            a[i] ^= KECCAK_LETOH(context->block[i]);
+            a[i] ^= KECCAK_LOAD_LANE(context->buffer + i * KECCAK_W_BYTES);
          }
 
          //Apply block permutation function
@@ -389,18 +388,18 @@ void keccakFinal(KeccakContext *context, uint8_t pad)
    context->buffer[context->blockSize - 1] |= 0x80;
 
    //Absorb the final block
-   for(i = 0; i < context->blockSize / sizeof(keccak_lane_t); i++)
+   for(i = 0; i < context->blockSize / KECCAK_W_BYTES; i++)
    {
-      a[i] ^= KECCAK_LETOH(context->block[i]);
+      a[i] ^= KECCAK_LOAD_LANE(context->buffer + i * KECCAK_W_BYTES);
    }
 
    //Apply block permutation function
    keccakPermutBlock(context);
 
    //Convert lanes to little-endian byte order
-   for(i = 0; i < context->blockSize / sizeof(keccak_lane_t); i++)
+   for(i = 0; i < context->blockSize / KECCAK_W_BYTES; i++)
    {
-      a[i] = KECCAK_HTOLE(a[i]);
+      KECCAK_STORE_LANE(a[i], context->buffer + i * KECCAK_W_BYTES);
    }
 
    //Number of bytes available in the output buffer
@@ -430,19 +429,13 @@ void keccakSqueeze(KeccakContext *context, uint8_t *output, size_t length)
       //Check whether more data is required
       if(context->length == 0)
       {
-         //Convert lanes to host byte order
-         for(i = 0; i < context->blockSize / sizeof(keccak_lane_t); i++)
-         {
-            a[i] = KECCAK_LETOH(a[i]);
-         }
-
          //Apply block permutation function
          keccakPermutBlock(context);
 
          //Convert lanes to little-endian byte order
-         for(i = 0; i < context->blockSize / sizeof(keccak_lane_t); i++)
+         for(i = 0; i < context->blockSize / KECCAK_W_BYTES; i++)
          {
-            a[i] = KECCAK_HTOLE(a[i]);
+            KECCAK_STORE_LANE(a[i], context->buffer + i * KECCAK_W_BYTES);
          }
 
          //Number of bytes available in the output buffer
@@ -455,7 +448,7 @@ void keccakSqueeze(KeccakContext *context, uint8_t *output, size_t length)
       //Copy the output string
       if(output != NULL)
       {
-         osMemcpy(output, context->digest + context->blockSize -
+         osMemcpy(output, context->buffer + context->blockSize -
             context->length, n);
       }
 

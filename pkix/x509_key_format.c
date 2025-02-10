@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -76,7 +76,7 @@ error_t x509FormatSubjectPublicKeyInfo(const X509SubjectPublicKeyInfo *publicKey
 
 #if (DSA_SUPPORT == ENABLED)
    //Valid DSA public key?
-   if(publicKey != NULL && !oidComp(oid, oidLen, DSA_OID, sizeof(DSA_OID)))
+   if(publicKey != NULL && OID_COMP(oid, oidLen, DSA_OID) == 0)
    {
       const DsaPublicKey *dsaPublicKey;
 
@@ -108,8 +108,8 @@ error_t x509FormatSubjectPublicKeyInfo(const X509SubjectPublicKeyInfo *publicKey
 
 #if (RSA_SUPPORT == ENABLED)
    //RSA or RSA-PSS algorithm identifier?
-   if(!oidComp(oid, oidLen, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)) ||
-      !oidComp(oid, oidLen, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
+   if(OID_COMP(oid, oidLen, RSA_ENCRYPTION_OID) == 0 ||
+      OID_COMP(oid, oidLen, RSASSA_PSS_OID) == 0)
    {
       //Valid RSA public key?
       if(publicKey != NULL)
@@ -128,7 +128,7 @@ error_t x509FormatSubjectPublicKeyInfo(const X509SubjectPublicKeyInfo *publicKey
 #endif
 #if (DSA_SUPPORT == ENABLED)
    //DSA algorithm identifier?
-   if(!oidComp(oid, oidLen, DSA_OID, sizeof(DSA_OID)))
+   if(OID_COMP(oid, oidLen, DSA_OID) == 0)
    {
       //Valid DSA public key?
       if(publicKey != NULL)
@@ -147,14 +147,14 @@ error_t x509FormatSubjectPublicKeyInfo(const X509SubjectPublicKeyInfo *publicKey
 #endif
 #if (EC_SUPPORT == ENABLED)
    //EC public key identifier?
-   if(!oidComp(oid, oidLen, EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
+   if(OID_COMP(oid, oidLen, EC_PUBLIC_KEY_OID) == 0)
    {
       //Valid EC public key?
       if(publicKey != NULL)
       {
-         //Export the EC public key to ASN.1 format
-         error = x509ExportEcPublicKey(publicKeyInfo, publicKey,
-            p + 1, &n);
+         //Export the EC public key
+         error = ecExportPublicKey(publicKey, p + 1, &n,
+            EC_PUBLIC_KEY_FORMAT_X963);
       }
       else
       {
@@ -167,14 +167,13 @@ error_t x509FormatSubjectPublicKeyInfo(const X509SubjectPublicKeyInfo *publicKey
 #endif
 #if (ED25519_SUPPORT == ENABLED)
    //Ed25519 algorithm identifier?
-   if(!oidComp(oid, oidLen, ED25519_OID, sizeof(ED25519_OID)))
+   if(OID_COMP(oid, oidLen, ED25519_OID) == 0)
    {
       //Valid EdDSA public key?
       if(publicKey != NULL)
       {
-         //Export the EdDSA public key to ASN.1 format
-         error = x509ExportEddsaPublicKey(publicKey, ED25519_PUBLIC_KEY_LEN,
-            p + 1, &n);
+         //Export the EdDSA public key
+         error = eddsaExportPublicKey(publicKey, p + 1, &n);
       }
       else
       {
@@ -187,14 +186,13 @@ error_t x509FormatSubjectPublicKeyInfo(const X509SubjectPublicKeyInfo *publicKey
 #endif
 #if (ED448_SUPPORT == ENABLED)
    //Ed448 algorithm identifier?
-   if(!oidComp(oid, oidLen, ED448_OID, sizeof(ED448_OID)))
+   if(OID_COMP(oid, oidLen, ED448_OID) == 0)
    {
       //Valid EdDSA public key?
       if(publicKey != NULL)
       {
-         //Export the EdDSA public key to ASN.1 format
-         error = x509ExportEddsaPublicKey(publicKey, ED448_PUBLIC_KEY_LEN,
-            p + 1, &n);
+         //Export the EdDSA public key
+         error = eddsaExportPublicKey(publicKey, p + 1, &n);
       }
       else
       {
@@ -313,7 +311,7 @@ error_t x509FormatAlgoId(const X509SubjectPublicKeyInfo *publicKeyInfo,
 
 #if (RSA_SUPPORT == ENABLED)
    //RSA algorithm identifier?
-   if(!oidComp(oid, oidLen, RSA_ENCRYPTION_OID, sizeof(RSA_ENCRYPTION_OID)))
+   if(OID_COMP(oid, oidLen, RSA_ENCRYPTION_OID) == 0)
    {
       //The parameters field must have ASN.1 type NULL for this algorithm
       //identifier (refer to RFC 3279, section 2.3.1)
@@ -327,7 +325,7 @@ error_t x509FormatAlgoId(const X509SubjectPublicKeyInfo *publicKeyInfo,
       error = asn1WriteTag(&tag, FALSE, p, &n);
    }
    //RSA-PSS algorithm identifier?
-   else if(!oidComp(oid, oidLen, RSASSA_PSS_OID, sizeof(RSASSA_PSS_OID)))
+   else if(OID_COMP(oid, oidLen, RSASSA_PSS_OID) == 0)
    {
       //The parameters may be either absent or present when used as subject
       //public key information (refer to RFC 4055, section 3.1)
@@ -337,7 +335,7 @@ error_t x509FormatAlgoId(const X509SubjectPublicKeyInfo *publicKeyInfo,
 #endif
 #if (DSA_SUPPORT == ENABLED)
    //DSA algorithm identifier?
-   if(!oidComp(oid, oidLen, DSA_OID, sizeof(DSA_OID)))
+   if(OID_COMP(oid, oidLen, DSA_OID) == 0)
    {
       //Valid DSA domain parameters?
       if(params != NULL)
@@ -355,7 +353,7 @@ error_t x509FormatAlgoId(const X509SubjectPublicKeyInfo *publicKeyInfo,
 #endif
 #if (EC_SUPPORT == ENABLED)
    //EC public key identifier?
-   if(!oidComp(oid, oidLen, EC_PUBLIC_KEY_OID, sizeof(EC_PUBLIC_KEY_OID)))
+   if(OID_COMP(oid, oidLen, EC_PUBLIC_KEY_OID) == 0)
    {
       //Format ECParameters structure
       error = x509FormatEcParameters(&publicKeyInfo->ecParams, p, &n);
@@ -364,8 +362,8 @@ error_t x509FormatAlgoId(const X509SubjectPublicKeyInfo *publicKeyInfo,
 #endif
 #if (ED25519_SUPPORT == ENABLED)
    //X25519 or Ed25519 algorithm identifier?
-   if(!oidComp(oid, oidLen, X25519_OID, sizeof(X25519_OID)) ||
-      !oidComp(oid, oidLen, ED25519_OID, sizeof(ED25519_OID)))
+   if(OID_COMP(oid, oidLen, X25519_OID) == 0 ||
+      OID_COMP(oid, oidLen, ED25519_OID) == 0)
    {
       //For all of the OIDs, the parameters must be absent (refer to RFC 8410,
       //section 3)
@@ -375,8 +373,8 @@ error_t x509FormatAlgoId(const X509SubjectPublicKeyInfo *publicKeyInfo,
 #endif
 #if (ED448_SUPPORT == ENABLED)
    //X448 or Ed448 algorithm identifier?
-   if(!oidComp(oid, oidLen, X448_OID, sizeof(X448_OID)) ||
-      !oidComp(oid, oidLen, ED448_OID, sizeof(ED448_OID)))
+   if(OID_COMP(oid, oidLen, X448_OID) == 0 ||
+      OID_COMP(oid, oidLen, ED448_OID) == 0)
    {
       //For all of the OIDs, the parameters must be absent (refer to RFC 8410,
       //section 3)
@@ -1057,50 +1055,37 @@ error_t x509ExportDsaParameters(const DsaDomainParameters *params,
 
 
 /**
- * @brief Export an EC public key to ASN.1 format
- * @param[in] publicKeyInfo Public key information
- * @param[in] publicKey Pointer to the EC public key
+ * @brief Export an EdDSA private key to ASN.1 format
+ * @param[in] privateKey Pointer to the EdDSA private key
  * @param[out] output Buffer where to store the ASN.1 structure
  * @param[out] written Length of the resulting ASN.1 structure
  * @return Error code
  **/
 
-error_t x509ExportEcPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
-   const EcPoint *publicKey, uint8_t *output, size_t *written)
+error_t x509ExportEddsaPrivateKey(const EddsaPrivateKey *privateKey,
+   uint8_t *output, size_t *written)
 {
-#if (EC_SUPPORT == ENABLED)
+#if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
    error_t error;
-   const EcCurveInfo *curveInfo;
-   EcDomainParameters params;
+   size_t n;
+   Asn1Tag tag;
 
-   //Initialize EC domain parameters
-   ecInitDomainParameters(&params);
-
-   //Retrieve EC domain parameters
-   curveInfo = x509GetCurveInfo(publicKeyInfo->ecParams.namedCurve.value,
-      publicKeyInfo->ecParams.namedCurve.length);
-
-   //Make sure the specified elliptic curve is supported
-   if(curveInfo != NULL)
-   {
-      //Load EC domain parameters
-      error = ecLoadDomainParameters(&params, curveInfo);
-   }
-   else
-   {
-      //Invalid EC domain parameters
-      error = ERROR_WRONG_IDENTIFIER;
-   }
+   //The private key is always an opaque byte sequence
+   error = eddsaExportPrivateKey(privateKey, output, &n);
 
    //Check status code
    if(!error)
    {
-      //Format ECPublicKey structure
-      error = ecExport(&params, publicKey, output, written);
-   }
+      //The private key is encapsulated within an octet string
+      tag.constructed = FALSE;
+      tag.objClass = ASN1_CLASS_UNIVERSAL;
+      tag.objType = ASN1_TYPE_OCTET_STRING;
+      tag.length = n;
+      tag.value = output;
 
-   //Release EC domain parameters
-   ecFreeDomainParameters(&params);
+      //Write CurvePrivateKey structure
+      error = asn1WriteTag(&tag, FALSE, output, written);
+   }
 
    //Return status code
    return error;
@@ -1108,79 +1093,6 @@ error_t x509ExportEcPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
    //Not implemented
    return ERROR_NOT_IMPLEMENTED;
 #endif
-}
-
-
-/**
- * @brief Export an EdDSA public key to ASN.1 format
- * @param[in] publicKey Pointer to the EdDSA public key
- * @param[in] publicKeyLen Length of the EdDSA public key, in bytes
- * @param[out] output Buffer where to store the ASN.1 structure
- * @param[out] written Length of the resulting ASN.1 structure
- * @return Error code
- **/
-
-error_t x509ExportEddsaPublicKey(const EddsaPublicKey *publicKey,
-   size_t publicKeyLen, uint8_t *output, size_t *written)
-{
-   error_t error;
-
-   //The SubjectPublicKey contains the byte stream of the public key
-   error = mpiExport(&publicKey->q, output, publicKeyLen,
-      MPI_FORMAT_LITTLE_ENDIAN);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Total number of bytes that have been written
-   *written = publicKeyLen;
-
-   //Successful processing
-   return NO_ERROR;
-}
-
-
-/**
- * @brief Export an EdDSA private key to ASN.1 format
- * @param[in] privateKey Pointer to the EdDSA private key
- * @param[in] privateKeyLen Length of the EdDSA private key, in bytes
- * @param[out] output Buffer where to store the ASN.1 structure
- * @param[out] written Length of the resulting ASN.1 structure
- * @return Error code
- **/
-
-error_t x509ExportEddsaPrivateKey(const EddsaPrivateKey *privateKey,
-   size_t privateKeyLen, uint8_t *output, size_t *written)
-{
-   error_t error;
-   size_t n;
-   Asn1Tag tag;
-
-   //The private key is always an opaque byte sequence
-   error = mpiExport(&privateKey->d, output, privateKeyLen,
-      MPI_FORMAT_LITTLE_ENDIAN);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //The private key is encapsulated within an octet string
-   tag.constructed = FALSE;
-   tag.objClass = ASN1_CLASS_UNIVERSAL;
-   tag.objType = ASN1_TYPE_OCTET_STRING;
-   tag.length = privateKeyLen;
-   tag.value = output;
-
-   //Write CurvePrivateKey structure
-   error = asn1WriteTag(&tag, FALSE, output, &n);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Total number of bytes that have been written
-   *written = tag.totalLength;
-
-   //Successful processing
-   return NO_ERROR;
 }
 
 #endif

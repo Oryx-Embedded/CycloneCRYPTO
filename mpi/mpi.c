@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -63,12 +63,17 @@ void mpiInit(Mpi *r)
 
 void mpiFree(Mpi *r)
 {
+   uint_t i;
+
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Any memory previously allocated?
    if(r->data != NULL)
    {
       //Erase contents
-      osMemset(r->data, 0, r->size * MPI_INT_SIZE);
+      for(i = 0; i < r->size; i++)
+      {
+         r->data[i] = 0;
+      }
 
       //Release memory buffer
       cryptoFreeMem(r->data);
@@ -76,7 +81,10 @@ void mpiFree(Mpi *r)
    }
 #else
    //Erase contents
-   osMemset(r->data, 0, r->size * MPI_INT_SIZE);
+   for(i = 0; i < r->size; i++)
+   {
+      r->data[i] = 0;
+   }
 #endif
 
    //Reset size to zero
@@ -94,8 +102,9 @@ void mpiFree(Mpi *r)
 error_t mpiGrow(Mpi *r, uint_t size)
 {
    error_t error;
+   uint_t i;
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
-   uint_t *data;
+   mpi_word_t *data;
 #endif
 
    //Initialize status code
@@ -109,7 +118,7 @@ error_t mpiGrow(Mpi *r, uint_t size)
    {
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
       //Allocate a new memory buffer
-      data = cryptoAllocMem(size * MPI_INT_SIZE);
+      data = cryptoAllocMem(size * sizeof(mpi_word_t));
 
       //Successful memory allocation?
       if(data != NULL)
@@ -118,15 +127,22 @@ error_t mpiGrow(Mpi *r, uint_t size)
          if(r->size > 0)
          {
             //Copy original data
-            osMemcpy(data, r->data, r->size * MPI_INT_SIZE);
+            for(i = 0; i < r->size; i++)
+            {
+               data[i] = r->data[i];
+               r->data[i] = 0;
+            }
 
             //Release old memory buffer
-            osMemset(r->data, 0, r->size * MPI_INT_SIZE);
             cryptoFreeMem(r->data);
          }
 
          //Clear upper words
-         osMemset(data + r->size, 0, (size - r->size) * MPI_INT_SIZE);
+         for(i = r->size; i < size; i++)
+         {
+            data[i] = 0;
+         }
+
          //Attach new memory buffer
          r->data = data;
          //Update the size of the multiple precision integer
@@ -139,10 +155,14 @@ error_t mpiGrow(Mpi *r, uint_t size)
       }
 #else
       //Check parameter
-      if(size <= MPI_MAX_INT_SIZE)
+      if(size <= MPI_MAX_WORDS)
       {
          //Clear upper words
-         osMemset(r->data + r->size, 0, (size - r->size) * MPI_INT_SIZE);
+         for(i = r->size; i < size; i++)
+         {
+            r->data[i] = 0;
+         }
+
          //Update the size of the multiple precision integer
          r->size = size;
       }
@@ -212,7 +232,7 @@ uint_t mpiGetByteLength(const Mpi *a)
    //Get the current word
    m = a->data[n];
    //Convert the length to a byte count
-   n *= MPI_INT_SIZE;
+   n *= MPI_BYTES_PER_WORD;
 
    //Adjust the byte count
    for(; m != 0; m >>= 8)
@@ -251,7 +271,7 @@ uint_t mpiGetBitLength(const Mpi *a)
    //Get the current word
    m = a->data[n];
    //Convert the length to a bit count
-   n *= MPI_INT_SIZE * 8;
+   n *= MPI_BITS_PER_WORD;
 
    //Adjust the bit count
    for(; m != 0; m >>= 1)
@@ -279,8 +299,8 @@ error_t mpiSetBitValue(Mpi *r, uint_t index, uint_t value)
    uint_t n2;
 
    //Retrieve the position of the bit to be written
-   n1 = index / (MPI_INT_SIZE * 8);
-   n2 = index % (MPI_INT_SIZE * 8);
+   n1 = index / MPI_BITS_PER_WORD;
+   n2 = index % MPI_BITS_PER_WORD;
 
    //Ajust the size of the multiple precision integer if necessary
    error = mpiGrow(r, n1 + 1);
@@ -289,7 +309,7 @@ error_t mpiSetBitValue(Mpi *r, uint_t index, uint_t value)
       return error;
 
    //Set bit value
-   if(value)
+   if(value != 0)
    {
       r->data[n1] |= (1U << n2);
    }
@@ -298,7 +318,7 @@ error_t mpiSetBitValue(Mpi *r, uint_t index, uint_t value)
       r->data[n1] &= ~(1U << n2);
    }
 
-   //No error to report
+   //Successful operation
    return NO_ERROR;
 }
 
@@ -316,8 +336,8 @@ uint_t mpiGetBitValue(const Mpi *a, uint_t index)
    uint_t n2;
 
    //Retrieve the position of the bit to be read
-   n1 = index / (MPI_INT_SIZE * 8);
-   n2 = index % (MPI_INT_SIZE * 8);
+   n1 = index / MPI_BITS_PER_WORD;
+   n2 = index % MPI_BITS_PER_WORD;
 
    //Index out of range?
    if(n1 >= a->size)
@@ -339,36 +359,63 @@ int_t mpiComp(const Mpi *a, const Mpi *b)
 {
    uint_t m;
    uint_t n;
+   int_t res;
+
+   //Initialize variable
+   res = 0;
 
    //Determine the actual length of A and B
    m = mpiGetLength(a);
    n = mpiGetLength(b);
 
    //Compare lengths
-   if(!m && !n)
-      return 0;
-   else if(m > n)
-      return a->sign;
-   else if(m < n)
-      return -b->sign;
-
-   //Compare signs
-   if(a->sign > 0 && b->sign < 0)
-      return 1;
-   else if(a->sign < 0 && b->sign > 0)
-      return -1;
-
-   //Then compare values
-   while(n--)
+   if(m == 0 && n == 0)
    {
-      if(a->data[n] > b->data[n])
-         return a->sign;
-      else if(a->data[n] < b->data[n])
-         return -a->sign;
+      res = 0;
+   }
+   else if(m > n)
+   {
+      res = a->sign;
+   }
+   else if(m < n)
+   {
+      res = -b->sign;
+   }
+   else
+   {
+      //Compare signs
+      if(a->sign > 0 && b->sign < 0)
+      {
+         res = 1;
+      }
+      else if(a->sign < 0 && b->sign > 0)
+      {
+         res = -1;
+      }
+      else
+      {
+         //Compare values
+         while(n-- > 0)
+         {
+            if(a->data[n] > b->data[n])
+            {
+               res = a->sign;
+               break;
+            }
+            else if(a->data[n] < b->data[n])
+            {
+               res = -a->sign;
+               break;
+            }
+            else
+            {
+            }
+         }
+      }
    }
 
-   //Multiple precision integers are equals
-   return 0;
+   //Return comparison result
+   return res;
 }
 
 
@@ -379,15 +426,16 @@ int_t mpiComp(const Mpi *a, const Mpi *b)
  * @return Comparison result
  **/
 
-int_t mpiCompInt(const Mpi *a, int_t b)
+int_t mpiCompInt(const Mpi *a, mpi_sword_t b)
 {
-   uint_t value;
+   mpi_word_t value;
    Mpi t;
 
    //Initialize a temporary multiple precision integer
    value = (b >= 0) ? b : -b;
    t.sign = (b >= 0) ? 1 : -1;
    t.size = 1;
+
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    t.data = &value;
 #else
@@ -410,30 +458,51 @@ int_t mpiCompAbs(const Mpi *a, const Mpi *b)
 {
    uint_t m;
    uint_t n;
+   int_t res;
+
+   //Initialize variable
+   res = 0;
 
    //Determine the actual length of A and B
    m = mpiGetLength(a);
    n = mpiGetLength(b);
 
    //Compare lengths
-   if(!m && !n)
-      return 0;
-   else if(m > n)
-      return 1;
-   else if(m < n)
-      return -1;
-
-   //Then compare values
-   while(n--)
+   if(m == 0 && n == 0)
    {
-      if(a->data[n] > b->data[n])
-         return 1;
-      else if(a->data[n] < b->data[n])
-         return -1;
+      res = 0;
+   }
+   else if(m > n)
+   {
+      res = 1;
+   }
+   else if(m < n)
+   {
+      res = -1;
+   }
+   else
+   {
+      //Compare values
+      while(n-- > 0)
+      {
+         if(a->data[n] > b->data[n])
+         {
+            res = 1;
+            break;
+         }
+         else if(a->data[n] < b->data[n])
+         {
+            res = -1;
+            break;
+         }
+         else
+         {
+         }
+      }
    }
 
-   //Operands are equals
-   return 0;
+   //Return comparison result
+   return res;
 }
 
 
@@ -447,6 +516,7 @@ int_t mpiCompAbs(const Mpi *a, const Mpi *b)
 error_t mpiCopy(Mpi *r, const Mpi *a)
 {
    error_t error;
+   uint_t i;
    uint_t n;
 
    //R and A are the same instance?
@@ -462,12 +532,20 @@ error_t mpiCopy(Mpi *r, const Mpi *a)
    if(error)
       return error;
 
-   //Clear the contents of the multiple precision integer
-   osMemset(r->data, 0, r->size * MPI_INT_SIZE);
-   //Let R = A
-   osMemcpy(r->data, a->data, n * MPI_INT_SIZE);
    //Set the sign of R
    r->sign = a->sign;
+
+   //Let R = A
+   for(i = 0; i < n; i++)
+   {
+      r->data[i] = a->data[i];
+   }
+
+   //Clear upper words
+   for(; i < r->size; i++)
+   {
+      r->data[i] = 0;
+   }
 
    //Successful operation
    return NO_ERROR;
@@ -481,9 +559,10 @@ error_t mpiCopy(Mpi *r, const Mpi *a)
  * @return Error code
  **/
 
-error_t mpiSetValue(Mpi *r, int_t a)
+error_t mpiSetValue(Mpi *r, mpi_sword_t a)
 {
    error_t error;
+   uint_t i;
 
    //Ajust the size of the destination operand
    error = mpiGrow(r, 1);
@@ -492,7 +571,11 @@ error_t mpiSetValue(Mpi *r, int_t a)
       return error;
 
    //Clear the contents of the multiple precision integer
-   osMemset(r->data, 0, r->size * MPI_INT_SIZE);
+   for(i = 0; i < r->size; i++)
+   {
+      r->data[i] = 0;
+   }
+
    //Set the value or R
    r->data[0] = (a >= 0) ? a : -a;
    //Set the sign of R
@@ -516,13 +599,14 @@ error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo,
    void *prngContext)
 {
    error_t error;
+   uint_t i;
    uint_t m;
    uint_t n;
 
    //Compute the required length, in words
-   n = (length + (MPI_INT_SIZE * 8) - 1) / (MPI_INT_SIZE * 8);
+   n = (length + MPI_BITS_PER_WORD - 1) / MPI_BITS_PER_WORD;
    //Number of bits in the most significant word
-   m = length % (MPI_INT_SIZE * 8);
+   m = length % MPI_BITS_PER_WORD;
 
    //Ajust the size of the multiple precision integer if necessary
    error = mpiGrow(r, n);
@@ -531,12 +615,16 @@ error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo,
       return error;
 
    //Clear the contents of the multiple precision integer
-   osMemset(r->data, 0, r->size * MPI_INT_SIZE);
+   for(i = 0; i < r->size; i++)
+   {
+      r->data[i] = 0;
+   }
+
    //Set the sign of R
    r->sign = 1;
 
    //Generate a random pattern
-   error = prngAlgo->read(prngContext, (uint8_t *) r->data, n * MPI_INT_SIZE);
+   error = prngAlgo->read(prngContext, (uint8_t *) r->data, n * sizeof(mpi_word_t));
    //Any error to report?
    if(error)
       return error;
@@ -604,7 +692,7 @@ end:
 
 __weak_func error_t mpiCheckProbablePrime(const Mpi *a)
 {
-   //The algorithm is implemented by hardware
+   //This function is a placeholder for hardware implementation
    return ERROR_NOT_IMPLEMENTED;
 }
 
@@ -615,71 +703,83 @@ __weak_func error_t mpiCheckProbablePrime(const Mpi *a)
  * Converts an octet string to a non-negative integer
  *
  * @param[out] r Non-negative integer resulting from the conversion
- * @param[in] data Octet string to be converted
+ * @param[in] input Octet string to be converted
  * @param[in] length Length of the octet string
  * @param[in] format Input format
  * @return Error code
  **/
 
-error_t mpiImport(Mpi *r, const uint8_t *data, uint_t length, MpiFormat format)
+error_t mpiImport(Mpi *r, const uint8_t *input, size_t length,
+   MpiFormat format)
 {
    error_t error;
    uint_t i;
+   mpi_word_t temp;
 
    //Check input format
    if(format == MPI_FORMAT_LITTLE_ENDIAN)
    {
       //Skip trailing zeroes
-      while(length > 0 && data[length - 1] == 0)
+      while(length > 0 && input[length - 1] == 0)
       {
          length--;
       }
 
       //Ajust the size of the multiple precision integer
-      error = mpiGrow(r, (length + MPI_INT_SIZE - 1) / MPI_INT_SIZE);
+      error = mpiGrow(r, (length + MPI_BYTES_PER_WORD - 1) / MPI_BYTES_PER_WORD);
 
       //Check status code
       if(!error)
       {
          //Clear the contents of the multiple precision integer
-         osMemset(r->data, 0, r->size * MPI_INT_SIZE);
+         for(i = 0; i < r->size; i++)
+         {
+            r->data[i] = 0;
+         }
+
          //Set sign
          r->sign = 1;
 
          //Import data
-         for(i = 0; i < length; i++, data++)
+         for(i = 0; i < length; i++, input++)
          {
-            r->data[i / MPI_INT_SIZE] |= *data << ((i % MPI_INT_SIZE) * 8);
+            temp = *input & 0xFF;
+            r->data[i / MPI_BYTES_PER_WORD] |= temp << ((i % MPI_BYTES_PER_WORD) * 8);
          }
       }
    }
    else if(format == MPI_FORMAT_BIG_ENDIAN)
    {
       //Skip leading zeroes
-      while(length > 1 && *data == 0)
+      while(length > 1 && *input == 0)
       {
-         data++;
+         input++;
          length--;
       }
 
       //Ajust the size of the multiple precision integer
-      error = mpiGrow(r, (length + MPI_INT_SIZE - 1) / MPI_INT_SIZE);
+      error = mpiGrow(r, (length + MPI_BYTES_PER_WORD - 1) / MPI_BYTES_PER_WORD);
 
       //Check status code
       if(!error)
       {
          //Clear the contents of the multiple precision integer
-         osMemset(r->data, 0, r->size * MPI_INT_SIZE);
+         for(i = 0; i < r->size; i++)
+         {
+            r->data[i] = 0;
+         }
+
          //Set sign
          r->sign = 1;
 
          //Start from the least significant byte
-         data += length - 1;
+         input += length - 1;
 
          //Import data
-         for(i = 0; i < length; i++, data--)
+         for(i = 0; i < length; i++, input--)
          {
-            r->data[i / MPI_INT_SIZE] |= *data << ((i % MPI_INT_SIZE) * 8);
+            temp = *input & 0xFF;
+            r->data[i / MPI_BYTES_PER_WORD] |= temp << ((i % MPI_BYTES_PER_WORD) * 8);
          }
       }
    }
@@ -700,17 +800,19 @@ error_t mpiImport(Mpi *r, const uint8_t *data, uint_t length, MpiFormat format)
  * Converts an integer to an octet string of a specified length
  *
  * @param[in] a Non-negative integer to be converted
- * @param[out] data Octet string resulting from the conversion
+ * @param[out] output Octet string resulting from the conversion
  * @param[in] length Intended length of the resulting octet string
  * @param[in] format Output format
  * @return Error code
  **/
 
-error_t mpiExport(const Mpi *a, uint8_t *data, uint_t length, MpiFormat format)
+error_t mpiExport(const Mpi *a, uint8_t *output, size_t length,
+   MpiFormat format)
 {
+   error_t error;
    uint_t i;
    uint_t n;
-   error_t error;
+   mpi_word_t temp;
 
    //Initialize status code
    error = NO_ERROR;
@@ -725,12 +827,13 @@ error_t mpiExport(const Mpi *a, uint8_t *data, uint_t length, MpiFormat format)
       if(n <= length)
       {
          //Clear output buffer
-         osMemset(data, 0, length);
+         osMemset(output, 0, length);
 
          //Export data
-         for(i = 0; i < n; i++, data++)
+         for(i = 0; i < n; i++, output++)
          {
-            *data = a->data[i / MPI_INT_SIZE] >> ((i % MPI_INT_SIZE) * 8);
+            temp = a->data[i / MPI_BYTES_PER_WORD] >> ((i % MPI_BYTES_PER_WORD) * 8);
+            *output = temp & 0xFF;
          }
       }
       else
@@ -748,15 +851,16 @@ error_t mpiExport(const Mpi *a, uint8_t *data, uint_t length, MpiFormat format)
       if(n <= length)
       {
          //Clear output buffer
-         osMemset(data, 0, length);
+         osMemset(output, 0, length);
 
          //Point to the least significant word
-         data += length - 1;
+         output += length - 1;
 
          //Export data
-         for(i = 0; i < n; i++, data--)
+         for(i = 0; i < n; i++, output--)
          {
-            *data = a->data[i / MPI_INT_SIZE] >> ((i % MPI_INT_SIZE) * 8);
+            temp = a->data[i / MPI_BYTES_PER_WORD] >> ((i % MPI_BYTES_PER_WORD) * 8);
+            *output = temp & 0xFF;
          }
       }
       else
@@ -833,15 +937,16 @@ error_t mpiAdd(Mpi *r, const Mpi *a, const Mpi *b)
  * @return Error code
  **/
 
-error_t mpiAddInt(Mpi *r, const Mpi *a, int_t b)
+error_t mpiAddInt(Mpi *r, const Mpi *a, mpi_sword_t b)
 {
-   uint_t value;
+   mpi_word_t value;
    Mpi t;
 
    //Convert the second operand to a multiple precision integer
    value = (b >= 0) ? b : -b;
    t.sign = (b >= 0) ? 1 : -1;
    t.size = 1;
+
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    t.data = &value;
 #else
@@ -910,15 +1015,16 @@ error_t mpiSub(Mpi *r, const Mpi *a, const Mpi *b)
  * @return Error code
  **/
 
-error_t mpiSubInt(Mpi *r, const Mpi *a, int_t b)
+error_t mpiSubInt(Mpi *r, const Mpi *a, mpi_sword_t b)
 {
-   uint_t value;
+   mpi_word_t value;
    Mpi t;
 
    //Convert the second operand to a multiple precision integer
    value = (b >= 0) ? b : -b;
    t.sign = (b >= 0) ? 1 : -1;
    t.size = 1;
+
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    t.data = &value;
 #else
@@ -943,8 +1049,8 @@ error_t mpiAddAbs(Mpi *r, const Mpi *a, const Mpi *b)
    error_t error;
    uint_t i;
    uint_t n;
-   uint_t c;
-   uint_t d;
+   mpi_word_t c;
+   mpi_word_t d;
 
    //R and B are the same instance?
    if(r == b)
@@ -976,12 +1082,22 @@ error_t mpiAddAbs(Mpi *r, const Mpi *a, const Mpi *b)
    {
       //Add carry bit
       d = r->data[i] + c;
+
       //Update carry bit
-      if(d != 0) c = 0;
+      if(d != 0)
+      {
+         c = 0;
+      }
+
       //Perform addition
       d += b->data[i];
+
       //Update carry bit
-      if(d < b->data[i]) c = 1;
+      if(d < b->data[i])
+      {
+         c = 1;
+      }
+
       //Save result
       r->data[i] = d;
    }
@@ -991,8 +1107,12 @@ error_t mpiAddAbs(Mpi *r, const Mpi *a, const Mpi *b)
    {
       //Add carry bit
       r->data[i] += c;
+
       //Update carry bit
-      if(r->data[i] != 0) c = 0;
+      if(r->data[i] != 0)
+      {
+         c = 0;
+      }
    }
 
    //Check the final carry bit
@@ -1021,11 +1141,11 @@ end:
 error_t mpiSubAbs(Mpi *r, const Mpi *a, const Mpi *b)
 {
    error_t error;
-   uint_t c;
-   uint_t d;
    uint_t i;
    uint_t m;
    uint_t n;
+   mpi_word_t c;
+   mpi_word_t d;
 
    //Check input parameters
    if(mpiCompAbs(a, b) < 0)
@@ -1056,16 +1176,24 @@ error_t mpiSubAbs(Mpi *r, const Mpi *a, const Mpi *b)
       d = a->data[i];
 
       //Check the carry bit
-      if(c)
+      if(c != 0)
       {
          //Update carry bit
-         if(d != 0) c = 0;
+         if(d != 0)
+         {
+            c = 0;
+         }
+
          //Propagate carry bit
          d -= 1;
       }
 
       //Update carry bit
-      if(d < b->data[i]) c = 1;
+      if(d < b->data[i])
+      {
+         c = 1;
+      }
+
       //Perform subtraction
       r->data[i] = d - b->data[i];
    }
@@ -1074,7 +1202,11 @@ error_t mpiSubAbs(Mpi *r, const Mpi *a, const Mpi *b)
    for(i = n; c && i < m; i++)
    {
       //Update carry bit
-      if(a->data[i] != 0) c = 0;
+      if(a->data[i] != 0)
+      {
+         c = 0;
+      }
+
       //Propagate carry bit
       r->data[i] = a->data[i] - 1;
    }
@@ -1088,7 +1220,7 @@ error_t mpiSubAbs(Mpi *r, const Mpi *a, const Mpi *b)
          r->data[i] = a->data[i];
       }
 
-      //Zero the upper part of R
+      //Zero the upper part
       for(; i < r->size; i++)
       {
          r->data[i] = 0;
@@ -1124,12 +1256,12 @@ error_t mpiShiftLeft(Mpi *r, uint_t n)
    k = mpiGetBitLength(r);
 
    //Number of 32-bit words to shift
-   n1 = n / (MPI_INT_SIZE * 8);
+   n1 = n / MPI_BITS_PER_WORD;
    //Number of bits to shift
-   n2 = n % (MPI_INT_SIZE * 8);
+   n2 = n % MPI_BITS_PER_WORD;
 
    //Increase the size of the multiple-precision number
-   error = mpiGrow(r, (k + n + 31) / 32);
+   error = mpiGrow(r, (k + n + (MPI_BITS_PER_WORD - 1)) / MPI_BITS_PER_WORD);
    //Check return code
    if(error)
       return error;
@@ -1156,7 +1288,7 @@ error_t mpiShiftLeft(Mpi *r, uint_t n)
       //Process the most significant words
       for(i = r->size - 1; i >= 1; i--)
       {
-         r->data[i] = (r->data[i] << n2) | (r->data[i - 1] >> (32 - n2));
+         r->data[i] = (r->data[i] << n2) | (r->data[i - 1] >> (MPI_BITS_PER_WORD - n2));
       }
 
       //The least significant word requires a special handling
@@ -1181,14 +1313,20 @@ error_t mpiShiftRight(Mpi *r, uint_t n)
    uint_t m;
 
    //Number of 32-bit words to shift
-   uint_t n1 = n / (MPI_INT_SIZE * 8);
+   uint_t n1 = n / MPI_BITS_PER_WORD;
    //Number of bits to shift
-   uint_t n2 = n % (MPI_INT_SIZE * 8);
+   uint_t n2 = n % MPI_BITS_PER_WORD;
 
    //Check parameters
    if(n1 >= r->size)
    {
-      osMemset(r->data, 0, r->size * MPI_INT_SIZE);
+      //Clear the contents of the multiple precision integer
+      for(i = 0; i < r->size; i++)
+      {
+         r->data[i] = 0;
+      }
+
+      //We are done
       return NO_ERROR;
    }
 
@@ -1214,7 +1352,7 @@ error_t mpiShiftRight(Mpi *r, uint_t n)
       //Process the least significant words
       for(m = r->size - n1 - 1, i = 0; i < m; i++)
       {
-         r->data[i] = (r->data[i] >> n2) | (r->data[i + 1] << (32 - n2));
+         r->data[i] = (r->data[i] >> n2) | (r->data[i + 1] << (MPI_BITS_PER_WORD - n2));
       }
 
       //The most significant word requires a special handling
@@ -1237,9 +1375,9 @@ error_t mpiShiftRight(Mpi *r, uint_t n)
 __weak_func error_t mpiMul(Mpi *r, const Mpi *a, const Mpi *b)
 {
    error_t error;
-   int_t i;
-   int_t m;
-   int_t n;
+   uint_t i;
+   uint_t m;
+   uint_t n;
    Mpi ta;
    Mpi tb;
 
@@ -1275,7 +1413,10 @@ __weak_func error_t mpiMul(Mpi *r, const Mpi *a, const Mpi *b)
    r->sign = (a->sign == b->sign) ? 1 : -1;
 
    //Clear the contents of the destination integer
-   osMemset(r->data, 0, r->size * MPI_INT_SIZE);
+   for(i = 0; i < r->size; i++)
+   {
+      r->data[i] = 0;
+   }
 
    //Perform multiplication
    if(m < n)
@@ -1311,15 +1452,16 @@ end:
  * @return Error code
  **/
 
-error_t mpiMulInt(Mpi *r, const Mpi *a, int_t b)
+error_t mpiMulInt(Mpi *r, const Mpi *a, mpi_sword_t b)
 {
-   uint_t value;
+   mpi_word_t value;
    Mpi t;
 
    //Convert the second operand to a multiple precision integer
    value = (b >= 0) ? b : -b;
    t.sign = (b >= 0) ? 1 : -1;
    t.size = 1;
+
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    t.data = &value;
 #else
@@ -1413,15 +1555,16 @@ end:
  * @return Error code
  **/
 
-error_t mpiDivInt(Mpi *q, Mpi *r, const Mpi *a, int_t b)
+error_t mpiDivInt(Mpi *q, Mpi *r, const Mpi *a, mpi_sword_t b)
 {
-   uint_t value;
+   mpi_word_t value;
    Mpi t;
 
    //Convert the divisor to a multiple precision integer
    value = (b >= 0) ? b : -b;
    t.sign = (b >= 0) ? 1 : -1;
    t.size = 1;
+
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    t.data = &value;
 #else
@@ -1675,8 +1818,8 @@ __weak_func error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
       mpiInit(&s[i]);
    }
 
-   //Very small exponents are often selected with low Hamming weight.
-   //The sliding window mechanism should be disabled in that case
+   //Very small exponents are often selected with low Hamming weight. The
+   //sliding window mechanism should be disabled in that case
    d = (mpiGetBitLength(e) <= 32) ? 1 : 4;
 
    //Even modulus?
@@ -1742,7 +1885,7 @@ __weak_func error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
 
       //Compute C^2 mod P
       MPI_CHECK(mpiSetValue(&c2, 1));
-      MPI_CHECK(mpiShiftLeft(&c2, 2 * k * (MPI_INT_SIZE * 8)));
+      MPI_CHECK(mpiShiftLeft(&c2, 2 * k * MPI_BITS_PER_WORD));
       MPI_CHECK(mpiMod(&c2, &c2, p));
 
       //Let B = A * C mod P
@@ -1792,7 +1935,10 @@ __weak_func error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
             n = MAX(i - d + 1, 0);
 
             //The least significant bit of the window must be equal to 1
-            while(!mpiGetBitValue(e, n)) n++;
+            while(!mpiGetBitValue(e, n))
+            {
+               n++;
+            }
 
             //The algorithm processes more than one bit per iteration
             for(u = 0, j = i; j >= n; j--)
@@ -1879,18 +2025,18 @@ error_t mpiMontgomeryMul(Mpi *r, const Mpi *a, const Mpi *b, uint_t k,
 {
    error_t error;
    uint_t i;
-   uint_t m;
    uint_t n;
-   uint_t q;
+   mpi_word_t m;
+   mpi_word_t q;
 
    //Use Newton's method to compute the inverse of P[0] mod 2^32
-   for(m = 2 - p->data[0], i = 0; i < 4; i++)
+   for(m = p->data[0], i = 0; i < 4; i++)
    {
-      m = m * (2 - m * p->data[0]);
+      m = m * (2U - m * p->data[0]);
    }
 
    //Precompute -1/P[0] mod 2^32;
-   m = ~m + 1;
+   m = ~m + 1U;
 
    //We assume that B is always less than 2^k
    n = MIN(b->size, k);
@@ -1922,7 +2068,7 @@ error_t mpiMontgomeryMul(Mpi *r, const Mpi *a, const Mpi *b, uint_t k,
    }
 
    //Compute R = T / 2^(32 * k)
-   MPI_CHECK(mpiShiftRight(t, k * (MPI_INT_SIZE * 8)));
+   MPI_CHECK(mpiShiftRight(t, k * MPI_BITS_PER_WORD));
    MPI_CHECK(mpiCopy(r, t));
 
    //A final subtraction is required
@@ -1949,13 +2095,14 @@ end:
 
 error_t mpiMontgomeryRed(Mpi *r, const Mpi *a, uint_t k, const Mpi *p, Mpi *t)
 {
-   uint_t value;
+   mpi_word_t value;
    Mpi b;
 
    //Let B = 1
    value = 1;
    b.sign = 1;
    b.size = 1;
+
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    b.data = &value;
 #else
@@ -1977,13 +2124,14 @@ error_t mpiMontgomeryRed(Mpi *r, const Mpi *a, uint_t k, const Mpi *p, Mpi *t)
  * @param[in] b Second operand B
  **/
 
-void mpiMulAccCore(uint_t *r, const uint_t *a, int_t m, const uint_t b)
+void mpiMulAccCore(mpi_word_t *r, const mpi_word_t *a, int_t m,
+   const mpi_word_t b)
 {
    int_t i;
-   uint32_t c;
-   uint32_t u;
-   uint32_t v;
-   uint64_t p;
+   mpi_word_t c;
+   mpi_word_t u;
+   mpi_word_t v;
+   mpi_dword_t p;
 
    //Clear variables
    c = 0;
@@ -1993,15 +2141,23 @@ void mpiMulAccCore(uint_t *r, const uint_t *a, int_t m, const uint_t b)
    //Perform multiplication
    for(i = 0; i < m; i++)
    {
-      p = (uint64_t) a[i] * b;
-      u = (uint32_t) p;
-      v = (uint32_t) (p >> 32);
+      p = (mpi_dword_t) a[i] * b;
+      u = (mpi_word_t) p;
+      v = (mpi_word_t) (p >> MPI_BITS_PER_WORD);
 
       u += c;
-      if(u < c) v++;
+
+      if(u < c)
+      {
+         v++;
+      }
 
       u += r[i];
-      if(u < r[i]) v++;
+
+      if(u < r[i])
+      {
+         v++;
+      }
 
       r[i] = u;
       c = v;
@@ -2034,14 +2190,18 @@ void mpiDump(FILE *stream, const char_t *prepend, const Mpi *a)
    {
       //Beginning of a new line?
       if(i == 0 || ((a->size - i - 1) % 8) == 7)
+      {
          fprintf(stream, "%s", prepend);
+      }
 
       //Display current data
       fprintf(stream, "%08X ", a->data[a->size - 1 - i]);
 
       //End of current line?
       if(((a->size - i - 1) % 8) == 0 || i == (a->size - 1))
+      {
          fprintf(stream, "\r\n");
+      }
    }
 }
 

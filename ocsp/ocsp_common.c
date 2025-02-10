@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -88,7 +88,7 @@ const HashAlgo *ocspGetHashAlgo(const uint8_t *oid, size_t length)
 
 #if (OCSP_SHA1_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
    //SHA-1 hash algorithm identifier?
-   if(!oidComp(oid, length, SHA1_OID, sizeof(SHA1_OID)))
+   if(OID_COMP(oid, length, SHA1_OID) == 0)
    {
       hashAlgo = SHA1_HASH_ALGO;
    }
@@ -96,7 +96,7 @@ const HashAlgo *ocspGetHashAlgo(const uint8_t *oid, size_t length)
 #endif
 #if (OCSP_SHA256_SUPPORT == ENABLED && SHA256_SUPPORT == ENABLED)
    //SHA-256 hash algorithm identifier?
-   if(!oidComp(oid, length, SHA256_OID, sizeof(SHA256_OID)))
+   if(OID_COMP(oid, length, SHA256_OID) == 0)
    {
       hashAlgo = SHA256_HASH_ALGO;
    }
@@ -104,7 +104,7 @@ const HashAlgo *ocspGetHashAlgo(const uint8_t *oid, size_t length)
 #endif
 #if (OCSP_SHA384_SUPPORT == ENABLED && SHA384_SUPPORT == ENABLED)
    //SHA-384 hash algorithm identifier?
-   if(!oidComp(oid, length, SHA384_OID, sizeof(SHA384_OID)))
+   if(OID_COMP(oid, length, SHA384_OID) == 0)
    {
       hashAlgo = SHA384_HASH_ALGO;
    }
@@ -112,7 +112,7 @@ const HashAlgo *ocspGetHashAlgo(const uint8_t *oid, size_t length)
 #endif
 #if (OCSP_SHA512_SUPPORT == ENABLED && SHA512_SUPPORT == ENABLED)
    //SHA-512 hash algorithm identifier?
-   if(!oidComp(oid, length, SHA512_OID, sizeof(SHA512_OID)))
+   if(OID_COMP(oid, length, SHA512_OID) == 0)
    {
       hashAlgo = SHA512_HASH_ALGO;
    }

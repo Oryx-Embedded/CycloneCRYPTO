@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2025 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneCRYPTO Open.
  *
@@ -31,7 +31,7 @@
  * more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.4
+ * @version 2.5.0
  **/
 
 //Switch to the appropriate trace level
@@ -39,7 +39,7 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "hash/blake2b.h"
+#include "mac/blake2b.h"
 
 //Check crypto library configuration
 #if (BLAKE2B_SUPPORT == ENABLED)
@@ -255,12 +255,14 @@ void blake2bUpdate(Blake2bContext *context, const void *data, size_t length)
 /**
  * @brief Finish the BLAKE2b message digest
  * @param[in] context Pointer to the BLAKE2b context
- * @param[out] digest Calculated digest (optional parameter)
+ * @param[out] digest Calculated digest
  **/
 
 void blake2bFinal(Blake2bContext *context, uint8_t *digest)
 {
    size_t i;
+   size_t n;
+   uint8_t buffer[8];
 
    //The last block is padded with zeros to full block size, if required
    for(i = context->size; i < 128; i++)
@@ -271,16 +273,12 @@ void blake2bFinal(Blake2bContext *context, uint8_t *digest)
    //Compress the last block
    blake2bProcessBlock(context, TRUE);
 
-   //Convert from host byte order to big-endian byte order
-   for(i = 0; i < 8; i++)
-   {
-      context->h[i] = htole64(context->h[i]);
-   }
-
    //Copy the resulting digest
-   if(digest != NULL)
+   for(i = 0; (i * 8) < context->digestSize; i++)
    {
-      osMemcpy(digest, context->digest, context->digestSize);
+      n = MIN(context->digestSize - i * 8, 8);
+      STORE64LE(context->h[i], buffer);
+      memcpy(digest + i * 8, buffer, n);
    }
 }
 
@@ -333,7 +331,7 @@ void blake2bProcessBlock(Blake2bContext *context, bool_t last)
    //Convert from little-endian byte order to host byte order
    for(i = 0; i < 16; i++)
    {
-      m[i] = letoh64(m[i]);
+      m[i] = LOAD64LE(context->buffer + i * 8);
    }
 
    //Cryptographic mixing
