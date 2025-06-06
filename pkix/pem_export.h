@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _PEM_EXPORT_H
@@ -34,11 +34,7 @@
 //Dependencies
 #include "core/crypto.h"
 #include "pkix/pem_common.h"
-#include "pkc/dh.h"
-#include "pkc/rsa.h"
-#include "pkc/dsa.h"
 #include "ecc/ec.h"
-#include "ecc/eddsa.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -55,38 +51,8 @@ error_t pemExportCrl(const uint8_t *crl, size_t crlLen,
 error_t pemExportCsr(const uint8_t *csr, size_t csrLen,
    char_t *output, size_t *written);
 
-error_t pemExportRsaPublicKey(const RsaPublicKey *publicKey,
-   char_t *output, size_t *written);
-
-error_t pemExportRsaPrivateKey(const RsaPrivateKey *privateKey,
-   char_t *output, size_t *written);
-
-error_t pemExportRsaPssPublicKey(const RsaPublicKey *publicKey,
-   char_t *output, size_t *written);
-
-error_t pemExportRsaPssPrivateKey(const RsaPrivateKey *privateKey,
-   char_t *output, size_t *written);
-
-error_t pemExportDsaPublicKey(const DsaPublicKey *publicKey,
-   char_t *output, size_t *written);
-
-error_t pemExportDsaPrivateKey(const DsaPrivateKey *privateKey,
-   char_t *output, size_t *written);
-
 error_t pemExportEcParameters(const EcCurve *curve, char_t *output,
    size_t *written);
-
-error_t pemExportEcPublicKey(const EcPublicKey *publicKey,
-   char_t *output, size_t *written);
-
-error_t pemExportEcPrivateKey(const EcPrivateKey *privateKey,
-   char_t *output, size_t *written);
-
-error_t pemExportEddsaPublicKey(const EddsaPublicKey *publicKey,
-   char_t *output, size_t *written);
-
-error_t pemExportEddsaPrivateKey(const EddsaPrivateKey *privateKey,
-   char_t *output, size_t *written);
 
 //C++ guard
 #ifdef __cplusplus

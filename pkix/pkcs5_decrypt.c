@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -86,7 +86,7 @@ error_t pkcs5Decrypt(const X509AlgoId *encryptionAlgoId,
    else
    {
       //Report an error
-      return ERROR_INVALID_PARAMETER;
+      error = ERROR_INVALID_PARAMETER;
    }
 
    //Return status code
@@ -516,7 +516,7 @@ error_t pkcs5ParseKeyDerivationFunc(const uint8_t *data, size_t length,
    if(error)
       return error;
 
-   //Save the total length of the field
+   //Save the total length of the sequence
    *totalLength = tag.totalLength;
 
    //Point to the first field of the sequence
@@ -693,7 +693,7 @@ error_t pkcs5ParseEncryptionScheme(const uint8_t *data, size_t length,
    if(error)
       return error;
 
-   //Save the total length of the field of the sequence
+   //Save the total length of the sequence
    *totalLength = tag.totalLength;
 
    //Point to the first field

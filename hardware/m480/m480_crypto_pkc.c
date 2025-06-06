@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -182,7 +182,7 @@ error_t ecMulRegular(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
    {
       //Report an error
       error = ERROR_FAILURE;
-      }
+   }
 
    //Return status code
    return error;

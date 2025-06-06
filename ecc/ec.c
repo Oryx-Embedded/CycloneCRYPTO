@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -254,20 +254,20 @@ error_t ecGeneratePublicKey(const EcPrivateKey *privateKey,
  * @brief Import an EC public key
  * @param[out] key EC public key
  * @param[in] curve Elliptic curve parameters
- * @param[in] data Pointer to the octet string
+ * @param[in] input Pointer to the octet string
  * @param[in] length Length of the octet string, in bytes
  * @param[in] format EC public key format (X9.63 or raw format)
  * @return Error code
  **/
 
 error_t ecImportPublicKey(EcPublicKey *key, const EcCurve *curve,
-   const uint8_t *data, size_t length, EcPublicKeyFormat format)
+   const uint8_t *input, size_t length, EcPublicKeyFormat format)
 {
    error_t error;
    size_t n;
 
    //Check parameters
-   if(key != NULL && curve != NULL && data != NULL)
+   if(key != NULL && curve != NULL && input != NULL)
    {
       //Check curve type
       if(curve->type == EC_CURVE_TYPE_WEIERSTRASS ||
@@ -281,7 +281,7 @@ error_t ecImportPublicKey(EcPublicKey *key, const EcCurve *curve,
          if(format == EC_PUBLIC_KEY_FORMAT_X963)
          {
             //Read the public key
-            error = ecImportPoint(curve, &key->q, data, length);
+            error = ecImportPoint(curve, &key->q, input, length);
          }
          else if(format == EC_PUBLIC_KEY_FORMAT_RAW)
          {
@@ -289,15 +289,15 @@ error_t ecImportPublicKey(EcPublicKey *key, const EcCurve *curve,
             if(length == (n * 2))
             {
                //Convert the x-coordinate to an integer
-               error = ecScalarImport(key->q.x, EC_MAX_MODULUS_SIZE, data, n,
-                  EC_SCALAR_FORMAT_BIG_ENDIAN);
+               error = ecScalarImport(key->q.x, EC_MAX_MODULUS_SIZE, input,
+                  n, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
                //Check status code
                if(!error)
                {
                   //Convert the y-coordinate to an integer
                   error = ecScalarImport(key->q.y, EC_MAX_MODULUS_SIZE,
-                     data + n, n, EC_SCALAR_FORMAT_BIG_ENDIAN);
+                     input + n, n, EC_SCALAR_FORMAT_BIG_ENDIAN);
                }
             }
             else
@@ -309,14 +309,14 @@ error_t ecImportPublicKey(EcPublicKey *key, const EcCurve *curve,
          else if(format == EC_PUBLIC_KEY_FORMAT_RAW_X)
          {
             //Convert the x-coordinate to an integer
-            error = ecScalarImport(key->q.x, EC_MAX_MODULUS_SIZE, data, length,
-               EC_SCALAR_FORMAT_BIG_ENDIAN);
+            error = ecScalarImport(key->q.x, EC_MAX_MODULUS_SIZE, input,
+               length, EC_SCALAR_FORMAT_BIG_ENDIAN);
          }
          else if(format == EC_PUBLIC_KEY_FORMAT_RAW_Y)
          {
             //Convert the y-coordinate to an integer
-            error = ecScalarImport(key->q.y, EC_MAX_MODULUS_SIZE, data, length,
-               EC_SCALAR_FORMAT_BIG_ENDIAN);
+            error = ecScalarImport(key->q.y, EC_MAX_MODULUS_SIZE, input,
+               length, EC_SCALAR_FORMAT_BIG_ENDIAN);
          }
          else
          {
@@ -333,8 +333,8 @@ error_t ecImportPublicKey(EcPublicKey *key, const EcCurve *curve,
             ecScalarSetInt(key->q.y, 0, EC_MAX_MODULUS_SIZE);
 
             //Convert the u-coordinate to an integer
-            error = ecScalarImport(key->q.x, EC_MAX_MODULUS_SIZE, data, length,
-               EC_SCALAR_FORMAT_LITTLE_ENDIAN);
+            error = ecScalarImport(key->q.x, EC_MAX_MODULUS_SIZE, input,
+               length, EC_SCALAR_FORMAT_LITTLE_ENDIAN);
          }
          else
          {
@@ -369,20 +369,23 @@ error_t ecImportPublicKey(EcPublicKey *key, const EcCurve *curve,
 /**
  * @brief Export an EC public key
  * @param[in] key EC public key
- * @param[out] data Pointer to the octet string
- * @param[out] length Length of the octet string, in bytes
+ * @param[out] output Pointer to the octet string
+ * @param[out] written Length of the octet string, in bytes
  * @param[in] format EC public key format (X9.63 or raw format)
  * @return Error code
  **/
 
-error_t ecExportPublicKey(const EcPublicKey *key, uint8_t *data,
-   size_t *length, EcPublicKeyFormat format)
+error_t ecExportPublicKey(const EcPublicKey *key, uint8_t *output,
+   size_t *written, EcPublicKeyFormat format)
 {
    error_t error;
    size_t n;
 
+   //Initialize status code
+   error = NO_ERROR;
+
    //Check parameters
-   if(key != NULL && data != NULL && length != NULL)
+   if(key != NULL && written != NULL)
    {
       //Valid elliptic curve?
       if(key->curve != NULL)
@@ -399,20 +402,25 @@ error_t ecExportPublicKey(const EcPublicKey *key, uint8_t *data,
             if(format == EC_PUBLIC_KEY_FORMAT_X963)
             {
                //Write the public key
-               error = ecExportPoint(key->curve, &key->q, data, &n);
+               error = ecExportPoint(key->curve, &key->q, output, &n);
             }
             else if(format == EC_PUBLIC_KEY_FORMAT_RAW)
             {
-               //Convert the x-coordinate to an octet string
-               error = ecScalarExport(key->q.x, (n + 3) / 4, data, n,
-                  EC_SCALAR_FORMAT_BIG_ENDIAN);
-
-               //Check status code
-               if(!error)
+               //If the output parameter is NULL, then the function calculates
+               //the length of the octet string without copying any data
+               if(output != NULL)
                {
-                  //Convert the y-coordinate to an octet string
-                  error = ecScalarExport(key->q.y, (n + 3) / 4, data + n, n,
+                  //Convert the x-coordinate to an octet string
+                  error = ecScalarExport(key->q.x, (n + 3) / 4, output, n,
                      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+                  //Check status code
+                  if(!error)
+                  {
+                     //Convert the y-coordinate to an octet string
+                     error = ecScalarExport(key->q.y, (n + 3) / 4, output + n, n,
+                        EC_SCALAR_FORMAT_BIG_ENDIAN);
+                  }
                }
 
                //Check status code
@@ -424,15 +432,25 @@ error_t ecExportPublicKey(const EcPublicKey *key, uint8_t *data,
             }
             else if(format == EC_PUBLIC_KEY_FORMAT_RAW_X)
             {
-               //Convert the x-coordinate to an octet string
-               error = ecScalarExport(key->q.x, (n + 3) / 4, data, n,
-                  EC_SCALAR_FORMAT_BIG_ENDIAN);
+               //If the output parameter is NULL, then the function calculates
+               //the length of the octet string without copying any data
+               if(output != NULL)
+               {
+                  //Convert the x-coordinate to an octet string
+                  error = ecScalarExport(key->q.x, (n + 3) / 4, output, n,
+                     EC_SCALAR_FORMAT_BIG_ENDIAN);
+               }
             }
             else if(format == EC_PUBLIC_KEY_FORMAT_RAW_Y)
             {
-               //Convert the y-coordinate to an octet string
-               error = ecScalarExport(key->q.y, (n + 3) / 4, data, n,
-                  EC_SCALAR_FORMAT_BIG_ENDIAN);
+               //If the output parameter is NULL, then the function calculates
+               //the length of the octet string without copying any data
+               if(output != NULL)
+               {
+                  //Convert the y-coordinate to an octet string
+                  error = ecScalarExport(key->q.y, (n + 3) / 4, output, n,
+                     EC_SCALAR_FORMAT_BIG_ENDIAN);
+               }
             }
             else
             {
@@ -445,9 +463,14 @@ error_t ecExportPublicKey(const EcPublicKey *key, uint8_t *data,
             //Get the length of the modulus, in bytes
             n = (key->curve->fieldSize + 7) / 8;
 
-            //Convert the u-coordinate to an octet string
-            error = ecScalarExport(key->q.x, (n + 3) / 4, data, n,
-               EC_SCALAR_FORMAT_LITTLE_ENDIAN);
+            //If the output parameter is NULL, then the function calculates the
+            //length of the octet string without copying any data
+            if(output != NULL)
+            {
+               //Convert the u-coordinate to an octet string
+               error = ecScalarExport(key->q.x, (n + 3) / 4, output, n,
+                  EC_SCALAR_FORMAT_LITTLE_ENDIAN);
+            }
          }
          else
          {
@@ -465,7 +488,7 @@ error_t ecExportPublicKey(const EcPublicKey *key, uint8_t *data,
       if(!error)
       {
          //Return the length of the octet string
-         *length = n;
+         *written = n;
       }
    }
    else
@@ -482,18 +505,19 @@ error_t ecExportPublicKey(const EcPublicKey *key, uint8_t *data,
 /**
  * @brief Import an EC private key
  * @param[out] key EC private key
- * @param[in] data Pointer to the octet string
+ * @param[in] curve Elliptic curve parameters
+ * @param[in] input Pointer to the octet string
  * @param[in] length Length of the octet string, in bytes
  * @return Error code
  **/
 
 error_t ecImportPrivateKey(EcPrivateKey *key, const EcCurve *curve,
-   const uint8_t *data, size_t length)
+   const uint8_t *input, size_t length)
 {
    error_t error;
 
    //Check parameters
-   if(key != NULL && curve != NULL && data != NULL)
+   if(key != NULL && curve != NULL && input != NULL)
    {
       //Check curve type
       if(curve->type == EC_CURVE_TYPE_WEIERSTRASS ||
@@ -501,7 +525,7 @@ error_t ecImportPrivateKey(EcPrivateKey *key, const EcCurve *curve,
          curve->type == EC_CURVE_TYPE_WEIERSTRASS_A3)
       {
          //Read the private key
-         error = ecScalarImport(key->d, EC_MAX_ORDER_SIZE, data, length,
+         error = ecScalarImport(key->d, EC_MAX_ORDER_SIZE, input, length,
             EC_SCALAR_FORMAT_BIG_ENDIAN);
       }
       else if(curve->type == EC_CURVE_TYPE_MONTGOMERY)
@@ -510,7 +534,7 @@ error_t ecImportPrivateKey(EcPrivateKey *key, const EcCurve *curve,
          if(length == ((curve->orderSize + 7) / 8))
          {
             //Read the private key
-            error = ecScalarImport(key->d, EC_MAX_ORDER_SIZE, data, length,
+            error = ecScalarImport(key->d, EC_MAX_ORDER_SIZE, input, length,
                EC_SCALAR_FORMAT_LITTLE_ENDIAN);
          }
          else
@@ -546,19 +570,22 @@ error_t ecImportPrivateKey(EcPrivateKey *key, const EcCurve *curve,
 /**
  * @brief Export an EC private key
  * @param[in] key EC private key
- * @param[out] data Pointer to the octet string
- * @param[out] length Length of the octet string, in bytes
+ * @param[out] output Pointer to the octet string
+ * @param[out] written Length of the octet string, in bytes
  * @return Error code
  **/
 
-error_t ecExportPrivateKey(const EcPrivateKey *key, uint8_t *data,
-   size_t *length)
+error_t ecExportPrivateKey(const EcPrivateKey *key, uint8_t *output,
+   size_t *written)
 {
    error_t error;
    size_t n;
 
+   //Initialize status code
+   error = NO_ERROR;
+
    //Check parameters
-   if(key != NULL && data != NULL && length != NULL)
+   if(key != NULL && written != NULL)
    {
       //Valid elliptic curve?
       if(key->curve != NULL)
@@ -571,18 +598,28 @@ error_t ecExportPrivateKey(const EcPrivateKey *key, uint8_t *data,
             //Get the length of the order, in bytes
             n = (key->curve->orderSize + 7) / 8;
 
-            //Write the private key
-            error = ecScalarExport(key->d, (n + 3) / 4, data, n,
-               EC_SCALAR_FORMAT_BIG_ENDIAN);
+            //If the output parameter is NULL, then the function calculates the
+            //length of the octet string without copying any data
+            if(output != NULL)
+            {
+               //Write the private key
+               error = ecScalarExport(key->d, (n + 3) / 4, output, n,
+                  EC_SCALAR_FORMAT_BIG_ENDIAN);
+            }
          }
          else if(key->curve->type == EC_CURVE_TYPE_MONTGOMERY)
          {
             //Get the length of the order, in bytes
             n = (key->curve->orderSize + 7) / 8;
 
-            //Write the private key
-            error = ecScalarExport(key->d, (n + 3) / 4, data, n,
-               EC_SCALAR_FORMAT_LITTLE_ENDIAN);
+            //If the output parameter is NULL, then the function calculates the
+            //length of the octet string without copying any data
+            if(output != NULL)
+            {
+               //Write the private key
+               error = ecScalarExport(key->d, (n + 3) / 4, output, n,
+                  EC_SCALAR_FORMAT_LITTLE_ENDIAN);
+            }
          }
          else
          {
@@ -600,7 +637,7 @@ error_t ecExportPrivateKey(const EcPrivateKey *key, uint8_t *data,
       if(!error)
       {
          //Return the length of the octet string
-         *length = n;
+         *written = n;
       }
    }
    else
@@ -618,19 +655,19 @@ error_t ecExportPrivateKey(const EcPrivateKey *key, uint8_t *data,
  * @brief Convert an octet string to an EC point
  * @param[in] curve Elliptic curve parameters
  * @param[out] r EC point resulting from the conversion
- * @param[in] data Pointer to the octet string
+ * @param[in] input Pointer to the octet string
  * @param[in] length Length of the octet string
  * @return Error code
  **/
 
-error_t ecImportPoint(const EcCurve *curve, EcPoint *r, const uint8_t *data,
+error_t ecImportPoint(const EcCurve *curve, EcPoint *r, const uint8_t *input,
    size_t length)
 {
    error_t error;
    size_t n;
 
    //Check parameters
-   if(curve == NULL || r == NULL || data == NULL)
+   if(curve == NULL || r == NULL || input == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Get the length of the modulus, in bytes
@@ -641,18 +678,18 @@ error_t ecImportPoint(const EcCurve *curve, EcPoint *r, const uint8_t *data,
       return ERROR_ILLEGAL_PARAMETER;
 
    //Compressed point representation is not supported
-   if(data[0] != EC_POINT_FORMAT_UNCOMPRESSED)
+   if(input[0] != EC_POINT_FORMAT_UNCOMPRESSED)
       return ERROR_ILLEGAL_PARAMETER;
 
    //Convert the x-coordinate to an integer
-   error = ecScalarImport(r->x, EC_MAX_MODULUS_SIZE, data + 1, n,
+   error = ecScalarImport(r->x, EC_MAX_MODULUS_SIZE, input + 1, n,
       EC_SCALAR_FORMAT_BIG_ENDIAN);
    //Any error to report?
    if(error)
       return error;
 
    //Convert the y-coordinate to an integer
-   error = ecScalarImport(r->y, EC_MAX_MODULUS_SIZE, data + n + 1, n,
+   error = ecScalarImport(r->y, EC_MAX_MODULUS_SIZE, input + n + 1, n,
       EC_SCALAR_FORMAT_BIG_ENDIAN);
    //Any error to report?
    if(error)
@@ -667,43 +704,48 @@ error_t ecImportPoint(const EcCurve *curve, EcPoint *r, const uint8_t *data,
  * @brief Convert an EC point to an octet string
  * @param[in] curve Elliptic curve parameters
  * @param[in] a EC point to be converted
- * @param[out] data Pointer to the octet string
- * @param[out] length Length of the resulting octet string
+ * @param[out] output Pointer to the octet string
+ * @param[out] written Length of the resulting octet string
  * @return Error code
  **/
 
-error_t ecExportPoint(const EcCurve *curve, const EcPoint *a, uint8_t *data,
-   size_t *length)
+error_t ecExportPoint(const EcCurve *curve, const EcPoint *a, uint8_t *output,
+   size_t *written)
 {
    error_t error;
    size_t n;
 
    //Check parameters
-   if(curve == NULL || a == NULL || data == NULL || length == NULL)
+   if(curve == NULL || a == NULL || written == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Get the length of the modulus, in bytes
    n = (curve->fieldSize + 7) / 8;
 
-   //Point compression is not used
-   data[0] = EC_POINT_FORMAT_UNCOMPRESSED;
+   //If the output parameter is NULL, then the function calculates the length
+   //of the octet string without copying any data
+   if(output != NULL)
+   {
+      //Point compression is not used
+      output[0] = EC_POINT_FORMAT_UNCOMPRESSED;
 
-   //Convert the x-coordinate to an octet string
-   error = ecScalarExport(a->x, (n + 3) / 4, data + 1, n,
-      EC_SCALAR_FORMAT_BIG_ENDIAN);
-   //Conversion failed?
-   if(error)
-      return error;
+      //Convert the x-coordinate to an octet string
+      error = ecScalarExport(a->x, (n + 3) / 4, output + 1, n,
+         EC_SCALAR_FORMAT_BIG_ENDIAN);
+      //Conversion failed?
+      if(error)
+         return error;
 
-   //Convert the y-coordinate to an octet string
-   error = ecScalarExport(a->y, (n + 3) / 4, data + n + 1, n,
-      EC_SCALAR_FORMAT_BIG_ENDIAN);
-   //Conversion failed?
-   if(error)
-      return error;
+      //Convert the y-coordinate to an octet string
+      error = ecScalarExport(a->y, (n + 3) / 4, output + n + 1, n,
+         EC_SCALAR_FORMAT_BIG_ENDIAN);
+      //Conversion failed?
+      if(error)
+         return error;
+   }
 
    //Return the length of the octet string
-   *length = n * 2 + 1;
+   *written = n * 2 + 1;
 
    //Successful processing
    return NO_ERROR;

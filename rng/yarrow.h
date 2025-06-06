@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _YARROW_H
@@ -62,17 +62,17 @@ extern "C" {
 
 typedef struct
 {
-   OsMutex mutex;                    //Mutex to prevent simultaneous access to the PRNG state
-   bool_t ready;                     //This flag tells whether the PRNG has been properly seeded
-   uint_t currentPool[YARROW_N];     //Current pool identifier
-   Sha256Context fastPool;           //Fast pool
-   size_t fastPoolEntropy[YARROW_N]; //Entropy estimation (fast pool)
-   Sha256Context slowPool;           //Slow pool
-   size_t slowPoolEntropy[YARROW_N]; //Entropy estimation (slow pool)
-   AesContext cipherContext;         //Cipher context
-   uint8_t key[32];                  //Current key
-   uint8_t counter[16];              //Counter block
-   size_t blockCount;                //Number of blocks that have been generated
+   OsMutex mutex;                    ///<Mutex preventing simultaneous access to the PRNG state
+   bool_t ready;                     ///<This flag tells whether the PRNG has been properly seeded
+   uint_t currentPool[YARROW_N];     ///<TCurrent pool identifier
+   Sha256Context fastPool;           ///<TFast pool
+   size_t fastPoolEntropy[YARROW_N]; ///<TEntropy estimation (fast pool)
+   Sha256Context slowPool;           ///<TSlow pool
+   size_t slowPoolEntropy[YARROW_N]; ///<TEntropy estimation (slow pool)
+   AesContext cipherContext;         ///<TCipher context
+   uint8_t key[32];                  ///<TCurrent key
+   uint8_t counter[16];              ///<TCounter block
+   size_t blockCount;                ///<TNumber of blocks that have been generated
 } YarrowContext;
 
 
@@ -87,7 +87,7 @@ error_t yarrowSeed(YarrowContext *context, const uint8_t *input, size_t length);
 error_t yarrowAddEntropy(YarrowContext *context, uint_t source,
    const uint8_t *input, size_t length, size_t entropy);
 
-error_t yarrowRead(YarrowContext *context, uint8_t *output, size_t length);
+error_t yarrowGenerate(YarrowContext *context, uint8_t *output, size_t length);
 
 void yarrowGenerateBlock(YarrowContext *context, uint8_t *output);
 void yarrowFastReseed(YarrowContext *context);

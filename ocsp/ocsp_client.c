@@ -33,7 +33,7 @@
  * - RFC 8954: Online Certificate Status Protocol (OCSP) Nonce Extension
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -583,6 +583,7 @@ error_t ocspClientValidateResponse(OcspClientContext *context,
    size_t derIssuerCertLen;
    X509CertInfo *certInfo;
    X509CertInfo *issuerCertInfo;
+   X509Options options;
 
    //Check parameters
    if(context == NULL || cert == NULL || issuerCert == NULL)
@@ -601,6 +602,10 @@ error_t ocspClientValidateResponse(OcspClientContext *context,
    derIssuerCert = NULL;
    certInfo = NULL;
    issuerCertInfo = NULL;
+
+   //Additional certificate parsing options
+   options = X509_DEFAULT_OPTIONS;
+   options.ignoreUnknownExtensions = TRUE;
 
    //Start of exception handling block
    do
@@ -637,7 +642,8 @@ error_t ocspClientValidateResponse(OcspClientContext *context,
             break;
 
          //Parse X.509 certificate
-         error = x509ParseCertificateEx(derCert, derCertLen, certInfo, TRUE);
+         error = x509ParseCertificateEx(derCert, derCertLen, certInfo,
+            &options);
          //Any error to report?
          if(error)
             break;
@@ -645,7 +651,7 @@ error_t ocspClientValidateResponse(OcspClientContext *context,
       else
       {
          //Parse X.509 certificate
-         error = x509ParseCertificateEx(cert, certLen, certInfo, TRUE);
+         error = x509ParseCertificateEx(cert, certLen, certInfo, &options);
          //Any error to report?
          if(error)
             break;
@@ -685,7 +691,7 @@ error_t ocspClientValidateResponse(OcspClientContext *context,
 
          //Parse X.509 certificate
          error = x509ParseCertificateEx(derIssuerCert, derIssuerCertLen,
-            issuerCertInfo, TRUE);
+            issuerCertInfo, &options);
          //Any error to report?
          if(error)
             break;
@@ -694,7 +700,7 @@ error_t ocspClientValidateResponse(OcspClientContext *context,
       {
          //Parse X.509 certificate
          error = x509ParseCertificateEx(issuerCert, issuerCertLen,
-            issuerCertInfo, TRUE);
+            issuerCertInfo, &options);
          //Any error to report?
          if(error)
             break;

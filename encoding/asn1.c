@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -494,10 +494,9 @@ error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data,
  * @param[in] tag Structure describing the ASN.1 tag
  * @param[in] reverse Use reverse encoding
  * @param[out] data Output stream where to write the tag (optional parameter)
- * @param[out] written Number of bytes written to the output stream (optional parameter)
+ * @param[out] written Number of bytes written to the output stream
  * @return Error code
  **/
-
 
 error_t asn1WriteHeader(Asn1Tag *tag, bool_t reverse, uint8_t *data,
    size_t *written)
@@ -634,6 +633,143 @@ error_t asn1WriteHeader(Asn1Tag *tag, bool_t reverse, uint8_t *data,
 
 
 /**
+ * @brief Insert an ASN.1 tag header
+ * @param[in] tag Structure describing the ASN.1 tag
+ * @param[out] data Output stream where to write the tag (optional parameter)
+ * @param[out] written Number of bytes written to the output stream
+ * @return Error code
+ **/
+
+error_t asn1InsertHeader(Asn1Tag *tag, uint8_t *data, size_t *written)
+{
+   size_t i;
+   size_t m;
+   size_t n;
+
+   //Compute the number of octets that are necessary to encode the tag number
+   if(tag->objType < 31)
+   {
+      m = 0;
+   }
+   else if(tag->objType < 128)
+   {
+      m = 1;
+   }
+   else if(tag->objType < 16384)
+   {
+      m = 2;
+   }
+   else if(tag->objType < 2097152)
+   {
+      m = 3;
+   }
+   else if(tag->objType < 268435456)
+   {
+      m = 4;
+   }
+   else
+   {
+      m = 5;
+   }
+
+   //Compute the number of octets that are necessary to encode the length field
+   if(tag->length < 128)
+   {
+      n = 0;
+   }
+   else if(tag->length < 256)
+   {
+      n = 1;
+   }
+   else if(tag->length < 65536)
+   {
+      n = 2;
+   }
+   else if(tag->length < 16777216)
+   {
+      n = 3;
+   }
+   else
+   {
+      n = 4;
+   }
+
+   //Valid output stream?
+   if(data != NULL)
+   {
+      //Make room for the ASN.1 tag header
+      osMemmove(data + m + n + 2, data, tag->length);
+
+      //Save the class of the ASN.1 tag
+      data[0] = tag->objClass;
+
+      //Primitive or constructed encoding?
+      if(tag->constructed)
+      {
+         data[0] |= ASN1_ENCODING_CONSTRUCTED;
+      }
+
+      //Encode the tag number
+      if(m == 0)
+      {
+         //Tag number is in the range 0 to 30
+         data[0] |= tag->objType;
+      }
+      else
+      {
+         //The tag number is greater than or equal to 31
+         data[0] |= ASN1_TAG_NUMBER_MASK;
+
+         //The subsequent octets will encode the tag number
+         for(i = 0; i < m; i++)
+         {
+            //Bits 7 to 1 encode the tag number
+            data[m - i] = (tag->objType >> (i * 7)) & 0x7F;
+
+            //Bit 8 of each octet shall be set to one unless it is the
+            //last octet of the identifier octets
+            if(i != 0)
+            {
+               data[m - i] |= 0x80;
+            }
+         }
+      }
+
+      //Encode the length field
+      if(n == 0)
+      {
+         //Use short form encoding
+         data[1 + m] = tag->length & 0x7F;
+      }
+      else
+      {
+         //Bits 7 to 1 encode the number of octets in the length field
+         data[1 + m] = 0x80 | (n & 0x7F);
+
+         //The subsequent octets will encode the length field
+         for(i = 0; i < n; i++)
+         {
+            data[1 + m + n - i] = (tag->length >> (i * 8)) & 0xFF;
+         }
+      }
+   }
+
+   //Total length occupied by the ASN.1 tag
+   tag->totalLength = tag->length + m + n + 2;
+
+   //The last parameter is optional
+   if(written != NULL)
+   {
+      //Number of bytes written to the output stream
+      *written = m + n + 2;
+   }
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
  * @brief Write a 32-bit integer to the output stream
  * @param[in] value Integer value
  * @param[in] reverse Use reverse encoding
@@ -680,9 +816,12 @@ error_t asn1WriteInt32(int32_t value, bool_t reverse, uint8_t *data,
       }
    }
 
-   //Number of bytes written to the output stream
+   //The last parameter is optional
    if(written != NULL)
+   {
+      //Number of bytes written to the output stream
       *written = n + 2;
+   }
 
    //Successful processing
    return NO_ERROR;
@@ -781,7 +920,9 @@ error_t asn1WriteMpi(const Mpi *value, bool_t reverse, uint8_t *data,
 
    //Number of bytes written to the output stream
    if(written != NULL)
+   {
       *written = tag.totalLength;
+   }
 
    //Successful processing
    return NO_ERROR;
@@ -806,9 +947,11 @@ error_t asn1CheckTag(const Asn1Tag *tag, bool_t constructed, uint_t objClass,
    //Check encoding
    if(tag->constructed != constructed)
       return ERROR_WRONG_ENCODING;
+
    //Enforce class
    if(tag->objClass != objClass)
       return ERROR_INVALID_CLASS;
+
    //Enforce type
    if(tag->objType != objType)
       return ERROR_INVALID_TYPE;
@@ -899,7 +1042,7 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
    };
 
    //Prefix used to format the structure
-   static const char_t *const prefix[10] =
+   static const char_t *const prefix[12] =
    {
       "",
       "  ",
@@ -910,7 +1053,9 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
       "            ",
       "              ",
       "                ",
-      "                  "
+      "                  ",
+      "                   ",
+      "                    "
    };
 
    //Parse ASN.1 object
@@ -940,7 +1085,7 @@ error_t asn1DumpObject(const uint8_t *data, size_t length, uint_t level)
       if(tag.constructed)
       {
          //Check whether the maximum level of recursion is reached
-         if(level < 8)
+         if(level < 10)
          {
             //Recursive decoding of the ASN.1 tag
             error = asn1DumpObject(tag.value, tag.length, level + 1);

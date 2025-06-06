@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -46,15 +46,15 @@ const PrngAlgo yarrowPrngAlgo =
    sizeof(YarrowContext),
    (PrngAlgoInit) yarrowInit,
    (PrngAlgoSeed) yarrowSeed,
-   (PrngAlgoAddEntropy) yarrowAddEntropy,
-   (PrngAlgoRead) yarrowRead,
+   (PrngAlgoReseed) NULL,
+   (PrngAlgoGenerate) yarrowGenerate,
    (PrngAlgoDeinit) yarrowDeinit
 };
 
 
 /**
  * @brief Initialize PRNG context
- * @param[in] context Pointer to the PRNG context to initialize
+ * @param[in] context Pointer to the Yarrow context to initialize
  * @return Error code
  **/
 
@@ -84,7 +84,7 @@ error_t yarrowInit(YarrowContext *context)
 
 /**
  * @brief Seed the PRNG state
- * @param[in] context Pointer to the PRNG context
+ * @param[in] context Pointer to the Yarrow context
  * @param[in] input Pointer to the input data
  * @param[in] length Length of the input data
  * @return Error code
@@ -108,7 +108,7 @@ error_t yarrowSeed(YarrowContext *context, const uint8_t *input, size_t length)
 
 /**
  * @brief Add entropy to the PRNG state
- * @param[in] context Pointer to the PRNG context
+ * @param[in] context Pointer to the Yarrow context
  * @param[in] source Entropy source identifier
  * @param[in] input Pointer to the input data
  * @param[in] length Length of the input data
@@ -189,14 +189,14 @@ error_t yarrowAddEntropy(YarrowContext *context, uint_t source,
 
 
 /**
- * @brief Read random data
- * @param[in] context Pointer to the PRNG context
+ * @brief Generate random data
+ * @param[in] context Pointer to the Yarrow context
  * @param[out] output Buffer where to store the output data
  * @param[in] length Desired length in bytes
  * @return Error code
  **/
 
-error_t yarrowRead(YarrowContext *context, uint8_t *output, size_t length)
+error_t yarrowGenerate(YarrowContext *context, uint8_t *output, size_t length)
 {
    size_t n;
    uint8_t buffer[AES_BLOCK_SIZE];
@@ -211,7 +211,7 @@ error_t yarrowRead(YarrowContext *context, uint8_t *output, size_t length)
    //Generate random data in a block-by-block fashion
    while(length > 0)
    {
-      //Number of bytes to process at a time
+      //Number of bytes to generate at a time
       n = MIN(length, AES_BLOCK_SIZE);
 
       //Generate a random block
@@ -251,7 +251,7 @@ error_t yarrowRead(YarrowContext *context, uint8_t *output, size_t length)
 
 /**
  * @brief Generate a random block of data
- * @param[in] context Pointer to the PRNG context
+ * @param[in] context Pointer to the Yarrow context
  * @param[out] output Buffer where to store the output block
  **/
 
@@ -276,7 +276,7 @@ void yarrowGenerateBlock(YarrowContext *context, uint8_t *output)
 
 /**
  * @brief Reseed from the fast pool
- * @param[in] context Pointer to the PRNG context
+ * @param[in] context Pointer to the Yarrow context
  **/
 
 void yarrowFastReseed(YarrowContext *context)
@@ -317,7 +317,7 @@ void yarrowFastReseed(YarrowContext *context)
 
 /**
  * @brief Reseed from the slow pool
- * @param[in] context Pointer to the PRNG context
+ * @param[in] context Pointer to the Yarrow context
  **/
 
 void yarrowSlowReseed(YarrowContext *context)
@@ -365,7 +365,7 @@ void yarrowSlowReseed(YarrowContext *context)
 
 /**
  * @brief Release PRNG context
- * @param[in] context Pointer to the PRNG context
+ * @param[in] context Pointer to the Yarrow context
  **/
 
 void yarrowDeinit(YarrowContext *context)

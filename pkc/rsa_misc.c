@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -235,7 +235,7 @@ error_t emePkcs1v15Encode(const PrngAlgo *prngAlgo, void *prngContext,
    while(n > 0)
    {
       //Generate random data
-      error = prngAlgo->read(prngContext, p, n);
+      error = prngAlgo->generate(prngContext, p, n);
       //Any error to report?
       if(error)
          return error;
@@ -352,7 +352,7 @@ error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
    db = em + hash->digestSize + 1;
 
    //Generate a random octet string seed of length hLen
-   error = prngAlgo->read(prngContext, seed, hash->digestSize);
+   error = prngAlgo->generate(prngContext, seed, hash->digestSize);
    //Any error to report?
    if(error)
       return error;
@@ -688,7 +688,7 @@ error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
    salt = db + n + 1;
 
    //Generate a random octet string salt of length sLen
-   error = prngAlgo->read(prngContext, salt, saltLen);
+   error = prngAlgo->generate(prngContext, salt, saltLen);
    //Any error to report?
    if(error)
       return error;

@@ -25,13 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
+#include "esp_crypto_lock.h"
 #include "hal/sha_types.h"
 #include "soc/hwcrypto_reg.h"
 #include "soc/dport_access.h"
@@ -52,8 +53,6 @@
 
 void esp32ShaInit(void)
 {
-   //Enable SHA module
-   periph_module_enable(PERIPH_SHA_MODULE);
 }
 
 
@@ -233,7 +232,9 @@ error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
    uint8_t buffer[64];
 
    //Acquire exclusive access to the SHA module
-   osAcquireMutex(&esp32CryptoMutex);
+   esp_crypto_sha_aes_lock_acquire();
+   //Enable SHA module
+   periph_module_enable(PERIPH_SHA_MODULE);
 
    //Process the first message block
    first = TRUE;
@@ -289,8 +290,10 @@ error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
    STORE32BE(temp, digest + 16);
    DPORT_INTERRUPT_RESTORE();
 
+   //Disable SHA module
+   periph_module_disable(PERIPH_SHA_MODULE);
    //Release exclusive access to the SHA module
-   osReleaseMutex(&esp32CryptoMutex);
+   esp_crypto_sha_aes_lock_release();
 
    //Sucessful processing
    return NO_ERROR;
@@ -315,7 +318,9 @@ error_t sha256Compute(const void *data, size_t length, uint8_t *digest)
    uint8_t buffer[64];
 
    //Acquire exclusive access to the SHA module
-   osAcquireMutex(&esp32CryptoMutex);
+   esp_crypto_sha_aes_lock_acquire();
+   //Enable SHA module
+   periph_module_enable(PERIPH_SHA_MODULE);
 
    //Process the first message block
    first = TRUE;
@@ -377,8 +382,10 @@ error_t sha256Compute(const void *data, size_t length, uint8_t *digest)
    STORE32BE(temp, digest + 28);
    DPORT_INTERRUPT_RESTORE();
 
+   //Disable SHA module
+   periph_module_disable(PERIPH_SHA_MODULE);
    //Release exclusive access to the SHA module
-   osReleaseMutex(&esp32CryptoMutex);
+   esp_crypto_sha_aes_lock_release();
 
    //Sucessful processing
    return NO_ERROR;
@@ -403,7 +410,9 @@ error_t sha384Compute(const void *data, size_t length, uint8_t *digest)
    uint8_t buffer[128];
 
    //Acquire exclusive access to the SHA module
-   osAcquireMutex(&esp32CryptoMutex);
+   esp_crypto_sha_aes_lock_acquire();
+   //Enable SHA module
+   periph_module_enable(PERIPH_SHA_MODULE);
 
    //Process the first message block
    first = TRUE;
@@ -473,8 +482,10 @@ error_t sha384Compute(const void *data, size_t length, uint8_t *digest)
    STORE32BE(temp, digest + 44);
    DPORT_INTERRUPT_RESTORE();
 
+   //Disable SHA module
+   periph_module_disable(PERIPH_SHA_MODULE);
    //Release exclusive access to the SHA module
-   osReleaseMutex(&esp32CryptoMutex);
+   esp_crypto_sha_aes_lock_release();
 
    //Sucessful processing
    return NO_ERROR;
@@ -499,7 +510,9 @@ error_t sha512Compute(const void *data, size_t length, uint8_t *digest)
    uint8_t buffer[128];
 
    //Acquire exclusive access to the SHA module
-   osAcquireMutex(&esp32CryptoMutex);
+   esp_crypto_sha_aes_lock_acquire();
+   //Enable SHA module
+   periph_module_enable(PERIPH_SHA_MODULE);
 
    //Process the first message block
    first = TRUE;
@@ -577,8 +590,10 @@ error_t sha512Compute(const void *data, size_t length, uint8_t *digest)
    STORE32BE(temp, digest + 60);
    DPORT_INTERRUPT_RESTORE();
 
+   //Disable SHA module
+   periph_module_disable(PERIPH_SHA_MODULE);
    //Release exclusive access to the SHA module
-   osReleaseMutex(&esp32CryptoMutex);
+   esp_crypto_sha_aes_lock_release();
 
    //Sucessful processing
    return NO_ERROR;

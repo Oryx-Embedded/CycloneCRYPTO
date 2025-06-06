@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -680,7 +680,7 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
 }
 
 #endif
-#if (GCM_SUPPORT == ENABLED && BSP_FEATURE_CRYPTO_HAS_SCE9 != 0)
+#if (GCM_SUPPORT == ENABLED && BSP_FEATURE_RSIP_SCE9_SUPPORTED != 0)
 
 /**
  * @brief Initialize GCM context

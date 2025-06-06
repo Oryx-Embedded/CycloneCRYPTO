@@ -31,7 +31,7 @@
  * PKCS #3 (Diffie-Hellman Key-Agreement Standard)
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -174,6 +174,68 @@ error_t dhGenerateKeyPair(DhContext *context, const PrngAlgo *prngAlgo,
 
 
 /**
+ * @brief Export our own public key
+ * @param[in] context Pointer to the Diffie-Hellman context
+ * @param[out] output Pointer to the octet string
+ * @param[out] written Length of the octet string, in bytes
+ * @param[in] format Output format
+ * @return Error code
+ **/
+
+error_t dhExportPublicKey(DhContext *context, uint8_t *output, size_t *written,
+   MpiFormat format)
+{
+   error_t error;
+   size_t n;
+
+   //Retrieve the length of the modulus
+   n = mpiGetByteLength(&context->params.p);
+
+   //Export our own public key
+   error = mpiExport(&context->ya, output, n, format);
+
+   //Check status code
+   if(!error)
+   {
+      //Return the length of the octet string
+      *written = n;
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Import peer's public key
+ * @param[in] context Pointer to the Diffie-Hellman context
+ * @param[in] input Pointer to the octet string
+ * @param[in] length Length of the octet string, in bytes
+ * @param[in] format Input format
+ * @return Error code
+ **/
+
+error_t dhImportPeerPublicKey(DhContext *context, const uint8_t *input,
+   size_t length, MpiFormat format)
+{
+   error_t error;
+
+   //Import peer's public key
+   error = mpiImport(&context->yb, input, length, format);
+
+   //Check status code
+   if(!error)
+   {
+      //Ensure the public key is acceptable
+      error = dhCheckPublicKey(context, &context->yb);
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
  * @brief Check Diffie-Hellman public value
  * @param[in] context Pointer to the Diffie-Hellman context
  * @param[in] publicKey Public value to be checked
@@ -209,6 +271,7 @@ error_t dhCheckPublicKey(DhContext *context, const Mpi *publicKey)
 
    //Free previously allocated resources
    mpiFree(&a);
+
    //Return status code
    return error;
 }
@@ -271,6 +334,7 @@ error_t dhComputeSharedSecret(DhContext *context, uint8_t *output,
 
    //Release previously allocated resources
    mpiFree(&z);
+
    //Return status code
    return error;
 }

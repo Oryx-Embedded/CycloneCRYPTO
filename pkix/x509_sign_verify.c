@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -67,7 +67,7 @@ error_t x509RegisterSignVerifyCallback(X509SignVerifyCallback callback)
 
 
 /**
- * @brief Certificate signature verification
+ * @brief Signature verification
  * @param[in] tbsData Data whose signature is to be verified
  * @param[in] signAlgoId Signature algorithm identifier
  * @param[in] publicKeyInfo Issuer's public key

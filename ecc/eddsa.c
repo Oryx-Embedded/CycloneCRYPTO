@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -266,13 +266,14 @@ error_t eddsaGeneratePublicKey(const EddsaPrivateKey *privateKey,
 /**
  * @brief Import an EdDSA public key
  * @param[out] key EdDSA public key
- * @param[in] data Pointer to the octet string
+ * @param[in] curve Elliptic curve parameters
+ * @param[in] input Pointer to the octet string
  * @param[in] length Length of the octet string, in bytes
  * @return Error code
  **/
 
 error_t eddsaImportPublicKey(EddsaPublicKey *key, const EcCurve *curve,
-   const uint8_t *data, size_t length)
+   const uint8_t *input, size_t length)
 {
    error_t error;
 
@@ -280,7 +281,7 @@ error_t eddsaImportPublicKey(EddsaPublicKey *key, const EcCurve *curve,
    error = NO_ERROR;
 
    //Check parameters
-   if(key != NULL && curve != NULL && data != NULL)
+   if(key != NULL && curve != NULL && input != NULL)
    {
       //Edwards elliptic curve?
       if(curve->type == EC_CURVE_TYPE_EDWARDS)
@@ -291,7 +292,7 @@ error_t eddsaImportPublicKey(EddsaPublicKey *key, const EcCurve *curve,
             //Save elliptic curve parameters
             key->curve = curve;
             //Copy the public key
-            osMemcpy(key->q, data, length);
+            osMemcpy(key->q, input, length);
          }
          else
          {
@@ -319,29 +320,39 @@ error_t eddsaImportPublicKey(EddsaPublicKey *key, const EcCurve *curve,
 /**
  * @brief Export an EdDSA public key
  * @param[in] key EdDSA public key
- * @param[out] data Pointer to the octet string
- * @param[out] length Length of the octet string, in bytes
+ * @param[out] output Pointer to the octet string (optional parameter)
+ * @param[out] written Length of the resulting octet string, in bytes
  * @return Error code
  **/
 
-error_t eddsaExportPublicKey(const EddsaPublicKey *key, uint8_t *data,
-   size_t *length)
+error_t eddsaExportPublicKey(const EddsaPublicKey *key, uint8_t *output,
+   size_t *written)
 {
    error_t error;
+   size_t n;
 
    //Initialize status code
    error = NO_ERROR;
 
    //Check parameters
-   if(key != NULL && data != NULL && length != NULL)
+   if(key != NULL && written != NULL)
    {
       //Edwards elliptic curve?
       if(key->curve != NULL && key->curve->type == EC_CURVE_TYPE_EDWARDS)
       {
          //Determine the length of the public key
-         *length = (key->curve->fieldSize / 8) + 1;
-         //Copy the public key
-         osMemcpy(data, key->q, *length);
+         n = (key->curve->fieldSize / 8) + 1;
+
+         //If the output parameter is NULL, then the function calculates the
+         //length of the octet string without copying any data
+         if(output != NULL)
+         {
+            //Copy the public key
+            osMemcpy(output, key->q, n);
+         }
+
+         //Length of the resulting octet string
+         *written = n;
       }
       else
       {
@@ -363,6 +374,7 @@ error_t eddsaExportPublicKey(const EddsaPublicKey *key, uint8_t *data,
 /**
  * @brief Import an EdDSA private key
  * @param[out] key EdDSA private key
+ * @param[in] curve Elliptic curve parameters
  * @param[in] data Pointer to the octet string
  * @param[in] length Length of the octet string, in bytes
  * @return Error code
@@ -416,29 +428,39 @@ error_t eddsaImportPrivateKey(EddsaPrivateKey *key, const EcCurve *curve,
 /**
  * @brief Export an EdDSA private key
  * @param[in] key EdDSA private key
- * @param[out] data Pointer to the octet string
- * @param[out] length Length of the octet string, in bytes
+ * @param[out] output Pointer to the octet string (optional parameter)
+ * @param[out] written Length of the octet string, in bytes
  * @return Error code
  **/
 
-error_t eddsaExportPrivateKey(const EddsaPrivateKey *key, uint8_t *data,
-   size_t *length)
+error_t eddsaExportPrivateKey(const EddsaPrivateKey *key, uint8_t *output,
+   size_t *written)
 {
    error_t error;
+   size_t n;
 
    //Initialize status code
    error = NO_ERROR;
 
    //Check parameters
-   if(key != NULL && data != NULL && length != NULL)
+   if(key != NULL && written != NULL)
    {
       //Edwards elliptic curve?
       if(key->curve != NULL && key->curve->type == EC_CURVE_TYPE_EDWARDS)
       {
          //Determine the length of the private key
-         *length = (key->curve->fieldSize / 8) + 1;
-         //Copy the private key
-         osMemcpy(data, key->d, *length);
+         n = (key->curve->fieldSize / 8) + 1;
+
+         //If the output parameter is NULL, then the function calculates the
+         //length of the octet string without copying any data
+         if(output != NULL)
+         {
+            //Copy the private key
+            osMemcpy(output, key->d, n);
+         }
+
+         //Length of the resulting octet string
+         *written = n;
       }
       else
       {

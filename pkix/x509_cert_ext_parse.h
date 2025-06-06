@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _X509_CERT_EXT_PARSE_H
@@ -42,7 +42,7 @@ extern "C" {
 
 //X.509 related functions
 error_t x509ParseCertExtensions(const uint8_t *data, size_t length,
-   size_t *totalLength, X509Extensions *extensions, bool_t ignoreUnknown);
+   size_t *totalLength, X509Extensions *extensions, const X509Options *options);
 
 error_t x509ParseExtension(const uint8_t *data, size_t length,
    size_t *totalLength, X509Extension *extension);

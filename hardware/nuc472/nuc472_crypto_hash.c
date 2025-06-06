@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -142,7 +142,7 @@ error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
    __UNALIGNED_UINT32_WRITE(digest + 12, temp);
    temp = CRPT->SHA_DGST4;
    __UNALIGNED_UINT32_WRITE(digest + 16, temp);
- 
+
    //Stop SHA engine
    CRPT->SHA_CTL |= CRPT_SHA_CTL_STOP_Msk;
 
@@ -228,7 +228,7 @@ error_t sha224Compute(const void *data, size_t length, uint8_t *digest)
    __UNALIGNED_UINT32_WRITE(digest + 20, temp);
    temp = CRPT->SHA_DGST6;
    __UNALIGNED_UINT32_WRITE(digest + 24, temp);
- 
+
    //Stop SHA engine
    CRPT->SHA_CTL |= CRPT_SHA_CTL_STOP_Msk;
 
@@ -316,7 +316,7 @@ error_t sha256Compute(const void *data, size_t length, uint8_t *digest)
    __UNALIGNED_UINT32_WRITE(digest + 24, temp);
    temp = CRPT->SHA_DGST7;
    __UNALIGNED_UINT32_WRITE(digest + 28, temp);
- 
+
    //Stop SHA engine
    CRPT->SHA_CTL |= CRPT_SHA_CTL_STOP_Msk;
 

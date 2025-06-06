@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -75,7 +75,7 @@ error_t x509FormatExtensions(const X509Extensions *extensions,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format BasicConstraints extension
@@ -85,7 +85,7 @@ error_t x509FormatExtensions(const X509Extensions *extensions,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format KeyUsage extension
@@ -95,7 +95,7 @@ error_t x509FormatExtensions(const X509Extensions *extensions,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format ExtendedKeyUsage extension
@@ -105,7 +105,7 @@ error_t x509FormatExtensions(const X509Extensions *extensions,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format SubjectKeyId extension
@@ -115,7 +115,7 @@ error_t x509FormatExtensions(const X509Extensions *extensions,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format AuthorityKeyId extension
@@ -125,7 +125,7 @@ error_t x509FormatExtensions(const X509Extensions *extensions,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format SubjectAltName extension
@@ -135,7 +135,7 @@ error_t x509FormatExtensions(const X509Extensions *extensions,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Add custom extensions, if any
@@ -148,7 +148,7 @@ error_t x509FormatExtensions(const X509Extensions *extensions,
          return error;
 
       //Advance data pointer
-      p += n;
+      ASN1_INC_POINTER(p, n);
       length += n;
    }
 
@@ -160,26 +160,30 @@ error_t x509FormatExtensions(const X509Extensions *extensions,
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = length;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &n);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      length = tag.totalLength;
 
       //Explicit tagging shall be used to encode the Extensions structure
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_CONTEXT_SPECIFIC;
       tag.objType = 3;
-      tag.length = n;
-      tag.value = output;
+      tag.length = length;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &length);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting tag
+      length = tag.totalLength;
    }
 
    //Total number of bytes that have been written
@@ -227,7 +231,7 @@ error_t x509FormatExtension(const X509Extension *extension, uint8_t *output,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //An extension includes the critical flag, with a default value of FALSE
@@ -250,7 +254,7 @@ error_t x509FormatExtension(const X509Extension *extension, uint8_t *output,
          return error;
 
       //Advance data pointer
-      p += n;
+      ASN1_INC_POINTER(p, n);
       length += n;
    }
 
@@ -275,16 +279,15 @@ error_t x509FormatExtension(const X509Extension *extension, uint8_t *output,
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_SEQUENCE;
    tag.length = length;
-   tag.value = output;
 
    //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &length);
+   error = asn1InsertHeader(&tag, output, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Total number of bytes that have been written
-   *written = length;
+   *written = tag.totalLength;
 
    //Successful processing
    return NO_ERROR;
@@ -334,7 +337,7 @@ error_t x509FormatBasicConstraints(const X509BasicConstraints *basicConstraints,
          return error;
 
       //Advance data pointer
-      p += n;
+      ASN1_INC_POINTER(p, n);
       length += n;
 
       //An extension includes the critical flag, with a default value of FALSE
@@ -357,7 +360,7 @@ error_t x509FormatBasicConstraints(const X509BasicConstraints *basicConstraints,
             return error;
 
          //Advance data pointer
-         p += n;
+         ASN1_INC_POINTER(p, n);
          length += n;
       }
 
@@ -382,10 +385,14 @@ error_t x509FormatBasicConstraints(const X509BasicConstraints *basicConstraints,
          tag.value = buffer;
 
          //Write the corresponding ASN.1 tag
-         error = asn1WriteTag(&tag, FALSE, p, &length);
+         error = asn1WriteTag(&tag, FALSE, p, &n);
          //Any error to report?
          if(error)
             return error;
+
+         //Advance data pointer
+         ASN1_INC_POINTER(p, n);
+         length += n;
 
          //Where pathLenConstraint does not appear, no limit is imposed
          if(basicConstraints->pathLenConstraint >= 0)
@@ -396,14 +403,25 @@ error_t x509FormatBasicConstraints(const X509BasicConstraints *basicConstraints,
             value = basicConstraints->pathLenConstraint;
 
             //Encode pathLenConstraint value
-            error = asn1WriteInt32(value, FALSE, p + length, &n);
+            error = asn1WriteInt32(value, FALSE, p, &n);
             //Any error to report?
             if(error)
                return error;
 
-            //Update the length of the extension value
+            //Advance data pointer
+            ASN1_INC_POINTER(p, n);
             length += n;
          }
+      }
+
+      //Point to the BasicConstraints extension
+      if(output != NULL)
+      {
+         p = output + *written;
+      }
+      else
+      {
+         p = NULL;
       }
 
       //The BasicConstraints extension is encapsulated within a sequence
@@ -411,42 +429,45 @@ error_t x509FormatBasicConstraints(const X509BasicConstraints *basicConstraints,
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = length;
-      tag.value = p;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, p, &n);
+      error = asn1InsertHeader(&tag, p, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      length = tag.totalLength;
 
       //The extension value is encapsulated in an octet string
       tag.constructed = FALSE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_OCTET_STRING;
-      tag.length = n;
-      tag.value = p;
+      tag.length = length;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output + *written, &n);
+      error = asn1InsertHeader(&tag, p, &n);
       //Any error to report?
       if(error)
          return error;
 
       //Adjust the length of the extension
-      *written += n;
+      *written += tag.totalLength;
 
       //The extension is encapsulated within a sequence
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = *written;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &length);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      length = tag.totalLength;
    }
 
    //Total number of bytes that have been written
@@ -502,7 +523,7 @@ error_t x509FormatKeyUsage(const X509KeyUsage *keyUsage, uint8_t *output,
          return error;
 
       //Advance data pointer
-      p += n;
+      ASN1_INC_POINTER(p, n);
       length += n;
 
       //An extension includes the critical flag, with a default value of FALSE
@@ -525,7 +546,7 @@ error_t x509FormatKeyUsage(const X509KeyUsage *keyUsage, uint8_t *output,
             return error;
 
          //Advance data pointer
-         p += n;
+         ASN1_INC_POINTER(p, n);
          length += n;
       }
 
@@ -570,29 +591,30 @@ error_t x509FormatKeyUsage(const X509KeyUsage *keyUsage, uint8_t *output,
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_OCTET_STRING;
       tag.length = n;
-      tag.value = p;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, p, &n);
+      error = asn1InsertHeader(&tag, p, &n);
       //Any error to report?
       if(error)
          return error;
 
       //Adjust the length of the extension
-      length += n;
+      length += tag.totalLength;
 
       //The extension is encapsulated within a sequence
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = length;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &length);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      length = tag.totalLength;
    }
 
    //Total number of bytes that have been written
@@ -647,7 +669,7 @@ error_t x509FormatExtendedKeyUsage(const X509ExtendedKeyUsage *extKeyUsage,
          return error;
 
       //Advance data pointer
-      p += n;
+      ASN1_INC_POINTER(p, n);
       length += n;
 
       //An extension includes the critical flag, with a default value of FALSE
@@ -670,7 +692,7 @@ error_t x509FormatExtendedKeyUsage(const X509ExtendedKeyUsage *extKeyUsage,
             return error;
 
          //Advance data pointer
-         p += n;
+         ASN1_INC_POINTER(p, n);
          length += n;
       }
 
@@ -685,29 +707,30 @@ error_t x509FormatExtendedKeyUsage(const X509ExtendedKeyUsage *extKeyUsage,
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_OCTET_STRING;
       tag.length = n;
-      tag.value = p;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, p, &n);
+      error = asn1InsertHeader(&tag, p, &n);
       //Any error to report?
       if(error)
          return error;
 
       //Adjust the length of the extension
-      length += n;
+      length += tag.totalLength;
 
       //The extension is encapsulated within a sequence
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = length;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &length);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      length = tag.totalLength;
    }
 
    //Total number of bytes that have been written
@@ -760,7 +783,7 @@ error_t x509FormatKeyPurposes(uint16_t bitmap, uint8_t *output,
          return error;
 
       //Advance data pointer
-      p += n;
+      ASN1_INC_POINTER(p, n);
       length += n;
    }
    else
@@ -871,7 +894,7 @@ error_t x509FormatKeyPurposes(uint16_t bitmap, uint8_t *output,
                return error;
 
             //Advance data pointer
-            p += n;
+            ASN1_INC_POINTER(p, n);
             length += n;
          }
       }
@@ -882,16 +905,15 @@ error_t x509FormatKeyPurposes(uint16_t bitmap, uint8_t *output,
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_SEQUENCE;
    tag.length = length;
-   tag.value = output;
 
    //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &length);
+   error = asn1InsertHeader(&tag, output, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Total number of bytes that have been written
-   *written = length;
+   *written = tag.totalLength;
 
    //Successful processing
    return NO_ERROR;
@@ -943,7 +965,7 @@ error_t x509FormatSubjectAltName(const X509SubjectAltName *subjectAltName,
          return error;
 
       //Advance data pointer
-      p += n;
+      ASN1_INC_POINTER(p, n);
       //Total number of bytes that have been written
       *written = n;
 
@@ -964,54 +986,64 @@ error_t x509FormatSubjectAltName(const X509SubjectAltName *subjectAltName,
             return error;
 
          //Advance data pointer
-         p += n;
+         ASN1_INC_POINTER(p, n);
          length += n;
       }
 
       //Point to the first object
-      p = output + *written;
+      if(output != NULL)
+      {
+         p = output + *written;
+      }
+      else
+      {
+         p = NULL;
+      }
 
       //The names are encapsulated within a sequence
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = length;
-      tag.value = p;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, p, &n);
+      error = asn1InsertHeader(&tag, p, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      length = tag.totalLength;
 
       //The extension value is encapsulated in an octet string
       tag.constructed = FALSE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_OCTET_STRING;
-      tag.length = n;
-      tag.value = p;
+      tag.length = length;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, p, &n);
+      error = asn1InsertHeader(&tag, p, &n);
       //Any error to report?
       if(error)
          return error;
 
       //Adjust the length of the extension
-      *written += n;
+      *written += tag.totalLength;
 
       //The extension is encapsulated within a sequence
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = *written;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &length);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting tag
+      length = tag.totalLength;
    }
 
    //Total number of bytes that have been written
@@ -1065,7 +1097,7 @@ error_t x509FormatSubjectKeyId(const X509SubjectKeyId *subjectKeyId,
          return error;
 
       //Advance data pointer
-      p += n;
+      ASN1_INC_POINTER(p, n);
       length += n;
 
       //Format the KeyIdentifier field
@@ -1086,29 +1118,30 @@ error_t x509FormatSubjectKeyId(const X509SubjectKeyId *subjectKeyId,
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_OCTET_STRING;
       tag.length = n;
-      tag.value = p;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, p, &n);
+      error = asn1InsertHeader(&tag, p, &n);
       //Any error to report?
       if(error)
          return error;
 
       //Adjust the length of the extension
-      length += n;
+      length += tag.totalLength;
 
       //The extension is encapsulated within a sequence
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = length;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &length);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      length = tag.totalLength;
    }
 
    //Total number of bytes that have been written
@@ -1162,7 +1195,7 @@ error_t x509FormatAuthorityKeyId(const X509AuthKeyId *authKeyId,
          return error;
 
       //Advance data pointer
-      p += n;
+      ASN1_INC_POINTER(p, n);
       length += n;
 
       //Explicit tagging shall be used to encode the keyIdentifier field
@@ -1183,42 +1216,45 @@ error_t x509FormatAuthorityKeyId(const X509AuthKeyId *authKeyId,
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = n;
-      tag.value = p;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, p, &n);
+      error = asn1InsertHeader(&tag, p, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      n = tag.totalLength;
 
       //The extension value is encapsulated in an octet string
       tag.constructed = FALSE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_OCTET_STRING;
       tag.length = n;
-      tag.value = p;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, p, &n);
+      error = asn1InsertHeader(&tag, p, &n);
       //Any error to report?
       if(error)
          return error;
 
       //Adjust the length of the extension
-      length += n;
+      length += tag.totalLength;
 
       //The extension is encapsulated within a sequence
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = length;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &length);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      length = tag.totalLength;
    }
 
    //Total number of bytes that have been written
@@ -1273,7 +1309,7 @@ error_t x509FormatNsCertType(const X509NsCertType *nsCertType,
          return error;
 
       //Advance data pointer
-      p += n;
+      ASN1_INC_POINTER(p, n);
       length += n;
 
       //Calculate the length, in bits, of the NetscapeCertType value
@@ -1305,29 +1341,30 @@ error_t x509FormatNsCertType(const X509NsCertType *nsCertType,
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_OCTET_STRING;
       tag.length = n;
-      tag.value = p;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, p, &n);
+      error = asn1InsertHeader(&tag, p, &n);
       //Any error to report?
       if(error)
          return error;
 
       //Adjust the length of the extension
-      length += n;
+      length += tag.totalLength;
 
       //The extension is encapsulated within a sequence
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = length;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &length);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      length = tag.totalLength;
    }
 
    //Total number of bytes that have been written

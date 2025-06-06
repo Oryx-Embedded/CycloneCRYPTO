@@ -31,7 +31,7 @@
  * documents. Refer to FIPS 186-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -189,12 +189,12 @@ void dsaFreeSignature(DsaSignature *signature)
 /**
  * @brief Import an ASN.1 encoded DSA signature
  * @param[out] signature DSA signature
- * @param[in] data Pointer to the octet string
+ * @param[in] input Pointer to the octet string
  * @param[in] length Length of the octet string, in bytes
  * @return Error code
  **/
 
-error_t dsaImportSignature(DsaSignature *signature, const uint8_t *data,
+error_t dsaImportSignature(DsaSignature *signature, const uint8_t *input,
    size_t length)
 {
    error_t error;
@@ -205,19 +205,19 @@ error_t dsaImportSignature(DsaSignature *signature, const uint8_t *data,
 
    //Dump DSA signature
    TRACE_DEBUG("  signature:\r\n");
-   TRACE_DEBUG_ARRAY("    ", data, length);
+   TRACE_DEBUG_ARRAY("    ", input, length);
 
    //Start of exception handling block
    do
    {
       //Display ASN.1 structure
-      error = asn1DumpObject(data, length, 0);
+      error = asn1DumpObject(input, length, 0);
       //Any error to report?
       if(error)
          break;
 
       //Read the contents of the ASN.1 structure
-      error = asn1ReadSequence(data, length, &tag);
+      error = asn1ReadSequence(input, length, &tag);
       //Failed to decode ASN.1 tag?
       if(error)
          break;
@@ -231,11 +231,11 @@ error_t dsaImportSignature(DsaSignature *signature, const uint8_t *data,
       }
 
       //Point to the first field
-      data = tag.value;
+      input = tag.value;
       length = tag.length;
 
       //Read the integer R
-      error = asn1ReadTag(data, length, &tag);
+      error = asn1ReadTag(input, length, &tag);
       //Failed to decode ASN.1 tag?
       if(error)
          break;
@@ -263,11 +263,11 @@ error_t dsaImportSignature(DsaSignature *signature, const uint8_t *data,
          break;
 
       //Point to the next field
-      data += tag.totalLength;
+      input += tag.totalLength;
       length -= tag.totalLength;
 
       //Read the integer S
-      error = asn1ReadTag(data, length, &tag);
+      error = asn1ReadTag(input, length, &tag);
       //Failed to decode ASN.1 tag?
       if(error)
          break;
@@ -326,19 +326,19 @@ error_t dsaImportSignature(DsaSignature *signature, const uint8_t *data,
 /**
  * @brief Export a DSA signature to ASN.1 format
  * @param[in] signature DSA signature
- * @param[out] data Pointer to the octet string
- * @param[out] length Length of the octet string, in bytes
+ * @param[out] output Pointer to the octet string (optional parameter)
+ * @param[out] written Length of the resulting octet string, in bytes
  * @return Error code
  **/
 
-error_t dsaExportSignature(const DsaSignature *signature, uint8_t *data,
-   size_t *length)
+error_t dsaExportSignature(const DsaSignature *signature, uint8_t *output,
+   size_t *written)
 {
    error_t error;
    size_t k;
    size_t n;
-   size_t rLen;
-   size_t sLen;
+   size_t length;
+   uint8_t *p;
    Asn1Tag tag;
 
    //Debug message
@@ -350,136 +350,93 @@ error_t dsaExportSignature(const DsaSignature *signature, uint8_t *data,
    TRACE_DEBUG("  s:\r\n");
    TRACE_DEBUG_MPI("    ", &signature->s);
 
-   //Calculate the length of R
-   rLen = mpiGetByteLength(&signature->r);
-   //Calculate the length of S
-   sLen = mpiGetByteLength(&signature->s);
+   //Point to the buffer where to write the ASN.1 structure
+   p = output;
+   //Length of the ASN.1 structure
+   length = 0;
 
-   //Make sure the (R, S) integer pair is valid
-   if(rLen == 0 || sLen == 0)
-      return ERROR_INVALID_LENGTH;
+   //R is always  encoded in the smallest possible number of octets
+   k = mpiGetBitLength(&signature->r) / 8 + 1;
 
-   //R and S are always encoded in the smallest possible number of octets
-   if(mpiGetBitValue(&signature->r, (rLen * 8) - 1))
-   {
-      rLen++;
-   }
-
-   if(mpiGetBitValue(&signature->s, (sLen * 8) - 1))
-   {
-      sLen++;
-   }
-
-   //The first pass computes the length of the ASN.1 sequence
-   n = 0;
-
-   //The integer R is encapsulated within an ASN.1 structure
+   //R is represented by an integer
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_INTEGER;
-   tag.length = rLen;
-   tag.value = NULL;
+   tag.length = k;
 
-   //Compute the length of the corresponding ASN.1 structure
-   error = asn1WriteTag(&tag, FALSE, NULL, NULL);
+   //Write the corresponding ASN.1 tag
+   error = asn1WriteHeader(&tag, FALSE, p, &n);
    //Any error to report?
    if(error)
       return error;
 
-   //Update the length of the ASN.1 sequence
-   n += tag.totalLength;
+   //Advance data pointer
+   ASN1_INC_POINTER(p, n);
+   length += n;
 
-   //The integer S is encapsulated within an ASN.1 structure
+   //If the output parameter is NULL, then the function calculates the
+   //length of the ASN.1 structure without copying any data
+   if(p != NULL)
+   {
+      //Convert R to an octet string
+      error = mpiExport(&signature->r, p, k, MPI_FORMAT_BIG_ENDIAN);
+      //Any error to report?
+      if(error)
+         return error;
+   }
+
+   //Advance data pointer
+   ASN1_INC_POINTER(p, k);
+   length += k;
+
+   //S is always  encoded in the smallest possible number of octets
+   k = mpiGetBitLength(&signature->s) / 8 + 1;
+
+   //S is represented by an integer
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_INTEGER;
-   tag.length = sLen;
-   tag.value = NULL;
+   tag.length = k;
 
-   //Compute the length of the corresponding ASN.1 structure
-   error = asn1WriteTag(&tag, FALSE, NULL, NULL);
+   //Write the corresponding ASN.1 tag
+   error = asn1WriteHeader(&tag, FALSE, p, &n);
    //Any error to report?
    if(error)
       return error;
 
-   //Update the length of the ASN.1 sequence
-   n += tag.totalLength;
+   //Advance data pointer
+   ASN1_INC_POINTER(p, n);
+   length += n;
 
-   //The second pass encodes the ASN.1 structure
-   k = 0;
+   //If the output parameter is NULL, then the function calculates the
+   //length of the ASN.1 structure without copying any data
+   if(p != NULL)
+   {
+      //Convert S to an octet string
+      error = mpiExport(&signature->s, p, k, MPI_FORMAT_BIG_ENDIAN);
+      //Any error to report?
+      if(error)
+         return error;
+   }
+
+   //Advance data pointer
+   ASN1_INC_POINTER(p, k);
+   length += k;
 
    //The (R, S) integer pair is encapsulated within a sequence
    tag.constructed = TRUE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_SEQUENCE;
-   tag.length = n;
-   tag.value = NULL;
+   tag.length = length;
 
    //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, data + k, &n);
+   error = asn1InsertHeader(&tag, output, &n);
    //Any error to report?
    if(error)
       return error;
-
-   //Advance write pointer
-   k += n;
-
-   //Encode the integer R using ASN.1
-   tag.constructed = FALSE;
-   tag.objClass = ASN1_CLASS_UNIVERSAL;
-   tag.objType = ASN1_TYPE_INTEGER;
-   tag.length = rLen;
-   tag.value = NULL;
-
-   //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, data + k, &n);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Advance write pointer
-   k += n;
-
-   //Convert R to an octet string
-   error = mpiExport(&signature->r, data + k, rLen, MPI_FORMAT_BIG_ENDIAN);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Advance write pointer
-   k += rLen;
-
-   //Encode the integer S using ASN.1
-   tag.constructed = FALSE;
-   tag.objClass = ASN1_CLASS_UNIVERSAL;
-   tag.objType = ASN1_TYPE_INTEGER;
-   tag.length = sLen;
-   tag.value = NULL;
-
-   //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, data + k, &n);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Advance write pointer
-   k += n;
-
-   //Convert S to an octet string
-   error = mpiExport(&signature->s, data + k, sLen, MPI_FORMAT_BIG_ENDIAN);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Advance write pointer
-   k += sLen;
-
-   //Dump DSA signature
-   TRACE_DEBUG("  signature:\r\n");
-   TRACE_DEBUG_ARRAY("    ", data, k);
 
    //Total length of the ASN.1 structure
-   *length = k;
+   *written = length + n;
 
    //Successful processing
    return NO_ERROR;

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _PEM_IMPORT_H
@@ -36,10 +36,6 @@
 #include "pkix/pem_common.h"
 #include "pkix/x509_common.h"
 #include "pkc/dh.h"
-#include "pkc/rsa.h"
-#include "pkc/dsa.h"
-#include "ecc/ec.h"
-#include "ecc/eddsa.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -58,33 +54,6 @@ error_t pemImportCsr(const char_t *input, size_t inputLen,
 
 error_t pemImportDhParameters(DhParameters *params, const char_t *input,
    size_t length);
-
-error_t pemImportRsaPublicKey(RsaPublicKey *publicKey, const char_t *input,
-   size_t length);
-
-error_t pemImportRsaPrivateKey(RsaPrivateKey *privateKey, const char_t *input,
-   size_t length, const char_t *password);
-
-error_t pemImportDsaPublicKey(DsaPublicKey *publicKey, const char_t *input,
-   size_t length);
-
-error_t pemImportDsaPrivateKey(DsaPrivateKey *privateKey, const char_t *input,
-   size_t length, const char_t *password);
-
-error_t pemImportEcPublicKey(EcPublicKey *publicKey, const char_t *input,
-   size_t length);
-
-error_t pemImportEcPrivateKey(EcPrivateKey *privateKey, const char_t *input,
-   size_t length, const char_t *password);
-
-error_t pemImportEddsaPublicKey(EddsaPublicKey *publicKey, const char_t *input,
-   size_t length);
-
-error_t pemImportEddsaPrivateKey(EddsaPrivateKey *privateKey,
-   const char_t *input, size_t length, const char_t *password);
-
-X509KeyType pemGetPublicKeyType(const char_t *input, size_t length);
-const EcCurve *pemGetPublicKeyCurve(const char_t *input, size_t length);
 
 //C++ guard
 #ifdef __cplusplus

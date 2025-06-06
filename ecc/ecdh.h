@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _ECDH_H
@@ -68,8 +68,16 @@ typedef struct
 void ecdhInit(EcdhContext *context);
 void ecdhFree(EcdhContext *context);
 
+error_t ecdhSetCurve(EcdhContext *context, const EcCurve *curve);
+
 error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
    void *prngContext);
+
+error_t ecdhExportPublicKey(EcdhContext *context, uint8_t *output,
+   size_t *written, EcPublicKeyFormat format);
+
+error_t ecdhImportPeerPublicKey(EcdhContext *context, const uint8_t *input,
+   size_t length, EcPublicKeyFormat format);
 
 error_t ecdhCheckPublicKey(EcdhContext *context, const EcPublicKey *publicKey);
 

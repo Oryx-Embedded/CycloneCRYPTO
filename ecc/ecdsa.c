@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -95,20 +95,20 @@ void ecdsaFreeSignature(EcdsaSignature *signature)
  * @brief Import an ECDSA signature
  * @param[out] signature ECDSA signature
  * @param[in] curve Elliptic curve parameters
- * @param[in] data Pointer to the octet string
+ * @param[in] input Pointer to the octet string
  * @param[in] length Length of the octet string, in bytes
  * @param[in] format ECDSA signature format (ASN.1 or raw format)
  * @return Error code
  **/
 
 error_t ecdsaImportSignature(EcdsaSignature *signature, const EcCurve *curve,
-   const uint8_t *data, size_t length, EcdsaSignatureFormat format)
+   const uint8_t *input, size_t length, EcdsaSignatureFormat format)
 {
    error_t error;
    size_t n;
 
    //Check parameters
-   if(signature == NULL || curve == NULL || data == NULL)
+   if(signature == NULL || curve == NULL || input == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Get the length of the order, in bytes
@@ -119,7 +119,7 @@ error_t ecdsaImportSignature(EcdsaSignature *signature, const EcCurve *curve,
 
    //Dump ECDSA signature
    TRACE_DEBUG("  signature:\r\n");
-   TRACE_DEBUG_ARRAY("    ", data, length);
+   TRACE_DEBUG_ARRAY("    ", input, length);
 
    //Check the format of the ECDSA signature
    if(format == ECDSA_SIGNATURE_FORMAT_ASN1)
@@ -127,13 +127,13 @@ error_t ecdsaImportSignature(EcdsaSignature *signature, const EcCurve *curve,
       Asn1Tag tag;
 
       //Display ASN.1 structure
-      error = asn1DumpObject(data, length, 0);
+      error = asn1DumpObject(input, length, 0);
       //Any error to report?
       if(error)
          return error;
 
       //Read the contents of the ASN.1 structure
-      error = asn1ReadSequence(data, length, &tag);
+      error = asn1ReadSequence(input, length, &tag);
       //Failed to decode ASN.1 tag?
       if(error)
          return error;
@@ -143,11 +143,11 @@ error_t ecdsaImportSignature(EcdsaSignature *signature, const EcCurve *curve,
          return ERROR_INVALID_SYNTAX;
 
       //Point to the first field
-      data = tag.value;
+      input = tag.value;
       length = tag.length;
 
       //Read the integer R
-      error = asn1ReadTag(data, length, &tag);
+      error = asn1ReadTag(input, length, &tag);
       //Failed to decode ASN.1 tag?
       if(error)
          return error;
@@ -171,11 +171,11 @@ error_t ecdsaImportSignature(EcdsaSignature *signature, const EcCurve *curve,
          return error;
 
       //Point to the next field
-      data += tag.totalLength;
+      input += tag.totalLength;
       length -= tag.totalLength;
 
       //Read the integer S
-      error = asn1ReadTag(data, length, &tag);
+      error = asn1ReadTag(input, length, &tag);
       //Failed to decode ASN.1 tag?
       if(error)
          return error;
@@ -215,7 +215,7 @@ error_t ecdsaImportSignature(EcdsaSignature *signature, const EcCurve *curve,
          return ERROR_INVALID_LENGTH;
 
       //Convert R to an integer
-      error = ecScalarImport(signature->r, EC_MAX_ORDER_SIZE, data, n,
+      error = ecScalarImport(signature->r, EC_MAX_ORDER_SIZE, input, n,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
       //Any error to report?
       if(error)
@@ -223,7 +223,7 @@ error_t ecdsaImportSignature(EcdsaSignature *signature, const EcCurve *curve,
 
       //Convert S to an integer
       error = ecScalarImport(signature->s, EC_MAX_ORDER_SIZE,
-         data + n, n, EC_SCALAR_FORMAT_BIG_ENDIAN);
+         input + n, n, EC_SCALAR_FORMAT_BIG_ENDIAN);
       //Any error to report?
       if(error)
          return error;
@@ -231,7 +231,7 @@ error_t ecdsaImportSignature(EcdsaSignature *signature, const EcCurve *curve,
    else if(format == ECDSA_SIGNATURE_FORMAT_RAW_R)
    {
       //Convert R to an integer
-      error = ecScalarImport(signature->r, EC_MAX_ORDER_SIZE, data, length,
+      error = ecScalarImport(signature->r, EC_MAX_ORDER_SIZE, input, length,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
       //Any error to report?
       if(error)
@@ -240,7 +240,7 @@ error_t ecdsaImportSignature(EcdsaSignature *signature, const EcCurve *curve,
    else if(format == ECDSA_SIGNATURE_FORMAT_RAW_S)
    {
       //Convert S to an integer
-      error = ecScalarImport(signature->s, EC_MAX_ORDER_SIZE, data, length,
+      error = ecScalarImport(signature->s, EC_MAX_ORDER_SIZE, input, length,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
       //Any error to report?
       if(error)
@@ -263,222 +263,202 @@ error_t ecdsaImportSignature(EcdsaSignature *signature, const EcCurve *curve,
 /**
  * @brief Export an ECDSA signature
  * @param[in] signature ECDSA signature
- * @param[out] data Pointer to the octet string
- * @param[out] length Length of the octet string, in bytes
+ * @param[out] output Pointer to the octet string (optional parameter)
+ * @param[out] written Length of the resulting octet string, in bytes
  * @param[in] format ECDSA signature format (ASN.1 or raw format)
  * @return Error code
  **/
 
-error_t ecdsaExportSignature(const EcdsaSignature *signature, uint8_t *data,
-   size_t *length, EcdsaSignatureFormat format)
+error_t ecdsaExportSignature(const EcdsaSignature *signature, uint8_t *output,
+   size_t *written, EcdsaSignatureFormat format)
 {
    error_t error;
    size_t k;
    size_t n;
-   size_t rLen;
-   size_t sLen;
+   size_t length;
+   size_t orderLen;
+   uint8_t *p;
    Asn1Tag tag;
 
    //Check parameters
-   if(signature == NULL || data == NULL || length == NULL)
+   if(signature == NULL || written == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Invalid elliptic curve?
    if(signature->curve == NULL)
       return ERROR_INVALID_ELLIPTIC_CURVE;
 
+   //Get the length of the order, in words
+   orderLen = (signature->curve->orderSize + 31) / 32;
+
    //Debug message
    TRACE_DEBUG("Exporting ECDSA signature...\r\n");
 
    //Dump (R, S) integer pair
    TRACE_DEBUG("  r:\r\n");
-   TRACE_DEBUG_EC_SCALAR("    ", signature->r, EC_MAX_ORDER_SIZE);
+   TRACE_DEBUG_EC_SCALAR("    ", signature->r, orderLen);
    TRACE_DEBUG("  s:\r\n");
-   TRACE_DEBUG_EC_SCALAR("    ", signature->s, EC_MAX_ORDER_SIZE);
-
-   //Calculate the length of R
-   rLen = ecScalarGetByteLength(signature->r, EC_MAX_ORDER_SIZE);
-   //Calculate the length of S
-   sLen = ecScalarGetByteLength(signature->s, EC_MAX_ORDER_SIZE);
-
-   //Make sure the (R, S) integer pair is valid
-   if(rLen == 0 || sLen == 0)
-      return ERROR_INVALID_LENGTH;
+   TRACE_DEBUG_EC_SCALAR("    ", signature->s, orderLen);
 
    //Check the format of the ECDSA signature
    if(format == ECDSA_SIGNATURE_FORMAT_ASN1)
    {
-      //R and S are always encoded in the smallest possible number of octets
-      if(ecScalarGetBitValue(signature->r, (rLen * 8) - 1) != 0)
-      {
-         rLen++;
-      }
+      //Point to the buffer where to write the ASN.1 structure
+      p = output;
+      //Length of the ASN.1 structure
+      length = 0;
 
-      if(ecScalarGetBitValue(signature->s, (sLen * 8) - 1) != 0)
-      {
-         sLen++;
-      }
+      //R is always  encoded in the smallest possible number of octets
+      k = ecScalarGetBitLength(signature->r, orderLen) / 8 + 1;
 
-      //The first pass computes the length of the ASN.1 sequence
-      n = 0;
-
-      //The integer R is encapsulated within an ASN.1 structure
+      //R is represented by an integer
       tag.constructed = FALSE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_INTEGER;
-      tag.length = rLen;
-      tag.value = NULL;
+      tag.length = k;
 
-      //Compute the length of the corresponding ASN.1 structure
-      error = asn1WriteTag(&tag, FALSE, NULL, NULL);
+      //Write the corresponding ASN.1 tag
+      error = asn1WriteHeader(&tag, FALSE, p, &n);
       //Any error to report?
       if(error)
          return error;
 
-      //Update the length of the ASN.1 sequence
-      n += tag.totalLength;
+      //Advance data pointer
+      ASN1_INC_POINTER(p, n);
+      length += n;
 
-      //The integer S is encapsulated within an ASN.1 structure
+      //If the output parameter is NULL, then the function calculates the
+      //length of the ASN.1 structure without copying any data
+      if(p != NULL)
+      {
+         //Convert R to an octet string
+         error = ecScalarExport(signature->r, EC_MAX_ORDER_SIZE, p, k,
+            EC_SCALAR_FORMAT_BIG_ENDIAN);
+         //Any error to report?
+         if(error)
+            return error;
+      }
+
+      //Advance data pointer
+      ASN1_INC_POINTER(p, k);
+      length += k;
+
+      //S is always  encoded in the smallest possible number of octets
+      k = ecScalarGetBitLength(signature->s, orderLen) / 8 + 1;
+
+      //S is represented by an integer
       tag.constructed = FALSE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_INTEGER;
-      tag.length = sLen;
-      tag.value = NULL;
+      tag.length = k;
 
-      //Compute the length of the corresponding ASN.1 structure
-      error = asn1WriteTag(&tag, FALSE, NULL, NULL);
+      //Write the corresponding ASN.1 tag
+      error = asn1WriteHeader(&tag, FALSE, p, &n);
       //Any error to report?
       if(error)
          return error;
 
-      //Update the length of the ASN.1 sequence
-      n += tag.totalLength;
+      //Advance data pointer
+      ASN1_INC_POINTER(p, n);
+      length += n;
 
-      //The second pass encodes the ASN.1 structure
-      k = 0;
+      //If the output parameter is NULL, then the function calculates the
+      //length of the ASN.1 structure without copying any data
+      if(p != NULL)
+      {
+         //Convert S to an octet string
+         error = ecScalarExport(signature->s, EC_MAX_ORDER_SIZE, p, k,
+            EC_SCALAR_FORMAT_BIG_ENDIAN);
+         //Any error to report?
+         if(error)
+            return error;
+      }
+
+      //Advance data pointer
+      ASN1_INC_POINTER(p, k);
+      length += k;
 
       //The (R, S) integer pair is encapsulated within a sequence
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
-      tag.length = n;
-      tag.value = NULL;
+      tag.length = length;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, data + k, &n);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
-
-      //Advance write pointer
-      k += n;
-
-      //Encode the integer R using ASN.1
-      tag.constructed = FALSE;
-      tag.objClass = ASN1_CLASS_UNIVERSAL;
-      tag.objType = ASN1_TYPE_INTEGER;
-      tag.length = rLen;
-      tag.value = NULL;
-
-      //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, data + k, &n);
-      //Any error to report?
-      if(error)
-         return error;
-
-      //Advance write pointer
-      k += n;
-
-      //Convert R to an octet string
-      error = ecScalarExport(signature->r, EC_MAX_ORDER_SIZE, data + k, rLen,
-         EC_SCALAR_FORMAT_BIG_ENDIAN);
-      //Any error to report?
-      if(error)
-         return error;
-
-      //Advance write pointer
-      k += rLen;
-
-      //Encode the integer S using ASN.1
-      tag.constructed = FALSE;
-      tag.objClass = ASN1_CLASS_UNIVERSAL;
-      tag.objType = ASN1_TYPE_INTEGER;
-      tag.length = sLen;
-      tag.value = NULL;
-
-      //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, data + k, &n);
-      //Any error to report?
-      if(error)
-         return error;
-
-      //Advance write pointer
-      k += n;
-
-      //Convert S to an octet string
-      error = ecScalarExport(signature->s, EC_MAX_ORDER_SIZE, data + k, sLen,
-         EC_SCALAR_FORMAT_BIG_ENDIAN);
-      //Any error to report?
-      if(error)
-         return error;
-
-      //Advance write pointer
-      k += sLen;
 
       //Total length of the ASN.1 structure
-      *length = k;
+      *written = length + n;
    }
    else if(format == ECDSA_SIGNATURE_FORMAT_RAW)
    {
       //Get the length of the order, in bytes
       n = (signature->curve->orderSize + 7) / 8;
 
-      //Convert R to an octet string
-      error = ecScalarExport(signature->r, (n + 3) / 4, data, n,
-         EC_SCALAR_FORMAT_BIG_ENDIAN);
-      //Any error to report?
-      if(error)
-         return error;
+      //If the output parameter is NULL, then the function calculates the
+      //length of the octet string without copying any data
+      if(output != NULL)
+      {
+         //Convert R to an octet string
+         error = ecScalarExport(signature->r, (n + 3) / 4, output, n,
+            EC_SCALAR_FORMAT_BIG_ENDIAN);
+         //Any error to report?
+         if(error)
+            return error;
 
-      //Convert S to an octet string
-      error = ecScalarExport(signature->s, (n + 3) / 4, data + n, n,
-         EC_SCALAR_FORMAT_BIG_ENDIAN);
-      //Any error to report?
-      if(error)
-         return error;
+         //Convert S to an octet string
+         error = ecScalarExport(signature->s, (n + 3) / 4, output + n, n,
+            EC_SCALAR_FORMAT_BIG_ENDIAN);
+         //Any error to report?
+         if(error)
+            return error;
+      }
 
       //Length of the resulting octet string
-      *length = 2 * n;
+      *written = 2 * n;
    }
    else if(format == ECDSA_SIGNATURE_FORMAT_RAW_R)
    {
       //Get the length of the order, in bytes
       n = (signature->curve->orderSize + 7) / 8;
 
-      //Convert R to an octet string
-      error = ecScalarExport(signature->r, (n + 3) / 4, data, n,
-         EC_SCALAR_FORMAT_BIG_ENDIAN);
-      //Any error to report?
-      if(error)
-         return error;
+      //If the output parameter is NULL, then the function calculates the
+      //length of the octet string without copying any data
+      if(output != NULL)
+      {
+         //Convert R to an octet string
+         error = ecScalarExport(signature->r, (n + 3) / 4, output, n,
+            EC_SCALAR_FORMAT_BIG_ENDIAN);
+         //Any error to report?
+         if(error)
+            return error;
+      }
 
       //Length of the resulting octet string
-      *length = n;
+      *written = n;
    }
    else if(format == ECDSA_SIGNATURE_FORMAT_RAW_S)
    {
       //Get the length of the order, in bytes
       n = (signature->curve->orderSize + 7) / 8;
 
-      //Convert S to an octet string
-      error = ecScalarExport(signature->s, (n + 3) / 4, data, n,
-         EC_SCALAR_FORMAT_BIG_ENDIAN);
-      //Any error to report?
-      if(error)
-         return error;
+      //If the output parameter is NULL, then the function calculates the
+      //length of the octet string without copying any data
+      if(output != NULL)
+      {
+         //Convert S to an octet string
+         error = ecScalarExport(signature->s, (n + 3) / 4, output, n,
+            EC_SCALAR_FORMAT_BIG_ENDIAN);
+         //Any error to report?
+         if(error)
+            return error;
+      }
 
       //Length of the resulting octet string
-      *length = n;
+      *written = n;
    }
    else
    {
@@ -487,8 +467,11 @@ error_t ecdsaExportSignature(const EcdsaSignature *signature, uint8_t *data,
    }
 
    //Dump ECDSA signature
-   TRACE_DEBUG("  signature:\r\n");
-   TRACE_DEBUG_ARRAY("    ", data, *length);
+   if(output != NULL)
+   {
+      TRACE_DEBUG("  signature:\r\n");
+      TRACE_DEBUG_ARRAY("    ", output, *written);
+   }
 
    //Successful processing
    return NO_ERROR;

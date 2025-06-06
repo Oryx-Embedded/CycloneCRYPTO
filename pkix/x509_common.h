@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _X509_COMMON_H
@@ -51,14 +51,14 @@
 #ifndef X509_RSA_SUPPORT
    #define X509_RSA_SUPPORT ENABLED
 #elif (X509_RSA_SUPPORT != ENABLED && X509_RSA_SUPPORT != DISABLED)
-   #error X509_RSA_SUPPORT
+   #error X509_RSA_SUPPORT parameter is not valid
 #endif
 
 //RSA-PSS certificate support
 #ifndef X509_RSA_PSS_SUPPORT
    #define X509_RSA_PSS_SUPPORT DISABLED
 #elif (X509_RSA_PSS_SUPPORT != ENABLED && X509_RSA_PSS_SUPPORT != DISABLED)
-   #error X509_RSA_PSS_SUPPORT
+   #error X509_RSA_PSS_SUPPORT parameter is not valid
 #endif
 
 //DSA certificate support
@@ -1117,6 +1117,7 @@ typedef struct
 
 typedef struct
 {
+   X509OctetString raw;
    X509TbsCertificate tbsCert;
    X509SignAlgoId signatureAlgo;
    X509OctetString signatureValue;
@@ -1325,6 +1326,16 @@ typedef struct
 } X509CsrInfo;
 
 
+/**
+ * @brief Certificate parsing options
+ **/
+
+typedef struct
+{
+   bool_t ignoreUnknownExtensions; ///<Ignore unknown extensions
+} X509Options;
+
+
 //X.509 related constants
 extern const uint8_t X509_COMMON_NAME_OID[3];
 extern const uint8_t X509_SURNAME_OID[3];
@@ -1386,11 +1397,16 @@ extern const uint8_t X509_KP_DOC_SIGNING_OID[8];
 extern const uint8_t X509_AD_CA_ISSUERS[8];
 extern const uint8_t X509_AD_OCSP[8];
 
-extern const uint8_t X509_EMAIL_ADDRESS_OID[9];
-extern const uint8_t X509_CHALLENGE_PASSWORD_OID[9];
-extern const uint8_t X509_EXTENSION_REQUEST_OID[9];
+extern const uint8_t PKCS9_EMAIL_ADDR_OID[9];
+extern const uint8_t PKCS9_CHALLENGE_PASSWORD_OID[9];
+extern const uint8_t PKCS9_EXTENSION_REQUEST_OID[9];
+
+extern const X509Options X509_DEFAULT_OPTIONS;
 
 //X.509 related functions
+bool_t x509CompareName(const uint8_t *name1, size_t nameLen1,
+   const uint8_t *name2, size_t nameLen2);
+
 bool_t x509IsSignAlgoSupported(X509SignatureAlgo signAlgo);
 bool_t x509IsHashAlgoSupported(X509HashAlgo hashAlgo);
 bool_t x509IsCurveSupported(const uint8_t *oid, size_t length);

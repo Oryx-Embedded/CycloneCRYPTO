@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -34,6 +34,7 @@
 //Dependencies
 #include "core/crypto.h"
 #include "pkix/x509_sign_generate.h"
+#include "ecc/ec_misc.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -66,12 +67,11 @@ error_t x509RegisterSignGenCallback(X509SignGenCallback callback)
 
 
 /**
- * @brief Certificate signature generation
+ * @brief Signature generation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
  * @param[in] tbsData Pointer to the data to be signed
  * @param[in] signAlgoId Signature algorithm identifier
- * @param[in] publicKeyInfo Signer's public key information
  * @param[in] privateKey Signer's private key
  * @param[out] output Resulting signature
  * @param[out] written Length of the resulting signature
@@ -80,8 +80,7 @@ error_t x509RegisterSignGenCallback(X509SignGenCallback callback)
 
 error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    const X509OctetString *tbsData, const X509SignAlgoId *signAlgoId,
-   const X509SubjectPublicKeyInfo *publicKeyInfo, const void *privateKey,
-   uint8_t *output, size_t *written)
+   const void *privateKey, uint8_t *output, size_t *written)
 {
    error_t error;
    X509SignatureAlgo signAlgo;
@@ -93,7 +92,7 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    {
       //Invoke user-defined callback
       error = x509SignGenCallback(prngAlgo, prngContext, tbsData,
-         signAlgoId, publicKeyInfo, privateKey, output, written);
+         signAlgoId, privateKey, output, written);
    }
    else
 #endif
@@ -150,7 +149,7 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
          {
             //Generate ECDSA signature
             error = x509GenerateEcdsaSignature(prngAlgo, prngContext, tbsData,
-               hashAlgo, publicKeyInfo, privateKey, output, written);
+               hashAlgo, privateKey, output, written);
          }
          else
 #endif
@@ -215,15 +214,28 @@ error_t x509GenerateRsaSignature(const X509OctetString *tbsData,
    error_t error;
    uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
-   //Digest the TBSCertificate structure using the specified hash algorithm
-   error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
+   //Initialize status code
+   error = NO_ERROR;
 
-   //Check status code
-   if(!error)
+   //If the output parameter is NULL, then the function calculates the length
+   //of the resulting signature but will not generate a signature
+   if(output != NULL)
    {
-      //Generate RSA signature
-      error = rsassaPkcs1v15Sign(privateKey, hashAlgo, digest, output,
-         written);
+      //Digest the TBSCertificate structure using the specified hash algorithm
+      error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
+
+      //Check status code
+      if(!error)
+      {
+         //Generate RSA signature
+         error = rsassaPkcs1v15Sign(privateKey, hashAlgo, digest, output,
+            written);
+      }
+   }
+   else
+   {
+      //Length of the resulting RSA signature
+      *written = mpiGetByteLength(&privateKey->n);
    }
 
    //Return status code
@@ -256,15 +268,28 @@ error_t x509GenerateRsaPssSignature(const PrngAlgo *prngAlgo, void *prngContext,
    error_t error;
    uint8_t digest[MAX_HASH_DIGEST_SIZE];
 
-   //Digest the TBSCertificate structure using the specified hash algorithm
-   error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
+   //Initialize status code
+   error = NO_ERROR;
 
-   //Check status code
-   if(!error)
+   //If the output parameter is NULL, then the function calculates the length
+   //of the resulting signature but will not generate a signature
+   if(output != NULL)
    {
-      //Generate RSA-PSS signature
-      error = rsassaPssSign(prngAlgo, prngContext, privateKey, hashAlgo,
-         saltLen, digest, output, written);
+      //Digest the TBSCertificate structure using the specified hash algorithm
+      error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
+
+      //Check status code
+      if(!error)
+      {
+         //Generate RSA-PSS signature
+         error = rsassaPssSign(prngAlgo, prngContext, privateKey, hashAlgo,
+            saltLen, digest, output, written);
+      }
+   }
+   else
+   {
+      //Length of the resulting RSA-PSS signature
+      *written = mpiGetByteLength(&privateKey->n);
    }
 
    //Return status code
@@ -300,15 +325,31 @@ error_t x509GenerateDsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
    //Initialize DSA signature
    dsaInitSignature(&dsaSignature);
 
-   //Digest the TBSCertificate structure using the specified hash algorithm
-   error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
-
-   //Check status code
-   if(!error)
+   //If the output parameter is NULL, then the function calculates the length
+   //of the resulting signature but will not generate a signature
+   if(output != NULL)
    {
-      //Generate DSA signature
-      error = dsaGenerateSignature(prngAlgo, prngContext, privateKey, digest,
-         hashAlgo->digestSize, &dsaSignature);
+      //Digest the TBSCertificate structure using the specified hash algorithm
+      error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
+
+      //Check status code
+      if(!error)
+      {
+         //Generate DSA signature
+         error = dsaGenerateSignature(prngAlgo, prngContext, privateKey, digest,
+            hashAlgo->digestSize, &dsaSignature);
+      }
+   }
+   else
+   {
+      //Generate a dummy (R, S) integer pair
+      error = mpiSubInt(&dsaSignature.r, &privateKey->params.q, 1);
+
+      //Check status code
+      if(!error)
+      {
+         error = mpiSubInt(&dsaSignature.s, &privateKey->params.q, 1);
+      }
    }
 
    //Check status code
@@ -336,7 +377,6 @@ error_t x509GenerateDsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
  * @param[in] prngContext Pointer to the PRNG context
  * @param[in] tbsData Pointer to the data to be signed
  * @param[in] hashAlgo Underlying hash function
- * @param[in] publicKeyInfo Signer's public key information
  * @param[in] privateKey Signer's private key
  * @param[out] output Resulting signature
  * @param[out] written Length of the resulting signature
@@ -345,34 +385,49 @@ error_t x509GenerateDsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
 
 error_t x509GenerateEcdsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
    const X509OctetString *tbsData, const HashAlgo *hashAlgo,
-   const X509SubjectPublicKeyInfo *publicKeyInfo,
    const EcPrivateKey *privateKey, uint8_t *output, size_t *written)
 {
 #if (X509_ECDSA_SUPPORT == ENABLED && ECDSA_SUPPORT == ENABLED)
    error_t error;
-   const EcCurve *curve;
    EcdsaSignature ecdsaSignature;
    uint8_t digest[MAX_HASH_DIGEST_SIZE];
+
+   //Initialize status code
+   error = NO_ERROR;
 
    //Initialize ECDSA signature
    ecdsaInitSignature(&ecdsaSignature);
 
-   //Get the elliptic curve that matches the OID
-   curve = x509GetCurve(publicKeyInfo->ecParams.namedCurve.value,
-      publicKeyInfo->ecParams.namedCurve.length);
-
-   //Make sure the specified elliptic curve is supported
-   if(curve != NULL && curve == privateKey->curve)
+   //Valid elliptic curve?
+   if(privateKey->curve != NULL)
    {
-      //Digest the TBSCertificate structure using the specified hash algorithm
-      error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
-
-      //Check status code
-      if(!error)
+      //If the output parameter is NULL, then the function calculates the
+      //length of the resulting signature but will not generate a signature
+      if(output != NULL)
       {
-         //Generate ECDSA signature
-         error = ecdsaGenerateSignature(prngAlgo, prngContext, privateKey,
-            digest, hashAlgo->digestSize, &ecdsaSignature);
+         //Digest the TBSCertificate structure using the specified hash
+         //algorithm
+         error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
+
+         //Check status code
+         if(!error)
+         {
+            //Generate ECDSA signature
+            error = ecdsaGenerateSignature(prngAlgo, prngContext, privateKey,
+               digest, hashAlgo->digestSize, &ecdsaSignature);
+         }
+      }
+      else
+      {
+         //Save elliptic curve parameters
+         ecdsaSignature.curve = privateKey->curve;
+
+         //Generate a dummy (R, S) integer pair
+         ecScalarSubInt(ecdsaSignature.r, privateKey->curve->q, 1,
+            EC_MAX_ORDER_SIZE);
+
+         ecScalarSubInt(ecdsaSignature.s, privateKey->curve->q, 1,
+            EC_MAX_ORDER_SIZE);
       }
 
       //Check status code
@@ -386,7 +441,7 @@ error_t x509GenerateEcdsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
    else
    {
       //Invalid elliptic curve
-      error = ERROR_BAD_CERTIFICATE;
+      error = ERROR_INVALID_ELLIPTIC_CURVE;
    }
 
    //Release previously allocated resources
@@ -421,13 +476,28 @@ error_t x509GenerateSm2Signature(const PrngAlgo *prngAlgo, void *prngContext,
    error_t error;
    EcdsaSignature sm2Signature;
 
+   //Initialize status code
+   error = NO_ERROR;
+
    //Initialize SM2 signature
    ecdsaInitSignature(&sm2Signature);
 
-   //Generate SM2 signature
-   error = sm2GenerateSignature(prngAlgo, prngContext, privateKey, hashAlgo,
-      SM2_DEFAULT_ID, osStrlen(SM2_DEFAULT_ID), tbsData->value, tbsData->length,
-      &sm2Signature);
+   //If the output parameter is NULL, then the function calculates the length
+   //of the resulting signature but will not generate a signature
+   if(output != NULL)
+   {
+      //Generate SM2 signature
+      error = sm2GenerateSignature(prngAlgo, prngContext, privateKey, hashAlgo,
+         SM2_DEFAULT_ID, osStrlen(SM2_DEFAULT_ID), tbsData->value,
+         tbsData->length, &sm2Signature);
+   }
+   else
+   {
+      //Generate a dummy (R, S) integer pair
+      sm2Signature.curve = SM2_CURVE;
+      ecScalarSubInt(sm2Signature.r, sm2Curve.q, 1, EC_MAX_ORDER_SIZE);
+      ecScalarSubInt(sm2Signature.s, sm2Curve.q, 1, EC_MAX_ORDER_SIZE);
+   }
 
    //Check status code
    if(!error)
@@ -465,15 +535,23 @@ error_t x509GenerateEd25519Signature(const X509OctetString *tbsData,
    error_t error;
    const uint8_t *q;
 
+   //Initialize status code
+   error = NO_ERROR;
+
    //Check elliptic curve parameters
    if(privateKey->curve == ED25519_CURVE)
    {
-      //The public key is optional
-      q = (privateKey->q.curve != NULL) ? privateKey->q.q : NULL;
+      //If the output parameter is NULL, then the function calculates the
+      //length of the resulting signature but will not generate a signature
+      if(output != NULL)
+      {
+         //The public key is optional
+         q = (privateKey->q.curve != NULL) ? privateKey->q.q : NULL;
 
-      //Generate Ed25519 signature (PureEdDSA mode)
-      error = ed25519GenerateSignature(privateKey->d, q, tbsData->value,
-         tbsData->length, NULL, 0, 0, output);
+         //Generate Ed25519 signature (PureEdDSA mode)
+         error = ed25519GenerateSignature(privateKey->d, q, tbsData->value,
+            tbsData->length, NULL, 0, 0, output);
+      }
 
       //Check status code
       if(!error)
@@ -513,15 +591,23 @@ error_t x509GenerateEd448Signature(const X509OctetString *tbsData,
    error_t error;
    const uint8_t *q;
 
+   //Initialize status code
+   error = NO_ERROR;
+
    //Check elliptic curve parameters
    if(privateKey->curve == ED448_CURVE)
    {
-      //The public key is optional
-      q = (privateKey->q.curve != NULL) ? privateKey->q.q : NULL;
+      //If the output parameter is NULL, then the function calculates the
+      //length of the resulting signature but will not generate a signature
+      if(output != NULL)
+      {
+         //The public key is optional
+         q = (privateKey->q.curve != NULL) ? privateKey->q.q : NULL;
 
-      //Generate Ed448 signature (PureEdDSA mode)
-      error = ed448GenerateSignature(privateKey->d, q, tbsData->value,
-         tbsData->length, NULL, 0, 0, output);
+         //Generate Ed448 signature (PureEdDSA mode)
+         error = ed448GenerateSignature(privateKey->d, q, tbsData->value,
+            tbsData->length, NULL, 0, 0, output);
+      }
 
       //Check status code
       if(!error)

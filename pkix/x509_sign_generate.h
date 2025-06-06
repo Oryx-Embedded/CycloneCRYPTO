@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _X509_SIGN_GENERATE_H
@@ -47,8 +47,7 @@ extern "C" {
 
 typedef error_t (*X509SignGenCallback)(const PrngAlgo *prngAlgo,
    void *prngContext, const X509OctetString *tbsData,
-   const X509SignAlgoId *signAlgoId,
-   const X509SubjectPublicKeyInfo *publicKeyInfo, const void *privateKey,
+   const X509SignAlgoId *signAlgoId, const void *privateKey,
    uint8_t *output, size_t *written);
 
 
@@ -57,8 +56,7 @@ error_t x509RegisterSignGenCallback(X509SignGenCallback callback);
 
 error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    const X509OctetString *tbsData, const X509SignAlgoId *signAlgoId,
-   const X509SubjectPublicKeyInfo *publicKeyInfo, const void *privateKey,
-   uint8_t *output, size_t *written);
+   const void *privateKey, uint8_t *output, size_t *written);
 
 error_t x509GenerateRsaSignature(const X509OctetString *tbsData,
    const HashAlgo *hashAlgo, const RsaPrivateKey *privateKey, uint8_t *output,
@@ -74,7 +72,6 @@ error_t x509GenerateDsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
 
 error_t x509GenerateEcdsaSignature(const PrngAlgo *prngAlgo, void *prngContext,
    const X509OctetString *tbsData, const HashAlgo *hashAlgo,
-   const X509SubjectPublicKeyInfo *publicKeyInfo,
    const EcPrivateKey *privateKey, uint8_t *output, size_t *written);
 
 error_t x509GenerateSm2Signature(const PrngAlgo *prngAlgo, void *prngContext,

@@ -31,7 +31,7 @@
  * for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -109,7 +109,7 @@ error_t sivEncrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
    //K2 is used for CTR
    cipher->init(&cipherContext, k2, kLen);
    //Encrypt plaintext
-   ctrEncrypt(cipher, &cipherContext, 128, q, p, c, length); 
+   ctrEncrypt(cipher, &cipherContext, 128, q, p, c, length);
 
    //Successful processing
    return NO_ERROR;
@@ -176,7 +176,7 @@ error_t sivDecrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
    //K2 is used for CTR
    cipher->init(&cipherContext, k2, kLen);
    //Decrypt ciphertext
-   ctrDecrypt(cipher, &cipherContext, 128, q, c, p, length); 
+   ctrDecrypt(cipher, &cipherContext, 128, q, c, p, length);
 
    //T = S2V(K1, AD1, ..., ADn, P)
    s2v(cipher, k1, kLen, ad, adLen, p, length, t);

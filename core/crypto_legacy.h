@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _CRYPTO_LEGACY_H
@@ -66,5 +66,9 @@
 #define EddsaMessageChunk DataChunk
 
 #define MPI_MAX_BIT_SIZE MPI_MAX_BITS
+
+#define PEM_PUBLIC_KEY_FORMAT_PKCS8 PEM_PUBLIC_KEY_FORMAT_DEFAULT
+
+#define yarrowRead yarrowGenerate
 
 #endif

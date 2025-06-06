@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.5.0"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.5.2"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 5
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 0
+#define CYCLONE_CRYPTO_REV_NUMBER 2
 
 //Static memory allocation
 #ifndef CRYPTO_STATIC_MEM_SUPPORT
@@ -774,6 +774,13 @@
    #error SHA_CRYPT_SUPPORT parameter is not valid
 #endif
 
+//HMAC_DRBG PRNG support
+#ifndef HMAC_DRBG_SUPPORT
+   #define HMAC_DRBG_SUPPORT ENABLED
+#elif (HMAC_DRBG_SUPPORT != ENABLED && HMAC_DRBG_SUPPORT != DISABLED)
+   #error HMAC_DRBG_SUPPORT parameter is not valid
+#endif
+
 //Yarrow PRNG support
 #ifndef YARROW_SUPPORT
    #define YARROW_SUPPORT ENABLED
@@ -814,6 +821,13 @@
    #define PKCS5_SUPPORT DISABLED
 #elif (PKCS5_SUPPORT != ENABLED && PKCS5_SUPPORT != DISABLED)
    #error PKCS5_SUPPORT parameter is not valid
+#endif
+
+//PKCS #7 support
+#ifndef PKCS7_SUPPORT
+   #define PKCS7_SUPPORT DISABLED
+#elif (PKCS7_SUPPORT != ENABLED && PKCS7_SUPPORT != DISABLED)
+   #error PKCS7_SUPPORT parameter is not valid
 #endif
 
 //Allocate memory block
@@ -1066,10 +1080,11 @@ typedef error_t (*PrngAlgoInit)(void *context);
 typedef error_t (*PrngAlgoSeed)(void *context, const uint8_t *input,
    size_t length);
 
-typedef error_t (*PrngAlgoAddEntropy)(void *context, uint_t source,
-   const uint8_t *input, size_t length, size_t entropy);
+typedef error_t (*PrngAlgoReseed)(void *context, const uint8_t *input,
+   size_t length);
 
-typedef error_t (*PrngAlgoRead)(void *context, uint8_t *output, size_t length);
+typedef error_t (*PrngAlgoGenerate)(void *context, uint8_t *output,
+   size_t length);
 
 typedef void (*PrngAlgoDeinit)(void *context);
 
@@ -1142,8 +1157,8 @@ struct _PrngAlgo
    size_t contextSize;
    PrngAlgoInit init;
    PrngAlgoSeed seed;
-   PrngAlgoAddEntropy addEntropy;
-   PrngAlgoRead read;
+   PrngAlgoReseed reseed;
+   PrngAlgoGenerate generate;
    PrngAlgoDeinit deinit;
 };
 

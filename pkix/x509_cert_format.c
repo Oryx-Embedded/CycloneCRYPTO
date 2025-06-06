@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -90,7 +90,7 @@ error_t x509FormatTbsCertificate(const PrngAlgo *prngAlgo, void *prngContext,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format SerialNumber field
@@ -100,7 +100,7 @@ error_t x509FormatTbsCertificate(const PrngAlgo *prngAlgo, void *prngContext,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format Signature field
@@ -110,7 +110,7 @@ error_t x509FormatTbsCertificate(const PrngAlgo *prngAlgo, void *prngContext,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format Issuer field
@@ -120,7 +120,7 @@ error_t x509FormatTbsCertificate(const PrngAlgo *prngAlgo, void *prngContext,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format Validity field
@@ -130,7 +130,7 @@ error_t x509FormatTbsCertificate(const PrngAlgo *prngAlgo, void *prngContext,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format Subject field
@@ -140,7 +140,7 @@ error_t x509FormatTbsCertificate(const PrngAlgo *prngAlgo, void *prngContext,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format SubjectPublicKeyInfo field
@@ -151,7 +151,7 @@ error_t x509FormatTbsCertificate(const PrngAlgo *prngAlgo, void *prngContext,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //The SubjectKeyIdentifier extension provides a means of identifying
@@ -167,7 +167,7 @@ error_t x509FormatTbsCertificate(const PrngAlgo *prngAlgo, void *prngContext,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //The TBSCertificate structure is encapsulated within a sequence
@@ -175,16 +175,15 @@ error_t x509FormatTbsCertificate(const PrngAlgo *prngAlgo, void *prngContext,
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_SEQUENCE;
    tag.length = length;
-   tag.value = output;
 
    //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &n);
+   error = asn1InsertHeader(&tag, output, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Total number of bytes that have been written
-   *written = n;
+   *written = tag.totalLength;
 
    //Successful processing
    return NO_ERROR;
@@ -217,16 +216,15 @@ error_t x509FormatVersion(X509Version version, uint8_t *output,
    tag.objClass = ASN1_CLASS_CONTEXT_SPECIFIC;
    tag.objType = 0;
    tag.length = n;
-   tag.value = output;
 
    //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &n);
+   error = asn1InsertHeader(&tag, output, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Total number of bytes that have been written
-   *written = n;
+   *written = tag.totalLength;
 
    //Successful processing
    return NO_ERROR;
@@ -250,6 +248,9 @@ error_t x509FormatSerialNumber(const PrngAlgo *prngAlgo, void *prngContext,
    size_t n;
    Asn1Tag tag;
 
+   //Initialize status code
+   error = NO_ERROR;
+
    //Valid serial number?
    if(serialNumber != NULL)
    {
@@ -260,38 +261,53 @@ error_t x509FormatSerialNumber(const PrngAlgo *prngAlgo, void *prngContext,
       tag.objType = ASN1_TYPE_INTEGER;
       tag.length = serialNumber->length;
       tag.value = serialNumber->value;
+
+      //Write the corresponding ASN.1 tag
+      error = asn1WriteTag(&tag, FALSE, output, &n);
    }
    else
    {
-      //Conforming CAs must not use serial number values longer than 20 octets
-      error = prngAlgo->read(prngContext, output, X509_SERIAL_NUMBER_SIZE);
-      //Any error to report?
-      if(error)
-         return error;
+      //If the output parameter is NULL, then the function calculates the
+      //length of the octet string without copying any data
+      if(output != NULL)
+      {
+         //Conforming CAs must not use serial number values longer than 20
+         //octets
+         error = prngAlgo->generate(prngContext, output,
+            X509_SERIAL_NUMBER_SIZE);
 
-      //CAs must force the serial number to be a non-negative integer
-      output[0] = (output[0] & 0x3F) | 0x40;
+         //Check status code
+         if(!error)
+         {
+            //CAs must force the serial number to be a non-negative integer
+            output[0] = (output[0] & 0x3F) | 0x40;
+         }
+      }
 
-      //The serial number is a unique integer assigned by the CA to each
-      //certificate
-      tag.constructed = FALSE;
-      tag.objClass = ASN1_CLASS_UNIVERSAL;
-      tag.objType = ASN1_TYPE_INTEGER;
-      tag.length = X509_SERIAL_NUMBER_SIZE;
-      tag.value = output;
+      //Check status code
+      if(!error)
+      {
+         //The serial number is a unique integer assigned by the CA to each
+         //certificate
+         tag.constructed = FALSE;
+         tag.objClass = ASN1_CLASS_UNIVERSAL;
+         tag.objType = ASN1_TYPE_INTEGER;
+         tag.length = X509_SERIAL_NUMBER_SIZE;
+
+         //Write the corresponding ASN.1 tag
+         error = asn1InsertHeader(&tag, output, &n);
+      }
    }
 
-   //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &n);
-   //Any error to report?
-   if(error)
-      return error;
+   //Check status code
+   if(!error)
+   {
+      //Total number of bytes that have been written
+      *written = tag.totalLength;
+   }
 
-   //Total number of bytes that have been written
-   *written = n;
-
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 }
 
 
@@ -319,7 +335,11 @@ error_t x509FormatName(const X509Name *name, uint8_t *output, size_t *written)
    if(name->raw.value != NULL && name->raw.length > 0)
    {
       //Copy raw ASN.1 sequence
-      osMemcpy(output, name->raw.value, name->raw.length);
+      if(output != NULL)
+      {
+         osMemcpy(output, name->raw.value, name->raw.length);
+      }
+
       //Total number of bytes that have been written
       *written = name->raw.length;
    }
@@ -347,7 +367,7 @@ error_t x509FormatName(const X509Name *name, uint8_t *output, size_t *written)
             return error;
 
          //Advance data pointer
-         p += n;
+         ASN1_INC_POINTER(p, n);
          length += n;
       }
 
@@ -368,12 +388,12 @@ error_t x509FormatName(const X509Name *name, uint8_t *output, size_t *written)
             return error;
 
          //Advance data pointer
-         p += n;
+         ASN1_INC_POINTER(p, n);
          length += n;
       }
 
       //Valid Locality Name attribute?
-      if(name->localityName.value != NULL && name->localityName.length> 0)
+      if(name->localityName.value != NULL && name->localityName.length > 0)
       {
          //Set attribute type and value
          nameAttribute.oid.value = X509_LOCALITY_NAME_OID;
@@ -389,12 +409,12 @@ error_t x509FormatName(const X509Name *name, uint8_t *output, size_t *written)
             return error;
 
          //Advance data pointer
-         p += n;
+         ASN1_INC_POINTER(p, n);
          length += n;
       }
 
       //Valid Organization Name attribute?
-      if(name->organizationName.value != NULL && name->organizationName.length> 0)
+      if(name->organizationName.value != NULL && name->organizationName.length > 0)
       {
          //Set attribute type and value
          nameAttribute.oid.value = X509_ORGANIZATION_NAME_OID;
@@ -410,12 +430,12 @@ error_t x509FormatName(const X509Name *name, uint8_t *output, size_t *written)
             return error;
 
          //Advance data pointer
-         p += n;
+         ASN1_INC_POINTER(p, n);
          length += n;
       }
 
       //Valid Organizational Unit Name attribute?
-      if(name->organizationalUnitName.value != NULL && name->organizationalUnitName.length> 0)
+      if(name->organizationalUnitName.value != NULL && name->organizationalUnitName.length > 0)
       {
          //Set attribute type and value
          nameAttribute.oid.value = X509_ORGANIZATIONAL_UNIT_NAME_OID;
@@ -431,7 +451,7 @@ error_t x509FormatName(const X509Name *name, uint8_t *output, size_t *written)
             return error;
 
          //Advance data pointer
-         p += n;
+         ASN1_INC_POINTER(p, n);
          length += n;
       }
 
@@ -452,7 +472,7 @@ error_t x509FormatName(const X509Name *name, uint8_t *output, size_t *written)
             return error;
 
          //Advance data pointer
-         p += n;
+         ASN1_INC_POINTER(p, n);
          length += n;
       }
 
@@ -460,8 +480,8 @@ error_t x509FormatName(const X509Name *name, uint8_t *output, size_t *written)
       if(name->emailAddress.value != NULL && name->emailAddress.length > 0)
       {
          //Set attribute type and value
-         nameAttribute.oid.value = X509_EMAIL_ADDRESS_OID;
-         nameAttribute.oid.length = sizeof(X509_EMAIL_ADDRESS_OID);
+         nameAttribute.oid.value = PKCS9_EMAIL_ADDR_OID;
+         nameAttribute.oid.length = sizeof(PKCS9_EMAIL_ADDR_OID);
          nameAttribute.type = ASN1_TYPE_IA5_STRING;
          nameAttribute.data.value = name->emailAddress.value;
          nameAttribute.data.length = name->emailAddress.length;
@@ -473,7 +493,7 @@ error_t x509FormatName(const X509Name *name, uint8_t *output, size_t *written)
             return error;
 
          //Advance data pointer
-         p += n;
+         ASN1_INC_POINTER(p, n);
          length += n;
       }
 
@@ -494,7 +514,7 @@ error_t x509FormatName(const X509Name *name, uint8_t *output, size_t *written)
             return error;
 
          //Advance data pointer
-         p += n;
+         ASN1_INC_POINTER(p, n);
          length += n;
       }
 
@@ -503,16 +523,15 @@ error_t x509FormatName(const X509Name *name, uint8_t *output, size_t *written)
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = length;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &n);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
 
       //Total number of bytes that have been written
-      *written = n;
+      *written = tag.totalLength;
    }
 
    //Successful processing
@@ -556,7 +575,7 @@ error_t x509FormatNameAttribute(const X509NameAttribute *nameAttribute,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format AttributeValue field
@@ -573,7 +592,7 @@ error_t x509FormatNameAttribute(const X509NameAttribute *nameAttribute,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //The attribute type and value are encapsulated within a sequence
@@ -581,10 +600,9 @@ error_t x509FormatNameAttribute(const X509NameAttribute *nameAttribute,
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_SEQUENCE;
    tag.length = length;
-   tag.value = output;
 
    //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &n);
+   error = asn1InsertHeader(&tag, output, &n);
    //Any error to report?
    if(error)
       return error;
@@ -593,17 +611,16 @@ error_t x509FormatNameAttribute(const X509NameAttribute *nameAttribute,
    tag.constructed = TRUE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_SET;
-   tag.length = n;
-   tag.value = output;
+   tag.length = length + n;
 
    //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &n);
+   error = asn1InsertHeader(&tag, output, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Total number of bytes that have been written
-   *written = n;
+   *written = tag.totalLength;
 
    //Successful processing
    return NO_ERROR;
@@ -639,7 +656,7 @@ error_t x509FormatValidity(const X509Validity *validity, uint8_t *output,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //The NotAfter field may be encoded as UTCTime or GeneralizedTime
@@ -649,7 +666,7 @@ error_t x509FormatValidity(const X509Validity *validity, uint8_t *output,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //The Validity structure is encapsulated within a sequence
@@ -657,16 +674,15 @@ error_t x509FormatValidity(const X509Validity *validity, uint8_t *output,
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_SEQUENCE;
    tag.length = length;
-   tag.value = output;
 
    //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &n);
+   error = asn1InsertHeader(&tag, output, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Total number of bytes that have been written
-   *written = n;
+   *written = tag.totalLength;
 
    //Successful processing
    return NO_ERROR;
@@ -695,26 +711,18 @@ error_t x509FormatTime(const DateTime *dateTime, uint8_t *output,
    {
       //Use UTCTime format
       type = ASN1_TYPE_UTC_TIME;
-
-      //The UTCTime uses a 2-digit representation of the year. If YY is greater
-      //than or equal to 50, the year shall be interpreted as 19YY. If YY is
-      //less than 50, the year shall be interpreted as 20YY
-      osSprintf(buffer, "%02" PRIu16 "%02" PRIu8 "%02" PRIu8
-         "%02" PRIu8 "%02" PRIu8 "%02" PRIu8 "Z",
-         dateTime->year % 100, dateTime->month, dateTime->day,
-         dateTime->hours, dateTime->minutes, dateTime->seconds);
    }
    else
    {
       //Use GeneralizedTime format
       type = ASN1_TYPE_GENERALIZED_TIME;
-
-      //The GeneralizedTime uses a 4-digit representation of the year
-      osSprintf(buffer, "%04" PRIu16 "%02" PRIu8 "%02" PRIu8
-         "%02" PRIu8 "%02" PRIu8 "%02" PRIu8 "Z",
-         dateTime->year, dateTime->month, dateTime->day,
-         dateTime->hours, dateTime->minutes, dateTime->seconds);
    }
+
+   //Format UTCTime or GeneralizedTime string
+   error = x509FormatTimeString(dateTime, type, buffer);
+   //Any error to report?
+   if(error)
+      return error;
 
    //The date may be encoded as UTCTime or GeneralizedTime
    tag.constructed = FALSE;
@@ -734,6 +742,61 @@ error_t x509FormatTime(const DateTime *dateTime, uint8_t *output,
 
    //Successful processing
    return NO_ERROR;
+}
+
+
+/**
+ * @brief Format UTCTime or GeneralizedTime string
+ * @param[in] dateTime Date to be encoded
+ * @param[in] type Time format (UTCTime or GeneralizedTime)
+ * @param[out] output Buffer where to format the string
+ * @return Error code
+ **/
+
+error_t x509FormatTimeString(const DateTime *dateTime, uint_t type,
+   char_t *output)
+{
+   error_t error;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //The date may be encoded as UTCTime or GeneralizedTime
+   if(type == ASN1_TYPE_UTC_TIME)
+   {
+      //UTCTime is limited to the period from 1950 to 2049
+      if(dateTime->year >= 1950 && dateTime->year <= 2049)
+      {
+         //The UTCTime uses a 2-digit representation of the year. If YY is
+         //greater than or equal to 50, the year shall be interpreted as 19YY.
+         //If YY is less than 50, the year shall be interpreted as 20YY
+         osSprintf(output, "%02" PRIu16 "%02" PRIu8 "%02" PRIu8
+            "%02" PRIu8 "%02" PRIu8 "%02" PRIu8 "Z",
+            dateTime->year % 100, dateTime->month, dateTime->day,
+            dateTime->hours, dateTime->minutes, dateTime->seconds);
+      }
+      else
+      {
+         //Report an error
+         error = ERROR_OUT_OF_RANGE;
+      }
+   }
+   else if(type == ASN1_TYPE_GENERALIZED_TIME)
+   {
+      //The GeneralizedTime uses a 4-digit representation of the year
+      osSprintf(output, "%04" PRIu16 "%02" PRIu8 "%02" PRIu8
+         "%02" PRIu8 "%02" PRIu8 "%02" PRIu8 "Z",
+         dateTime->year, dateTime->month, dateTime->day,
+         dateTime->hours, dateTime->minutes, dateTime->seconds);
+   }
+   else
+   {
+      //Report an error
+      error = ERROR_INVALID_TYPE;
+   }
+
+   //Return status code
+   return error;
 }
 
 #endif

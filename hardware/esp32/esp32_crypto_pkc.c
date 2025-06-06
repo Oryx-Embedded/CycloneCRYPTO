@@ -25,13 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
+#include "esp_crypto_lock.h"
 #include "soc/hwcrypto_reg.h"
 #include "soc/dport_access.h"
 #include "esp_private/periph_ctrl.h"
@@ -97,7 +98,7 @@ error_t mpiMul(Mpi *r, const Mpi *a, const Mpi *b)
       n = (n + 7) & ~7U;
 
       //Acquire exclusive access to the RSA module
-      osAcquireMutex(&esp32CryptoMutex);
+      esp_crypto_mpi_lock_acquire();
 
       //Clear the interrupt flag
       DPORT_REG_WRITE(RSA_INTERRUPT_REG, 1);
@@ -179,7 +180,7 @@ error_t mpiMul(Mpi *r, const Mpi *a, const Mpi *b)
       DPORT_REG_WRITE(RSA_INTERRUPT_REG, 1);
 
       //Release exclusive access to the RSA module
-      osReleaseMutex(&esp32CryptoMutex);
+      esp_crypto_mpi_lock_release();
    }
    else
    {
@@ -251,7 +252,7 @@ error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
       if(!error)
       {
          //Acquire exclusive access to the RSA module
-         osAcquireMutex(&esp32CryptoMutex);
+         esp_crypto_mpi_lock_acquire();
 
          //Clear the interrupt flag
          DPORT_REG_WRITE(RSA_INTERRUPT_REG, 1);
@@ -360,7 +361,7 @@ error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
          DPORT_REG_WRITE(RSA_INTERRUPT_REG, 1);
 
          //Release exclusive access to the RSA module
-         osReleaseMutex(&esp32CryptoMutex);
+         esp_crypto_mpi_lock_release();
       }
    }
    else
@@ -400,7 +401,7 @@ void ecScalarMul(uint32_t *rl, uint32_t *rh, const uint32_t *a,
    m = (n + 7) & ~7U;
 
    //Acquire exclusive access to the RSA module
-   osAcquireMutex(&esp32CryptoMutex);
+   esp_crypto_mpi_lock_acquire();
 
    //Clear the interrupt flag
    DPORT_REG_WRITE(RSA_INTERRUPT_REG, 1);
@@ -478,7 +479,7 @@ void ecScalarMul(uint32_t *rl, uint32_t *rh, const uint32_t *a,
    DPORT_REG_WRITE(RSA_INTERRUPT_REG, 1);
 
    //Release exclusive access to the RSA module
-   osReleaseMutex(&esp32CryptoMutex);
+   esp_crypto_mpi_lock_release();
 }
 
 

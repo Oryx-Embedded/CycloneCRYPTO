@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -87,7 +87,7 @@ error_t x509FormatSignatureAlgo(const X509SignAlgoId *signatureAlgo,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
 #if (X509_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
@@ -175,7 +175,7 @@ error_t x509FormatSignatureAlgo(const X509SignAlgoId *signatureAlgo,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //The Algorithm and Parameters fields are encapsulated within a sequence
@@ -183,16 +183,15 @@ error_t x509FormatSignatureAlgo(const X509SignAlgoId *signatureAlgo,
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_SEQUENCE;
    tag.length = length;
-   tag.value = output;
 
    //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &length);
+   error = asn1InsertHeader(&tag, output, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Total number of bytes that have been written
-   *written = length;
+   *written = length + n;
 
    //Successful processing
    return NO_ERROR;
@@ -219,16 +218,28 @@ error_t x509FormatSignatureValue(const PrngAlgo *prngAlgo, void *prngContext,
 {
    error_t error;
    size_t n;
+   uint8_t *p;
    Asn1Tag tag;
 
-   //The bit string shall contain an initial octet which encodes the number
-   //of unused bits in the final subsequent octet
-   output[0] = 0;
+   //Point to the buffer where to write the ASN.1 structure
+   p = output;
+
+   //If the output parameter is NULL, then the function calculates the length
+   //of the ASN.1 structure without copying any data
+   if(p != NULL)
+   {
+      //The bit string shall contain an initial octet which encodes the number
+      //of unused bits in the final subsequent octet
+      p[0] = 0;
+
+      //Advance data pointer
+      p++;
+   }
 
    //The ASN.1 DER-encoded tbsCertificate is used as the input to the signature
    //function
-   error = x509GenerateSignature(prngAlgo, prngContext, tbsCert,
-      signAlgoId, publicKeyInfo, privateKey, output + 1, &n);
+   error = x509GenerateSignature(prngAlgo, prngContext, tbsCert, signAlgoId,
+      privateKey, p, &n);
    //Any error to report?
    if(error)
       return error;
@@ -238,16 +249,15 @@ error_t x509FormatSignatureValue(const PrngAlgo *prngAlgo, void *prngContext,
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_BIT_STRING;
    tag.length = n + 1;
-   tag.value = output;
 
    //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &n);
+   error = asn1InsertHeader(&tag, output, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Total number of bytes that have been written
-   *written = n;
+   *written = tag.totalLength;
 
    //Successful processing
    return NO_ERROR;
@@ -283,7 +293,7 @@ error_t x509FormatRsaPssParameters(const X509RsaPssParameters *rsaPssParams,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format maskGenAlgorithm parameter
@@ -293,7 +303,7 @@ error_t x509FormatRsaPssParameters(const X509RsaPssParameters *rsaPssParams,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format saltLength parameter
@@ -303,7 +313,7 @@ error_t x509FormatRsaPssParameters(const X509RsaPssParameters *rsaPssParams,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //The RSASSA-PSS parameters are encapsulated within a sequence
@@ -311,16 +321,15 @@ error_t x509FormatRsaPssParameters(const X509RsaPssParameters *rsaPssParams,
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_SEQUENCE;
    tag.length = length;
-   tag.value = output;
 
    //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &n);
+   error = asn1InsertHeader(&tag, output, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Total number of bytes that have been written
-   *written = n;
+   *written = tag.totalLength;
 
    //Successful processing
    return NO_ERROR;
@@ -367,26 +376,30 @@ error_t x509FormatRsaPssHashAlgo(const X509RsaPssParameters *rsaPssParams,
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = n;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &n);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      n = tag.totalLength;
 
       //Explicit tagging shall be used to encode each parameter
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_CONTEXT_SPECIFIC;
       tag.objType = 0;
       tag.length = n;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &n);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting tag
+      n = tag.totalLength;
    }
 
    //Total number of bytes that have been written
@@ -437,7 +450,7 @@ error_t x509FormatRsaPssMaskGenAlgo(const X509RsaPssParameters *rsaPssParams,
          return error;
 
       //Advance data pointer
-      p += n;
+      ASN1_INC_POINTER(p, n);
       length += n;
 
       //Write the algorithm identifier of the one-way hash function employed
@@ -448,7 +461,7 @@ error_t x509FormatRsaPssMaskGenAlgo(const X509RsaPssParameters *rsaPssParams,
          return error;
 
       //Advance data pointer
-      p += n;
+      ASN1_INC_POINTER(p, n);
       length += n;
 
       //The maskGenAlgorithm parameter is encapsulated within a sequence
@@ -456,26 +469,30 @@ error_t x509FormatRsaPssMaskGenAlgo(const X509RsaPssParameters *rsaPssParams,
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = length;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &length);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      n = tag.totalLength;
 
       //Explicit tagging shall be used to encode each parameter
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_CONTEXT_SPECIFIC;
       tag.objType = 1;
-      tag.length = length;
-      tag.value = output;
+      tag.length = n;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &length);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting tag
+      length = tag.totalLength;
    }
 
    //Total number of bytes that have been written
@@ -527,13 +544,15 @@ error_t x509FormatRsaPssMaskGenHashAlgo(const X509RsaPssParameters *rsaPssParams
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = n;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &n);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      n = tag.totalLength;
    }
 
    //Total number of bytes that have been written
@@ -576,13 +595,15 @@ error_t x509FormatRsaPssSaltLength(const X509RsaPssParameters *rsaPssParams,
       tag.objClass = ASN1_CLASS_CONTEXT_SPECIFIC;
       tag.objType = 2;
       tag.length = n;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &n);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting tag
+      n = tag.totalLength;
    }
 
    //Total number of bytes that have been written

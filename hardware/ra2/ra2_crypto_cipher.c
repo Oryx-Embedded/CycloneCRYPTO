@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -626,7 +626,7 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             osAcquireMutex(&ra2CryptoMutex);
 
             //Process plaintext
-            while(length > 0 && status == SSP_SUCCESS)
+            while(length > 0 && status == FSP_SUCCESS)
             {
                //Limit the number of blocks to process at a time
                k = 256 - t[AES_BLOCK_SIZE - 1];

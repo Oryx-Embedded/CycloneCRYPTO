@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -158,12 +158,43 @@ const uint8_t X509_AD_CA_ISSUERS[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30,
 //Access Description OCSP (1.3.6.1.5.5.7.48.2)
 const uint8_t X509_AD_OCSP[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x02};
 
-//PKCS #9 e-mail address OID (1.2.840.113549.1.9.1)
-const uint8_t X509_EMAIL_ADDRESS_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x01};
+//PKCS #9 E-mail Address OID (1.2.840.113549.1.9.1)
+const uint8_t PKCS9_EMAIL_ADDR_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x01};
 //PKCS #9 Challenge Password OID (1.2.840.113549.1.9.7)
-const uint8_t X509_CHALLENGE_PASSWORD_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x07};
+const uint8_t PKCS9_CHALLENGE_PASSWORD_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x07};
 //PKCS #9 Extension Request OID (1.2.840.113549.1.9.14)
-const uint8_t X509_EXTENSION_REQUEST_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x0E};
+const uint8_t PKCS9_EXTENSION_REQUEST_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x09, 0x0E};
+
+//Default certificate parsing options
+const X509Options X509_DEFAULT_OPTIONS =
+{
+   FALSE //Ignore unknown extensions
+};
+
+
+/**
+ * @brief Compare distinguished names
+ * @param[in] name1 Pointer to the first distinguished name
+ * @param[in] nameLen1 Length of the first distinguished name
+ * @param[in] name2 Pointer to the second distinguished name
+ * @param[in] nameLen2 Length of the second distinguished name
+ * @return Comparison result
+ **/
+
+bool_t x509CompareName(const uint8_t *name1, size_t nameLen1,
+   const uint8_t *name2, size_t nameLen2)
+{
+   //Compare the length of the distinguished names
+   if(nameLen1 != nameLen2)
+      return FALSE;
+
+   //Compare the contents of the distinguished names
+   if(osMemcmp(name1, name2, nameLen1))
+      return FALSE;
+
+   //The distinguished names match
+   return TRUE;
+}
 
 
 /**

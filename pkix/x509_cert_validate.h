@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _X509_CERT_VALIDATE_H
@@ -49,9 +49,6 @@ error_t x509CheckSubjectName(const X509CertInfo *certInfo,
 
 error_t x509CheckNameConstraints(const char_t *subjectName,
    const X509CertInfo *certInfo);
-
-bool_t x509CompareName(const uint8_t *name1, size_t nameLen1,
-   const uint8_t *name2, size_t nameLen2);
 
 bool_t x509CompareSubjectName(const char_t *subjectName, size_t subjectNameLen,
    const char_t *fqdn);

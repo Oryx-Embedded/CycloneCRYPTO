@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _EC_H
@@ -557,22 +557,22 @@ error_t ecGeneratePublicKey(const EcPrivateKey *privateKey,
    EcPublicKey *publicKey);
 
 error_t ecImportPublicKey(EcPublicKey *key, const EcCurve *curve,
-   const uint8_t *data, size_t length, EcPublicKeyFormat format);
+   const uint8_t *input, size_t length, EcPublicKeyFormat format);
 
-error_t ecExportPublicKey(const EcPublicKey *key, uint8_t *data,
-   size_t *length, EcPublicKeyFormat format);
+error_t ecExportPublicKey(const EcPublicKey *key, uint8_t *output,
+   size_t *written, EcPublicKeyFormat format);
 
 error_t ecImportPrivateKey(EcPrivateKey *key, const EcCurve *curve,
-   const uint8_t *data, size_t length);
+   const uint8_t *input, size_t length);
 
-error_t ecExportPrivateKey(const EcPrivateKey *key, uint8_t *data,
-   size_t *length);
+error_t ecExportPrivateKey(const EcPrivateKey *key, uint8_t *output,
+   size_t *written);
 
-error_t ecImportPoint(const EcCurve *curve, EcPoint *r, const uint8_t *data,
+error_t ecImportPoint(const EcCurve *curve, EcPoint *r, const uint8_t *input,
    size_t length);
 
-error_t ecExportPoint(const EcCurve *curve, const EcPoint *a, uint8_t *data,
-   size_t *length);
+error_t ecExportPoint(const EcCurve *curve, const EcPoint *a, uint8_t *output,
+   size_t *written);
 
 void ecProjectify(const EcCurve *curve, EcPoint3 *r, const EcPoint *s);
 error_t ecAffinify(const EcCurve *curve, EcPoint3 *r, const EcPoint3 *s);

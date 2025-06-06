@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _ASN1_H
@@ -53,6 +53,9 @@
 #define ASN1_CLASS_APPLICATION      0x40
 #define ASN1_CLASS_CONTEXT_SPECIFIC 0x80
 #define ASN1_CLASS_PRIVATE          0xC0
+
+//Helper macro
+#define ASN1_INC_POINTER(p, n) if(p != NULL) p += n;
 
 //C++ guard
 #ifdef __cplusplus
@@ -126,6 +129,8 @@ error_t asn1WriteTag(Asn1Tag *tag, bool_t reverse, uint8_t *data,
 
 error_t asn1WriteHeader(Asn1Tag *tag, bool_t reverse, uint8_t *data,
    size_t *written);
+
+error_t asn1InsertHeader(Asn1Tag *tag, uint8_t *data, size_t *written);
 
 error_t asn1WriteInt32(int32_t value, bool_t reverse, uint8_t *data,
    size_t *written);

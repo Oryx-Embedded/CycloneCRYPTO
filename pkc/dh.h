@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _DH_H
@@ -74,6 +74,12 @@ void dhFreeParameters(DhParameters *params);
 
 error_t dhGenerateKeyPair(DhContext *context, const PrngAlgo *prngAlgo,
    void *prngContext);
+
+error_t dhExportPublicKey(DhContext *context, uint8_t *output, size_t *written,
+   MpiFormat format);
+
+error_t dhImportPeerPublicKey(DhContext *context, const uint8_t *input,
+   size_t length, MpiFormat format);
 
 error_t dhCheckPublicKey(DhContext *context, const Mpi *publicKey);
 

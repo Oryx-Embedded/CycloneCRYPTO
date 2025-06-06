@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -92,7 +92,7 @@ error_t x509CreateCsr(const PrngAlgo *prngAlgo, void *prngContext,
    tbsData.length = n;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format SignatureAlgorithm structure
@@ -102,7 +102,7 @@ error_t x509CreateCsr(const PrngAlgo *prngAlgo, void *prngContext,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format Signature structure
@@ -114,7 +114,7 @@ error_t x509CreateCsr(const PrngAlgo *prngAlgo, void *prngContext,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //The CSR is encapsulated within a sequence
@@ -122,16 +122,15 @@ error_t x509CreateCsr(const PrngAlgo *prngAlgo, void *prngContext,
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_SEQUENCE;
    tag.length = length;
-   tag.value = output;
 
    //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &n);
+   error = asn1InsertHeader(&tag, output, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Total number of bytes that have been written
-   *written = n;
+   *written = tag.totalLength;
 
    //Successful processing
    return NO_ERROR;

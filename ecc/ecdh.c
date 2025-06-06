@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -74,6 +74,37 @@ void ecdhFree(EcdhContext *context)
 
 
 /**
+ * @brief Specify the elliptic curve to use
+ * @param[in] context Pointer to the ECDH context
+ * @param[in] curve Elliptic curve parameters
+ * @return Error code
+ **/
+
+error_t ecdhSetCurve(EcdhContext *context, const EcCurve *curve)
+{
+   error_t error;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Check parameters
+   if(context != NULL && curve != NULL)
+   {
+      //Save elliptic curve parameters
+      context->curve = curve;
+   }
+   else
+   {
+      //Report an error
+      error = ERROR_INVALID_PARAMETER;
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
  * @brief ECDH key pair generation
  * @param[in] context Pointer to the ECDH context
  * @param[in] prngAlgo PRNG algorithm
@@ -108,7 +139,7 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
       uint8_t g[CURVE25519_BYTE_LEN];
 
       //Generate 32 random bytes
-      error = prngAlgo->read(prngContext, da, CURVE25519_BYTE_LEN);
+      error = prngAlgo->generate(prngContext, da, CURVE25519_BYTE_LEN);
 
       //Check status code
       if(!error)
@@ -160,7 +191,7 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
       uint8_t g[CURVE448_BYTE_LEN];
 
       //Generate 56 random bytes
-      error = prngAlgo->read(prngContext, da, CURVE448_BYTE_LEN);
+      error = prngAlgo->generate(prngContext, da, CURVE448_BYTE_LEN);
 
       //Check status code
       if(!error)
@@ -215,7 +246,53 @@ error_t ecdhGenerateKeyPair(EcdhContext *context, const PrngAlgo *prngAlgo,
 
 
 /**
- * @brief Check ECDH public key
+ * @brief Export our own public key
+ * @param[in] context Pointer to the ECDH context
+ * @param[out] output Pointer to the octet string
+ * @param[out] written Length of the octet string, in bytes
+ * @param[in] format EC public key format (X9.63 or raw format)
+ * @return Error code
+ **/
+
+error_t ecdhExportPublicKey(EcdhContext *context, uint8_t *output,
+   size_t *written, EcPublicKeyFormat format)
+{
+   //Export our own public key
+   return ecExportPublicKey(&context->da.q, output, written, format);
+}
+
+
+/**
+ * @brief Import peer's public key
+ * @param[in] context Pointer to the ECDH context
+ * @param[in] input Pointer to the octet string
+ * @param[in] length Length of the octet string, in bytes
+ * @param[in] format EC public key format (X9.63 or raw format)
+ * @return Error code
+ **/
+
+error_t ecdhImportPeerPublicKey(EcdhContext *context, const uint8_t *input,
+   size_t length, EcPublicKeyFormat format)
+{
+   error_t error;
+
+   //Import peer's public key
+   error = ecImportPublicKey(&context->qb, context->curve, input, length, format);
+
+   //Check status code
+   if(!error)
+   {
+      //Ensure the public key is acceptable
+      error = ecdhCheckPublicKey(context, &context->qb);
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Check public key
  * @param[in] context Pointer to the ECDH context
  * @param[in] publicKey Public key to be checked
  * @return Error code

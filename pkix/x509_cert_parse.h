@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _X509_CERT_PARSE_H
@@ -45,10 +45,11 @@ error_t x509ParseCertificate(const uint8_t *data, size_t length,
    X509CertInfo *certInfo);
 
 error_t x509ParseCertificateEx(const uint8_t *data, size_t length,
-   X509CertInfo *certInfo, bool_t ignoreUnknown);
+   X509CertInfo *certInfo, const X509Options *options);
 
 error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
-   size_t *totalLength, X509TbsCertificate *tbsCert, bool_t ignoreUnknown);
+   size_t *totalLength, X509TbsCertificate *tbsCert,
+   const X509Options *options);
 
 error_t x509ParseVersion(const uint8_t *data, size_t length,
    size_t *totalLength, X509Version *version);
@@ -85,6 +86,9 @@ error_t x509ParseValidity(const uint8_t *data, size_t length,
 
 error_t x509ParseTime(const uint8_t *data, size_t length,
    size_t *totalLength, DateTime *dateTime);
+
+error_t x509ParseTimeString(const uint8_t *data, size_t length, uint_t type,
+   DateTime *dateTime);
 
 error_t x509ParseInt(const uint8_t *data, size_t length, uint_t *value);
 

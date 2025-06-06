@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _EDDSA_H
@@ -98,16 +98,16 @@ error_t eddsaGeneratePublicKey(const EddsaPrivateKey *privateKey,
    EddsaPublicKey *publicKey);
 
 error_t eddsaImportPublicKey(EddsaPublicKey *key, const EcCurve *curve,
-   const uint8_t *data, size_t length);
+   const uint8_t *input, size_t length);
 
-error_t eddsaExportPublicKey(const EddsaPublicKey *key, uint8_t *data,
-   size_t *length);
+error_t eddsaExportPublicKey(const EddsaPublicKey *key, uint8_t *output,
+   size_t *written);
 
 error_t eddsaImportPrivateKey(EddsaPrivateKey *key, const EcCurve *curve,
    const uint8_t *data, size_t length);
 
-error_t eddsaExportPrivateKey(const EddsaPrivateKey *key, uint8_t *data,
-   size_t *length);
+error_t eddsaExportPrivateKey(const EddsaPrivateKey *key, uint8_t *output,
+   size_t *written);
 
 //C++ guard
 #ifdef __cplusplus

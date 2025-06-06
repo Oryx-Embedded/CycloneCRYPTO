@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -137,13 +137,13 @@ error_t chachaInit(ChachaContext *context, uint_t nr, const uint8_t *key,
    //Check the length of the nonce
    if(nonceLen == 8)
    {
-      //Input words 12 and 13 are a block counter, with word 12
-      //overflowing into word 13
+      //Input words 12 and 13 are a block counter, with word 12 overflowing
+      //into word 13
       w[12] = 0;
       w[13] = 0;
 
-      //Input words 14 and 15 are taken from an 64-bit nonce, by reading
-      //the bytes in little-endian order, in 4-byte chunks
+      //Input words 14 and 15 are taken from the 64-bit nonce, by reading the
+      //bytes in little-endian order, in 4-byte chunks
       w[14] = LOAD32LE(nonce);
       w[15] = LOAD32LE(nonce + 4);
    }
@@ -152,11 +152,20 @@ error_t chachaInit(ChachaContext *context, uint_t nr, const uint8_t *key,
       //Input word 12 is a block counter
       w[12] = 0;
 
-      //Input words 13 to 15 are taken from an 96-bit nonce, by reading
+      //Input words 13 to 15 are taken from the 96-bit nonce, by reading
       //the bytes in little-endian order, in 4-byte chunks
       w[13] = LOAD32LE(nonce);
       w[14] = LOAD32LE(nonce + 4);
       w[15] = LOAD32LE(nonce + 8);
+   }
+   else if(nonceLen == 16)
+   {
+      //Input words 12 to 15 are taken from the 128-bit nonce, by reading
+      //the bytes in little-endian order, in 4-byte chunks
+      w[12] = LOAD32LE(nonce);
+      w[13] = LOAD32LE(nonce + 4);
+      w[14] = LOAD32LE(nonce + 8);
+      w[15] = LOAD32LE(nonce + 12);
    }
    else
    {

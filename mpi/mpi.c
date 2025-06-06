@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -624,7 +624,8 @@ error_t mpiRand(Mpi *r, uint_t length, const PrngAlgo *prngAlgo,
    r->sign = 1;
 
    //Generate a random pattern
-   error = prngAlgo->read(prngContext, (uint8_t *) r->data, n * sizeof(mpi_word_t));
+   error = prngAlgo->generate(prngContext, (uint8_t *) r->data,
+      n * sizeof(mpi_word_t));
    //Any error to report?
    if(error)
       return error;
@@ -1639,7 +1640,6 @@ end:
 }
 
 
-
 /**
  * @brief Modular addition
  * @param[out] r Resulting integer R = A + B mod P
@@ -1860,7 +1860,10 @@ __weak_func error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
             n = MAX(i - d + 1, 0);
 
             //The least significant bit of the window must be equal to 1
-            while(!mpiGetBitValue(e, n)) n++;
+            while(!mpiGetBitValue(e, n))
+            {
+               n++;
+            }
 
             //The algorithm processes more than one bit per iteration
             for(u = 0, j = i; j >= n; j--)
@@ -2195,7 +2198,13 @@ void mpiDump(FILE *stream, const char_t *prepend, const Mpi *a)
       }
 
       //Display current data
-      fprintf(stream, "%08X ", a->data[a->size - 1 - i]);
+#if (MPI_BITS_PER_WORD == 8)
+      fprintf(stream, "%02" PRIX8 " ", a->data[a->size - 1 - i]);
+#elif (MPI_BITS_PER_WORD == 16)
+      fprintf(stream, "%04" PRIX16 " ", a->data[a->size - 1 - i]);
+#elif (MPI_BITS_PER_WORD == 32)
+      fprintf(stream, "%08" PRIX32 " ", a->data[a->size - 1 - i]);
+#endif
 
       //End of current line?
       if(((a->size - i - 1) % 8) == 0 || i == (a->size - 1))

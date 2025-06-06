@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -647,14 +647,16 @@ error_t x509ImportDsaPublicKey(DsaPublicKey *publicKey,
          publicKeyInfo->dsaPublicKey.y.value != NULL)
       {
          //Read parameter p
-         error = mpiImport(&publicKey->params.p, publicKeyInfo->dsaParams.p.value,
+         error = mpiImport(&publicKey->params.p,
+            publicKeyInfo->dsaParams.p.value,
             publicKeyInfo->dsaParams.p.length, MPI_FORMAT_BIG_ENDIAN);
 
          //Check status code
          if(!error)
          {
             //Read parameter q
-            error = mpiImport(&publicKey->params.q, publicKeyInfo->dsaParams.q.value,
+            error = mpiImport(&publicKey->params.q,
+               publicKeyInfo->dsaParams.q.value,
                publicKeyInfo->dsaParams.q.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
@@ -662,7 +664,8 @@ error_t x509ImportDsaPublicKey(DsaPublicKey *publicKey,
          if(!error)
          {
             //Read parameter g
-            error = mpiImport(&publicKey->params.g, publicKeyInfo->dsaParams.g.value,
+            error = mpiImport(&publicKey->params.g,
+               publicKeyInfo->dsaParams.g.value,
                publicKeyInfo->dsaParams.g.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
@@ -670,7 +673,8 @@ error_t x509ImportDsaPublicKey(DsaPublicKey *publicKey,
          if(!error)
          {
             //Read public value
-            error = mpiImport(&publicKey->y, publicKeyInfo->dsaPublicKey.y.value,
+            error = mpiImport(&publicKey->y,
+               publicKeyInfo->dsaPublicKey.y.value,
                publicKeyInfo->dsaPublicKey.y.length, MPI_FORMAT_BIG_ENDIAN);
          }
 

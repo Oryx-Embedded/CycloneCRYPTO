@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -415,31 +415,6 @@ error_t x509CheckNameConstraints(const char_t *subjectName,
 
    //Return status code
    return error;
-}
-
-
-/**
- * @brief Compare distinguished names
- * @param[in] name1 Pointer to the first distinguished name
- * @param[in] nameLen1 Length of the first distinguished name
- * @param[in] name2 Pointer to the second distinguished name
- * @param[in] nameLen2 Length of the second distinguished name
- * @return Comparison result
- **/
-
-bool_t x509CompareName(const uint8_t *name1, size_t nameLen1,
-   const uint8_t *name2, size_t nameLen2)
-{
-   //Compare the length of the distinguished names
-   if(nameLen1 != nameLen2)
-      return FALSE;
-
-   //Compare the contents of the distinguished names
-   if(osMemcmp(name1, name2, nameLen1))
-      return FALSE;
-
-   //The distinguished names match
-   return TRUE;
 }
 
 

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -67,7 +67,6 @@ error_t mpiExpModFast(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
 {
    error_t error;
    fsp_err_t status;
-   size_t n;
    size_t aLen;
    size_t eLen;
    size_t pLen;
@@ -80,19 +79,23 @@ error_t mpiExpModFast(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    pLen = mpiGetByteLength(p);
 
    //The accelerator supports operand lengths up to 4096 bits
-   if((aLen <= 256 && eLen <= 4 && pLen <= 256) ||
-      (aLen <= 384 && eLen <= 4 && pLen <= 384) ||
-      (aLen <= 512 && eLen <= 4 && pLen <= 512))
+   if(aLen <= 512 && eLen <= 4 && pLen <= 512)
    {
+      size_t n;
       sce_oem_cmd_t command;
 
       //Select appropriate scalar length
-      if(pLen <= 256)
+      if(aLen <= 128 && pLen <= 128)
+      {
+         command = SCE_OEM_CMD_RSA1024_PUBLIC;
+         n = 128;
+      }
+      else if(aLen <= 256 && pLen <= 256)
       {
          command = SCE_OEM_CMD_RSA2048_PUBLIC;
          n = 256;
       }
-      else if(pLen <= 384)
+      else if(aLen <= 384 && pLen <= 384)
       {
          command = SCE_OEM_CMD_RSA3072_PUBLIC;
          n = 384;
@@ -121,7 +124,12 @@ error_t mpiExpModFast(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
       if(status == FSP_SUCCESS)
       {
          //Perform RSA encryption
-         if(n == 256)
+         if(n == 128)
+         {
+            status = HW_SCE_Rsa1024ModularExponentEncryptSub(rsaArgs.wrappedKey,
+               rsaArgs.m, rsaArgs.c);
+         }
+         else if(n == 256)
          {
             status = HW_SCE_Rsa2048ModularExponentEncryptSub(rsaArgs.wrappedKey,
                rsaArgs.m, rsaArgs.c);
@@ -195,34 +203,60 @@ error_t mpiExpModRegular(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    //The accelerator supports operand lengths up to 2048 bits
    if(aLen <= 256 && eLen <= 256 && pLen <= 256)
    {
+      size_t n;
+      sce_oem_cmd_t command;
+
+      //Select appropriate scalar length
+      if(aLen <= 128 && eLen <= 128 && pLen <= 128)
+      {
+         command = SCE_OEM_CMD_RSA1024_PRIVATE;
+         n = 128;
+      }
+      else
+      {
+         command = SCE_OEM_CMD_RSA2048_PRIVATE;
+         n = 256;
+      }
+
       //Acquire exclusive access to the SCE module
       osAcquireMutex(&ra4CryptoMutex);
 
       //Format ciphertext representative
-      mpiWriteRaw(a, (uint8_t *) rsaArgs.c, 256);
+      mpiWriteRaw(a, (uint8_t *) rsaArgs.c, n);
 
       //Format private key
-      mpiWriteRaw(p, (uint8_t *) rsaArgs.key, 256);
-      mpiWriteRaw(e, (uint8_t *) rsaArgs.key + 256, 256);
+      mpiWriteRaw(p, (uint8_t *) rsaArgs.key, n);
+      mpiWriteRaw(e, (uint8_t *) rsaArgs.key + n, n);
 
       //Install the plaintext private key and get the wrapped key
       status = HW_SCE_GenerateOemKeyIndexPrivate(SCE_OEM_KEY_TYPE_PLAIN,
-         SCE_OEM_CMD_RSA2048_PRIVATE, NULL, NULL, (uint8_t *) rsaArgs.key,
-         rsaArgs.wrappedKey);
+         command, NULL, NULL, (uint8_t *) rsaArgs.key, rsaArgs.wrappedKey);
 
       //Check status code
       if(status == FSP_SUCCESS)
       {
          //Perform RSA decryption
-         status = HW_SCE_Rsa2048ModularExponentDecryptSub(rsaArgs.wrappedKey,
-            rsaArgs.c, rsaArgs.m);
+         if(n == 128)
+         {
+            status = HW_SCE_Rsa1024ModularExponentDecryptSub(rsaArgs.wrappedKey,
+               rsaArgs.c, rsaArgs.m);
+         }
+         else if(n == 256)
+         {
+            status = HW_SCE_Rsa2048ModularExponentDecryptSub(rsaArgs.wrappedKey,
+               rsaArgs.c, rsaArgs.m);
+         }
+         else
+         {
+            status = FSP_ERR_CRYPTO_NOT_IMPLEMENTED;
+         }
       }
 
       //Check status code
       if(status == FSP_SUCCESS)
       {
          //Copy the message representative
-         error = mpiReadRaw(r, (uint8_t *) rsaArgs.m, 256);
+         error = mpiReadRaw(r, (uint8_t *) rsaArgs.m, n);
       }
       else
       {

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -74,7 +74,7 @@ error_t x509FormatCertRequestInfo(const X509CertRequestInfo *certReqInfo,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format Subject field
@@ -84,7 +84,7 @@ error_t x509FormatCertRequestInfo(const X509CertRequestInfo *certReqInfo,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format SubjectPublicKeyInfo field
@@ -95,7 +95,7 @@ error_t x509FormatCertRequestInfo(const X509CertRequestInfo *certReqInfo,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format Attributes field
@@ -105,7 +105,7 @@ error_t x509FormatCertRequestInfo(const X509CertRequestInfo *certReqInfo,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //The CertificationRequestInfo structure is encapsulated within a sequence
@@ -113,16 +113,15 @@ error_t x509FormatCertRequestInfo(const X509CertRequestInfo *certReqInfo,
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_SEQUENCE;
    tag.length = length;
-   tag.value = output;
 
    //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &n);
+   error = asn1InsertHeader(&tag, output, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Total number of bytes that have been written
-   *written = n;
+   *written = tag.totalLength;
 
    //Successful processing
    return NO_ERROR;
@@ -151,24 +150,24 @@ error_t x509FormatAttributes(const X509Attributes *attributes,
    //Length of the ASN.1 structure
    length = 0;
 
-   //Format PKCS#9 Challenge Password attribute
+   //Format PKCS #9 Challenge Password attribute
    error = x509FormatChallengePassword(&attributes->challengePwd, p, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
-   //Format PKCS#9 Extension Request attribute
+   //Format PKCS #9 Extension Request attribute
    error = x509FormatExtensionRequest(&attributes->extensionReq, p, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Explicit tagging shall be used to encode the Extensions structure
@@ -176,16 +175,15 @@ error_t x509FormatAttributes(const X509Attributes *attributes,
    tag.objClass = ASN1_CLASS_CONTEXT_SPECIFIC;
    tag.objType = 0;
    tag.length = length;
-   tag.value = output;
 
    //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &length);
+   error = asn1InsertHeader(&tag, output, &n);
    //Any error to report?
    if(error)
       return error;
 
    //Total number of bytes that have been written
-   *written = length;
+   *written = tag.totalLength;
 
    //Successful processing
    return NO_ERROR;
@@ -221,8 +219,8 @@ error_t x509FormatChallengePassword(const X509ChallengePassword *challengePwd,
       tag.constructed = FALSE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
-      tag.length = sizeof(X509_CHALLENGE_PASSWORD_OID);
-      tag.value = X509_CHALLENGE_PASSWORD_OID;
+      tag.length = sizeof(PKCS9_CHALLENGE_PASSWORD_OID);
+      tag.value = PKCS9_CHALLENGE_PASSWORD_OID;
 
       //Write the corresponding ASN.1 tag
       error = asn1WriteTag(&tag, FALSE, p, &n);
@@ -231,13 +229,14 @@ error_t x509FormatChallengePassword(const X509ChallengePassword *challengePwd,
          return error;
 
       //Advance data pointer
-      p += n;
+      ASN1_INC_POINTER(p, n);
       length += n;
 
-      //Format challenge password
+      //ChallengePassword attribute values should use the PrintableString
+      //encoding whenever possible (refer to RFC 2985, section 5.4.1)
       tag.constructed = FALSE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
-      tag.objType = ASN1_TYPE_UTF8_STRING;
+      tag.objType = ASN1_TYPE_PRINTABLE_STRING;
       tag.length = challengePwd->length;
       tag.value = (uint8_t *) challengePwd->value;
 
@@ -252,26 +251,30 @@ error_t x509FormatChallengePassword(const X509ChallengePassword *challengePwd,
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SET;
       tag.length = n;
-      tag.value = p;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, p, &n);
+      error = asn1InsertHeader(&tag, p, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting tag
+      n = tag.totalLength;
 
       //The attribute is encapsulated within a sequence
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = length + n;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &length);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      length = tag.totalLength;
    }
 
    //Total number of bytes that have been written
@@ -309,8 +312,8 @@ error_t x509FormatExtensionRequest(const X509Extensions *extensionReq,
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
-   tag.length = sizeof(X509_EXTENSION_REQUEST_OID);
-   tag.value = X509_EXTENSION_REQUEST_OID;
+   tag.length = sizeof(PKCS9_EXTENSION_REQUEST_OID);
+   tag.value = PKCS9_EXTENSION_REQUEST_OID;
 
    //Write the corresponding ASN.1 tag
    error = asn1WriteTag(&tag, FALSE, p, &m);
@@ -319,7 +322,7 @@ error_t x509FormatExtensionRequest(const X509Extensions *extensionReq,
       return error;
 
    //Advance data pointer
-   p += m;
+   ASN1_INC_POINTER(p, m);
 
    //Format NetscapeCertType extension
    error = x509FormatNsCertType(&extensionReq->nsCertType, p, &n);
@@ -328,7 +331,7 @@ error_t x509FormatExtensionRequest(const X509Extensions *extensionReq,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format BasicConstraints extension
@@ -339,7 +342,7 @@ error_t x509FormatExtensionRequest(const X509Extensions *extensionReq,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format KeyUsage extension
@@ -349,7 +352,7 @@ error_t x509FormatExtensionRequest(const X509Extensions *extensionReq,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format SubjectAltName extension
@@ -359,7 +362,7 @@ error_t x509FormatExtensionRequest(const X509Extensions *extensionReq,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format SubjectKeyIdentifier extension
@@ -369,7 +372,7 @@ error_t x509FormatExtensionRequest(const X509Extensions *extensionReq,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Format AuthorityKeyIdentifier extension
@@ -379,53 +382,66 @@ error_t x509FormatExtensionRequest(const X509Extensions *extensionReq,
       return error;
 
    //Advance data pointer
-   p += n;
+   ASN1_INC_POINTER(p, n);
    length += n;
 
    //Any extensions written?
    if(length > 0)
    {
       //Point to the first certificate extension
-      p = output + m;
+      if(output != NULL)
+      {
+         p = output + m;
+      }
+      else
+      {
+         p = NULL;
+      }
 
       //Certificate extensions are encapsulated within a sequence
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = length;
-      tag.value = p;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, p, &length);
+      error = asn1InsertHeader(&tag, p, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      length = tag.totalLength;
 
       //Attribute value is encapsulated within a set
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SET;
       tag.length = length;
-      tag.value = p;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, p, &length);
+      error = asn1InsertHeader(&tag, p, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting tag
+      length = tag.totalLength;
 
       //The attribute is encapsulated within a sequence
       tag.constructed = TRUE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_SEQUENCE;
       tag.length = length + m;
-      tag.value = output;
 
       //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, output, &length);
+      error = asn1InsertHeader(&tag, output, &n);
       //Any error to report?
       if(error)
          return error;
+
+      //Get the length of the resulting sequence
+      length = tag.totalLength;
    }
 
    //Total number of bytes that have been written

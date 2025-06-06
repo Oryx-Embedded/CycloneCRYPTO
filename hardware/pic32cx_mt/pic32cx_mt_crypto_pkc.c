@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -903,7 +903,7 @@ bool_t ecIsPointAffine(const EcCurve *curve, const EcPoint *s)
    PukccZpEcPointIsOnCurveParams params = {0};
 
    //Get the length of the modulus, in bytes
-   modLen = (curve->fieldSize + 7) /8;
+   modLen = (curve->fieldSize + 7) / 8;
    modLen = (modLen + 3U) & ~3U;
 
    //Acquire exclusive access to the CPKCC accelerator

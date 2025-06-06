@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _PKCS8_KEY_FORMAT_H
@@ -51,9 +51,6 @@ error_t pkcs8FormatDsaPrivateKey(const DsaPrivateKey *privateKey,
    uint8_t *output, size_t *written);
 
 error_t pkcs8FormatEcPrivateKey(const EcPrivateKey *privateKey,
-   uint8_t *output, size_t *written);
-
-error_t pkcs8FormatEcPublicKey(const EcPublicKey *publicKey,
    uint8_t *output, size_t *written);
 
 error_t pkcs8FormatEddsaPrivateKey(const EddsaPrivateKey *privateKey,

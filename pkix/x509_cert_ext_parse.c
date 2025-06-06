@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -49,12 +49,12 @@
  * @param[in] length Length of the ASN.1 structure
  * @param[out] totalLength Number of bytes that have been parsed
  * @param[out] extensions Information resulting from the parsing process
- * @param[in] ignoreUnknown Ignore unknown extensions
+ * @param[in] options Certificate parsing options
  * @return Error code
  **/
 
 error_t x509ParseCertExtensions(const uint8_t *data, size_t length,
-   size_t *totalLength, X509Extensions *extensions, bool_t ignoreUnknown)
+   size_t *totalLength, X509Extensions *extensions, const X509Options *options)
 {
    error_t error;
    size_t n;
@@ -218,7 +218,7 @@ error_t x509ParseCertExtensions(const uint8_t *data, size_t length,
             //An application must reject the certificate if it encounters a
             //critical extension it does not recognize or a critical extension
             //that contains information that it cannot process
-            if(!extension.critical || ignoreUnknown)
+            if(!extension.critical || options->ignoreUnknownExtensions)
             {
                error = NO_ERROR;
             }
@@ -228,16 +228,6 @@ error_t x509ParseCertExtensions(const uint8_t *data, size_t length,
       //Any parsing error?
       if(error)
          return error;
-   }
-
-   //Check whether the keyCertSign bit is asserted
-   if((extensions->keyUsage.bitmap & X509_KEY_USAGE_KEY_CERT_SIGN) != 0)
-   {
-      //If the keyCertSign bit is asserted, then the cA bit in the basic
-      //constraints extension must also be asserted (refer to RFC 5280,
-      //section 4.2.1.3)
-      if(!extensions->basicConstraints.cA)
-         return ERROR_INVALID_SYNTAX;
    }
 
    //Check whether the NameConstraints extension is present

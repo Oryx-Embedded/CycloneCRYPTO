@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _DSA_H
@@ -113,11 +113,11 @@ void dsaFreePrivateKey(DsaPrivateKey *key);
 void dsaInitSignature(DsaSignature *signature);
 void dsaFreeSignature(DsaSignature *signature);
 
-error_t dsaImportSignature(DsaSignature *signature, const uint8_t *data,
+error_t dsaImportSignature(DsaSignature *signature, const uint8_t *input,
    size_t length);
 
-error_t dsaExportSignature(const DsaSignature *signature, uint8_t *data,
-   size_t *length);
+error_t dsaExportSignature(const DsaSignature *signature, uint8_t *output,
+   size_t *written);
 
 error_t dsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    const DsaPrivateKey *key, const uint8_t *digest, size_t digestLen,

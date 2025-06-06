@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -268,15 +268,15 @@ void ecScalarSqrMod(const EcCurve *curve, uint32_t *r, const uint32_t *a)
    }
    else
    {
-     uint_t qLen;
-     uint32_t u[EC_MAX_ORDER_SIZE * 2];
+      uint_t qLen;
+      uint32_t u[EC_MAX_ORDER_SIZE * 2];
 
-     //Get the length of the order, in words
-     qLen = (curve->orderSize + 31) / 32;
+      //Get the length of the order, in words
+      qLen = (curve->orderSize + 31) / 32;
 
-     //Compute R = (A ^ 2) mod q
-     ecScalarSqr(u, a, qLen);
-     curve->scalarMod(curve, r, u);
+      //Compute R = (A ^ 2) mod q
+      ecScalarSqr(u, a, qLen);
+      curve->scalarMod(curve, r, u);
    }
 }
 

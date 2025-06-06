@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -74,11 +74,18 @@ error_t pkcs8ParsePrivateKeyInfo(const uint8_t *data, size_t length,
    data = tag.value;
    length = tag.length;
 
-   //Read Version field
+   //The Version field identifies the version of OneAsymmetricKey
    error = asn1ReadInt32(data, length, &tag, &privateKeyInfo->version);
    //Failed to decode ASN.1 tag?
    if(error)
       return error;
+
+   //Check version
+   if(privateKeyInfo->version != PKCS8_VERSION_1 &&
+      privateKeyInfo->version != PKCS8_VERSION_2)
+   {
+      return ERROR_INVALID_VERSION;
+   }
 
    //Point to the next field
    data += tag.totalLength;
@@ -172,12 +179,8 @@ error_t pkcs8ParsePrivateKeyInfo(const uint8_t *data, size_t length,
    data += tag.totalLength;
    length -= tag.totalLength;
 
-#if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
-   //X25519, Ed25519, X448 or Ed448 algorithm identifier?
-   if(OID_COMP(oid, oidLen, X25519_OID) == 0 ||
-      OID_COMP(oid, oidLen, ED25519_OID) == 0 ||
-      OID_COMP(oid, oidLen, X448_OID) == 0 ||
-      OID_COMP(oid, oidLen, ED448_OID) == 0)
+   //Check version
+   if(privateKeyInfo->version == PKCS8_VERSION_2)
    {
       //The OneAsymmetricKey structure allows for the public key and additional
       //attributes about the key to be included as well (refer to RFC 8410,
@@ -197,13 +200,40 @@ error_t pkcs8ParsePrivateKeyInfo(const uint8_t *data, size_t length,
          //Check attribute type
          if(tag.objType == 1)
          {
-            //The publicKey field contains the elliptic curve public key
-            //associated with the private key in question
-            error = pkcs8ParseEddsaPublicKey(tag.value, tag.length,
-               &privateKeyInfo->eddsaPublicKey);
-            //Any error to report?
-            if(error)
-               return error;
+#if (ED25519_SUPPORT == ENABLED)
+            //X25519 or Ed25519 algorithm identifier?
+            if(OID_COMP(oid, oidLen, X25519_OID) == 0 ||
+               OID_COMP(oid, oidLen, ED25519_OID) == 0)
+            {
+               //The publicKey field contains the elliptic curve public key
+               //associated with the private key in question
+               error = pkcs8ParseEddsaPublicKey(tag.value, tag.length,
+                  &privateKeyInfo->eddsaPublicKey);
+               //Any error to report?
+               if(error)
+                  return error;
+            }
+            else
+#endif
+#if (ED448_SUPPORT == ENABLED)
+            //X448 or Ed448 algorithm identifier?
+            if(OID_COMP(oid, oidLen, X448_OID) == 0 ||
+               OID_COMP(oid, oidLen, ED448_OID) == 0)
+            {
+               //The publicKey field contains the elliptic curve public key
+               //associated with the private key in question
+               error = pkcs8ParseEddsaPublicKey(tag.value, tag.length,
+                  &privateKeyInfo->eddsaPublicKey);
+               //Any error to report?
+               if(error)
+                  return error;
+            }
+            else
+#endif
+            //Unknown algorithm identifier?
+            {
+               //Just for sanity
+            }
          }
 
          //Next attribute
@@ -211,7 +241,6 @@ error_t pkcs8ParsePrivateKeyInfo(const uint8_t *data, size_t length,
          length -= tag.totalLength;
       }
    }
-#endif
 
    //Successful processing
    return NO_ERROR;
@@ -239,7 +268,7 @@ error_t pkcs8ParsePrivateKeyAlgo(const uint8_t *data, size_t length,
    if(error)
       return error;
 
-   //Save the total length of the field
+   //Save the total length of the sequence
    *totalLength = tag.totalLength;
 
    //Point to the first field of the sequence
@@ -935,7 +964,7 @@ error_t pkcs8ParseEncryptionAlgoId(const uint8_t *data, size_t length,
    if(error)
       return error;
 
-   //Save the total length of the field
+   //Save the total length of the sequence
    *totalLength = tag.totalLength;
 
    //Point to the first field of the sequence
@@ -1001,14 +1030,16 @@ error_t pkcs8ImportRsaPrivateKey(RsaPrivateKey *privateKey,
          privateKeyInfo->rsaPrivateKey.qinv.value != NULL)
       {
          //Read modulus
-         error = mpiImport(&privateKey->n, privateKeyInfo->rsaPrivateKey.n.value,
+         error = mpiImport(&privateKey->n,
+            privateKeyInfo->rsaPrivateKey.n.value,
             privateKeyInfo->rsaPrivateKey.n.length, MPI_FORMAT_BIG_ENDIAN);
 
          //Check status code
          if(!error)
          {
             //Read public exponent
-            error = mpiImport(&privateKey->e, privateKeyInfo->rsaPrivateKey.e.value,
+            error = mpiImport(&privateKey->e,
+               privateKeyInfo->rsaPrivateKey.e.value,
                privateKeyInfo->rsaPrivateKey.e.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
@@ -1016,7 +1047,8 @@ error_t pkcs8ImportRsaPrivateKey(RsaPrivateKey *privateKey,
          if(!error)
          {
             //Read private exponent
-            error = mpiImport(&privateKey->d, privateKeyInfo->rsaPrivateKey.d.value,
+            error = mpiImport(&privateKey->d,
+               privateKeyInfo->rsaPrivateKey.d.value,
                privateKeyInfo->rsaPrivateKey.d.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
@@ -1024,7 +1056,8 @@ error_t pkcs8ImportRsaPrivateKey(RsaPrivateKey *privateKey,
          if(!error)
          {
             //Read first factor
-            error = mpiImport(&privateKey->p, privateKeyInfo->rsaPrivateKey.p.value,
+            error = mpiImport(&privateKey->p,
+               privateKeyInfo->rsaPrivateKey.p.value,
                privateKeyInfo->rsaPrivateKey.p.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
@@ -1032,7 +1065,8 @@ error_t pkcs8ImportRsaPrivateKey(RsaPrivateKey *privateKey,
          if(!error)
          {
             //Read second factor
-            error = mpiImport(&privateKey->q, privateKeyInfo->rsaPrivateKey.q.value,
+            error = mpiImport(&privateKey->q,
+               privateKeyInfo->rsaPrivateKey.q.value,
                privateKeyInfo->rsaPrivateKey.q.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
@@ -1040,7 +1074,8 @@ error_t pkcs8ImportRsaPrivateKey(RsaPrivateKey *privateKey,
          if(!error)
          {
             //Read first exponent
-            error = mpiImport(&privateKey->dp, privateKeyInfo->rsaPrivateKey.dp.value,
+            error = mpiImport(&privateKey->dp,
+               privateKeyInfo->rsaPrivateKey.dp.value,
                privateKeyInfo->rsaPrivateKey.dp.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
@@ -1048,7 +1083,8 @@ error_t pkcs8ImportRsaPrivateKey(RsaPrivateKey *privateKey,
          if(!error)
          {
             //Read second exponent
-            error = mpiImport(&privateKey->dq, privateKeyInfo->rsaPrivateKey.dq.value,
+            error = mpiImport(&privateKey->dq,
+               privateKeyInfo->rsaPrivateKey.dq.value,
                privateKeyInfo->rsaPrivateKey.dq.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
@@ -1056,7 +1092,8 @@ error_t pkcs8ImportRsaPrivateKey(RsaPrivateKey *privateKey,
          if(!error)
          {
             //Read coefficient
-            error = mpiImport(&privateKey->qinv, privateKeyInfo->rsaPrivateKey.qinv.value,
+            error = mpiImport(&privateKey->qinv,
+               privateKeyInfo->rsaPrivateKey.qinv.value,
                privateKeyInfo->rsaPrivateKey.qinv.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
@@ -1126,14 +1163,16 @@ error_t pkcs8ImportDsaPrivateKey(DsaPrivateKey *privateKey,
          privateKeyInfo->dsaPrivateKey.x.value != NULL)
       {
          //Read parameter p
-         error = mpiImport(&privateKey->params.p, privateKeyInfo->dsaParams.p.value,
+         error = mpiImport(&privateKey->params.p,
+            privateKeyInfo->dsaParams.p.value,
             privateKeyInfo->dsaParams.p.length, MPI_FORMAT_BIG_ENDIAN);
 
          //Check status code
          if(!error)
          {
             //Read parameter q
-            error = mpiImport(&privateKey->params.q, privateKeyInfo->dsaParams.q.value,
+            error = mpiImport(&privateKey->params.q,
+               privateKeyInfo->dsaParams.q.value,
                privateKeyInfo->dsaParams.q.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
@@ -1141,7 +1180,8 @@ error_t pkcs8ImportDsaPrivateKey(DsaPrivateKey *privateKey,
          if(!error)
          {
             //Read parameter g
-            error = mpiImport(&privateKey->params.g, privateKeyInfo->dsaParams.g.value,
+            error = mpiImport(&privateKey->params.g,
+               privateKeyInfo->dsaParams.g.value,
                privateKeyInfo->dsaParams.g.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
@@ -1149,16 +1189,28 @@ error_t pkcs8ImportDsaPrivateKey(DsaPrivateKey *privateKey,
          if(!error)
          {
             //Read private value
-            error = mpiImport(&privateKey->x, privateKeyInfo->dsaPrivateKey.x.value,
+            error = mpiImport(&privateKey->x,
+               privateKeyInfo->dsaPrivateKey.x.value,
                privateKeyInfo->dsaPrivateKey.x.length, MPI_FORMAT_BIG_ENDIAN);
          }
 
          //Check status code
          if(!error)
          {
-            //Read public value
-            error = mpiImport(&privateKey->y, privateKeyInfo->dsaPublicKey.y.value,
-               privateKeyInfo->dsaPublicKey.y.length, MPI_FORMAT_BIG_ENDIAN);
+            //The public key is optional
+            if(privateKeyInfo->dsaPublicKey.y.value != NULL)
+            {
+               //Read public value
+               error = mpiImport(&privateKey->y,
+                  privateKeyInfo->dsaPublicKey.y.value,
+                  privateKeyInfo->dsaPublicKey.y.length, MPI_FORMAT_BIG_ENDIAN);
+            }
+            else
+            {
+               //The public key is not present
+               mpiFree(&privateKey->y);
+               mpiInit(&privateKey->y);
+            }
          }
 
          //Check status code

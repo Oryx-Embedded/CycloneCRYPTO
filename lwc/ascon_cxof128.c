@@ -31,7 +31,7 @@
  * message hash. It supports a security strength of up to 128 bits
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level

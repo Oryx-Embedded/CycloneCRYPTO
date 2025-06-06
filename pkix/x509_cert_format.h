@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _X509_CERT_FORMAT_H
@@ -64,6 +64,9 @@ error_t x509FormatValidity(const X509Validity *validity, uint8_t *output,
 
 error_t x509FormatTime(const DateTime *dateTime, uint8_t *output,
    size_t *written);
+
+error_t x509FormatTimeString(const DateTime *dateTime, uint_t type,
+   char_t *output);
 
 //C++ guard
 #ifdef __cplusplus

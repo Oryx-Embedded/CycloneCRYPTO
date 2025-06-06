@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _X509_KEY_FORMAT_H
@@ -46,6 +46,9 @@ error_t x509FormatSubjectPublicKeyInfo(const X509SubjectPublicKeyInfo *publicKey
 
 error_t x509FormatAlgoId(const X509SubjectPublicKeyInfo *publicKeyInfo,
    const void *params, uint8_t *output, size_t *written);
+
+error_t x509FormatSubjectPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo,
+   const void *publicKey, uint8_t *keyId, uint8_t *output, size_t *written);
 
 error_t x509FormatRsaPublicKey(const X509RsaPublicKey *rsaPublicKey,
    uint8_t *output, size_t *written);
@@ -76,6 +79,16 @@ error_t x509ExportDsaPrivateKey(const DsaPrivateKey *privateKey,
 
 error_t x509ExportDsaParameters(const DsaDomainParameters *params,
    uint8_t *output, size_t *written);
+
+error_t x509ExportEcPublicKey(const EcPublicKey *publicKey,
+   uint8_t *output, size_t *written);
+
+error_t x509ExportEcPrivateKey(const EcCurve *curve,
+   const EcPrivateKey *privateKey, const EcPublicKey *publicKey,
+   uint8_t *output, size_t *written);
+
+error_t x509ExportEcParameters(const EcCurve *curve, uint8_t *output,
+   size_t *written);
 
 error_t x509ExportEddsaPrivateKey(const EddsaPrivateKey *privateKey,
    uint8_t *output, size_t *written);

@@ -25,13 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
+#include "esp_crypto_lock.h"
 #include "soc/hwcrypto_reg.h"
 #include "soc/dport_access.h"
 #include "esp_private/periph_ctrl.h"
@@ -52,8 +53,6 @@
 
 void esp32AesInit(void)
 {
-   //Enable AES module
-   periph_module_enable(PERIPH_AES_MODULE);
 }
 
 
@@ -201,15 +200,19 @@ error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen)
 void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 {
    //Acquire exclusive access to the AES module
-   osAcquireMutex(&esp32CryptoMutex);
+   esp_crypto_sha_aes_lock_acquire();
+   //Enable AES module
+   periph_module_enable(PERIPH_AES_MODULE);
 
    //Load AES key
    aesLoadKey(context, AES_MODE_ENC);
    //Perform AES encryption
    aesProcessDataBlock(input, output);
 
+   //Disable AES module
+   periph_module_disable(PERIPH_AES_MODULE);
    //Release exclusive access to the AES module
-   osReleaseMutex(&esp32CryptoMutex);
+   esp_crypto_sha_aes_lock_release();
 }
 
 
@@ -223,15 +226,19 @@ void aesEncryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 void aesDecryptBlock(AesContext *context, const uint8_t *input, uint8_t *output)
 {
    //Acquire exclusive access to the AES module
-   osAcquireMutex(&esp32CryptoMutex);
+   esp_crypto_sha_aes_lock_acquire();
+   //Enable AES module
+   periph_module_enable(PERIPH_AES_MODULE);
 
    //Load AES key
    aesLoadKey(context, AES_MODE_DEC);
    //Perform AES decryption
    aesProcessDataBlock(input, output);
 
+   //Disable AES module
+   periph_module_disable(PERIPH_AES_MODULE);
    //Release exclusive access to the AES module
-   osReleaseMutex(&esp32CryptoMutex);
+   esp_crypto_sha_aes_lock_release();
 }
 
 
@@ -259,7 +266,9 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
    if(cipher == AES_CIPHER_ALGO)
    {
       //Acquire exclusive access to the AES module
-      osAcquireMutex(&esp32CryptoMutex);
+      esp_crypto_sha_aes_lock_acquire();
+      //Enable AES module
+      periph_module_enable(PERIPH_AES_MODULE);
 
       //Load AES key
       aesLoadKey(context, AES_MODE_ENC);
@@ -276,8 +285,10 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
          length -= AES_BLOCK_SIZE;
       }
 
+      //Disable AES module
+      periph_module_disable(PERIPH_AES_MODULE);
       //Release exclusive access to the AES module
-      osReleaseMutex(&esp32CryptoMutex);
+      esp_crypto_sha_aes_lock_release();
 
       //The length of the payload must be a multiple of the block size
       if(length != 0)
@@ -333,7 +344,9 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    if(cipher == AES_CIPHER_ALGO)
    {
       //Acquire exclusive access to the AES module
-      osAcquireMutex(&esp32CryptoMutex);
+      esp_crypto_sha_aes_lock_acquire();
+      //Enable AES module
+      periph_module_enable(PERIPH_AES_MODULE);
 
       //Load AES key
       aesLoadKey(context, AES_MODE_DEC);
@@ -350,8 +363,10 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
          length -= AES_BLOCK_SIZE;
       }
 
+      //Disable AES module
+      periph_module_disable(PERIPH_AES_MODULE);
       //Release exclusive access to the AES module
-      osReleaseMutex(&esp32CryptoMutex);
+      esp_crypto_sha_aes_lock_release();
 
       //The length of the payload must be a multiple of the block size
       if(length != 0)
@@ -411,7 +426,9 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
    if(cipher == AES_CIPHER_ALGO)
    {
       //Acquire exclusive access to the AES module
-      osAcquireMutex(&esp32CryptoMutex);
+      esp_crypto_sha_aes_lock_acquire();
+      //Enable AES module
+      periph_module_enable(PERIPH_AES_MODULE);
 
       //Load AES key
       aesLoadKey(context, AES_MODE_ENC);
@@ -438,8 +455,10 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
          length -= AES_BLOCK_SIZE;
       }
 
+      //Disable AES module
+      periph_module_disable(PERIPH_AES_MODULE);
       //Release exclusive access to the AES module
-      osReleaseMutex(&esp32CryptoMutex);
+      esp_crypto_sha_aes_lock_release();
 
       //The length of the payload must be a multiple of the block size
       if(length != 0)
@@ -508,7 +527,9 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
    if(cipher == AES_CIPHER_ALGO)
    {
       //Acquire exclusive access to the AES module
-      osAcquireMutex(&esp32CryptoMutex);
+      esp_crypto_sha_aes_lock_acquire();
+      //Enable AES module
+      periph_module_enable(PERIPH_AES_MODULE);
 
       //Load AES key
       aesLoadKey(context, AES_MODE_DEC);
@@ -537,8 +558,10 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
          length -= AES_BLOCK_SIZE;
       }
 
+      //Disable AES module
+      periph_module_disable(PERIPH_AES_MODULE);
       //Release exclusive access to the AES module
-      osReleaseMutex(&esp32CryptoMutex);
+      esp_crypto_sha_aes_lock_release();
 
       //The length of the payload must be a multiple of the block size
       if(length != 0)
@@ -620,7 +643,9 @@ error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
          s = s / 8;
 
          //Acquire exclusive access to the AES module
-         osAcquireMutex(&esp32CryptoMutex);
+         esp_crypto_sha_aes_lock_acquire();
+         //Enable AES module
+         periph_module_enable(PERIPH_AES_MODULE);
 
          //Load AES key
          aesLoadKey(context, AES_MODE_ENC);
@@ -650,8 +675,10 @@ error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
             length -= n;
          }
 
+         //Disable AES module
+         periph_module_disable(PERIPH_AES_MODULE);
          //Release exclusive access to the AES module
-         osReleaseMutex(&esp32CryptoMutex);
+         esp_crypto_sha_aes_lock_release();
       }
       else
       {
@@ -742,7 +769,9 @@ error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
          s = s / 8;
 
          //Acquire exclusive access to the AES module
-         osAcquireMutex(&esp32CryptoMutex);
+         esp_crypto_sha_aes_lock_acquire();
+         //Enable AES module
+         periph_module_enable(PERIPH_AES_MODULE);
 
          //Load AES key
          aesLoadKey(context, AES_MODE_ENC);
@@ -772,8 +801,10 @@ error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s,
             length -= n;
          }
 
+         //Disable AES module
+         periph_module_disable(PERIPH_AES_MODULE);
          //Release exclusive access to the AES module
-         osReleaseMutex(&esp32CryptoMutex);
+         esp_crypto_sha_aes_lock_release();
       }
       else
       {
@@ -866,7 +897,9 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
          s = s / 8;
 
          //Acquire exclusive access to the AES module
-         osAcquireMutex(&esp32CryptoMutex);
+         esp_crypto_sha_aes_lock_acquire();
+         //Enable AES module
+         periph_module_enable(PERIPH_AES_MODULE);
 
          //Load AES key
          aesLoadKey(context, AES_MODE_ENC);
@@ -896,8 +929,10 @@ error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s,
             length -= n;
          }
 
+         //Disable AES module
+         periph_module_disable(PERIPH_AES_MODULE);
          //Release exclusive access to the AES module
-         osReleaseMutex(&esp32CryptoMutex);
+         esp_crypto_sha_aes_lock_release();
       }
       else
       {
@@ -991,7 +1026,9 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
          m = m / 8;
 
          //Acquire exclusive access to the AES module
-         osAcquireMutex(&esp32CryptoMutex);
+         esp_crypto_sha_aes_lock_acquire();
+         //Enable AES module
+         periph_module_enable(PERIPH_AES_MODULE);
 
          //Load AES key
          aesLoadKey(context, AES_MODE_ENC);
@@ -1020,8 +1057,10 @@ error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m,
             length -= n;
          }
 
+         //Disable AES module
+         periph_module_disable(PERIPH_AES_MODULE);
          //Release exclusive access to the AES module
-         osReleaseMutex(&esp32CryptoMutex);
+         esp_crypto_sha_aes_lock_release();
       }
       else
       {

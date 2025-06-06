@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -64,7 +64,7 @@ error_t ocspClientGenerateNonce(OcspClientContext *context)
       //If the Nonce extension is present, then the length of the nonce
       //must be at least 1 octet and can be up to 32 octets (refer to
       //RFC 8954, section 2.1)
-      error = context->prngAlgo->read(context->prngContext,
+      error = context->prngAlgo->generate(context->prngContext,
          context->nonce, OCSP_CLIENT_NONCE_SIZE);
 
       //Check status code
@@ -166,6 +166,7 @@ error_t ocspClientFormatRequest(OcspClientContext *context, const char_t *cert,
    size_t derIssuerCertLen;
    X509CertInfo *certInfo;
    X509CertInfo *issuerCertInfo;
+   X509Options options;
 
    //Initialize status code
    error = NO_ERROR;
@@ -175,6 +176,10 @@ error_t ocspClientFormatRequest(OcspClientContext *context, const char_t *cert,
    derIssuerCert = NULL;
    certInfo = NULL;
    issuerCertInfo = NULL;
+
+   //Additional certificate parsing options
+   options = X509_DEFAULT_OPTIONS;
+   options.ignoreUnknownExtensions = TRUE;
 
    //Start of exception handling block
    do
@@ -204,13 +209,15 @@ error_t ocspClientFormatRequest(OcspClientContext *context, const char_t *cert,
          }
 
          //The second pass decodes the PEM certificate
-         error = pemImportCertificate(cert, certLen, derCert, &derCertLen, NULL);
+         error = pemImportCertificate(cert, certLen, derCert, &derCertLen,
+            NULL);
          //Any error to report?
          if(error)
             break;
 
          //Parse X.509 certificate
-         error = x509ParseCertificateEx(derCert, derCertLen, certInfo, TRUE);
+         error = x509ParseCertificateEx(derCert, derCertLen, certInfo,
+            &options);
          //Any error to report?
          if(error)
             break;
@@ -218,7 +225,7 @@ error_t ocspClientFormatRequest(OcspClientContext *context, const char_t *cert,
       else
       {
          //Parse X.509 certificate
-         error = x509ParseCertificateEx(cert, certLen, certInfo, TRUE);
+         error = x509ParseCertificateEx(cert, certLen, certInfo, &options);
          //Any error to report?
          if(error)
             break;
@@ -258,7 +265,7 @@ error_t ocspClientFormatRequest(OcspClientContext *context, const char_t *cert,
 
          //Parse X.509 certificate
          error = x509ParseCertificateEx(derIssuerCert, derIssuerCertLen,
-            issuerCertInfo, TRUE);
+            issuerCertInfo, &options);
          //Any error to report?
          if(error)
             break;
@@ -267,7 +274,7 @@ error_t ocspClientFormatRequest(OcspClientContext *context, const char_t *cert,
       {
          //Parse X.509 certificate
          error = x509ParseCertificateEx(issuerCert, issuerCertLen,
-            issuerCertInfo, TRUE);
+            issuerCertInfo, &options);
          //Any error to report?
          if(error)
             break;

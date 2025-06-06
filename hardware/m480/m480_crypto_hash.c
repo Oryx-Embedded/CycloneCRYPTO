@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -142,7 +142,7 @@ error_t sha1Compute(const void *data, size_t length, uint8_t *digest)
    __UNALIGNED_UINT32_WRITE(digest + 12, temp);
    temp = CRPT->HMAC_DGST[4];
    __UNALIGNED_UINT32_WRITE(digest + 16, temp);
- 
+
    //Stop SHA engine
    CRPT->HMAC_CTL |= CRPT_HMAC_CTL_STOP_Msk;
 
@@ -228,7 +228,7 @@ error_t sha224Compute(const void *data, size_t length, uint8_t *digest)
    __UNALIGNED_UINT32_WRITE(digest + 20, temp);
    temp = CRPT->HMAC_DGST[6];
    __UNALIGNED_UINT32_WRITE(digest + 24, temp);
- 
+
    //Stop SHA engine
    CRPT->HMAC_CTL |= CRPT_HMAC_CTL_STOP_Msk;
 
@@ -316,7 +316,7 @@ error_t sha256Compute(const void *data, size_t length, uint8_t *digest)
    __UNALIGNED_UINT32_WRITE(digest + 24, temp);
    temp = CRPT->HMAC_DGST[7];
    __UNALIGNED_UINT32_WRITE(digest + 28, temp);
- 
+
    //Stop SHA engine
    CRPT->HMAC_CTL |= CRPT_HMAC_CTL_STOP_Msk;
 
@@ -412,7 +412,7 @@ error_t sha384Compute(const void *data, size_t length, uint8_t *digest)
    __UNALIGNED_UINT32_WRITE(digest + 40, temp);
    temp = CRPT->HMAC_DGST[11];
    __UNALIGNED_UINT32_WRITE(digest + 44, temp);
- 
+
    //Stop SHA engine
    CRPT->HMAC_CTL |= CRPT_HMAC_CTL_STOP_Msk;
 
@@ -516,7 +516,7 @@ error_t sha512Compute(const void *data, size_t length, uint8_t *digest)
    __UNALIGNED_UINT32_WRITE(digest + 56, temp);
    temp = CRPT->HMAC_DGST[15];
    __UNALIGNED_UINT32_WRITE(digest + 60, temp);
- 
+
    //Stop SHA engine
    CRPT->HMAC_CTL |= CRPT_HMAC_CTL_STOP_Msk;
 

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -151,7 +151,7 @@ error_t ed25519GeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
       return ERROR_INVALID_PARAMETER;
 
    //The private key is 32 octets of cryptographically secure random data
-   error = prngAlgo->read(prngContext, privateKey, ED25519_PRIVATE_KEY_LEN);
+   error = prngAlgo->generate(prngContext, privateKey, ED25519_PRIVATE_KEY_LEN);
 
    //Return status code
    return error;
@@ -450,6 +450,7 @@ error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
  * @param[in] message Array of data chunks representing the message whose
  *   signature is to be verified
  * @param[in] messageLen Number of data chunks representing the message
+ * @param[in] context Constant string specified by the protocol using it
  * @param[in] contextLen Length of the context, in bytes
  * @param[in] flag Prehash flag for Ed25519ph scheme
  * @param[in] signature EdDSA signature (64 bytes)

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _CIPHER_ALGORITHMS_H
@@ -134,6 +134,16 @@
    #include "cipher/xtea.h"
 #endif
 
+//ChaCha cipher support?
+#if (CHACHA_SUPPORT == ENABLED)
+   #include "cipher/chacha.h"
+#endif
+
+//Salsa20 cipher support?
+#if (SALSA20_SUPPORT == ENABLED)
+   #include "cipher/salsa20.h"
+#endif
+
 //Trivium cipher support?
 #if (TRIVIUM_SUPPORT == ENABLED)
    #include "cipher/trivium.h"
@@ -142,16 +152,6 @@
 //ZUC cipher support?
 #if (ZUC_SUPPORT == ENABLED)
    #include "cipher/zuc.h"
-#endif
-
-//Salsa20 cipher support?
-#if (SALSA20_SUPPORT == ENABLED)
-   #include "cipher/salsa20.h"
-#endif
-
-//ChaCha cipher support?
-#if (CHACHA_SUPPORT == ENABLED)
-   #include "cipher/chacha.h"
 #endif
 
 //Maximum block size
@@ -266,6 +266,9 @@ typedef union
 #endif
 #if (XTEA_SUPPORT == ENABLED)
    XteaContext xteaContext;
+#endif
+#if (CHACHA_SUPPORT == ENABLED)
+   ChachaContext chachaContext;
 #endif
 #if (TRIVIUM_SUPPORT == ENABLED)
    TriviumContext triviumContext;

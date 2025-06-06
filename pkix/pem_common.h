@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _PEM_COMMON_H
@@ -33,55 +33,6 @@
 
 //Dependencies
 #include "core/crypto.h"
-
-//Encrypted private key support
-#ifndef PEM_ENCRYPTED_KEY_SUPPORT
-   #define PEM_ENCRYPTED_KEY_SUPPORT DISABLED
-#elif (PEM_ENCRYPTED_KEY_SUPPORT != ENABLED && PEM_ENCRYPTED_KEY_SUPPORT != DISABLED)
-   #error PEM_ENCRYPTED_KEY_SUPPORT parameter is not valid
-#endif
-
-//DES encryption support (insecure)
-#ifndef PEM_DES_SUPPORT
-   #define PEM_DES_SUPPORT DISABLED
-#elif (PEM_DES_SUPPORT != ENABLED && PEM_DES_SUPPORT != DISABLED)
-   #error PEM_DES_SUPPORT parameter is not valid
-#endif
-
-//Triple DES encryption support (weak)
-#ifndef PEM_3DES_SUPPORT
-   #define PEM_3DES_SUPPORT DISABLED
-#elif (PEM_3DES_SUPPORT != ENABLED && PEM_3DES_SUPPORT != DISABLED)
-   #error PEM_3DES_SUPPORT parameter is not valid
-#endif
-
-//AES encryption support
-#ifndef PEM_AES_SUPPORT
-   #define PEM_AES_SUPPORT ENABLED
-#elif (PEM_AES_SUPPORT != ENABLED && PEM_AES_SUPPORT != DISABLED)
-   #error PEM_AES_SUPPORT parameter is not valid
-#endif
-
-//Camellia cipher support?
-#ifndef PEM_CAMELLIA_SUPPORT
-   #define PEM_CAMELLIA_SUPPORT DISABLED
-#elif (PEM_CAMELLIA_SUPPORT != ENABLED && PEM_CAMELLIA_SUPPORT != DISABLED)
-   #error PEM_CAMELLIA_SUPPORT parameter is not valid
-#endif
-
-//ARIA cipher support?
-#ifndef PEM_ARIA_SUPPORT
-   #define PEM_ARIA_SUPPORT DISABLED
-#elif (PEM_ARIA_SUPPORT != ENABLED && PEM_ARIA_SUPPORT != DISABLED)
-   #error PEM_ARIA_SUPPORT parameter is not valid
-#endif
-
-//SM4 encryption support
-#ifndef PEM_SM4_SUPPORT
-   #define PEM_SM4_SUPPORT DISABLED
-#elif (PEM_SM4_SUPPORT != ENABLED && PEM_SM4_SUPPORT != DISABLED)
-   #error PEM_SM4_SUPPORT parameter is not valid
-#endif
 
 //C++ guard
 #ifdef __cplusplus
@@ -152,9 +103,6 @@ int_t pemFindChar(const PemString *s, char_t c);
 bool_t pemCompareString(const PemString *string, const char_t *value);
 bool_t pemTokenizeString(PemString *s, char_t c, PemString *token);
 void pemTrimWhitespace(PemString *s);
-
-const CipherAlgo *pemGetCipherAlgo(const PemString *algo);
-uint_t pemGetKeyLength(const PemString *algo);
 
 //C++ guard
 #ifdef __cplusplus

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -65,7 +65,7 @@ error_t bcryptHashPassword(const PrngAlgo *prngAlgo, void *prngContext,
    }
 
    //Generate a 16-byte random salt
-   error = prngAlgo->read(prngContext, salt, sizeof(salt));
+   error = prngAlgo->generate(prngContext, salt, sizeof(salt));
 
    //Check status code
    if(!error)

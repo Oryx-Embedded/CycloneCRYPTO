@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -254,18 +254,18 @@ error_t x509ParseAttributes(const uint8_t *data, size_t length,
       if(error)
          return error;
 
-      //PKCS#9 Challenge Password attribute found?
+      //PKCS #9 Challenge Password attribute found?
       if(OID_COMP(attribute.oid.value, attribute.oid.length,
-         X509_CHALLENGE_PASSWORD_OID) == 0)
+         PKCS9_CHALLENGE_PASSWORD_OID) == 0)
       {
          //The interpretation of challenge passwords is intended to be specified
          //by certificate issuers
          error = x509ParseChallengePassword(attribute.data.value,
             attribute.data.length, &attributes->challengePwd);
       }
-      //PKCS#9 Extension Request attribute found?
+      //PKCS #9 Extension Request attribute found?
       else if(OID_COMP(attribute.oid.value, attribute.oid.length,
-         X509_EXTENSION_REQUEST_OID) == 0)
+         PKCS9_EXTENSION_REQUEST_OID) == 0)
       {
          //This attribute may be used to carry information about certificate
          //extensions the requester wishes to be included in a certificate

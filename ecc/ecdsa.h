@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 #ifndef _ECDSA_H
@@ -113,10 +113,10 @@ void ecdsaInitSignature(EcdsaSignature *signature);
 void ecdsaFreeSignature(EcdsaSignature *signature);
 
 error_t ecdsaImportSignature(EcdsaSignature *signature, const EcCurve *curve,
-   const uint8_t *data, size_t length, EcdsaSignatureFormat format);
+   const uint8_t *input, size_t length, EcdsaSignatureFormat format);
 
-error_t ecdsaExportSignature(const EcdsaSignature *signature, uint8_t *data,
-   size_t *length, EcdsaSignatureFormat format);
+error_t ecdsaExportSignature(const EcdsaSignature *signature, uint8_t *output,
+   size_t *written, EcdsaSignatureFormat format);
 
 error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    const EcPrivateKey *privateKey, const uint8_t *digest, size_t digestLen,

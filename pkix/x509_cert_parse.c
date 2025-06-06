@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.0
+ * @version 2.5.2
  **/
 
 //Switch to the appropriate trace level
@@ -57,7 +57,7 @@ error_t x509ParseCertificate(const uint8_t *data, size_t length,
    X509CertInfo *certInfo)
 {
    //Parse the certificate
-   return x509ParseCertificateEx(data, length, certInfo, FALSE);
+   return x509ParseCertificateEx(data, length, certInfo, &X509_DEFAULT_OPTIONS);
 }
 
 
@@ -66,12 +66,12 @@ error_t x509ParseCertificate(const uint8_t *data, size_t length,
  * @param[in] data Pointer to the X.509 certificate to parse
  * @param[in] length Length of the X.509 certificate
  * @param[out] certInfo Information resulting from the parsing process
- * @param[in] ignoreUnknown Ignore unknown extensions
+ * @param[in] options Certificate parsing options
  * @return Error code
  **/
 
 error_t x509ParseCertificateEx(const uint8_t *data, size_t length,
-   X509CertInfo *certInfo, bool_t ignoreUnknown)
+   X509CertInfo *certInfo, const X509Options *options)
 {
    error_t error;
    size_t n;
@@ -96,13 +96,17 @@ error_t x509ParseCertificateEx(const uint8_t *data, size_t length,
    if(error)
       return ERROR_BAD_CERTIFICATE;
 
+   //Raw contents of the ASN.1 sequence
+   certInfo->raw.value = data;
+   certInfo->raw.length = tag.totalLength;
+
    //Point to the very first field
    data = tag.value;
    length = tag.length;
 
    //Parse TBSCertificate structure
    error = x509ParseTbsCertificate(data, length, &n, &certInfo->tbsCert,
-      ignoreUnknown);
+      options);
    //Any error to report?
    if(error)
       return ERROR_BAD_CERTIFICATE;
@@ -149,12 +153,13 @@ error_t x509ParseCertificateEx(const uint8_t *data, size_t length,
  * @param[in] length Length of the ASN.1 structure
  * @param[out] totalLength Number of bytes that have been parsed
  * @param[out] tbsCert Information resulting from the parsing process
- * @param[in] ignoreUnknown Ignore unknown extensions
+ * @param[in] options Certificate parsing options
  * @return Error code
  **/
 
 error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
-   size_t *totalLength, X509TbsCertificate *tbsCert, bool_t ignoreUnknown)
+   size_t *totalLength, X509TbsCertificate *tbsCert,
+   const X509Options *options)
 {
    error_t error;
    size_t n;
@@ -290,7 +295,7 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
 
    //Parse Extensions field
    error = x509ParseCertExtensions(data, length, &n, &tbsCert->extensions,
-      ignoreUnknown);
+      options);
    //Any parsing error?
    if(error)
       return error;
@@ -301,6 +306,28 @@ error_t x509ParseTbsCertificate(const uint8_t *data, size_t length,
       //This field must only appear if the version is 3
       if(tbsCert->version < X509_VERSION_3)
          return ERROR_INVALID_VERSION;
+   }
+
+   //Self-signed certificate?
+   if(x509CompareName(tbsCert->subject.raw.value, tbsCert->subject.raw.length,
+      tbsCert->issuer.raw.value, tbsCert->issuer.raw.length))
+   {
+      //The use of self-issued certificates and self-signed certificates issued
+      //by entities other than CAs are outside the scope of RFC 5280 (refer to
+      //RFC 6818, section 2)
+   }
+   else
+   {
+      //Check whether the keyCertSign bit is asserted
+      if((tbsCert->extensions.keyUsage.bitmap &
+         X509_KEY_USAGE_KEY_CERT_SIGN) != 0)
+      {
+         //If the keyCertSign bit is asserted, then the cA bit in the basic
+         //constraints extension must also be asserted (refer to RFC 5280,
+         //section 4.2.1.3)
+         if(!tbsCert->extensions.basicConstraints.cA)
+            return ERROR_INVALID_SYNTAX;
+      }
    }
 
    //Successful processing
@@ -357,7 +384,7 @@ error_t x509ParseVersion(const uint8_t *data, size_t length,
    if(error)
       return error;
 
-   //Check version field
+   //Check version
    if(value > X509_VERSION_3)
       return ERROR_INVALID_VERSION;
 
@@ -683,7 +710,7 @@ error_t x509ParseName(const uint8_t *data, size_t length,
          name->pseudonym.length = nameAttribute.data.length;
       }
       else if(OID_COMP(nameAttribute.oid.value, nameAttribute.oid.length,
-         X509_EMAIL_ADDRESS_OID) == 0)
+         PKCS9_EMAIL_ADDR_OID) == 0)
       {
          //Save E-mail Address attribute
          name->emailAddress.value = nameAttribute.data.value;
@@ -1022,7 +1049,6 @@ error_t x509ParseTime(const uint8_t *data, size_t length,
    size_t *totalLength, DateTime *dateTime)
 {
    error_t error;
-   uint_t value;
    Asn1Tag tag;
 
    //Debug message
@@ -1030,22 +1056,60 @@ error_t x509ParseTime(const uint8_t *data, size_t length,
 
    //Read current ASN.1 tag
    error = asn1ReadTag(data, length, &tag);
-   //Failed to decode ASN.1 tag?
-   if(error)
-      return error;
 
-   //Save the total length of the field
-   *totalLength = tag.totalLength;
+   //Check status code
+   if(!error)
+   {
+      //Enforce encoding and class
+      if(tag.constructed == FALSE && tag.objClass == ASN1_CLASS_UNIVERSAL)
+      {
+         //The date may be encoded as UTCTime or GeneralizedTime
+         error = x509ParseTimeString(tag.value, tag.length, tag.objType,
+            dateTime);
+      }
+      else
+      {
+         //Report an error
+         error = ERROR_WRONG_ENCODING;
+      }
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Save the total length of the field
+      *totalLength = tag.totalLength;
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Parse UTCTime or GeneralizedTime string
+ * @param[in] data Pointer to the string to parse
+ * @param[in] length Length of the string
+ * @param[out] type Time format (UTCTime or GeneralizedTime)
+ * @param[out] dateTime date resulting from the parsing process
+ * @return Error code
+ **/
+
+error_t x509ParseTimeString(const uint8_t *data, size_t length, uint_t type,
+   DateTime *dateTime)
+{
+   error_t error;
+   uint_t value;
 
    //The date may be encoded as UTCTime or GeneralizedTime
-   if(!asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_UTC_TIME))
+   if(type == ASN1_TYPE_UTC_TIME)
    {
       //Check the length of the UTCTime field
-      if(tag.length != 13)
+      if(length != 13)
          return ERROR_INVALID_SYNTAX;
 
       //The UTCTime uses a 2-digit representation of the year
-      error = x509ParseInt(tag.value, 2, &value);
+      error = x509ParseInt(data, 2, &value);
       //Any error to report?
       if(error)
          return error;
@@ -1062,16 +1126,16 @@ error_t x509ParseTime(const uint8_t *data, size_t length,
       }
 
       //Point to the next field
-      data = tag.value + 2;
+      data += 2;
    }
-   else if(!asn1CheckTag(&tag, FALSE, ASN1_CLASS_UNIVERSAL, ASN1_TYPE_GENERALIZED_TIME))
+   else if(type == ASN1_TYPE_GENERALIZED_TIME)
    {
       //Check the length of the GeneralizedTime field
-      if(tag.length != 15)
+      if(length != 15)
          return ERROR_INVALID_SYNTAX;
 
       //The GeneralizedTime uses a 4-digit representation of the year
-      error = x509ParseInt(tag.value, 4, &value);
+      error = x509ParseInt(data, 4, &value);
       //Any error to report?
       if(error)
          return error;
@@ -1080,7 +1144,7 @@ error_t x509ParseTime(const uint8_t *data, size_t length,
       dateTime->year = value;
 
       //Point to the next field
-      data = tag.value + 4;
+      data += 4;
    }
    else
    {
@@ -1140,7 +1204,7 @@ error_t x509ParseTime(const uint8_t *data, size_t length,
    //Milliseconds
    dateTime->milliseconds = 0;
 
-   //UTCTime or GeneralizedTime field successfully parsed
+   //Successful processing
    return NO_ERROR;
 }
 
@@ -1155,26 +1219,33 @@ error_t x509ParseTime(const uint8_t *data, size_t length,
 
 error_t x509ParseInt(const uint8_t *data, size_t length, uint_t *value)
 {
+   error_t error;
+   size_t i;
+
+   //Initialize status code
+   error = NO_ERROR;
+
    //Initialize integer value
    *value = 0;
 
    //Parse the string
-   while(length > 0)
+   for(i = 0; i < length && !error; i++)
    {
       //Check whether the character is decimal digit
-      if(!osIsdigit(*data))
-         return ERROR_FAILURE;
-
-      //Convert the string to integer
-      *value = *value * 10 + (*data - '0');
-
-      //Next character
-      data++;
-      length--;
+      if(osIsdigit(data[i]))
+      {
+         //Convert the string to integer
+         *value = *value * 10 + (data[i] - '0');
+      }
+      else
+      {
+         //Report an error
+         error = ERROR_INVALID_SYNTAX;
+      }
    }
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 }
 
 #endif
