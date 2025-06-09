@@ -212,6 +212,9 @@ error_t hmacDrbgSeedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
    if(entropyInputLen < (context->hashAlgo->digestSize / 2))
       return ERROR_INVALID_PARAMETER;
 
+   //Acquire exclusive access to the PRNG state
+   osAcquireMutex(&context->mutex);
+
    //Determine the output block length
    outLen = context->hashAlgo->digestSize;
 
@@ -233,6 +236,9 @@ error_t hmacDrbgSeedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
 
    //Reset reseed_counter
    context->reseedCounter = 1;
+
+   //Release exclusive access to the PRNG state
+   osReleaseMutex(&context->mutex);
 
    //Successful processing
    return NO_ERROR;
@@ -294,6 +300,9 @@ error_t hmacDrbgReseedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
    if(entropyInputLen < (context->hashAlgo->digestSize / 2))
       return ERROR_INVALID_PARAMETER;
 
+   //Acquire exclusive access to the PRNG state
+   osAcquireMutex(&context->mutex);
+
    //Let seed_material = entropy_input || additional_input
    seedMaterial[0].buffer = entropyInput;
    seedMaterial[0].length = entropyInputLen;
@@ -305,6 +314,9 @@ error_t hmacDrbgReseedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
 
    //Reset reseed_counter
    context->reseedCounter = 1;
+
+   //Release exclusive access to the PRNG state
+   osReleaseMutex(&context->mutex);
 
    //Successful processing
    return NO_ERROR;
@@ -368,6 +380,9 @@ error_t hmacDrbgGenerateEx(HmacDrbgContext *context, uint8_t *output,
    if(context->reseedCounter > HMAC_DRBG_MAX_RESEED_INTERVAL)
       return ERROR_RESEED_REQUIRED;
 
+   //Acquire exclusive access to the PRNG state
+   osAcquireMutex(&context->mutex);
+
    //Point to the HMAC context
    hmacContext = &context->hmacContext;
    //Determine the output block length
@@ -415,6 +430,9 @@ error_t hmacDrbgGenerateEx(HmacDrbgContext *context, uint8_t *output,
 
    //Increment reseed_counter
    context->reseedCounter++;
+
+   //Release exclusive access to the PRNG state
+   osReleaseMutex(&context->mutex);
 
    //Successful processing
    return NO_ERROR;
