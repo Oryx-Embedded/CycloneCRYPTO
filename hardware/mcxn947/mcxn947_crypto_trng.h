@@ -1,6 +1,6 @@
 /**
- * @file scep_client_transport.h
- * @brief HTTP transport mechanism
+ * @file mcxn947_crypto_trng.h
+ * @brief NXP MCX N947 true random number generator
  *
  * @section License
  *
@@ -25,28 +25,30 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
-#ifndef _SCEP_CLIENT_TRANSPORT_H
-#define _SCEP_CLIENT_TRANSPORT_H
+#ifndef _MCXN947_CRYPTO_TRNG_H
+#define _MCXN947_CRYPTO_TRNG_H
 
 //Dependencies
-#include "core/net.h"
-#include "scep/scep_client.h"
+#include "core/crypto.h"
+
+//True random number generator
+#ifndef MCXN947_CRYPTO_TRNG_SUPPORT
+   #define MCXN947_CRYPTO_TRNG_SUPPORT ENABLED
+#elif (MCXN947_CRYPTO_TRNG_SUPPORT != ENABLED && MCXN947_CRYPTO_TRNG_SUPPORT != DISABLED)
+   #error MCXN947_CRYPTO_TRNG_SUPPORT parameter is not valid
+#endif
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//SCEP client related functions
-error_t scepClientSendRequest(ScepClientContext *context);
-
-error_t scepClientFormatRequestHeader(ScepClientContext *context,
-   const char_t *method, const char_t *operation);
-
-error_t scepClientParseResponseHeader(ScepClientContext *context);
+//TRNG related functions
+error_t trngInit(void);
+error_t trngGetRandomData(uint8_t *data, size_t length);
 
 //C++ guard
 #ifdef __cplusplus

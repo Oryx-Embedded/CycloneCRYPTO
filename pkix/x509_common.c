@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -150,6 +150,10 @@ const uint8_t X509_KP_IPSEC_IKE_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x
 const uint8_t X509_KP_SSH_CLIENT_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x15};
 //Key Purpose Secure Shell Client OID (1.3.6.1.5.5.7.3.22)
 const uint8_t X509_KP_SSH_SERVER_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x16};
+//Key Purpose CMC Certification Authorities OID (1.3.6.1.5.5.7.3.27)
+const uint8_t X509_KP_CMC_CA_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x1B};
+//Key Purpose CMC Registration Authorities OID (1.3.6.1.5.5.7.3.28)
+const uint8_t X509_KP_CMC_RA_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x1C};
 //Key Purpose Document Signing OID (1.3.6.1.5.5.7.3.36)
 const uint8_t X509_KP_DOC_SIGNING_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x24};
 

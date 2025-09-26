@@ -31,7 +31,7 @@
  * supports 256 bits of security strength. Refer to FIPS 202 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -48,6 +48,34 @@
 const uint8_t SHAKE128_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0B};
 //SHAKE256 object identifier (2.16.840.1.101.3.4.2.12)
 const uint8_t SHAKE256_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x0C};
+
+//Common interface for XOF algorithms (SHAKE128)
+const XofAlgo shake128XofAlgo =
+{
+   "SHAKE128",
+   SHAKE128_OID,
+   sizeof(SHAKE128_OID),
+   sizeof(ShakeContext),
+   (XofAlgoCompute) shake128Compute,
+   (XofAlgoInit) shake128Init,
+   (XofAlgoAbsorb) shakeAbsorb,
+   (XofAlgoFinal) shakeFinal,
+   (XofAlgoSqueeze) shakeSqueeze
+};
+
+//Common interface for XOF algorithms (SHAKE256)
+const XofAlgo shake256XofAlgo =
+{
+   "SHAKE256",
+   SHAKE256_OID,
+   sizeof(SHAKE256_OID),
+   sizeof(ShakeContext),
+   (XofAlgoCompute) shake256Compute,
+   (XofAlgoInit) shake256Init,
+   (XofAlgoAbsorb) shakeAbsorb,
+   (XofAlgoFinal) shakeFinal,
+   (XofAlgoSqueeze) shakeSqueeze
+};
 
 
 /**
@@ -111,6 +139,40 @@ error_t shakeCompute(uint_t strength, const void *input, size_t inputLen,
 
 
 /**
+ * @brief Digest a message using SHAKE128
+ * @param[in] input Pointer to the input data
+ * @param[in] inputLen Length of the input data
+ * @param[out] output Pointer to the output data
+ * @param[in] outputLen Expected length of the output data
+ * @return Error code
+ **/
+
+error_t shake128Compute(const void *input, size_t inputLen, uint8_t *output,
+   size_t outputLen)
+{
+   //Digest the message using SHAKE128
+   return shakeCompute(128, input, inputLen, output, outputLen);
+}
+
+
+/**
+ * @brief Digest a message using SHAKE256
+ * @param[in] input Pointer to the input data
+ * @param[in] inputLen Length of the input data
+ * @param[out] output Pointer to the output data
+ * @param[in] outputLen Expected length of the output data
+ * @return Error code
+ **/
+
+error_t shake256Compute(const void *input, size_t inputLen, uint8_t *output,
+   size_t outputLen)
+{
+   //Digest the message using SHAKE256
+   return shakeCompute(256, input, inputLen, output, outputLen);
+}
+
+
+/**
  * @brief Initialize SHAKE context
  * @param[in] context Pointer to the SHAKE context to initialize
  * @param[in] strength Number of bits of security (128 for SHAKE128 and
@@ -136,6 +198,32 @@ error_t shakeInit(ShakeContext *context, uint_t strength)
 
    //Return status code
    return error;
+}
+
+
+/**
+ * @brief Initialize SHAKE128 context
+ * @param[in] context Pointer to the SHAKE context to initialize
+ * @return Error code
+ **/
+
+error_t shake128Init(ShakeContext *context)
+{
+   //Initialize SHAKE128 context
+   return shakeInit(context, 128);
+}
+
+
+/**
+ * @brief Initialize SHAKE256 context
+ * @param[in] context Pointer to the SHAKE context to initialize
+ * @return Error code
+ **/
+
+error_t shake256Init(ShakeContext *context)
+{
+   //Initialize SHAKE256 context
+   return shakeInit(context, 256);
 }
 
 

@@ -1,6 +1,6 @@
 /**
- * @file scep_debug.h
- * @brief Data logging functions for debugging purpose (SCEP)
+ * @file mimxrt1180_crypto_conifg.h
+ * @brief ELE-specific configuration file
  *
  * @section License
  *
@@ -25,43 +25,29 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
-#ifndef _SCEP_DEBUG_H
-#define _SCEP_DEBUG_H
+#ifndef _MIMXRT1180_CRYPTO_CONFIG_H
+#define _MIMXRT1180_CRYPTO_CONFIG_H
 
 //Dependencies
-#include "core/crypto.h"
+#include "ele_crypto.h"
 
-//C++ guard
-#ifdef __cplusplus
-extern "C" {
-#endif
+//ELE-specific context (SHA-1)
+#define SHA1_PRIVATE_CONTEXT \
+   ele_hash_ctx_t eleContext;
 
+//ELE-specific context (SHA-256)
+#define SHA256_PRIVATE_CONTEXT \
+   ele_hash_ctx_t eleContext;
 
-/**
- * @brief Parameter value/name binding
- **/
+//ELE-specific context (SHA-512)
+#define SHA512_PRIVATE_CONTEXT \
+   ele_hash_ctx_t eleContext;
 
-typedef struct
-{
-   uint_t value;
-   const char_t *name;
-} ScepParamName;
-
-
-//SCEP related functions
-void scepDumpMessageType(uint_t messageType);
-void scepDumpPkiStatus(uint_t pkiStatus);
-void scepDumpFailInfo(uint_t failInfo);
-
-const char_t *scepGetParamName(uint_t value, const ScepParamName *paramList,
-   size_t paramListLen);
-
-//C++ guard
-#ifdef __cplusplus
-}
-#endif
+//ELE-specific context (SM3)
+#define SM3_PRIVATE_CONTEXT \
+   ele_hash_ctx_t eleContext;
 
 #endif

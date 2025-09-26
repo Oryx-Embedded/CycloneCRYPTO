@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 #ifndef _HMAC_DRBG_H
@@ -53,12 +53,13 @@ extern "C" {
 
 typedef struct
 {
-   OsMutex mutex;                     ///<Mutex preventing simultaneous access to the PRNG state
-   const HashAlgo *hashAlgo;          ///<Hash function
-   HmacContext hmacContext;           ///<HMAC context
-   uint8_t k[MAX_HASH_DIGEST_SIZE];   ///<Key
-   uint8_t v[MAX_HASH_DIGEST_SIZE];   ///<Value V
-   uint64_t reseedCounter;            ///<Reseed counter
+   OsMutex mutex;                   ///<Mutex preventing simultaneous access to the PRNG state
+   const HashAlgo *hashAlgo;        ///<Hash function
+   HmacContext hmacContext;         ///<HMAC context
+   size_t securityStrength;         ///<Security strength
+   uint8_t v[MAX_HASH_DIGEST_SIZE]; ///<Value V
+   uint8_t k[MAX_HASH_DIGEST_SIZE]; ///<Key
+   uint64_t reseedCounter;          ///<Reseed counter
 } HmacDrbgContext;
 
 
@@ -68,17 +69,14 @@ extern const PrngAlgo hmacDrbgPrngAlgo;
 //HMAC_DRBG related functions
 error_t hmacDrbgInit(HmacDrbgContext *context, const HashAlgo *hashAlgo);
 
-void hmacDrbgUpdate(HmacDrbgContext *context, const DataChunk *providedData,
-   uint_t providedDataLen);
-
-error_t hmacDrbgSeed(HmacDrbgContext *context, const uint8_t *input,
+error_t hmacDrbgSeed(HmacDrbgContext *context, const uint8_t *seed,
    size_t length);
 
 error_t hmacDrbgSeedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
    size_t entropyInputLen, const uint8_t *nonce, size_t nonceLen,
    const uint8_t *personalizationString, size_t personalizationStringLen);
 
-error_t hmacDrbgReseed(HmacDrbgContext *context, const uint8_t *input,
+error_t hmacDrbgReseed(HmacDrbgContext *context, const uint8_t *seed,
    size_t length);
 
 error_t hmacDrbgReseedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
@@ -88,10 +86,14 @@ error_t hmacDrbgReseedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
 error_t hmacDrbgGenerate(HmacDrbgContext *context, uint8_t *output,
    size_t length);
 
-error_t hmacDrbgGenerateEx(HmacDrbgContext *context, uint8_t *output,
-   size_t outputLen, const uint8_t *additionalInput, size_t additionalInputLen);
+error_t hmacDrbgGenerateEx(HmacDrbgContext *context,
+   const uint8_t *additionalInput, size_t additionalInputLen, uint8_t *output,
+   size_t outputLen);
 
 void hmacDrbgDeinit(HmacDrbgContext *context);
+
+void hmacDrbgUpdate(HmacDrbgContext *context, const DataChunk *providedData,
+   uint_t providedDataLen);
 
 //C++ guard
 #ifdef __cplusplus

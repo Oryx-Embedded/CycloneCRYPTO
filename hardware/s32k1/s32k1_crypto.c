@@ -1,6 +1,6 @@
 /**
  * @file s32k1_crypto.c
- * @brief S32K1 hardware cryptographic accelerator (CSEq)
+ * @brief S32K1 hardware cryptographic accelerator (CSEc)
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level

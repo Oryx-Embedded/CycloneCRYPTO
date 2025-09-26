@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -43,7 +43,7 @@
 
 //Global variables
 static uint8_t buffer[16];
-static size_t index;
+static size_t bufferPos;
 
 
 /**
@@ -56,9 +56,9 @@ error_t trngInit(void)
    uint32_t status;
 
    //Mark the buffer as empty
-   index = sizeof(buffer);
+   bufferPos = sizeof(buffer);
 
-   //Check for the previous CSEq command to complete
+   //Check for the previous CSEc command to complete
    while((FTFC->FSTAT & FTFC_FSTAT_CCIF_MASK) == 0)
    {
    }
@@ -66,10 +66,10 @@ error_t trngInit(void)
    //Clear error flags
    FTFC->FSTAT = FTFC_FSTAT_FPVIOL_MASK | FTFC_FSTAT_ACCERR_MASK;
 
-   //Start CSEq command
-   CSE_PRAM->RAMn[0].DATA_32 = CSEQ_CMD_INIT_RNG;
+   //Start CSEc command
+   CSE_PRAM->RAMn[0].DATA_32 = CSEC_CMD_INIT_RNG;
 
-   //Wait for the CSEq command to complete
+   //Wait for the CSEc command to complete
    while((FTFC->FSTAT & FTFC_FSTAT_CCIF_MASK) == 0)
    {
    }
@@ -78,7 +78,7 @@ error_t trngInit(void)
    status = CSE_PRAM->RAMn[1].DATA_32 >> 16;
 
    //Return status code
-   return (status == CSEQ_ERC_NO_ERROR) ? NO_ERROR : ERROR_FAILURE;
+   return (status == CSEC_ERC_NO_ERROR) ? NO_ERROR : ERROR_FAILURE;
 }
 
 
@@ -95,18 +95,18 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
    uint32_t status;
 
    //Initialize status code
-   status = CSEQ_ERC_NO_ERROR;
+   status = CSEC_ERC_NO_ERROR;
 
-   //Acquire exclusive access to the RNG module
+   //Acquire exclusive access to the CSEc module
    osAcquireMutex(&s32k1CryptoMutex);
 
    //Generate random data
-   for(i = 0; i < length && status == CSEQ_ERC_NO_ERROR; i++)
+   for(i = 0; i < length && status == CSEC_ERC_NO_ERROR; i++)
    {
       //Generate a new 128-bit random value when necessary
-      if(index >= sizeof(buffer))
+      if(bufferPos >= sizeof(buffer))
       {
-         //Check for the previous CSEq command to complete
+         //Check for the previous CSEc command to complete
          while((FTFC->FSTAT & FTFC_FSTAT_CCIF_MASK) == 0)
          {
          }
@@ -114,10 +114,10 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
          //Clear error flags
          FTFC->FSTAT = FTFC_FSTAT_FPVIOL_MASK | FTFC_FSTAT_ACCERR_MASK;
 
-         //Start CSEq command
-         CSE_PRAM->RAMn[0].DATA_32 = CSEQ_CMD_RND;
+         //Start CSEc command
+         CSE_PRAM->RAMn[0].DATA_32 = CSEC_CMD_RND;
 
-         //Wait for the CSEq command to complete
+         //Wait for the CSEc command to complete
          while((FTFC->FSTAT & FTFC_FSTAT_CCIF_MASK) == 0)
          {
          }
@@ -126,7 +126,7 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
          status = CSE_PRAM->RAMn[1].DATA_32 >> 16;
 
          //Check status code
-         if(status == CSEQ_ERC_NO_ERROR)
+         if(status == CSEC_ERC_NO_ERROR)
          {
             //Save the 128-bit random value
             temp = CSE_PRAM->RAMn[4].DATA_32;
@@ -140,18 +140,18 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
          }
 
          //Rewind to the beginning of the buffer
-         index = 0;
+         bufferPos = 0;
       }
 
       //Extract a random byte
-      data[i] = buffer[index++];
+      data[i] = buffer[bufferPos++];
    }
 
-   //Release exclusive access to the RNG module
+   //Release exclusive access to the CSEc module
    osReleaseMutex(&s32k1CryptoMutex);
 
    //Return status code
-   return (status == CSEQ_ERC_NO_ERROR) ? NO_ERROR : ERROR_FAILURE;
+   return (status == CSEC_ERC_NO_ERROR) ? NO_ERROR : ERROR_FAILURE;
 }
 
 #endif

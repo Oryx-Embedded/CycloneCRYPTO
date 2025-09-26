@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -60,7 +60,7 @@ const PrngAlgo yarrowPrngAlgo =
 
 error_t yarrowInit(YarrowContext *context)
 {
-   //Clear PRNG state
+   //Clear the internal state
    osMemset(context, 0, sizeof(YarrowContext));
 
    //Create a mutex to prevent simultaneous access to the PRNG state
@@ -370,7 +370,7 @@ void yarrowSlowReseed(YarrowContext *context)
 
 void yarrowDeinit(YarrowContext *context)
 {
-   //Erase AES context
+   //Release AES context
    if(context->ready)
    {
       aesDeinit(&context->cipherContext);
@@ -379,7 +379,7 @@ void yarrowDeinit(YarrowContext *context)
    //Free previously allocated resources
    osDeleteMutex(&context->mutex);
 
-   //Clear PRNG state
+   //Erase the contents of the internal state
    osMemset(context, 0, sizeof(YarrowContext));
 }
 

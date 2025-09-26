@@ -30,7 +30,7 @@
  * 64 bits under control of a 64-bit key. Refer to FIPS 46-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -430,6 +430,86 @@ __weak_func void desDeinit(DesContext *context)
 {
    //Clear DES context
    osMemset(context, 0, sizeof(DesContext));
+}
+
+
+/**
+ * @brief Convert a 56-bit key to a 64-bit key (with odd parity)
+ * @param[in] input 56-bit key
+ * @param[out] output 64-bit key (with odd parity)
+ **/
+
+void desComputeKeyParity(const uint8_t *input, uint8_t *output)
+{
+   //Convert the 56-bit key to a 64-bit key
+   output[0] = input[0];
+   output[1] = (input[0] << 7) | (input[1] >> 1);
+   output[2] = (input[1] << 6) | (input[2] >> 2);
+   output[3] = (input[2] << 5) | (input[3] >> 3);
+   output[4] = (input[3] << 4) | (input[4] >> 4);
+   output[5] = (input[4] << 3) | (input[5] >> 5);
+   output[6] = (input[5] << 2) | (input[6] >> 6);
+   output[7] = input[6] << 1;
+
+   //Fix parity bits
+   desFixKeyParity(output);
+}
+
+
+/**
+ * @brief Fix key parity
+ * @param[in,out] key 64-bit key
+ **/
+
+void desFixKeyParity(uint8_t *key)
+{
+   uint_t i;
+   uint8_t parity;
+
+   //Loop through the 64-bit key
+   for(i = 0; i < 8; i++)
+   {
+      //Calculate parity
+      parity = key[i];
+      parity ^= parity >> 1;
+      parity ^= parity >> 2;
+      parity ^= parity >> 4;
+      parity &= 0x01;
+
+      //Fix the parity bit so that there is an odd number of ones
+      key[i] ^= (parity ^ 0x01);
+   }
+}
+
+
+/**
+ * @brief Check key parity
+ * @param[in] key 64-bit key
+ * @return TRUE if the parity is correct, else FALSE
+ **/
+
+bool_t desCheckKeyParity(const uint8_t *key)
+{
+   uint_t i;
+   uint8_t valid;
+   uint8_t parity;
+
+   //Loop through the 64-bit key
+   for(valid = 1, i = 0; i < 8; i++)
+   {
+      //Calculate parity
+      parity = key[i];
+      parity ^= parity >> 1;
+      parity ^= parity >> 2;
+      parity ^= parity >> 4;
+      parity &= 0x01;
+
+      //Make sure there is an odd number of ones
+      valid &= parity;
+   }
+
+   //Return TRUE if the parity is correct
+   return valid ? TRUE : FALSE;
 }
 
 #endif

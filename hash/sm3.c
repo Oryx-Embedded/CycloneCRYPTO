@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -92,7 +92,7 @@ const HashAlgo sm3HashAlgo =
  * @return Error code
  **/
 
-error_t sm3Compute(const void *data, size_t length, uint8_t *digest)
+__weak_func error_t sm3Compute(const void *data, size_t length, uint8_t *digest)
 {
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    Sm3Context *context;
@@ -137,7 +137,7 @@ error_t sm3Compute(const void *data, size_t length, uint8_t *digest)
  * @param[in] context Pointer to the SM3 context to initialize
  **/
 
-void sm3Init(Sm3Context *context)
+__weak_func void sm3Init(Sm3Context *context)
 {
    //Set initial hash value
    context->h[0] = 0x7380166F;
@@ -202,7 +202,7 @@ __weak_func void sm3Update(Sm3Context *context, const void *data, size_t length)
  * @param[out] digest Calculated digest
  **/
 
-void sm3Final(Sm3Context *context, uint8_t *digest)
+__weak_func void sm3Final(Sm3Context *context, uint8_t *digest)
 {
    uint_t i;
    size_t paddingSize;

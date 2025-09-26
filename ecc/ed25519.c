@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -231,7 +231,7 @@ error_t ed25519GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey)
  * @return Error code
  **/
 
-error_t ed25519GenerateSignature(const uint8_t *privateKey,
+__weak_func error_t ed25519GenerateSignature(const uint8_t *privateKey,
    const uint8_t *publicKey, const void *message, size_t messageLen,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature)
 {
@@ -424,9 +424,9 @@ error_t ed25519GenerateSignatureEx(const uint8_t *privateKey,
  * @return Error code
  **/
 
-error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
-   size_t messageLen, const void *context, uint8_t contextLen, uint8_t flag,
-   const uint8_t *signature)
+__weak_func error_t ed25519VerifySignature(const uint8_t *publicKey,
+   const void *message, size_t messageLen, const void *context,
+   uint8_t contextLen, uint8_t flag, const uint8_t *signature)
 {
    error_t error;
    DataChunk messageChunks[1];

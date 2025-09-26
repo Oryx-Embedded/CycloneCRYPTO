@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 #ifndef _MPI_H
@@ -171,14 +171,6 @@ error_t mpiInvMod(Mpi *r, const Mpi *a, const Mpi *p);
 error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p);
 error_t mpiExpModFast(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p);
 error_t mpiExpModRegular(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p);
-
-error_t mpiMontgomeryMul(Mpi *r, const Mpi *a, const Mpi *b, uint_t k,
-   const Mpi *p, Mpi *t);
-
-error_t mpiMontgomeryRed(Mpi *r, const Mpi *a, uint_t k, const Mpi *p, Mpi *t);
-
-void mpiMulAccCore(mpi_word_t *r, const mpi_word_t *a, int_t m,
-   const mpi_word_t b);
 
 void mpiDump(FILE *stream, const char_t *prepend, const Mpi *a);
 

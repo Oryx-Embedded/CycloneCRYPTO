@@ -30,7 +30,7 @@
  * of the input messages, offering a security strength of 128 bits
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level

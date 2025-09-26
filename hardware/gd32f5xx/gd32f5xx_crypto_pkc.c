@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -533,9 +533,9 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
       return ERROR_OUT_OF_RANGE;
 
    //Use the Chinese remainder algorithm?
-   if(mpiGetLength(&key->n) > 0 && mpiGetLength(&key->p) > 0 &&
-      mpiGetLength(&key->q) > 0 && mpiGetLength(&key->dp) > 0 &&
-      mpiGetLength(&key->dq) > 0 && mpiGetLength(&key->qinv) > 0)
+   if(mpiGetLength(&key->p) > 0 && mpiGetLength(&key->q) > 0 &&
+      mpiGetLength(&key->dp) > 0 && mpiGetLength(&key->dq) > 0 &&
+      mpiGetLength(&key->qinv) > 0)
    {
       //Perform modular exponentiation (with CRT)
       error = pkcauRsaCrtExp(key, c, m);

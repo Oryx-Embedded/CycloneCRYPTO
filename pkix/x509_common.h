@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 #ifndef _X509_COMMON_H
@@ -553,8 +553,10 @@ typedef enum
    X509_EXT_KEY_USAGE_IPSEC_IKE        = 0x00000200,
    X509_EXT_KEY_USAGE_SSH_CLIENT       = 0x00000400,
    X509_EXT_KEY_USAGE_SSH_SERVER       = 0x00000800,
-   X509_EXT_KEY_USAGE_DOC_SIGNING      = 0x00001000,
-   X509_EXT_KEY_USAGE_ANY              = 0x00001FFF
+   X509_EXT_KEY_USAGE_CMC_CA           = 0x00001000,
+   X509_EXT_KEY_USAGE_CMC_RA           = 0x00002000,
+   X509_EXT_KEY_USAGE_DOC_SIGNING      = 0x00004000,
+   X509_EXT_KEY_USAGE_ANY              = 0x00007FFF
 } X509ExtKeyUsageBitmap;
 
 
@@ -1392,6 +1394,8 @@ extern const uint8_t X509_KP_OCSP_SIGNING_OID[8];
 extern const uint8_t X509_KP_IPSEC_IKE_OID[8];
 extern const uint8_t X509_KP_SSH_CLIENT_OID[8];
 extern const uint8_t X509_KP_SSH_SERVER_OID[8];
+extern const uint8_t X509_KP_CMC_CA_OID[8];
+extern const uint8_t X509_KP_CMC_RA_OID[8];
 extern const uint8_t X509_KP_DOC_SIGNING_OID[8];
 
 extern const uint8_t X509_AD_CA_ISSUERS[8];

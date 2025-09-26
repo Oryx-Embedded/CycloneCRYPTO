@@ -1,6 +1,6 @@
 /**
- * @file scep_client_req_format.h
- * @brief SCEP request generation
+ * @file mimxrt1180_crypto_pkc.h
+ * @brief i.MX RT1180 public-key hardware accelerator
  *
  * @section License
  *
@@ -25,30 +25,44 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
-#ifndef _SCEP_CLIENT_REQ_FORMAT_H
-#define _SCEP_CLIENT_REQ_FORMAT_H
+#ifndef _MIMXRT1180_CRYPTO_PKC_H
+#define _MIMXRT1180_CRYPTO_PKC_H
 
 //Dependencies
-#include "core/net.h"
-#include "scep/scep_client.h"
+#include "core/crypto.h"
+
+//Public-key hardware accelerator
+#ifndef MIMXRT1180_CRYPTO_PKC_SUPPORT
+   #define MIMXRT1180_CRYPTO_PKC_SUPPORT DISABLED
+#elif (MIMXRT1180_CRYPTO_PKC_SUPPORT != ENABLED && MIMXRT1180_CRYPTO_PKC_SUPPORT != DISABLED)
+   #error MIMXRT1180_CRYPTO_PKC_SUPPORT parameter is not valid
+#endif
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//SCEP client related functions
-error_t scepClientFormatPkiMessage(ScepClientContext *context,
-   ScepMessageType messageType, uint8_t *output, size_t *written);
 
-error_t scepClientFormatPkcsPkiEnvelope(ScepClientContext *context,
-   ScepMessageType messageType, uint8_t *output, size_t *written);
+/**
+ * @brief ELE RSA primitive arguments
+ **/
 
-error_t scepClientFormatIssuerAndSubject(ScepClientContext *context,
-   uint8_t *output, size_t *written);
+typedef struct
+{
+   uint8_t n[512];
+   uint8_t d[512];
+   uint8_t e[512];
+   uint8_t m[512];
+   uint8_t c[512];
+   uint8_t digest[32];
+   uint8_t signature[512];
+   char_t label[512];
+} EleRsaArgs;
+
 
 //C++ guard
 #ifdef __cplusplus

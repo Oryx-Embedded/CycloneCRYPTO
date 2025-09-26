@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -406,9 +406,9 @@ end:
  * @return Error code
  **/
 
-error_t rsaesPkcs1v15Encrypt(const PrngAlgo *prngAlgo, void *prngContext,
-   const RsaPublicKey *key, const uint8_t *message, size_t messageLen,
-   uint8_t *ciphertext, size_t *ciphertextLen)
+__weak_func error_t rsaesPkcs1v15Encrypt(const PrngAlgo *prngAlgo,
+   void *prngContext, const RsaPublicKey *key, const uint8_t *message,
+   size_t messageLen, uint8_t *ciphertext, size_t *ciphertextLen)
 {
    error_t error;
    uint_t k;
@@ -504,7 +504,7 @@ error_t rsaesPkcs1v15Encrypt(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
+__weak_func error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
    const uint8_t *ciphertext, size_t ciphertextLen, uint8_t *message,
    size_t messageSize, size_t *messageLen)
 {
@@ -665,10 +665,10 @@ error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
  * @return Error code
  **/
 
-error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo, void *prngContext,
-   const RsaPublicKey *key, const HashAlgo *hash, const char_t *label,
-   const uint8_t *message, size_t messageLen, uint8_t *ciphertext,
-   size_t *ciphertextLen)
+__weak_func error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo,
+   void *prngContext, const RsaPublicKey *key, const HashAlgo *hash,
+   const char_t *label, const uint8_t *message, size_t messageLen,
+   uint8_t *ciphertext, size_t *ciphertextLen)
 {
    error_t error;
    uint_t k;
@@ -771,9 +771,10 @@ error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t rsaesOaepDecrypt(const RsaPrivateKey *key, const HashAlgo *hash,
-   const char_t *label, const uint8_t *ciphertext, size_t ciphertextLen,
-   uint8_t *message, size_t messageSize, size_t *messageLen)
+__weak_func error_t rsaesOaepDecrypt(const RsaPrivateKey *key,
+   const HashAlgo *hash, const char_t *label, const uint8_t *ciphertext,
+   size_t ciphertextLen, uint8_t *message, size_t messageSize,
+   size_t *messageLen)
 {
    error_t error;
    uint_t k;
@@ -932,8 +933,9 @@ error_t rsaesOaepDecrypt(const RsaPrivateKey *key, const HashAlgo *hash,
  * @return Error code
  **/
 
-error_t rsassaPkcs1v15Sign(const RsaPrivateKey *key, const HashAlgo *hash,
-   const uint8_t *digest, uint8_t *signature, size_t *signatureLen)
+__weak_func error_t rsassaPkcs1v15Sign(const RsaPrivateKey *key,
+   const HashAlgo *hash, const uint8_t *digest, uint8_t *signature,
+   size_t *signatureLen)
 {
    error_t error;
    uint_t k;
@@ -1005,8 +1007,10 @@ error_t rsassaPkcs1v15Sign(const RsaPrivateKey *key, const HashAlgo *hash,
          break;
 
       //When unprotected, RSA-CRT is vulnerable to the Bellcore attack
-      if(key->n.size && key->e.size && key->p.size && key->q.size &&
-         key->dp.size && key->dq.size && key->qinv.size)
+      if(mpiGetLength(&key->n) > 0 && mpiGetLength(&key->e) > 0 &&
+         mpiGetLength(&key->p) > 0 && mpiGetLength(&key->q) > 0 &&
+         mpiGetLength(&key->dp) > 0 && mpiGetLength(&key->dq) > 0 &&
+         mpiGetLength(&key->qinv) > 0)
       {
          RsaPublicKey publicKey;
 
@@ -1065,8 +1069,9 @@ error_t rsassaPkcs1v15Sign(const RsaPrivateKey *key, const HashAlgo *hash,
  * @return Error code
  **/
 
-error_t rsassaPkcs1v15Verify(const RsaPublicKey *key, const HashAlgo *hash,
-   const uint8_t *digest, const uint8_t *signature, size_t signatureLen)
+__weak_func error_t rsassaPkcs1v15Verify(const RsaPublicKey *key,
+   const HashAlgo *hash, const uint8_t *digest, const uint8_t *signature,
+   size_t signatureLen)
 {
    error_t error;
    uint_t k;
@@ -1186,7 +1191,7 @@ error_t rsassaPkcs1v15Verify(const RsaPublicKey *key, const HashAlgo *hash,
  * @return Error code
  **/
 
-error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
+__weak_func error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
    const RsaPrivateKey *key, const HashAlgo *hash, size_t saltLen,
    const uint8_t *digest, uint8_t *signature, size_t *signatureLen)
 {
@@ -1306,9 +1311,9 @@ error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t rsassaPssVerify(const RsaPublicKey *key, const HashAlgo *hash,
-   size_t saltLen, const uint8_t *digest, const uint8_t *signature,
-   size_t signatureLen)
+__weak_func error_t rsassaPssVerify(const RsaPublicKey *key,
+   const HashAlgo *hash, size_t saltLen, const uint8_t *digest,
+   const uint8_t *signature, size_t signatureLen)
 {
    error_t error;
    uint_t k;

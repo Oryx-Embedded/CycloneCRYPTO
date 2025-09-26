@@ -31,7 +31,7 @@
  * security strength is up to 128 bits
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -43,6 +43,23 @@
 
 //Check crypto library configuration
 #if (ASCON_XOF128_SUPPORT == ENABLED)
+
+//Ascon-XOF128 object identifier (0.0)
+const uint8_t ASCON_XOF128_OID[1] = {0x00};
+
+//Common interface for XOF algorithms
+const XofAlgo asconXof128XofAlgo =
+{
+   "Ascon-XOF128",
+   ASCON_XOF128_OID,
+   sizeof(ASCON_XOF128_OID),
+   sizeof(AsconXof128Context),
+   (XofAlgoCompute) asconXof128Compute,
+   (XofAlgoInit) asconXof128Init,
+   (XofAlgoAbsorb) asconXof128Absorb,
+   (XofAlgoFinal) asconXof128Final,
+   (XofAlgoSqueeze) asconXof128Squeeze
+};
 
 
 /**

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -50,7 +50,7 @@
  * @return Error code
  **/
 
-error_t x448(uint8_t *r, const uint8_t *k, const uint8_t *u)
+__weak_func error_t x448(uint8_t *r, const uint8_t *k, const uint8_t *u)
 {
    int_t i;
    uint32_t b;

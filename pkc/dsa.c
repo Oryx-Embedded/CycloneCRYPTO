@@ -31,7 +31,7 @@
  * documents. Refer to FIPS 186-3 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -484,13 +484,6 @@ error_t dsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    mpiInit(&k);
    mpiInit(&z);
 
-   //Generate a random number k such as 0 < k < q
-   MPI_CHECK(mpiRandRange(&k, &key->params.q, prngAlgo, prngContext));
-
-   //Debug message
-   TRACE_DEBUG("  k:\r\n");
-   TRACE_DEBUG_MPI("    ", &k);
-
    //Let N be the bit length of q
    n = mpiGetBitLength(&key->params.q);
    //Compute N = MIN(N, outlen)
@@ -509,18 +502,38 @@ error_t dsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    TRACE_DEBUG("  z:\r\n");
    TRACE_DEBUG_MPI("    ", &z);
 
-   //Compute r = (g ^ k mod p) mod q
-   MPI_CHECK(mpiExpModRegular(&signature->r, &key->params.g, &k, &key->params.p));
-   MPI_CHECK(mpiMod(&signature->r, &signature->r, &key->params.q));
+   //DSA signature generation process
+   while(1)
+   {
+      //Generate a random number k such as 0 < k < q
+      MPI_CHECK(mpiRandRange(&k, &key->params.q, prngAlgo, prngContext));
 
-   //Compute k ^ -1 mod q
-   MPI_CHECK(mpiInvMod(&k, &k, &key->params.q));
+      //Debug message
+      TRACE_DEBUG("  k:\r\n");
+      TRACE_DEBUG_MPI("    ", &k);
 
-   //Compute s = k ^ -1 * (z + x * r) mod q
-   MPI_CHECK(mpiMul(&signature->s, &key->x, &signature->r));
-   MPI_CHECK(mpiAdd(&signature->s, &signature->s, &z));
-   MPI_CHECK(mpiMod(&signature->s, &signature->s, &key->params.q));
-   MPI_CHECK(mpiMulMod(&signature->s, &signature->s, &k, &key->params.q));
+      //Compute r = (g ^ k mod p) mod q
+      MPI_CHECK(mpiExpModRegular(&signature->r, &key->params.g, &k, &key->params.p));
+      MPI_CHECK(mpiMod(&signature->r, &signature->r, &key->params.q));
+
+      //Compute k ^ -1 mod q
+      MPI_CHECK(mpiInvMod(&k, &k, &key->params.q));
+
+      //Compute s = k ^ -1 * (z + x * r) mod q
+      MPI_CHECK(mpiMul(&signature->s, &key->x, &signature->r));
+      MPI_CHECK(mpiAdd(&signature->s, &signature->s, &z));
+      MPI_CHECK(mpiMod(&signature->s, &signature->s, &key->params.q));
+      MPI_CHECK(mpiMulMod(&signature->s, &signature->s, &k, &key->params.q));
+
+      //The values of r and s shall be checked to determine if r = 0 or s = 0.
+      //If either r = 0 or s = 0, a new value of k shall be generated, and the
+      //signature shall be recalculated (refer to FIPS 186-3, section 4.6)
+      if(mpiCompInt(&signature->r, 0) != 0 &&
+         mpiCompInt(&signature->s, 0) != 0)
+      {
+         break;
+      }
+   }
 
    //Dump DSA signature
    TRACE_DEBUG("  r:\r\n");

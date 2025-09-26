@@ -31,7 +31,7 @@
  * lengths of 128, 192, and 256 bits. Refer to FIPS 197 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level

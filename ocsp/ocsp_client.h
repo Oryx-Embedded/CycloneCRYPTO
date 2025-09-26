@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 #ifndef _OCSP_CLIENT_H
@@ -90,6 +90,10 @@
    #define OCSP_CLIENT_PRIVATE_CONTEXT
 #endif
 
+//Forward declaration of OcspClientContext structure
+struct _OcspClientContext;
+#define OcspClientContext struct _OcspClientContext
+
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
@@ -125,7 +129,7 @@ typedef enum
  * @brief TLS initialization callback function
  **/
 
-typedef error_t (*OcspClientTlsInitCallback)(HttpClientContext *context,
+typedef error_t (*OcspClientTlsInitCallback)(OcspClientContext *context,
    TlsContext *tlsContext);
 
 #endif
@@ -135,7 +139,7 @@ typedef error_t (*OcspClientTlsInitCallback)(HttpClientContext *context,
  * @brief OCSP client context
  **/
 
-typedef struct
+struct _OcspClientContext
 {
    OcspClientState state;                           ///<OCSP client state
    NetInterface *interface;                         ///<Underlying network interface
@@ -157,7 +161,7 @@ typedef struct
    uint_t httpStatusCode;                           ///<HTTP status code
    OcspResponse ocspResponse;                       ///<OCSP response
    OCSP_CLIENT_PRIVATE_CONTEXT                      ///<Application specific context
-} OcspClientContext;
+};
 
 
 //OCSP client related functions

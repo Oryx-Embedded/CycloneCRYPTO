@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -36,6 +36,7 @@
 #include "ecc/ecdsa.h"
 #include "ecc/ec_misc.h"
 #include "encoding/asn1.h"
+#include "rng/hmac_drbg.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -72,6 +73,9 @@ const uint8_t ECDSA_WITH_SHAKE256_OID[8] = {0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 
 
 void ecdsaInitSignature(EcdsaSignature *signature)
 {
+   //Initialize elliptic curve parameters
+   signature->curve = NULL;
+
    //Initialize (R, S) integer pair
    ecScalarSetInt(signature->r, 0, EC_MAX_ORDER_SIZE);
    ecScalarSetInt(signature->s, 0, EC_MAX_ORDER_SIZE);
@@ -85,9 +89,8 @@ void ecdsaInitSignature(EcdsaSignature *signature)
 
 void ecdsaFreeSignature(EcdsaSignature *signature)
 {
-   //Release (R, S) integer pair
-   ecScalarSetInt(signature->r, 0, EC_MAX_ORDER_SIZE);
-   ecScalarSetInt(signature->s, 0, EC_MAX_ORDER_SIZE);
+   //Clear ECDSA signature
+   osMemset(signature, 0, sizeof(EcdsaSignature));
 }
 
 
@@ -539,29 +542,21 @@ __weak_func error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo,
    ecScalarSetInt(signature->r, 0, EC_MAX_ORDER_SIZE);
    ecScalarSetInt(signature->s, 0, EC_MAX_ORDER_SIZE);
 
-   //Generate a random number k such as 0 < k < q - 1
-   error = ecScalarRand(privateKey->curve, state->k, prngAlgo, prngContext);
+   //Let N be the bit length of q
+   n = privateKey->curve->orderSize;
+   //Compute N = MIN(N, outlen)
+   n = MIN(n, digestLen * 8);
+
+   //Convert the digest to an integer
+   error = ecScalarImport(state->z, qLen, digest, (n + 7) / 8,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
 
    //Check status code
    if(!error)
    {
-      //Debug message
-      TRACE_DEBUG("  k:\r\n");
-      TRACE_DEBUG_EC_SCALAR("    ", state->k, qLen);
+      uint32_t c;
+      uint32_t z2[EC_MAX_ORDER_SIZE];
 
-      //Let N be the bit length of q
-      n = privateKey->curve->orderSize;
-      //Compute N = MIN(N, outlen)
-      n = MIN(n, digestLen * 8);
-
-      //Convert the digest to an integer
-      error = ecScalarImport(state->z, qLen, digest, (n + 7) / 8,
-         EC_SCALAR_FORMAT_BIG_ENDIAN);
-   }
-
-   //Check status code
-   if(!error)
-   {
       //Keep the leftmost N bits of the hash value
       if((n % 8) != 0)
       {
@@ -571,6 +566,197 @@ __weak_func error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo,
       //Debug message
       TRACE_DEBUG("  z:\r\n");
       TRACE_DEBUG_EC_SCALAR("    ", state->z, qLen);
+
+      //z is reduced modulo q. The modular reduction can be implemented with a
+      //simple conditional subtraction
+      c = ecScalarSub(z2, state->z, privateKey->curve->q, qLen);
+      ecScalarSelect(state->z, z2, state->z, c, qLen);
+   }
+
+   //ECDSA signature generation process
+   while(!error)
+   {
+      //Generate a random number k such as 0 < k < q - 1
+      error = ecScalarRand(privateKey->curve, state->k, prngAlgo, prngContext);
+
+      //Check status code
+      if(!error)
+      {
+         //Debug message
+         TRACE_DEBUG("  k:\r\n");
+         TRACE_DEBUG_EC_SCALAR("    ", state->k, qLen);
+
+         //Compute R1 = (x1, y1) = k.G
+         error = ecMulRegular(privateKey->curve, &state->r1, state->k,
+            &privateKey->curve->g);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Convert R1 to affine representation
+         error = ecAffinify(privateKey->curve, &state->r1, &state->r1);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Debug message
+         TRACE_DEBUG("  x1:\r\n");
+         TRACE_DEBUG_EC_SCALAR("    ", state->r1.x, pLen);
+         TRACE_DEBUG("  y1:\r\n");
+         TRACE_DEBUG_EC_SCALAR("    ", state->r1.y, pLen);
+
+         //Compute r = x1 mod q
+         ecScalarMod(signature->r, state->r1.x, pLen, privateKey->curve->q, qLen);
+         //Compute k ^ -1 mod q
+         ecScalarInvMod(privateKey->curve, state->k, state->k);
+
+         //Compute s = k ^ -1 * (z + x * r) mod q
+         ecScalarMulMod(privateKey->curve, signature->s, privateKey->d, signature->r);
+         ecScalarAddMod(privateKey->curve, signature->s, signature->s, state->z);
+         ecScalarMulMod(privateKey->curve, signature->s, signature->s, state->k);
+
+         //The values of r and s shall be checked to determine if r = 0 or s = 0.
+         //If either r = 0 or s = 0, a new value of k shall be generated, and the
+         //signature shall be recalculated (refer to FIPS 186-5, section 6.4.1)
+         if(ecScalarCompInt(signature->r, 0, qLen) != 0 &&
+            ecScalarCompInt(signature->s, 0, qLen) != 0)
+         {
+            break;
+         }
+      }
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Save elliptic curve parameters
+      signature->curve = privateKey->curve;
+
+      //Debug message
+      TRACE_DEBUG("  r:\r\n");
+      TRACE_DEBUG_EC_SCALAR("    ", signature->r, qLen);
+      TRACE_DEBUG("  s:\r\n");
+      TRACE_DEBUG_EC_SCALAR("    ", signature->s, qLen);
+   }
+
+   //Erase working state
+   osMemset(state, 0, sizeof(EcdsaGenerateSignatureState));
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Release working state
+   cryptoFreeMem(state);
+#endif
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Deterministic ECDSA signature generation
+ * @param[in] privateKey Signer's EC private key
+ * @param[in] hashAlgo Underlying hash function
+ * @param[in] digest Digest of the message to be signed
+ * @param[in] digestLen Length in octets of the digest
+ * @param[out] signature (R, S) integer pair
+ * @return Error code
+ **/
+
+error_t ecdsaGenerateDeterministicSignature(const EcPrivateKey *privateKey,
+   const HashAlgo *hashAlgo, const uint8_t *digest, EcdsaSignature *signature)
+{
+   error_t error;
+   uint_t n;
+   uint_t pLen;
+   uint_t qLen;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   EcdsaGenerateSignatureState *state;
+#else
+   EcdsaGenerateSignatureState state[1];
+#endif
+
+   //Check parameters
+   if(hashAlgo == NULL || privateKey == NULL || digest == NULL ||
+      signature == NULL)
+   {
+      return ERROR_INVALID_PARAMETER;
+   }
+
+   //Invalid elliptic curve?
+   if(privateKey->curve == NULL)
+      return ERROR_INVALID_ELLIPTIC_CURVE;
+
+   //Get the length of the modulus, in words
+   pLen = (privateKey->curve->fieldSize + 31) / 32;
+   //Get the length of the order, in words
+   qLen = (privateKey->curve->orderSize + 31) / 32;
+
+   //Debug message
+   TRACE_DEBUG("ECDSA signature generation...\r\n");
+   TRACE_DEBUG("  curve: %s\r\n", privateKey->curve->name);
+   TRACE_DEBUG("  private key:\r\n");
+   TRACE_DEBUG_EC_SCALAR("    ", privateKey->d, qLen);
+   TRACE_DEBUG("  digest:\r\n");
+   TRACE_DEBUG_ARRAY("    ", digest, hashAlgo->digestSize);
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Allocate working state
+   state = cryptoAllocMem(sizeof(EcdsaGenerateSignatureState));
+   //Failed to allocate memory?
+   if(state == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
+
+   //Initialize working state
+   osMemset(state, 0, sizeof(EcdsaGenerateSignatureState));
+
+   //Initialize (R, S) integer pair
+   ecScalarSetInt(signature->r, 0, EC_MAX_ORDER_SIZE);
+   ecScalarSetInt(signature->s, 0, EC_MAX_ORDER_SIZE);
+
+   //Let N be the bit length of q
+   n = privateKey->curve->orderSize;
+   //Compute N = MIN(N, outlen)
+   n = MIN(n, hashAlgo->digestSize * 8);
+
+   //Convert the digest to an integer
+   error = ecScalarImport(state->z, qLen, digest, (n + 7) / 8,
+      EC_SCALAR_FORMAT_BIG_ENDIAN);
+
+   //Check status code
+   if(!error)
+   {
+      uint32_t c;
+      uint32_t z2[EC_MAX_ORDER_SIZE];
+
+      //Keep the leftmost N bits of the hash value
+      if((n % 8) != 0)
+      {
+         ecScalarShiftRight(state->z, state->z, 8 - (n % 8), qLen);
+      }
+
+      //Debug message
+      TRACE_DEBUG("  z:\r\n");
+      TRACE_DEBUG_EC_SCALAR("    ", state->z, qLen);
+
+      //z is reduced modulo q. The modular reduction can be implemented with a
+      //simple conditional subtraction
+      c = ecScalarSub(z2, state->z, privateKey->curve->q, qLen);
+      ecScalarSelect(state->z, z2, state->z, c, qLen);
+
+      //Compute the pseudorandom k for signature generation
+      error = ecdsaGenerateK(privateKey->curve, hashAlgo, privateKey->d,
+         state->z, state->k);
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Debug message
+      TRACE_DEBUG("  k:\r\n");
+      TRACE_DEBUG_EC_SCALAR("    ", state->k, qLen);
 
       //Compute R1 = (x1, y1) = k.G
       error = ecMulRegular(privateKey->curve, &state->r1, state->k,
@@ -611,6 +797,14 @@ __weak_func error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo,
       TRACE_DEBUG_EC_SCALAR("    ", signature->r, qLen);
       TRACE_DEBUG("  s:\r\n");
       TRACE_DEBUG_EC_SCALAR("    ", signature->s, qLen);
+
+      //If r = 0 or if s = 0, and k was generated deterministically, then
+      //output failure (refer to FIPS 186-5, section 6.4.1)
+      if(ecScalarCompInt(signature->r, 0, qLen) == 0 ||
+         ecScalarCompInt(signature->s, 0, qLen) == 0)
+      {
+         error = ERROR_FAILURE;
+      }
    }
 
    //Erase working state
@@ -621,8 +815,128 @@ __weak_func error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo,
    cryptoFreeMem(state);
 #endif
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Generation of pseudorandom k
+ * @param[in] curve Elliptic curve parameters
+ * @param[in] hashAlgo Underlying hash function
+ * @param[in] x ECDSA private key
+ * @param[in] h Digest of the message to be signed
+ * @param[in] k Pseudorandom value k
+ * @return Error code
+ **/
+
+error_t ecdsaGenerateK(const EcCurve *curve, const HashAlgo *hashAlgo,
+   const uint32_t *x, const uint32_t *h, uint32_t *k)
+{
+#if (HMAC_DRBG_SUPPORT == ENABLED)
+   error_t error;
+   size_t n;
+   uint8_t seed[EC_MAX_ORDER_SIZE * 8];
+   uint8_t t[EC_MAX_ORDER_SIZE * 4];
+   uint32_t q[EC_MAX_ORDER_SIZE];
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   HmacDrbgContext *hmacDrbgContext;
+#else
+   HmacDrbgContext hmacDrbgContext[1];
+#endif
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Allocate HMAC_DRBG context
+   hmacDrbgContext = cryptoAllocMem(sizeof(HmacDrbgContext));
+   //Failed to allocate memory?
+   if(hmacDrbgContext == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
+
+   //Get the length of the order, in bytes
+   n = (curve->orderSize + 7) / 8;
+
+   //Instantiate HMAC_DRBG using HMAC parameterized with the same hash function
+   //H as the one used for processing the message that is to be signed (refer
+   //to RFC 6979, section 3.3)
+   error = hmacDrbgInit(hmacDrbgContext, hashAlgo);
+
+   //Check status code
+   if(!error)
+   {
+      //The private key is used as entropy string
+      error = ecScalarExport(x, (n + 3) / 4, seed, n,
+         EC_SCALAR_FORMAT_BIG_ENDIAN);
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //The hashed message (truncated and expanded by bits2octets) is used as
+      //nonce. The entropy string and nonce are simply concatenated into the
+      //initial seed
+      error = ecScalarExport(h, (n + 3) / 4, seed + n, n,
+         EC_SCALAR_FORMAT_BIG_ENDIAN);
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //For deterministic ECDSA, we want HMAC_DRBG to run with the entropy
+      //string and nonce that we specify, without accessing an actual entropy
+      //source
+      error = hmacDrbgSeed(hmacDrbgContext, seed, n * 2);
+   }
+
+   //Repeat this step until an acceptable value is obtained
+   while(!error)
+   {
+      //Generate a candidate value for k by requesting qlen bits from HMAC_DRBG
+      error = hmacDrbgGenerate(hmacDrbgContext, t, n);
+
+      //Check status code
+      if(!error)
+      {
+         //The resulting value is then converted to an integer value using the
+         //big-endian convention
+         error = ecScalarImport(k, (n + 3) / 4, t, n,
+            EC_SCALAR_FORMAT_BIG_ENDIAN);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //The qlen leftmost bits are kept, and subsequent bits are discarded
+         if(curve->orderSize < (n * 8))
+         {
+            ecScalarShiftRight(k, k, (n * 8) - curve->orderSize, (n + 3) / 4);
+         }
+
+         //Precompte q-1
+         ecScalarSubInt(q, curve->q, 1, (n + 3) / 4);
+
+         //If that value of k is within the [1,q-1] range, and is suitable for
+         //ECDSA, then the generation of k is finished
+         if(ecScalarCompInt(k, 0, (n + 3) / 4) > 0 &&
+            ecScalarComp(k, q, (n + 3) / 4) < 0)
+         {
+            //The obtained value of k can be used in ECDSA
+            break;
+         }
+      }
+   }
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Release working state
+   cryptoFreeMem(hmacDrbgContext);
+#endif
+
+   //Return status code
+   return error;
+#else
+   //HMAC_DRBG is not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 

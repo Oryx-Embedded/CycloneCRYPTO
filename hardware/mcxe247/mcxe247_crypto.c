@@ -1,6 +1,6 @@
 /**
- * @file scep_client_misc.h
- * @brief Helper functions for SCEP client
+ * @file mcxe247_crypto.c
+ * @brief NXP MCX E247 hardware cryptographic accelerator (ELA_CSEC)
  *
  * @section License
  *
@@ -25,41 +25,51 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
-#ifndef _SCEP_CLIENT_MISC_H
-#define _SCEP_CLIENT_MISC_H
+//Switch to the appropriate trace level
+#define TRACE_LEVEL CRYPTO_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "scep/scep_client.h"
-#include "pkcs7/pkcs7_common.h"
+#include "core/crypto.h"
+#include "hardware/mcxe247/mcxe247_crypto.h"
+#include "hardware/mcxe247/mcxe247_crypto_trng.h"
+#include "debug.h"
 
-//C++ guard
-#ifdef __cplusplus
-extern "C" {
+//Global variables
+OsMutex mcxe247CryptoMutex;
+
+
+/**
+ * @brief Initialize hardware cryptographic accelerator
+ * @return Error code
+ **/
+
+error_t mcxe247CryptoInit(void)
+{
+   error_t error;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Create a mutex to prevent simultaneous access to the hardware
+   //cryptographic accelerator
+   if(!osCreateMutex(&mcxe247CryptoMutex))
+   {
+      //Failed to create mutex
+      error = ERROR_OUT_OF_RESOURCES;
+   }
+
+#if (MCXE247_CRYPTO_TRNG_SUPPORT == ENABLED)
+   //Check status code
+   if(!error)
+   {
+      //Initialize TRNG module
+      error = trngInit();
+   }
 #endif
 
-//SCEP client related functions
-error_t scepClientSelectContentEncrAlgo(ScepClientContext *context,
-   Pkcs7ContentEncrAlgo *contentEncrAlgo);
-
-error_t scepClientSelectSignatureAlgo(ScepClientContext *context,
-   X509SignAlgoId *signatureAlgo);
-
-error_t scepClientParseCaCert(ScepClientContext *context,
-   X509CertInfo *certInfo);
-
-error_t scepClientVerifyCaCert(ScepClientContext *context);
-
-error_t scepClientGenerateTransactionId(ScepClientContext *context);
-error_t scepClientGenerateCsr(ScepClientContext *context);
-error_t scepClientGenerateSelfSignedCert(ScepClientContext *context);
-
-//C++ guard
-#ifdef __cplusplus
+   //Return status code
+   return error;
 }
-#endif
-
-#endif

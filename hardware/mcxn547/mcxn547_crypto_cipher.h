@@ -1,6 +1,6 @@
 /**
- * @file scep_client_resp_parse.h
- * @brief SCEP response parsing
+ * @file mcxn547_crypto_cipher.h
+ * @brief NXP MCX N547 cipher hardware accelerator
  *
  * @section License
  *
@@ -25,34 +25,26 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
-#ifndef _SCEP_CLIENT_RESP_PARSE_H
-#define _SCEP_CLIENT_RESP_PARSE_H
+#ifndef _MCXN547_CRYPTO_CIPHER_H
+#define _MCXN547_CRYPTO_CIPHER_H
 
 //Dependencies
-#include "core/net.h"
-#include "scep/scep_client.h"
+#include "core/crypto.h"
+
+//Cipher hardware accelerator
+#ifndef MCXN547_CRYPTO_CIPHER_SUPPORT
+   #define MCXN547_CRYPTO_CIPHER_SUPPORT DISABLED
+#elif (MCXN547_CRYPTO_CIPHER_SUPPORT != ENABLED && MCXN547_CRYPTO_CIPHER_SUPPORT != DISABLED)
+   #error MCXN547_CRYPTO_CIPHER_SUPPORT parameter is not valid
+#endif
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-//SCEP client related functions
-error_t scepClientParseGetCaCapsResponse(ScepClientContext *context);
-error_t scepClientParseGetCaCertResponse(ScepClientContext *context);
-error_t scepClientParseCertResponse(ScepClientContext *context);
-
-error_t scepClientParsePkiMessage(ScepClientContext *context,
-   const uint8_t *data, size_t length);
-
-error_t scepClientParsePkcsPkiEnvelope(ScepClientContext *context,
-   uint_t messageType, const uint8_t *data, size_t length);
-
-error_t scepClientParseMessageData(ScepClientContext *context,
-   uint_t messageType, const uint8_t *data, size_t length);
 
 //C++ guard
 #ifdef __cplusplus

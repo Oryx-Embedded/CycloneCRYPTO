@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 #ifndef _OCSP_CLIENT_MISC_H
@@ -49,6 +49,13 @@ error_t ocspClientFormatRequest(OcspClientContext *context, const char_t *cert,
    size_t certLen, const char_t *issuerCert, size_t issuerCertLen);
 
 error_t ocspClientParseHeader(OcspClientContext *context);
+
+#if (OCSP_CLIENT_TLS_SUPPORT == ENABLED)
+
+error_t ocspClientInitTlsContext(HttpClientContext *httpClientContext,
+   TlsContext *tlsContext, void *param);
+
+#endif
 
 //C++ guard
 #ifdef __cplusplus

@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -71,7 +71,7 @@ static const uint8_t padding[] =
 __weak_func error_t rsaep(const RsaPublicKey *key, const Mpi *m, Mpi *c)
 {
    //Ensure the RSA public key is valid
-   if(!key->n.size || !key->e.size)
+   if(mpiGetLength(&key->n) == 0 || mpiGetLength(&key->e) == 0)
       return ERROR_INVALID_PARAMETER;
 
    //The message representative m shall be between 0 and n - 1
@@ -112,9 +112,9 @@ __weak_func error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    mpiInit(&h);
 
    //Use the Chinese remainder algorithm?
-   if(mpiGetLength(&key->n) > 0 && mpiGetLength(&key->p) > 0 &&
-      mpiGetLength(&key->q) > 0 && mpiGetLength(&key->dp) > 0 &&
-      mpiGetLength(&key->dq) > 0 && mpiGetLength(&key->qinv) > 0)
+   if(mpiGetLength(&key->p) > 0 && mpiGetLength(&key->q) > 0 &&
+      mpiGetLength(&key->dp) > 0 && mpiGetLength(&key->dq) > 0 &&
+      mpiGetLength(&key->qinv) > 0)
    {
       //Compute m1 = c ^ dP mod p
       MPI_CHECK(mpiMod(&m1, c, &key->p));

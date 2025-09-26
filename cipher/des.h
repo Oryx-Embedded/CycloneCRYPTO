@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 #ifndef _DES_H
@@ -75,6 +75,10 @@ void desDecryptBlock(DesContext *context, const uint8_t *input,
    uint8_t *output);
 
 void desDeinit(DesContext *context);
+
+void desComputeKeyParity(const uint8_t *input, uint8_t *output);
+void desFixKeyParity(uint8_t *key);
+bool_t desCheckKeyParity(const uint8_t *key);
 
 //C++ guard
 #ifdef __cplusplus

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -349,4 +349,48 @@ error_t ocspClientParseHeader(OcspClientContext *context)
    return NO_ERROR;
 }
 
+
+#if (OCSP_CLIENT_TLS_SUPPORT == ENABLED)
+
+/**
+ * @brief TLS initialization
+ * @param[in] httpClientContext Pointer to the HTTP client context
+ * @param[in] tlsContext Pointer to the TLS context
+ * @param[in] param Pointer to the OCSP client context
+ * @return Error code
+ **/
+
+error_t ocspClientInitTlsContext(HttpClientContext *httpClientContext,
+   TlsContext *tlsContext, void *param)
+{
+   error_t error;
+   OcspClientContext *context;
+
+   //Point to the OCSP client context
+   context = (OcspClientContext *) param;
+
+   //Set the PRNG algorithm to be used
+   error = tlsSetPrng(tlsContext, context->prngAlgo, context->prngContext);
+
+   //Check status code
+   if(!error)
+   {
+      //Perform TLS related initialization
+      if(context->tlsInitCallback != NULL)
+      {
+         //Invoke callback function
+         error = context->tlsInitCallback(context, tlsContext);
+      }
+      else
+      {
+         //Report an error
+         error = ERROR_FAILURE;
+      }
+   }
+
+   //Return status code
+   return error;
+}
+
+#endif
 #endif

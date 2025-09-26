@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -46,12 +46,12 @@
 /**
  * @brief Load AES key
  * @param[in] key 128-bit encryption key
- * @return CSEq error code
+ * @return CSEc error code
  **/
 
 uint32_t aesLoadKey(const uint32_t *key)
 {
-   //Check for the previous CSEq command to complete
+   //Check for the previous CSEc command to complete
    while((FTFC->FSTAT & FTFC_FSTAT_CCIF_MASK) == 0)
    {
    }
@@ -59,17 +59,17 @@ uint32_t aesLoadKey(const uint32_t *key)
    //Clear error flags
    FTFC->FSTAT = FTFC_FSTAT_FPVIOL_MASK | FTFC_FSTAT_ACCERR_MASK;
 
-   //Copy the 128-bit key to CSEq RAM
+   //Copy the 128-bit key to CSEc RAM
    CSE_PRAM->RAMn[4].DATA_32 = htobe32(key[0]);
    CSE_PRAM->RAMn[5].DATA_32 = htobe32(key[1]);
    CSE_PRAM->RAMn[6].DATA_32 = htobe32(key[2]);
    CSE_PRAM->RAMn[7].DATA_32 = htobe32(key[3]);
 
-   //Start CSEq command
-   CSE_PRAM->RAMn[0].DATA_32 = CSEQ_CMD_LOAD_PLAIN_KEY | CSEQ_FORMAT_COPY |
-      CSEQ_CALL_SEQ_FIRST;
+   //Start CSEc command
+   CSE_PRAM->RAMn[0].DATA_32 = CSEC_CMD_LOAD_PLAIN_KEY | CSEC_FORMAT_COPY |
+      CSEC_CALL_SEQ_FIRST;
 
-   //Wait for the CSEq command to complete
+   //Wait for the CSEc command to complete
    while((FTFC->FSTAT & FTFC_FSTAT_CCIF_MASK) == 0)
    {
    }
@@ -81,12 +81,12 @@ uint32_t aesLoadKey(const uint32_t *key)
 
 /**
  * @brief Perform AES encryption or decryption
- * @param[in] command CSEq command
- * @param[in] offset CSEq RAM offset
+ * @param[in] command CSEc command
+ * @param[in] offset CSEc RAM offset
  * @param[in] input Data to be encrypted/decrypted
  * @param[out] output Data resulting from the encryption/decryption process
  * @param[in] length Total number of data bytes to be processed
- * @return CSEq error code
+ * @return CSEc error code
  **/
 
 uint32_t aesProcessData(uint32_t command, size_t offset, const uint8_t *input,
@@ -97,7 +97,7 @@ uint32_t aesProcessData(uint32_t command, size_t offset, const uint8_t *input,
    uint32_t temp;
    uint32_t status;
 
-   //Write input data to CSEq RAM
+   //Write input data to CSEc RAM
    for(i = offset, j = 0; j < length; i += 4, j += AES_BLOCK_SIZE)
    {
       CSE_PRAM->RAMn[i].DATA_32 = LOAD32BE(input);
@@ -109,10 +109,10 @@ uint32_t aesProcessData(uint32_t command, size_t offset, const uint8_t *input,
       input += AES_BLOCK_SIZE;
    }
 
-   //Start CSEq command
-   CSE_PRAM->RAMn[0].DATA_32 = command | CSEQ_FORMAT_COPY | CSEQ_RAM_KEY;
+   //Start CSEc command
+   CSE_PRAM->RAMn[0].DATA_32 = command | CSEC_FORMAT_COPY | CSEC_RAM_KEY;
 
-   //Wait for the CSEq command to complete
+   //Wait for the CSEc command to complete
    while((FTFC->FSTAT & FTFC_FSTAT_CCIF_MASK) == 0)
    {
    }
@@ -121,9 +121,9 @@ uint32_t aesProcessData(uint32_t command, size_t offset, const uint8_t *input,
    status = CSE_PRAM->RAMn[1].DATA_32 >> 16;
 
    //Check status code
-   if(status == CSEQ_ERC_NO_ERROR)
+   if(status == CSEC_ERC_NO_ERROR)
    {
-      //Read output data from CSEq RAM
+      //Read output data from CSEc RAM
       for(i = offset, j = 0; j < length; i += 4, j += AES_BLOCK_SIZE)
       {
          temp = CSE_PRAM->RAMn[i].DATA_32;
@@ -163,7 +163,7 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
    uint32_t status;
 
    //Initialize status code
-   status = CSEQ_ERC_NO_ERROR;
+   status = CSEC_ERC_NO_ERROR;
 
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -184,14 +184,14 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
          //Check the length of the key
          if(aesContext->nr == 10)
          {
-            //Acquire exclusive access to the CSEq module
+            //Acquire exclusive access to the CSEc module
             osAcquireMutex(&s32k1CryptoMutex);
 
             //Set encryption key
             status = aesLoadKey(aesContext->ek);
 
             //Process data blocks
-            while(length > 0 && status == CSEQ_ERC_NO_ERROR)
+            while(length > 0 && status == CSEC_ERC_NO_ERROR)
             {
                //Limit the number of data to process at a time
                n = MIN(length, AES_BLOCK_SIZE * 7);
@@ -200,7 +200,7 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
                CSE_PRAM->RAMn[3].DATA_32 = n / AES_BLOCK_SIZE;
 
                //Perform AES-ECB encryption
-               status = aesProcessData(CSEQ_CMD_ENC_ECB, 4, p, c, n);
+               status = aesProcessData(CSEC_CMD_ENC_ECB, 4, p, c, n);
 
                //Next block
                p += n;
@@ -208,19 +208,19 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
                length -= n;
             }
 
-            //Release exclusive access to the CSEq module
+            //Release exclusive access to the CSEc module
             osReleaseMutex(&s32k1CryptoMutex);
          }
          else
          {
             //192 and 256-bit keys are not supported
-            status = CSEQ_ERC_KEY_INVALID;
+            status = CSEC_ERC_KEY_INVALID;
          }
       }
       else
       {
          //The length of the payload must be a multiple of the block size
-         status = CSEQ_ERC_GENERAL_ERROR;
+         status = CSEC_ERC_GENERAL_ERROR;
       }
    }
    else
@@ -240,12 +240,12 @@ error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
       //The length of the payload must be a multiple of the block size
       if(length != 0)
       {
-         status = CSEQ_ERC_GENERAL_ERROR;
+         status = CSEC_ERC_GENERAL_ERROR;
       }
    }
 
    //Return status code
-   return (status == CSEQ_ERC_NO_ERROR) ? NO_ERROR : ERROR_FAILURE;
+   return (status == CSEC_ERC_NO_ERROR) ? NO_ERROR : ERROR_FAILURE;
 }
 
 
@@ -265,7 +265,7 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    uint32_t status;
 
    //Initialize status code
-   status = CSEQ_ERC_NO_ERROR;
+   status = CSEC_ERC_NO_ERROR;
 
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -286,14 +286,14 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
          //Check the length of the key
          if(aesContext->nr == 10)
          {
-            //Acquire exclusive access to the CSEq module
+            //Acquire exclusive access to the CSEc module
             osAcquireMutex(&s32k1CryptoMutex);
 
             //Set encryption key
             status = aesLoadKey(aesContext->ek);
 
             //Process data blocks
-            while(length > 0 && status == CSEQ_ERC_NO_ERROR)
+            while(length > 0 && status == CSEC_ERC_NO_ERROR)
             {
                //Limit the number of data to process at a time
                n = MIN(length, AES_BLOCK_SIZE * 7);
@@ -302,7 +302,7 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
                CSE_PRAM->RAMn[3].DATA_32 = n / AES_BLOCK_SIZE;
 
                //Perform AES-ECB decryption
-               status = aesProcessData(CSEQ_CMD_DEC_ECB, 4, c, p, n);
+               status = aesProcessData(CSEC_CMD_DEC_ECB, 4, c, p, n);
 
                //Next block
                c += n;
@@ -310,19 +310,19 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
                length -= n;
             }
 
-            //Release exclusive access to the CSEq module
+            //Release exclusive access to the CSEc module
             osReleaseMutex(&s32k1CryptoMutex);
          }
          else
          {
             //192 and 256-bit keys are not supported
-            status = CSEQ_ERC_KEY_INVALID;
+            status = CSEC_ERC_KEY_INVALID;
          }
       }
       else
       {
          //The length of the payload must be a multiple of the block size
-         status = CSEQ_ERC_GENERAL_ERROR;
+         status = CSEC_ERC_GENERAL_ERROR;
       }
    }
    else
@@ -342,12 +342,12 @@ error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
       //The length of the payload must be a multiple of the block size
       if(length != 0)
       {
-         status = CSEQ_ERC_GENERAL_ERROR;
+         status = CSEC_ERC_GENERAL_ERROR;
       }
    }
 
    //Return status code
-   return (status == CSEQ_ERC_NO_ERROR) ? NO_ERROR : ERROR_FAILURE;
+   return (status == CSEC_ERC_NO_ERROR) ? NO_ERROR : ERROR_FAILURE;
 }
 
 #endif
@@ -370,7 +370,7 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
    uint32_t status;
 
    //Initialize status code
-   status = CSEQ_ERC_NO_ERROR;
+   status = CSEC_ERC_NO_ERROR;
 
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -391,14 +391,14 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
          //Check the length of the key
          if(aesContext->nr == 10)
          {
-            //Acquire exclusive access to the CSEq module
+            //Acquire exclusive access to the CSEc module
             osAcquireMutex(&s32k1CryptoMutex);
 
             //Set encryption key
             status = aesLoadKey(aesContext->ek);
 
             //Process first data blocks
-            if(status == CSEQ_ERC_NO_ERROR)
+            if(status == CSEC_ERC_NO_ERROR)
             {
                //Set initialization vector
                CSE_PRAM->RAMn[4].DATA_32 = LOAD32BE(iv);
@@ -413,11 +413,11 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
                n = MIN(length, AES_BLOCK_SIZE * 6);
 
                //Perform AES-CBC encryption
-               status = aesProcessData(CSEQ_CMD_ENC_CBC | CSEQ_CALL_SEQ_FIRST,
+               status = aesProcessData(CSEC_CMD_ENC_CBC | CSEC_CALL_SEQ_FIRST,
                   8, p, c, n);
 
                //Check status code
-               if(status == CSEQ_ERC_NO_ERROR)
+               if(status == CSEC_ERC_NO_ERROR)
                {
                   //Update the value of the initialization vector
                   osMemcpy(iv, c + n - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
@@ -430,17 +430,17 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
             }
 
             //Process subsequent data blocks
-            while(length > 0 && status == CSEQ_ERC_NO_ERROR)
+            while(length > 0 && status == CSEC_ERC_NO_ERROR)
             {
                //Limit the number of data to process at a time
                n = MIN(length, AES_BLOCK_SIZE * 7);
 
                //Perform AES-CBC encryption
-               status = aesProcessData(CSEQ_CMD_ENC_CBC | CSEQ_CALL_SEQ_SUBSEQUENT,
+               status = aesProcessData(CSEC_CMD_ENC_CBC | CSEC_CALL_SEQ_SUBSEQUENT,
                   4, p, c, n);
 
                //Check status code
-               if(status == CSEQ_ERC_NO_ERROR)
+               if(status == CSEC_ERC_NO_ERROR)
                {
                   //Update the value of the initialization vector
                   osMemcpy(iv, c + n - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
@@ -452,19 +452,19 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
                length -= n;
             }
 
-            //Release exclusive access to the CSEq module
+            //Release exclusive access to the CSEc module
             osReleaseMutex(&s32k1CryptoMutex);
          }
          else
          {
             //192 and 256-bit keys are not supported
-            status = CSEQ_ERC_KEY_INVALID;
+            status = CSEC_ERC_KEY_INVALID;
          }
       }
       else
       {
          //The length of the payload must be a multiple of the block size
-         status = CSEQ_ERC_GENERAL_ERROR;
+         status = CSEC_ERC_GENERAL_ERROR;
       }
    }
    else
@@ -496,12 +496,12 @@ error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
       //The length of the payload must be a multiple of the block size
       if(length != 0)
       {
-         status = CSEQ_ERC_GENERAL_ERROR;
+         status = CSEC_ERC_GENERAL_ERROR;
       }
    }
 
    //Return status code
-   return (status == CSEQ_ERC_NO_ERROR) ? NO_ERROR : ERROR_FAILURE;
+   return (status == CSEC_ERC_NO_ERROR) ? NO_ERROR : ERROR_FAILURE;
 }
 
 
@@ -522,7 +522,7 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
    uint32_t status;
 
    //Initialize status code
-   status = CSEQ_ERC_NO_ERROR;
+   status = CSEC_ERC_NO_ERROR;
 
    //AES cipher algorithm?
    if(cipher == AES_CIPHER_ALGO)
@@ -544,14 +544,14 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
          //Check the length of the key
          if(aesContext->nr == 10)
          {
-            //Acquire exclusive access to the CSEq module
+            //Acquire exclusive access to the CSEc module
             osAcquireMutex(&s32k1CryptoMutex);
 
             //Set encryption key
             status = aesLoadKey(aesContext->ek);
 
             //Process first data blocks
-            if(status == CSEQ_ERC_NO_ERROR)
+            if(status == CSEC_ERC_NO_ERROR)
             {
                //Set initialization vector
                CSE_PRAM->RAMn[4].DATA_32 = LOAD32BE(iv);
@@ -568,11 +568,11 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
                osMemcpy(block, c + n - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
 
                //Perform AES-CBC decryption
-               status = aesProcessData(CSEQ_CMD_DEC_CBC | CSEQ_CALL_SEQ_FIRST,
+               status = aesProcessData(CSEC_CMD_DEC_CBC | CSEC_CALL_SEQ_FIRST,
                   8, c, p, n);
 
                //Check status code
-               if(status == CSEQ_ERC_NO_ERROR)
+               if(status == CSEC_ERC_NO_ERROR)
                {
                   //Update the value of the initialization vector
                   osMemcpy(iv, block, AES_BLOCK_SIZE);
@@ -585,7 +585,7 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
             }
 
             //Process subsequent data blocks
-            while(length > 0 && status == CSEQ_ERC_NO_ERROR)
+            while(length > 0 && status == CSEC_ERC_NO_ERROR)
             {
                //Limit the number of data to process at a time
                n = MIN(length, AES_BLOCK_SIZE * 7);
@@ -593,11 +593,11 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
                osMemcpy(block, c + n - AES_BLOCK_SIZE, AES_BLOCK_SIZE);
 
                //Perform AES-CBC decryption
-               status = aesProcessData(CSEQ_CMD_DEC_CBC | CSEQ_CALL_SEQ_SUBSEQUENT,
+               status = aesProcessData(CSEC_CMD_DEC_CBC | CSEC_CALL_SEQ_SUBSEQUENT,
                   4, c, p, n);
 
                //Check status code
-               if(status == CSEQ_ERC_NO_ERROR)
+               if(status == CSEC_ERC_NO_ERROR)
                {
                   //Update the value of the initialization vector
                   osMemcpy(iv, block, AES_BLOCK_SIZE);
@@ -609,19 +609,19 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
                length -= n;
             }
 
-            //Release exclusive access to the CSEq module
+            //Release exclusive access to the CSEc module
             osReleaseMutex(&s32k1CryptoMutex);
          }
          else
          {
             //192 and 256-bit keys are not supported
-            status = CSEQ_ERC_KEY_INVALID;
+            status = CSEC_ERC_KEY_INVALID;
          }
       }
       else
       {
          //The length of the payload must be a multiple of the block size
-         status = CSEQ_ERC_GENERAL_ERROR;
+         status = CSEC_ERC_GENERAL_ERROR;
       }
    }
    else
@@ -656,12 +656,12 @@ error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
       //The length of the payload must be a multiple of the block size
       if(length != 0)
       {
-         status = CSEQ_ERC_GENERAL_ERROR;
+         status = CSEC_ERC_GENERAL_ERROR;
       }
    }
 
    //Return status code
-   return (status == CSEQ_ERC_NO_ERROR) ? NO_ERROR : ERROR_FAILURE;
+   return (status == CSEC_ERC_NO_ERROR) ? NO_ERROR : ERROR_FAILURE;
 }
 
 #endif

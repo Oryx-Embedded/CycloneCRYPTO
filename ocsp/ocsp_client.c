@@ -33,7 +33,7 @@
  * - RFC 8954: Online Certificate Status Protocol (OCSP) Nonce Extension
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 //Switch to the appropriate trace level
@@ -264,9 +264,15 @@ error_t ocspClientConnect(OcspClientContext *context,
          context->serverPort = serverPort;
 
 #if (OCSP_CLIENT_TLS_SUPPORT == ENABLED)
-         //Register TLS initialization callback
-         error = httpClientRegisterTlsInitCallback(&context->httpClientContext,
-            context->tlsInitCallback);
+         //Where privacy is a requirement, OCSP transactions exchanged using
+         //HTTP may be protected using either TLS/SSL or some other lower layer
+         //protocol (refer to RFC 6960, appendix A.1)
+         if(context->tlsInitCallback != NULL)
+         {
+            //Register TLS initialization callback
+            error = httpClientRegisterTlsInitCallback(&context->httpClientContext,
+               ocspClientInitTlsContext, context);
+         }
 #endif
          //Check status code
          if(!error)

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.5.2
+ * @version 2.5.4
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.5.2"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.5.4"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 5
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 2
+#define CYCLONE_CRYPTO_REV_NUMBER 4
 
 //Static memory allocation
 #ifndef CRYPTO_STATIC_MEM_SUPPORT
@@ -774,11 +774,32 @@
    #error SHA_CRYPT_SUPPORT parameter is not valid
 #endif
 
+//Hash_DRBG PRNG support
+#ifndef HASH_DRBG_SUPPORT
+   #define HASH_DRBG_SUPPORT DISABLED
+#elif (HASH_DRBG_SUPPORT != ENABLED && HASH_DRBG_SUPPORT != DISABLED)
+   #error HASH_DRBG_SUPPORT parameter is not valid
+#endif
+
 //HMAC_DRBG PRNG support
 #ifndef HMAC_DRBG_SUPPORT
-   #define HMAC_DRBG_SUPPORT ENABLED
+   #define HMAC_DRBG_SUPPORT DISABLED
 #elif (HMAC_DRBG_SUPPORT != ENABLED && HMAC_DRBG_SUPPORT != DISABLED)
    #error HMAC_DRBG_SUPPORT parameter is not valid
+#endif
+
+//CTR_DRBG PRNG support
+#ifndef CTR_DRBG_SUPPORT
+   #define CTR_DRBG_SUPPORT DISABLED
+#elif (CTR_DRBG_SUPPORT != ENABLED && CTR_DRBG_SUPPORT != DISABLED)
+   #error CTR_DRBG_SUPPORT parameter is not valid
+#endif
+
+//XDRBG PRNG support
+#ifndef XDRBG_SUPPORT
+   #define XDRBG_SUPPORT DISABLED
+#elif (XDRBG_SUPPORT != ENABLED && XDRBG_SUPPORT != DISABLED)
+   #error XDRBG_SUPPORT parameter is not valid
 #endif
 
 //Yarrow PRNG support
@@ -1039,12 +1060,18 @@ typedef error_t (*HashAlgoCompute)(const void *data, size_t length,
    uint8_t *digest);
 
 typedef void (*HashAlgoInit)(void *context);
-
 typedef void (*HashAlgoUpdate)(void *context, const void *data, size_t length);
-
 typedef void (*HashAlgoFinal)(void *context, uint8_t *digest);
-
 typedef void (*HashAlgoFinalRaw)(void *context, uint8_t *digest);
+
+//Common API for XOF algorithms
+typedef error_t (*XofAlgoCompute)(const void *input, size_t inputLen,
+   uint8_t *output, size_t outputLen);
+
+typedef void (*XofAlgoInit)(void *context);
+typedef void (*XofAlgoAbsorb)(void *context, const void *input, size_t length);
+typedef void (*XofAlgoFinal)(void *context);
+typedef void (*XofAlgoSqueeze)(void *context, uint8_t *output, size_t length);
 
 //Common API for encryption algorithms
 typedef error_t (*CipherAlgoInit)(void *context, const uint8_t *key,
@@ -1077,10 +1104,10 @@ typedef error_t (*KemAlgoDecapsulate)(uint8_t *ss, const uint8_t *ct,
 //Common API for pseudo-random number generators (PRNG)
 typedef error_t (*PrngAlgoInit)(void *context);
 
-typedef error_t (*PrngAlgoSeed)(void *context, const uint8_t *input,
+typedef error_t (*PrngAlgoSeed)(void *context, const uint8_t *seed,
    size_t length);
 
-typedef error_t (*PrngAlgoReseed)(void *context, const uint8_t *input,
+typedef error_t (*PrngAlgoReseed)(void *context, const uint8_t *seed,
    size_t length);
 
 typedef error_t (*PrngAlgoGenerate)(void *context, uint8_t *output,
@@ -1109,6 +1136,24 @@ typedef struct
    HashAlgoFinal final;
    HashAlgoFinalRaw finalRaw;
 } HashAlgo;
+
+
+/**
+ * @brief Common interface for XOF algorithms
+ **/
+
+typedef struct
+{
+   const char_t *name;
+   const uint8_t *oid;
+   size_t oidSize;
+   size_t contextSize;
+   XofAlgoCompute compute;
+   XofAlgoInit init;
+   XofAlgoAbsorb absorb;
+   XofAlgoFinal final;
+   XofAlgoSqueeze squeeze;
+} XofAlgo;
 
 
 /**
