@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.0
+ * @version 2.6.2
  **/
 
 //Switch to the appropriate trace level
@@ -684,7 +684,8 @@ char_t *oidToString(const uint8_t *oid, size_t oidLen, char_t *str,
    if(oidLen > 0)
    {
       //Convert the first 2 bytes
-      n = osSprintf(temp, "%" PRIu8 ".%" PRIu8 "", oid[0] / 40, oid[0] % 40);
+      n = osSprintf(temp, "%" PRIu8 ".%" PRIu8 "", (uint8_t) (oid[0] / 40),
+         (uint8_t) (oid[0] % 40));
 
       //Sanity check
       if(n <= maxStrLen)

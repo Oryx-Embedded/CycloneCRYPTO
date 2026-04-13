@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.0
+ * @version 2.6.2
  **/
 
 //Switch to the appropriate trace level
@@ -141,8 +141,8 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
       //Enable the AES peripheral, by setting the EN bit of the AES_CR register
       AES->CR |= AES_CR_EN;
 
-      //Wait until the CCF flag is set in the AES_SR register
-      while((AES->SR & AES_SR_CCF) == 0)
+      //Wait until the CCF flag is set in the AES_ISR register
+      while((AES->ISR & AES_ISR_CCF) == 0)
       {
       }
 
@@ -180,8 +180,8 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
       AES->DINR = __UNALIGNED_UINT32_READ(input + 8);
       AES->DINR = __UNALIGNED_UINT32_READ(input + 12);
 
-      //Wait until the CCF flag is set in the AES_SR register
-      while((AES->SR & AES_SR_CCF) == 0)
+      //Wait until the CCF flag is set in the AES_ISR register
+      while((AES->ISR & AES_ISR_CCF) == 0)
       {
       }
 
@@ -219,8 +219,8 @@ void aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
       AES->DINR = buffer[2];
       AES->DINR = buffer[3];
 
-      //Wait until the CCF flag is set in the AES_SR register
-      while((AES->SR & AES_SR_CCF) == 0)
+      //Wait until the CCF flag is set in the AES_ISR register
+      while((AES->ISR & AES_ISR_CCF) == 0)
       {
       }
 
@@ -792,9 +792,9 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
    //AES_CR register
    AES->CR |= AES_CR_EN;
 
-   //Wait until the end of computation, indicated by the CCF flag of the AES_SR
+   //Wait until the end of computation, indicated by the CCF flag of the AES_ISR
    //transiting to 1
-   while((AES->SR & AES_SR_CCF) == 0)
+   while((AES->ISR & AES_ISR_CCF) == 0)
    {
    }
 
@@ -823,8 +823,8 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
       AES->DINR = __UNALIGNED_UINT32_READ(a + 8);
       AES->DINR = __UNALIGNED_UINT32_READ(a + 12);
 
-      //Wait until the CCF flag is set in the AES_SR register
-      while((AES->SR & AES_SR_CCF) == 0)
+      //Wait until the CCF flag is set in the AES_ISR register
+      while((AES->ISR & AES_ISR_CCF) == 0)
       {
       }
 
@@ -849,8 +849,8 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
       AES->DINR = buffer[2];
       AES->DINR = buffer[3];
 
-      //Wait until the CCF flag is set in the AES_SR register
-      while((AES->SR & AES_SR_CCF) == 0)
+      //Wait until the CCF flag is set in the AES_ISR register
+      while((AES->ISR & AES_ISR_CCF) == 0)
       {
       }
 
@@ -872,8 +872,8 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
       AES->DINR = __UNALIGNED_UINT32_READ(input + 8);
       AES->DINR = __UNALIGNED_UINT32_READ(input + 12);
 
-      //Wait until the CCF flag is set in the AES_SR register
-      while((AES->SR & AES_SR_CCF) == 0)
+      //Wait until the CCF flag is set in the AES_ISR register
+      while((AES->ISR & AES_ISR_CCF) == 0)
       {
       }
 
@@ -914,8 +914,8 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
       AES->DINR = buffer[2];
       AES->DINR = buffer[3];
 
-      //Wait until the CCF flag is set in the AES_SR register
-      while((AES->SR & AES_SR_CCF) == 0)
+      //Wait until the CCF flag is set in the AES_ISR register
+      while((AES->ISR & AES_ISR_CCF) == 0)
       {
       }
 
@@ -952,9 +952,9 @@ void gcmProcessData(AesContext *context, const uint8_t *iv,
    AES->DINR = htole32(m >> 32);
    AES->DINR = htole32(m);
 
-   //Wait until the end of computation, indicated by the CCF flag of the AES_SR
+   //Wait until the end of computation, indicated by the CCF flag of the AES_ISR
    //transiting to 1
-   while((AES->SR & AES_SR_CCF) == 0)
+   while((AES->ISR & AES_ISR_CCF) == 0)
    {
    }
 
@@ -1169,9 +1169,9 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
    //AES_CR register
    AES->CR |= AES_CR_EN;
 
-   //Wait until the end of computation, indicated by the CCF flag of the AES_SR
+   //Wait until the end of computation, indicated by the CCF flag of the AES_ISR
    //transiting to 1
-   while((AES->SR & AES_SR_CCF) == 0)
+   while((AES->ISR & AES_ISR_CCF) == 0)
    {
    }
 
@@ -1226,8 +1226,8 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
       AES->DINR = LOAD32LE(buffer + 8);
       AES->DINR = LOAD32LE(buffer + 12);
 
-      //Wait until the CCF flag is set in the AES_SR register
-      while((AES->SR & AES_SR_CCF) == 0)
+      //Wait until the CCF flag is set in the AES_ISR register
+      while((AES->ISR & AES_ISR_CCF) == 0)
       {
       }
 
@@ -1248,8 +1248,8 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
       AES->DINR = __UNALIGNED_UINT32_READ(a + 8);
       AES->DINR = __UNALIGNED_UINT32_READ(a + 12);
 
-      //Wait until the CCF flag is set in the AES_SR register
-      while((AES->SR & AES_SR_CCF) == 0)
+      //Wait until the CCF flag is set in the AES_ISR register
+      while((AES->ISR & AES_ISR_CCF) == 0)
       {
       }
 
@@ -1275,8 +1275,8 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
       AES->DINR = __UNALIGNED_UINT32_READ(buffer + 8);
       AES->DINR = __UNALIGNED_UINT32_READ(buffer + 12);
 
-      //Wait until the CCF flag is set in the AES_SR register
-      while((AES->SR & AES_SR_CCF) == 0)
+      //Wait until the CCF flag is set in the AES_ISR register
+      while((AES->ISR & AES_ISR_CCF) == 0)
       {
       }
 
@@ -1298,8 +1298,8 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
       AES->DINR = __UNALIGNED_UINT32_READ(input + 8);
       AES->DINR = __UNALIGNED_UINT32_READ(input + 12);
 
-      //Wait until the CCF flag is set in the AES_SR register
-      while((AES->SR & AES_SR_CCF) == 0)
+      //Wait until the CCF flag is set in the AES_ISR register
+      while((AES->ISR & AES_ISR_CCF) == 0)
       {
       }
 
@@ -1345,8 +1345,8 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
       AES->DINR = __UNALIGNED_UINT32_READ(buffer + 8);
       AES->DINR = __UNALIGNED_UINT32_READ(buffer + 12);
 
-      //Wait until the CCF flag is set in the AES_SR register
-      while((AES->SR & AES_SR_CCF) == 0)
+      //Wait until the CCF flag is set in the AES_ISR register
+      while((AES->ISR & AES_ISR_CCF) == 0)
       {
       }
 
@@ -1373,9 +1373,9 @@ void ccmProcessData(AesContext *context, const uint8_t *b0, const uint8_t *a,
    temp = AES->CR & ~AES_CR_GCMPH;
    AES->CR = temp | AES_CR_GCMPH_FINAL;
 
-   //Wait until the end of computation, indicated by the CCF flag of the AES_SR
+   //Wait until the end of computation, indicated by the CCF flag of the AES_ISR
    //transiting to 1
-   while((AES->SR & AES_SR_CCF) == 0)
+   while((AES->ISR & AES_ISR_CCF) == 0)
    {
    }
 

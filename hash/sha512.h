@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.0
+ * @version 2.6.2
  **/
 
 #ifndef _SHA512_H
@@ -72,9 +72,13 @@ typedef struct
 } Sha512Context;
 
 
+#if (SHA512_SUPPORT == ENABLED)
+
 //SHA-512 related constants
 extern const uint8_t SHA512_OID[9];
 extern const HashAlgo sha512HashAlgo;
+
+#endif
 
 //SHA-512 related functions
 error_t sha512Compute(const void *data, size_t length, uint8_t *digest);

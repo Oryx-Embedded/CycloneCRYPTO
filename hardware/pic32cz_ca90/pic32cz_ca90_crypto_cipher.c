@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.0
+ * @version 2.6.2
  **/
 
 //Switch to the appropriate trace level
@@ -54,7 +54,7 @@
  * @param[out] output Data resulting from the encryption/decryption process
  * @param[in] length Total number of data bytes to be processed
  * @param[in] mode Mode type
- * @param[in] cmd Command type
+ * @param[in] command Command type
  * @return Error code
  **/
 

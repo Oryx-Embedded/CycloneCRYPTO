@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.0
+ * @version 2.6.2
  **/
 
 #ifndef _STM32H5XX_CRYPTO_PKC_H
@@ -47,7 +47,8 @@
 #define PKA_MAX_EOS 640
 
 //PKA operation modes
-#if defined(STM32H523xx) || defined(STM32H562xx) || defined(STM32H563xx)
+#if defined(STM32H523xx) || defined(STM32H562xx) || defined(STM32H563xx) || \
+   defined(STM32H5E4xx) || defined(STM32H5E5xx)
    #define PKA_CR_MODE_ECDSA_VERIFY          0x26
 #else
    #define PKA_CR_MODE_MODULAR_EXP           0x00

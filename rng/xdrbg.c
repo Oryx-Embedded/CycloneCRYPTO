@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.0
+ * @version 2.6.2
  **/
 
 //Switch to the appropriate trace level
@@ -123,7 +123,7 @@ error_t xdrbgInit(XdrbgContext *context, const XofAlgo *xofAlgo)
  * @brief Seed the PRNG state
  * @param[in] context Pointer to the XDRBG context
  * @param[in] seed Seed material
- * @param[in] seedLen Length of the seed material, in bytes
+ * @param[in] length Length of the seed material, in bytes
  * @return Error code
  **/
 
@@ -205,7 +205,7 @@ error_t xdrbgSeedEx(XdrbgContext *context, const uint8_t *seed, size_t seedLen,
  * @brief Reseed the PRNG state
  * @param[in] context Pointer to the XDRBG context
  * @param[in] seed Seed material
- * @param[in] seedLen Length of the seed material, in bytes
+ * @param[in] length Length of the seed material, in bytes
  * @return Error code
  **/
 

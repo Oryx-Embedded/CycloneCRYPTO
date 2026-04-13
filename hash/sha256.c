@@ -30,7 +30,7 @@
  * of an electronic message. Refer to FIPS 180-4 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.0
+ * @version 2.6.2
  **/
 
 //Switch to the appropriate trace level
@@ -76,6 +76,8 @@ static const uint32_t k[64] =
    0x748F82EE, 0x78A5636F, 0x84C87814, 0x8CC70208, 0x90BEFFFA, 0xA4506CEB, 0xBEF9A3F7, 0xC67178F2
 };
 
+#if (SHA256_SUPPORT == ENABLED)
+
 //SHA-256 object identifier (2.16.840.1.101.3.4.2.1)
 const uint8_t SHA256_OID[9] = {0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01};
 
@@ -103,6 +105,8 @@ const HashAlgo sha256HashAlgo =
    (HashAlgoFinalRaw) sha256FinalRaw
 #endif
 };
+
+#endif
 
 
 /**
