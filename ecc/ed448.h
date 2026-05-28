@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 #ifndef _ED448_H
@@ -36,11 +36,11 @@
 #include "ecc/eddsa.h"
 #include "xof/shake.h"
 
-//Length of Ed448 private keys
+//Ed448 private key size
 #define ED448_PRIVATE_KEY_LEN 57
-//Length of Ed448 public keys
+//Ed448 public key size
 #define ED448_PUBLIC_KEY_LEN 57
-//Length of Ed448 signatures
+//Ed448 signature size
 #define ED448_SIGNATURE_LEN 114
 
 //Ed448ph flag

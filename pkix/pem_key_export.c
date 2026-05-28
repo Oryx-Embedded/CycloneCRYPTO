@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 //Switch to the appropriate trace level
@@ -942,18 +942,233 @@ error_t pemExportEddsaPrivateKey(const EddsaPrivateKey *privateKey,
          {
             //Format publicKey field
             error = pkcs8FormatEddsaPublicKey(&privateKey->q, p, &n);
-            //Any error to report?
-            if(error)
-               return error;
 
-            //Update the length of the PrivateKeyInfo structure
-            length += n;
+            //Check status code
+            if(!error)
+            {
+               //Update the length of the PrivateKeyInfo structure
+               length += n;
+            }
          }
       }
 
       //Check status code
       if(!error)
       {
+         //The PrivateKeyInfo structure is encapsulated within a sequence
+         tag.constructed = TRUE;
+         tag.objClass = ASN1_CLASS_UNIVERSAL;
+         tag.objType = ASN1_TYPE_SEQUENCE;
+         tag.length = length;
+
+         //Write the corresponding ASN.1 tag
+         error = asn1InsertHeader(&tag, (uint8_t *) output, &n);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Get the length of the PrivateKeyInfo structure
+         length = tag.totalLength;
+
+         //Unencrypted PKCS #8 private keys are encoded using the "PRIVATE KEY"
+         //label (refer to RFC 7468, section 10)
+         error = pemEncodeFile(output, length, "PRIVATE KEY", output, written);
+      }
+   }
+   else
+   {
+      //Invalid format
+      error = ERROR_INVALID_PARAMETER;
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief Export an ML-DSA public key to PEM format
+ * @param[in] publicKey ML-DSA public key
+ * @param[out] output Buffer where to store the PEM string (optional parameter)
+ * @param[out] written Length of the resulting PEM string
+ * @param[in] format Desired output format (RFC 7468 format only)
+ * @return Error code
+ **/
+
+error_t pemExportMldsaPublicKey(const MldsaPublicKey *publicKey,
+   char_t *output, size_t *written, PemPublicKeyFormat format)
+{
+#if (MLDSA44_SUPPORT == ENABLED || MLDSA65_SUPPORT == ENABLED || \
+   MLDSA87_SUPPORT == ENABLED)
+   error_t error;
+   size_t length;
+
+   //Check parameters
+   if(publicKey == NULL || written == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Invalid ML-DSA parameter set?
+   if(publicKey->level != MLDSA44_SECURITY_LEVEL &&
+      publicKey->level != MLDSA65_SECURITY_LEVEL &&
+      publicKey->level != MLDSA87_SECURITY_LEVEL)
+   {
+      return ERROR_INVALID_KEY;
+   }
+
+   //Check output format
+   if(format == PEM_PUBLIC_KEY_FORMAT_RFC7468 ||
+      format == PEM_PUBLIC_KEY_FORMAT_DEFAULT)
+   {
+      X509SubjectPublicKeyInfo publicKeyInfo;
+
+      //The ASN.1 encoded data of the public key is the SubjectPublicKeyInfo
+      //structure (refer to RFC 7468, section 13)
+      osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
+
+      //ML-DSA offers parameter sets that meet three security levels
+      if(publicKey->level == MLDSA44_SECURITY_LEVEL)
+      {
+         publicKeyInfo.oid.value = MLDSA44_OID;
+         publicKeyInfo.oid.length = sizeof(MLDSA44_OID);
+      }
+      else if(publicKey->level == MLDSA65_SECURITY_LEVEL)
+      {
+         publicKeyInfo.oid.value = MLDSA65_OID;
+         publicKeyInfo.oid.length = sizeof(MLDSA65_OID);
+      }
+      else
+      {
+         publicKeyInfo.oid.value = MLDSA87_OID;
+         publicKeyInfo.oid.length = sizeof(MLDSA87_OID);
+      }
+
+      //Format the SubjectPublicKeyInfo structure
+      error = x509FormatSubjectPublicKeyInfo(&publicKeyInfo, publicKey, NULL,
+         (uint8_t *) output, &length);
+
+      //Check status code
+      if(!error)
+      {
+         //Public keys are encoded using the "PUBLIC KEY" label (see RFC 7468,
+         //section 13)
+         error = pemEncodeFile(output, length, "PUBLIC KEY", output, written);
+      }
+   }
+   else
+   {
+      //Invalid format
+      error = ERROR_INVALID_PARAMETER;
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief Export an ML-DSA private key to PEM format
+ * @param[in] privateKey ML-DSA private key
+ * @param[out] output Buffer where to store the PEM string (optional parameter)
+ * @param[out] written Length of the resulting PEM string
+ * @param[in] format Desired output format (PKCS #8 v1 or v2 format)
+ * @return Error code
+ **/
+
+error_t pemExportMldsaPrivateKey(const MldsaPrivateKey *privateKey,
+   char_t *output, size_t *written, PemPrivateKeyFormat format)
+{
+#if (MLDSA44_SUPPORT == ENABLED || MLDSA65_SUPPORT == ENABLED || \
+   MLDSA87_SUPPORT == ENABLED)
+   error_t error;
+   size_t length;
+
+   //Check parameters
+   if(privateKey == NULL || written == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Invalid ML-DSA parameter set?
+   if(privateKey->level != MLDSA44_SECURITY_LEVEL &&
+      privateKey->level != MLDSA65_SECURITY_LEVEL &&
+      privateKey->level != MLDSA87_SECURITY_LEVEL)
+   {
+      return ERROR_INVALID_KEY;
+   }
+
+   //Check output format
+   if(format == PEM_PRIVATE_KEY_FORMAT_PKCS8 ||
+      format == PEM_PRIVATE_KEY_FORMAT_DEFAULT)
+   {
+      size_t n;
+      uint8_t *p;
+      Asn1Tag tag;
+
+      //Point to the buffer where to write the PrivateKeyInfo structure
+      p = (uint8_t *) output;
+      //Total length of the PrivateKeyInfo structure
+      length = 0;
+
+      //Format Version field
+      error = asn1WriteInt32(PKCS8_VERSION_1, FALSE, p, &n);
+
+      //Check status code
+      if(!error)
+      {
+         X509SubjectPublicKeyInfo publicKeyInfo;
+
+         //Advance data pointer
+         ASN1_INC_POINTER(p, n);
+         length += n;
+
+         //Clear the SubjectPublicKeyInfo structure
+         osMemset(&publicKeyInfo, 0, sizeof(X509SubjectPublicKeyInfo));
+
+         //The PrivateKeyAlgorithm identifies the private-key algorithm
+         if(privateKey->level == MLDSA44_SECURITY_LEVEL)
+         {
+            publicKeyInfo.oid.value = MLDSA44_OID;
+            publicKeyInfo.oid.length = sizeof(MLDSA44_OID);
+         }
+         else if(privateKey->level == MLDSA65_SECURITY_LEVEL)
+         {
+            publicKeyInfo.oid.value = MLDSA65_OID;
+            publicKeyInfo.oid.length = sizeof(MLDSA65_OID);
+         }
+         else
+         {
+            publicKeyInfo.oid.value = MLDSA87_OID;
+            publicKeyInfo.oid.length = sizeof(MLDSA87_OID);
+         }
+
+         //Format PrivateKeyAlgorithm field
+         error = x509FormatAlgoId(&publicKeyInfo, NULL, p, &n);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Advance data pointer
+         ASN1_INC_POINTER(p, n);
+         length += n;
+
+         //Format PrivateKey field
+         error = pkcs8FormatMldsaPrivateKey(privateKey, p, &n);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Update the length of the PrivateKeyInfo structure
+         length += n;
+
          //The PrivateKeyInfo structure is encapsulated within a sequence
          tag.constructed = TRUE;
          tag.objClass = ASN1_CLASS_UNIVERSAL;

@@ -33,7 +33,7 @@
  * - RFC 8954: Online Certificate Status Protocol (OCSP) Nonce Extension
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 //Switch to the appropriate trace level

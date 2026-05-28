@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 #ifndef _ED25519_H
@@ -36,11 +36,11 @@
 #include "ecc/eddsa.h"
 #include "hash/sha512.h"
 
-//Length of Ed25519 private keys
+//Ed25519 private key size
 #define ED25519_PRIVATE_KEY_LEN 32
-//Length of Ed25519 public keys
+//Ed25519 public key size
 #define ED25519_PUBLIC_KEY_LEN 32
-//Length of Ed25519 signatures
+//Ed25519 signature size
 #define ED25519_SIGNATURE_LEN 64
 
 //Ed25519ph flag

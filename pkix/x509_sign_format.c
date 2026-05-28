@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 //Switch to the appropriate trace level
@@ -160,6 +160,33 @@ error_t x509FormatSignatureAlgo(const X509SignAlgoId *signatureAlgo,
    if(signAlgo == X509_SIGN_ALGO_ED448)
    {
       //The parameters must be absent (refer to RFC 8410, section 6)
+      n = 0;
+   }
+   else
+#endif
+#if (X509_MLDSA44_SUPPORT == ENABLED && MLDSA44_SUPPORT == ENABLED)
+   //ML-DSA-44 signature algorithm?
+   if(signAlgo == X509_SIGN_ALGO_MLDSA44)
+   {
+      //The parameters must be absent (refer to RFC 9881, section 3)
+      n = 0;
+   }
+   else
+#endif
+#if (X509_MLDSA65_SUPPORT == ENABLED && MLDSA65_SUPPORT == ENABLED)
+   //ML-DSA-65 signature algorithm?
+   if(signAlgo == X509_SIGN_ALGO_MLDSA65)
+   {
+      //The parameters must be absent (refer to RFC 9881, section 3)
+      n = 0;
+   }
+   else
+#endif
+#if (X509_MLDSA87_SUPPORT == ENABLED && MLDSA87_SUPPORT == ENABLED)
+   //ML-DSA-87 signature algorithm?
+   if(signAlgo == X509_SIGN_ALGO_MLDSA87)
+   {
+      //The parameters must be absent (refer to RFC 9881, section 3)
       n = 0;
    }
    else

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 //Switch to the appropriate trace level
@@ -1222,6 +1222,63 @@ error_t ecMulRegular(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
    osReleaseMutex(&samd51CryptoMutex);
 
    //Return error code
+   return error;
+}
+
+
+/**
+ * @brief Twin multiplication
+ * @param[in] curve Elliptic curve parameters
+ * @param[out] r Resulting point R = d0.S + d1.T
+ * @param[in] d0 An integer d such as 0 <= d0 < p
+ * @param[in] s EC point
+ * @param[in] d1 An integer d such as 0 <= d1 < p
+ * @param[in] t EC point
+ * @return Error code
+ **/
+
+error_t ecTwinMul(const EcCurve *curve, EcPoint3 *r, const uint32_t *d0,
+   const EcPoint3 *s, const uint32_t *d1, const EcPoint3 *t)
+{
+   error_t error;
+   EcPoint3 u;
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   EcState *state;
+#else
+   EcState state[1];
+#endif
+
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   //Allocate working state
+   state = cryptoAllocMem(sizeof(EcState));
+   //Failed to allocate memory?
+   if(state == NULL)
+      return ERROR_OUT_OF_MEMORY;
+#endif
+
+   //Initialize working state
+   osMemset(state, 0, sizeof(EcState));
+   //Save elliptic curve parameters
+   state->curve = curve;
+
+   //Compute d0.S
+   error = ecMulFast(curve, r, d0, s);
+
+   //Check status code
+   if(!error)
+   {
+      //Compute d1.T
+      error = ecMulFast(curve, &u, d1, t);
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Compute d0.S + d1.T
+      ecFullAdd(state, r, r, &u);
+   }
+
+   //Return status code
    return error;
 }
 

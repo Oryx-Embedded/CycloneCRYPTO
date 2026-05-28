@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.6.2"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.6.4"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 6
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 2
+#define CYCLONE_CRYPTO_REV_NUMBER 4
 
 //Static memory allocation
 #ifndef CRYPTO_STATIC_MEM_SUPPORT
@@ -725,6 +725,27 @@
    #error SNTRUP761_SUPPORT parameter is not valid
 #endif
 
+//ML-DSA-44 support
+#ifndef MLDSA44_SUPPORT
+   #define MLDSA44_SUPPORT DISABLED
+#elif (MLDSA44_SUPPORT != ENABLED && MLDSA44_SUPPORT != DISABLED)
+   #error MLDSA44_SUPPORT parameter is not valid
+#endif
+
+//ML-DSA-65 support
+#ifndef MLDSA65_SUPPORT
+   #define MLDSA65_SUPPORT DISABLED
+#elif (MLDSA65_SUPPORT != ENABLED && MLDSA65_SUPPORT != DISABLED)
+   #error MLDSA65_SUPPORT parameter is not valid
+#endif
+
+//ML-DSA-87 support
+#ifndef MLDSA87_SUPPORT
+   #define MLDSA87_SUPPORT DISABLED
+#elif (MLDSA87_SUPPORT != ENABLED && MLDSA87_SUPPORT != DISABLED)
+   #error MLDSA87_SUPPORT parameter is not valid
+#endif
+
 //HKDF support
 #ifndef HKDF_SUPPORT
    #define HKDF_SUPPORT DISABLED
@@ -800,13 +821,6 @@
    #define XDRBG_SUPPORT DISABLED
 #elif (XDRBG_SUPPORT != ENABLED && XDRBG_SUPPORT != DISABLED)
    #error XDRBG_SUPPORT parameter is not valid
-#endif
-
-//Yarrow PRNG support
-#ifndef YARROW_SUPPORT
-   #define YARROW_SUPPORT ENABLED
-#elif (YARROW_SUPPORT != ENABLED && YARROW_SUPPORT != DISABLED)
-   #error YARROW_SUPPORT parameter is not valid
 #endif
 
 //Object identifier support

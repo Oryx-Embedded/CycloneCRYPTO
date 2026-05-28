@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 #ifndef _PKCS8_KEY_FORMAT_H
@@ -33,10 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "pkc/rsa.h"
-#include "pkc/dsa.h"
-#include "ecc/ec.h"
-#include "ecc/eddsa.h"
+#include "pkix/x509_common.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -57,6 +54,9 @@ error_t pkcs8FormatEddsaPrivateKey(const EddsaPrivateKey *privateKey,
    uint8_t *output, size_t *written);
 
 error_t pkcs8FormatEddsaPublicKey(const EddsaPublicKey *publicKey,
+   uint8_t *output, size_t *written);
+
+error_t pkcs8FormatMldsaPrivateKey(const MldsaPrivateKey *privateKey,
    uint8_t *output, size_t *written);
 
 //C++ guard

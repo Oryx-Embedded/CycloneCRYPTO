@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 //Switch to the appropriate trace level
@@ -35,6 +35,7 @@
 #include "core/crypto.h"
 #include "pkix/x509_key_parse.h"
 #include "pkix/x509_sign_verify.h"
+#include "encoding/oid.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -178,6 +179,36 @@ error_t x509VerifySignature(const X509OctetString *tbsData,
          }
          else
 #endif
+#if (X509_MLDSA44_SUPPORT == ENABLED && MLDSA44_SUPPORT == ENABLED)
+         //ML-DSA-44 signature algorithm?
+         if(signAlgo == X509_SIGN_ALGO_MLDSA44)
+         {
+            //Verify ML-DSA-44 signature
+            error = x509VerifyMldsa44Signature(tbsData, publicKeyInfo,
+               signature);
+         }
+         else
+#endif
+#if (X509_MLDSA65_SUPPORT == ENABLED && MLDSA65_SUPPORT == ENABLED)
+         //ML-DSA-65 signature algorithm?
+         if(signAlgo == X509_SIGN_ALGO_MLDSA65)
+         {
+            //Verify ML-DSA-65 signature
+            error = x509VerifyMldsa65Signature(tbsData, publicKeyInfo,
+               signature);
+         }
+         else
+#endif
+#if (X509_MLDSA87_SUPPORT == ENABLED && MLDSA87_SUPPORT == ENABLED)
+         //ML-DSA-87 signature algorithm?
+         if(signAlgo == X509_SIGN_ALGO_MLDSA87)
+         {
+            //Verify ML-DSA-87 signature
+            error = x509VerifyMldsa87Signature(tbsData, publicKeyInfo,
+               signature);
+         }
+         else
+#endif
          //Invalid signature algorithm?
          {
             //Report an error
@@ -213,36 +244,46 @@ error_t x509VerifyRsaSignature(const X509OctetString *tbsData,
    //Initialize RSA public key
    rsaInitPublicKey(&rsaPublicKey);
 
-   //Digest the TBSCertificate structure using the specified hash algorithm
-   error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
-
-   //Check status code
-   if(!error)
+   //Check algorithm identifier
+   if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      RSA_ENCRYPTION_OID) == 0)
    {
-      //Import the RSA public key
-      error = x509ImportRsaPublicKey(&rsaPublicKey, publicKeyInfo);
-   }
+      //Digest the TBSCertificate structure using the specified hash algorithm
+      error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
 
-   //Check status code
-   if(!error)
-   {
-      //Get the length of the modulus, in bits
-      k = mpiGetBitLength(&rsaPublicKey.n);
-
-      //Make sure the modulus is acceptable
-      if(k < X509_MIN_RSA_MODULUS_SIZE || k > X509_MAX_RSA_MODULUS_SIZE)
+      //Check status code
+      if(!error)
       {
-         //Report an error
-         error = ERROR_INVALID_KEY;
+         //Import the RSA public key
+         error = x509ImportRsaPublicKey(&rsaPublicKey, publicKeyInfo);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Get the length of the modulus, in bits
+         k = mpiGetBitLength(&rsaPublicKey.n);
+
+         //Make sure the modulus is acceptable
+         if(k < X509_MIN_RSA_MODULUS_SIZE || k > X509_MAX_RSA_MODULUS_SIZE)
+         {
+            //Report an error
+            error = ERROR_INVALID_KEY;
+         }
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Verify RSA signature (RSASSA-PKCS1-v1_5 signature scheme)
+         error = rsassaPkcs1v15Verify(&rsaPublicKey, hashAlgo, digest,
+            signature->value, signature->length);
       }
    }
-
-   //Check status code
-   if(!error)
+   else
    {
-      //Verify RSA signature (RSASSA-PKCS1-v1_5 signature scheme)
-      error = rsassaPkcs1v15Verify(&rsaPublicKey, hashAlgo, digest,
-         signature->value, signature->length);
+      //Invalid algorithm identifier
+      error = ERROR_WRONG_IDENTIFIER;
    }
 
    //Release previously allocated resources
@@ -281,36 +322,46 @@ error_t x509VerifyRsaPssSignature(const X509OctetString *tbsData,
    //Initialize RSA public key
    rsaInitPublicKey(&rsaPublicKey);
 
-   //Digest the TBSCertificate structure using the specified hash algorithm
-   error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
-
-   //Check status code
-   if(!error)
+   //Check algorithm identifier
+   if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      RSASSA_PSS_OID) == 0)
    {
-      //Import the RSA public key
-      error = x509ImportRsaPublicKey(&rsaPublicKey, publicKeyInfo);
-   }
+      //Digest the TBSCertificate structure using the specified hash algorithm
+      error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
 
-   //Check status code
-   if(!error)
-   {
-      //Get the length of the modulus, in bits
-      k = mpiGetBitLength(&rsaPublicKey.n);
-
-      //Make sure the modulus is acceptable
-      if(k < X509_MIN_RSA_MODULUS_SIZE || k > X509_MAX_RSA_MODULUS_SIZE)
+      //Check status code
+      if(!error)
       {
-         //Report an error
-         error = ERROR_INVALID_KEY;
+         //Import the RSA public key
+         error = x509ImportRsaPublicKey(&rsaPublicKey, publicKeyInfo);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Get the length of the modulus, in bits
+         k = mpiGetBitLength(&rsaPublicKey.n);
+
+         //Make sure the modulus is acceptable
+         if(k < X509_MIN_RSA_MODULUS_SIZE || k > X509_MAX_RSA_MODULUS_SIZE)
+         {
+            //Report an error
+            error = ERROR_INVALID_KEY;
+         }
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Verify RSA signature (RSASSA-PSS signature scheme)
+         error = rsassaPssVerify(&rsaPublicKey, hashAlgo, saltLen, digest,
+            signature->value, signature->length);
       }
    }
-
-   //Check status code
-   if(!error)
+   else
    {
-      //Verify RSA signature (RSASSA-PSS signature scheme)
-      error = rsassaPssVerify(&rsaPublicKey, hashAlgo, saltLen, digest,
-         signature->value, signature->length);
+      //Invalid algorithm identifier
+      error = ERROR_WRONG_IDENTIFIER;
    }
 
    //Release previously allocated resources
@@ -350,44 +401,54 @@ error_t x509VerifyDsaSignature(const X509OctetString *tbsData,
    //Initialize DSA signature
    dsaInitSignature(&dsaSignature);
 
-   //Digest the TBSCertificate structure using the specified hash algorithm
-   error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
-
-   //Check status code
-   if(!error)
+   //Check algorithm identifier
+   if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      DSA_OID) == 0)
    {
-      //Import the DSA public key
-      error = x509ImportDsaPublicKey(&dsaPublicKey, publicKeyInfo);
-   }
+      //Digest the TBSCertificate structure using the specified hash algorithm
+      error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
 
-   //Check status code
-   if(!error)
-   {
-      //Get the length of the prime modulus, in bits
-      k = mpiGetBitLength(&dsaPublicKey.params.p);
-
-      //Make sure the prime modulus is acceptable
-      if(k < X509_MIN_DSA_MODULUS_SIZE || k > X509_MAX_DSA_MODULUS_SIZE)
+      //Check status code
+      if(!error)
       {
-         //Report an error
-         error = ERROR_INVALID_KEY;
+         //Import the DSA public key
+         error = x509ImportDsaPublicKey(&dsaPublicKey, publicKeyInfo);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Get the length of the prime modulus, in bits
+         k = mpiGetBitLength(&dsaPublicKey.params.p);
+
+         //Make sure the prime modulus is acceptable
+         if(k < X509_MIN_DSA_MODULUS_SIZE || k > X509_MAX_DSA_MODULUS_SIZE)
+         {
+            //Report an error
+            error = ERROR_INVALID_KEY;
+         }
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Read the ASN.1 encoded signature
+         error = dsaImportSignature(&dsaSignature, signature->value,
+            signature->length);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Verify DSA signature
+         error = dsaVerifySignature(&dsaPublicKey, digest, hashAlgo->digestSize,
+            &dsaSignature);
       }
    }
-
-   //Check status code
-   if(!error)
+   else
    {
-      //Read the ASN.1 encoded signature
-      error = dsaImportSignature(&dsaSignature, signature->value,
-         signature->length);
-   }
-
-   //Check status code
-   if(!error)
-   {
-      //Verify DSA signature
-      error = dsaVerifySignature(&dsaPublicKey, digest, hashAlgo->digestSize,
-         &dsaSignature);
+      //Invalid algorithm identifier
+      error = ERROR_WRONG_IDENTIFIER;
    }
 
    //Release previously allocated resources
@@ -428,45 +489,55 @@ error_t x509VerifyEcdsaSignature(const X509OctetString *tbsData,
    //Initialize ECDSA signature
    ecdsaInitSignature(&ecdsaSignature);
 
-   //Get the elliptic curve that matches the OID
-   curve = x509GetCurve(publicKeyInfo->ecParams.namedCurve.value,
-      publicKeyInfo->ecParams.namedCurve.length);
-
-   //Make sure the specified elliptic curve is supported
-   if(curve != NULL)
+   //Check algorithm identifier
+   if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      EC_PUBLIC_KEY_OID) == 0)
    {
-      //Digest the TBSCertificate structure using the specified hash algorithm
-      error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
+      //Get the elliptic curve that matches the OID
+      curve = x509GetCurve(publicKeyInfo->ecParams.namedCurve.value,
+         publicKeyInfo->ecParams.namedCurve.length);
 
-      //Check status code
-      if(!error)
+      //Make sure the specified elliptic curve is supported
+      if(curve != NULL)
       {
-         //Import the EC public key
-         error = ecImportPublicKey(&ecPublicKey, curve,
-            publicKeyInfo->ecPublicKey.q.value,
-            publicKeyInfo->ecPublicKey.q.length, EC_PUBLIC_KEY_FORMAT_X963);
+         //Digest the TBSCertificate structure using the specified hash algorithm
+         error = hashAlgo->compute(tbsData->value, tbsData->length, digest);
+
+         //Check status code
+         if(!error)
+         {
+            //Import the EC public key
+            error = ecImportPublicKey(&ecPublicKey, curve,
+               publicKeyInfo->ecPublicKey.q.value,
+               publicKeyInfo->ecPublicKey.q.length, EC_PUBLIC_KEY_FORMAT_X963);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Read the ASN.1 encoded signature
+            error = ecdsaImportSignature(&ecdsaSignature, curve, signature->value,
+               signature->length, ECDSA_SIGNATURE_FORMAT_ASN1);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Verify ECDSA signature
+            error = ecdsaVerifySignature(&ecPublicKey, digest,
+               hashAlgo->digestSize, &ecdsaSignature);
+         }
       }
-
-      //Check status code
-      if(!error)
+      else
       {
-         //Read the ASN.1 encoded signature
-         error = ecdsaImportSignature(&ecdsaSignature, curve, signature->value,
-            signature->length, ECDSA_SIGNATURE_FORMAT_ASN1);
-      }
-
-      //Check status code
-      if(!error)
-      {
-         //Verify ECDSA signature
-         error = ecdsaVerifySignature(&ecPublicKey, digest,
-            hashAlgo->digestSize, &ecdsaSignature);
+         //Invalid elliptic curve
+         error = ERROR_BAD_CERTIFICATE;
       }
    }
    else
    {
-      //Invalid elliptic curve
-      error = ERROR_BAD_CERTIFICATE;
+      //Invalid algorithm identifier
+      error = ERROR_WRONG_IDENTIFIER;
    }
 
    //Release previously allocated resources
@@ -505,26 +576,46 @@ error_t x509VerifySm2Signature(const X509OctetString *tbsData,
    //Initialize SM2 signature
    ecdsaInitSignature(&sm2Signature);
 
-   //Import the EC public key
-   error = ecImportPublicKey(&ecPublicKey, SM2_CURVE,
-      publicKeyInfo->ecPublicKey.q.value,
-      publicKeyInfo->ecPublicKey.q.length, EC_PUBLIC_KEY_FORMAT_X963);
-
-   //Check status code
-   if(!error)
+   //Check algorithm identifier
+   if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      EC_PUBLIC_KEY_OID) == 0)
    {
-      //Read the ASN.1 encoded signature
-      error = ecdsaImportSignature(&sm2Signature, SM2_CURVE, signature->value,
-         signature->length, ECDSA_SIGNATURE_FORMAT_ASN1);
+      //SM2 elliptic curve?
+      if(OID_COMP(publicKeyInfo->ecParams.namedCurve.value,
+         publicKeyInfo->ecParams.namedCurve.length, SM2_OID) == 0)
+      {
+         //Import the EC public key
+         error = ecImportPublicKey(&ecPublicKey, SM2_CURVE,
+            publicKeyInfo->ecPublicKey.q.value,
+            publicKeyInfo->ecPublicKey.q.length, EC_PUBLIC_KEY_FORMAT_X963);
+
+         //Check status code
+         if(!error)
+         {
+            //Read the ASN.1 encoded signature
+            error = ecdsaImportSignature(&sm2Signature, SM2_CURVE, signature->value,
+               signature->length, ECDSA_SIGNATURE_FORMAT_ASN1);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Verify SM2 signature
+            error = sm2VerifySignature(&ecPublicKey, hashAlgo, SM2_DEFAULT_ID,
+               osStrlen(SM2_DEFAULT_ID), tbsData->value, tbsData->length,
+               &sm2Signature);
+         }
+      }
+      else
+      {
+         //Invalid elliptic curve
+         error = ERROR_BAD_CERTIFICATE;
+      }
    }
-
-   //Check status code
-   if(!error)
+   else
    {
-      //Verify SM2 signature
-      error = sm2VerifySignature(&ecPublicKey, hashAlgo, SM2_DEFAULT_ID,
-         osStrlen(SM2_DEFAULT_ID), tbsData->value, tbsData->length,
-         &sm2Signature);
+      //Invalid algorithm identifier
+      error = ERROR_WRONG_IDENTIFIER;
    }
 
    //Release previously allocated resources
@@ -555,26 +646,36 @@ error_t x509VerifyEd25519Signature(const X509OctetString *tbsData,
 #if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
    error_t error;
 
-   //Check the length of the public key
-   if(publicKeyInfo->ecPublicKey.q.length == ED25519_PUBLIC_KEY_LEN)
+   //Check algorithm identifier
+   if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      ED25519_OID) == 0)
    {
-      //Check the length of the EdDSA signature
-      if(signature->length == ED25519_SIGNATURE_LEN)
+      //Check the length of the public key
+      if(publicKeyInfo->ecPublicKey.q.length == ED25519_PUBLIC_KEY_LEN)
       {
-         //Verify signature (PureEdDSA mode)
-         error = ed25519VerifySignature(publicKeyInfo->ecPublicKey.q.value,
-            tbsData->value, tbsData->length, NULL, 0, 0, signature->value);
+         //Check the length of the EdDSA signature
+         if(signature->length == ED25519_SIGNATURE_LEN)
+         {
+            //Verify Ed25519 signature (PureEdDSA mode)
+            error = ed25519VerifySignature(publicKeyInfo->ecPublicKey.q.value,
+               tbsData->value, tbsData->length, NULL, 0, 0, signature->value);
+         }
+         else
+         {
+            //The length of the EdDSA signature is not valid
+            error = ERROR_INVALID_SIGNATURE;
+         }
       }
       else
       {
-         //The length of the EdDSA signature is not valid
-         error = ERROR_INVALID_SIGNATURE;
+         //The length of the Ed25519 public key is not valid
+         error = ERROR_ILLEGAL_PARAMETER;
       }
    }
    else
    {
-      //The length of the Ed25519 public key is not valid
-      error = ERROR_ILLEGAL_PARAMETER;
+      //Invalid algorithm identifier
+      error = ERROR_WRONG_IDENTIFIER;
    }
 
    //Return status code
@@ -601,26 +702,36 @@ error_t x509VerifyEd448Signature(const X509OctetString *tbsData,
 #if (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED)
    error_t error;
 
-   //Check the length of the public key
-   if(publicKeyInfo->ecPublicKey.q.length == ED448_PUBLIC_KEY_LEN)
+   //Check algorithm identifier
+   if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      ED448_OID) == 0)
    {
-      //Check the length of the EdDSA signature
-      if(signature->length == ED448_SIGNATURE_LEN)
+      //Check the length of the public key
+      if(publicKeyInfo->ecPublicKey.q.length == ED448_PUBLIC_KEY_LEN)
       {
-         //Verify signature (PureEdDSA mode)
-         error = ed448VerifySignature(publicKeyInfo->ecPublicKey.q.value,
-            tbsData->value, tbsData->length, NULL, 0, 0, signature->value);
+         //Check the length of the EdDSA signature
+         if(signature->length == ED448_SIGNATURE_LEN)
+         {
+            //Verify Ed448 signature (PureEdDSA mode)
+            error = ed448VerifySignature(publicKeyInfo->ecPublicKey.q.value,
+               tbsData->value, tbsData->length, NULL, 0, 0, signature->value);
+         }
+         else
+         {
+            //The length of the EdDSA signature is not valid
+            error = ERROR_INVALID_SIGNATURE;
+         }
       }
       else
       {
-         //The length of the EdDSA signature is not valid
-         error = ERROR_INVALID_SIGNATURE;
+         //The length of the Ed448 public key is not valid
+         error = ERROR_ILLEGAL_PARAMETER;
       }
    }
    else
    {
-      //The length of the Ed448 public key is not valid
-      error = ERROR_ILLEGAL_PARAMETER;
+      //Invalid algorithm identifier
+      error = ERROR_WRONG_IDENTIFIER;
    }
 
    //Return status code
@@ -630,5 +741,174 @@ error_t x509VerifyEd448Signature(const X509OctetString *tbsData,
    return ERROR_NOT_IMPLEMENTED;
 #endif
 }
+
+
+/**
+ * @brief ML-DSA-44 signature verification
+ * @param[in] tbsData Data whose signature is to be verified
+ * @param[in] publicKeyInfo Issuer's public key
+ * @param[in] signature Signature to be verified
+ * @return Error code
+ **/
+
+error_t x509VerifyMldsa44Signature(const X509OctetString *tbsData,
+   const X509SubjectPublicKeyInfo *publicKeyInfo,
+   const X509OctetString *signature)
+{
+#if (X509_MLDSA44_SUPPORT == ENABLED && MLDSA44_SUPPORT == ENABLED)
+   error_t error;
+
+   //Check algorithm identifier
+   if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      MLDSA44_OID) == 0)
+   {
+      //Check the length of the public key
+      if(publicKeyInfo->mldsaPublicKey.pk.length == MLDSA44_PUBLIC_KEY_LEN)
+      {
+         //Check the length of the ML-DSA-44 signature
+         if(signature->length == MLDSA44_SIGNATURE_LEN)
+         {
+            //Verify ML-DSA-44 signature
+            error = mldsa44VerifySignature(publicKeyInfo->mldsaPublicKey.pk.value,
+               tbsData->value, tbsData->length, NULL, 0, signature->value);
+         }
+         else
+         {
+            //The length of the ML-DSA-44 signature is not valid
+            error = ERROR_INVALID_SIGNATURE;
+         }
+      }
+      else
+      {
+         //The length of the ML-DSA-44 public key is not valid
+         error = ERROR_ILLEGAL_PARAMETER;
+      }
+   }
+   else
+   {
+      //Invalid algorithm identifier
+      error = ERROR_WRONG_IDENTIFIER;
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief ML-DSA-65 signature verification
+ * @param[in] tbsData Data whose signature is to be verified
+ * @param[in] publicKeyInfo Issuer's public key
+ * @param[in] signature Signature to be verified
+ * @return Error code
+ **/
+
+error_t x509VerifyMldsa65Signature(const X509OctetString *tbsData,
+   const X509SubjectPublicKeyInfo *publicKeyInfo,
+   const X509OctetString *signature)
+{
+#if (X509_MLDSA65_SUPPORT == ENABLED && MLDSA65_SUPPORT == ENABLED)
+   error_t error;
+
+   //Check algorithm identifier
+   if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      MLDSA65_OID) == 0)
+   {
+      //Check the length of the public key
+      if(publicKeyInfo->mldsaPublicKey.pk.length == MLDSA65_PUBLIC_KEY_LEN)
+      {
+         //Check the length of the ML-DSA-65 signature
+         if(signature->length == MLDSA65_SIGNATURE_LEN)
+         {
+            //Verify ML-DSA-65 signature
+            error = mldsa65VerifySignature(publicKeyInfo->mldsaPublicKey.pk.value,
+               tbsData->value, tbsData->length, NULL, 0, signature->value);
+         }
+         else
+         {
+            //The length of the ML-DSA-65 signature is not valid
+            error = ERROR_INVALID_SIGNATURE;
+         }
+      }
+      else
+      {
+         //The length of the ML-DSA-65 public key is not valid
+         error = ERROR_ILLEGAL_PARAMETER;
+      }
+   }
+   else
+   {
+      //Invalid algorithm identifier
+      error = ERROR_WRONG_IDENTIFIER;
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief ML-DSA-87 signature verification
+ * @param[in] tbsData Data whose signature is to be verified
+ * @param[in] publicKeyInfo Issuer's public key
+ * @param[in] signature Signature to be verified
+ * @return Error code
+ **/
+
+error_t x509VerifyMldsa87Signature(const X509OctetString *tbsData,
+   const X509SubjectPublicKeyInfo *publicKeyInfo,
+   const X509OctetString *signature)
+{
+#if (X509_MLDSA87_SUPPORT == ENABLED && MLDSA87_SUPPORT == ENABLED)
+   error_t error;
+
+   //Check algorithm identifier
+   if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      MLDSA87_OID) == 0)
+   {
+      //Check the length of the public key
+      if(publicKeyInfo->mldsaPublicKey.pk.length == MLDSA87_PUBLIC_KEY_LEN)
+      {
+         //Check the length of the ML-DSA-87 signature
+         if(signature->length == MLDSA87_SIGNATURE_LEN)
+         {
+            //Verify ML-DSA-87 signature
+            error = mldsa87VerifySignature(publicKeyInfo->mldsaPublicKey.pk.value,
+               tbsData->value, tbsData->length, NULL, 0, signature->value);
+         }
+         else
+         {
+            //The length of the ML-DSA-87 signature is not valid
+            error = ERROR_INVALID_SIGNATURE;
+         }
+      }
+      else
+      {
+         //The length of the ML-DSA-87 public key is not valid
+         error = ERROR_ILLEGAL_PARAMETER;
+      }
+   }
+   else
+   {
+      //Invalid algorithm identifier
+      error = ERROR_WRONG_IDENTIFIER;
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
 
 #endif

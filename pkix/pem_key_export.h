@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 #ifndef _PEM_KEY_EXPORT_H
@@ -34,10 +34,7 @@
 //Dependencies
 #include "core/crypto.h"
 #include "pkix/pem_common.h"
-#include "pkc/rsa.h"
-#include "pkc/dsa.h"
-#include "ecc/ec.h"
-#include "ecc/eddsa.h"
+#include "pkix/x509_common.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -100,6 +97,12 @@ error_t pemExportEddsaPublicKey(const EddsaPublicKey *publicKey,
    char_t *output, size_t *written, PemPublicKeyFormat format);
 
 error_t pemExportEddsaPrivateKey(const EddsaPrivateKey *privateKey,
+   char_t *output, size_t *written, PemPrivateKeyFormat format);
+
+error_t pemExportMldsaPublicKey(const MldsaPublicKey *publicKey,
+   char_t *output, size_t *written, PemPublicKeyFormat format);
+
+error_t pemExportMldsaPrivateKey(const MldsaPrivateKey *privateKey,
    char_t *output, size_t *written, PemPrivateKeyFormat format);
 
 //C++ guard

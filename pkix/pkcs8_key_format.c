@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 //Switch to the appropriate trace level
@@ -271,6 +271,55 @@ error_t pkcs8FormatEddsaPublicKey(const EddsaPublicKey *publicKey,
       tag.length = n + 1;
 
       //Write the corresponding ASN.1 tag
+      error = asn1InsertHeader(&tag, output, &n);
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Total number of bytes that have been written
+      *written = tag.totalLength;
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief Format an ML-DSA private key
+ * @param[in] privateKey ML-DSA private key
+ * @param[out] output Buffer where to format the ASN.1 structure
+ * @param[out] written Length of the resulting ASN.1 structure
+ * @return Error code
+ **/
+
+error_t pkcs8FormatMldsaPrivateKey(const MldsaPrivateKey *privateKey,
+   uint8_t *output, size_t *written)
+{
+#if (MLDSA44_SUPPORT == ENABLED || MLDSA65_SUPPORT == ENABLED || \
+   MLDSA87_SUPPORT == ENABLED)
+   error_t error;
+   size_t n;
+   Asn1Tag tag;
+
+   //Export the ML-DSA private key to ASN.1 format
+   error = x509ExportMldsaPrivateKey(privateKey, output, &n);
+
+   //Check status code
+   if(!error)
+   {
+      //The ML-DSA-PrivateKey structure is encapsulated within an octet string
+      tag.constructed = FALSE;
+      tag.objClass = ASN1_CLASS_UNIVERSAL;
+      tag.objType = ASN1_TYPE_OCTET_STRING;
+      tag.length = n;
+
+      //Write PrivateKey structure
       error = asn1InsertHeader(&tag, output, &n);
    }
 

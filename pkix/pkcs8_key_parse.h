@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 #ifndef _PKCS8_KEY_PARSE_H
@@ -101,6 +101,27 @@ typedef struct
 
 
 /**
+ * @brief ML-DSA private key
+ **/
+
+typedef struct
+{
+   X509OctetString seed;
+   X509OctetString expandedKey;
+} Pkcs8MldsaPrivateKey;
+
+
+/**
+ * @brief ML-DSA public key
+ **/
+
+typedef struct
+{
+   X509OctetString pk;
+} Pkcs8MldsaPublicKey;
+
+
+/**
  * @brief Private key information
  **/
 
@@ -124,6 +145,11 @@ typedef struct
 #if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
    Pkcs8EddsaPrivateKey eddsaPrivateKey;
    Pkcs8EddsaPublicKey eddsaPublicKey;
+#endif
+#if (MLDSA44_SUPPORT == ENABLED || MLDSA65_SUPPORT == ENABLED || \
+   MLDSA87_SUPPORT == ENABLED)
+   Pkcs8MldsaPrivateKey mldsaPrivateKey;
+   Pkcs8MldsaPublicKey mldsaPublicKey;
 #endif
 } Pkcs8PrivateKeyInfo;
 
@@ -166,6 +192,9 @@ error_t pkcs8ParseEddsaPrivateKey(const uint8_t *data, size_t length,
 error_t pkcs8ParseEddsaPublicKey(const uint8_t *data, size_t length,
    Pkcs8EddsaPublicKey *eddsaPublicKey);
 
+error_t pkcs8ParseMldsaPrivateKey(const uint8_t *data, size_t length,
+   Pkcs8MldsaPrivateKey *mldsaPrivateKey);
+
 error_t pkcs8ParseEncryptedPrivateKeyInfo(const uint8_t *data, size_t length,
    Pkcs8EncryptedPrivateKeyInfo *encryptedPrivateKeyInfo);
 
@@ -182,6 +211,9 @@ error_t pkcs8ImportEcPrivateKey(EcPrivateKey *privateKey,
    const Pkcs8PrivateKeyInfo *privateKeyInfo);
 
 error_t pkcs8ImportEddsaPrivateKey(EddsaPrivateKey *privateKey,
+   const Pkcs8PrivateKeyInfo *privateKeyInfo);
+
+error_t pkcs8ImportMldsaPrivateKey(MldsaPrivateKey *privateKey,
    const Pkcs8PrivateKeyInfo *privateKeyInfo);
 
 //C++ guard

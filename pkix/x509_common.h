@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 #ifndef _X509_COMMON_H
@@ -38,6 +38,7 @@
 #include "pkc/dsa.h"
 #include "ecc/ecdsa.h"
 #include "ecc/eddsa.h"
+#include "pqc/mldsa.h"
 #include "date_time.h"
 
 //Signature generation/verification callback functions
@@ -47,32 +48,74 @@
    #error X509_SIGN_CALLBACK_SUPPORT parameter is not valid
 #endif
 
-//RSA certificate support
+//RSA signature support
 #ifndef X509_RSA_SUPPORT
    #define X509_RSA_SUPPORT ENABLED
 #elif (X509_RSA_SUPPORT != ENABLED && X509_RSA_SUPPORT != DISABLED)
    #error X509_RSA_SUPPORT parameter is not valid
 #endif
 
-//RSA-PSS certificate support
+//RSA-PSS signature support
 #ifndef X509_RSA_PSS_SUPPORT
    #define X509_RSA_PSS_SUPPORT DISABLED
 #elif (X509_RSA_PSS_SUPPORT != ENABLED && X509_RSA_PSS_SUPPORT != DISABLED)
    #error X509_RSA_PSS_SUPPORT parameter is not valid
 #endif
 
-//DSA certificate support
+//DSA signature support
 #ifndef X509_DSA_SUPPORT
    #define X509_DSA_SUPPORT DISABLED
 #elif (X509_DSA_SUPPORT != ENABLED && X509_DSA_SUPPORT != DISABLED)
    #error X509_DSA_SUPPORT parameter is not valid
 #endif
 
-//ECDSA certificate support
+//ECDSA signature support
 #ifndef X509_ECDSA_SUPPORT
    #define X509_ECDSA_SUPPORT ENABLED
 #elif (X509_ECDSA_SUPPORT != ENABLED && X509_ECDSA_SUPPORT != DISABLED)
    #error X509_ECDSA_SUPPORT parameter is not valid
+#endif
+
+//SM2 signature support
+#ifndef X509_SM2_SUPPORT
+   #define X509_SM2_SUPPORT DISABLED
+#elif (X509_SM2_SUPPORT != ENABLED && X509_SM2_SUPPORT != DISABLED)
+   #error X509_SM2_SUPPORT parameter is not valid
+#endif
+
+//Ed25519 signature support
+#ifndef X509_ED25519_SUPPORT
+   #define X509_ED25519_SUPPORT DISABLED
+#elif (X509_ED25519_SUPPORT != ENABLED && X509_ED25519_SUPPORT != DISABLED)
+   #error X509_ED25519_SUPPORT parameter is not valid
+#endif
+
+//Ed448 signature support
+#ifndef X509_ED448_SUPPORT
+   #define X509_ED448_SUPPORT DISABLED
+#elif (X509_ED448_SUPPORT != ENABLED && X509_ED448_SUPPORT != DISABLED)
+   #error X509_ED448_SUPPORT parameter is not valid
+#endif
+
+//ML-DSA-44 signature support
+#ifndef X509_MLDSA44_SUPPORT
+   #define X509_MLDSA44_SUPPORT DISABLED
+#elif (X509_MLDSA44_SUPPORT != ENABLED && X509_MLDSA44_SUPPORT != DISABLED)
+   #error X509_MLDSA44_SUPPORT parameter is not valid
+#endif
+
+//ML-DSA-65 signature support
+#ifndef X509_MLDSA65_SUPPORT
+   #define X509_MLDSA65_SUPPORT DISABLED
+#elif (X509_MLDSA65_SUPPORT != ENABLED && X509_MLDSA65_SUPPORT != DISABLED)
+   #error X509_MLDSA65_SUPPORT parameter is not valid
+#endif
+
+//ML-DSA-87 signature support
+#ifndef X509_MLDSA87_SUPPORT
+   #define X509_MLDSA87_SUPPORT DISABLED
+#elif (X509_MLDSA87_SUPPORT != ENABLED && X509_MLDSA87_SUPPORT != DISABLED)
+   #error X509_MLDSA87_SUPPORT parameter is not valid
 #endif
 
 //MD5 hash support (insecure)
@@ -361,27 +404,6 @@
    #error X509_FRP256V1_SUPPORT parameter is not valid
 #endif
 
-//SM2 elliptic curve support
-#ifndef X509_SM2_SUPPORT
-   #define X509_SM2_SUPPORT DISABLED
-#elif (X509_SM2_SUPPORT != ENABLED && X509_SM2_SUPPORT != DISABLED)
-   #error X509_SM2_SUPPORT parameter is not valid
-#endif
-
-//Ed25519 elliptic curve support
-#ifndef X509_ED25519_SUPPORT
-   #define X509_ED25519_SUPPORT DISABLED
-#elif (X509_ED25519_SUPPORT != ENABLED && X509_ED25519_SUPPORT != DISABLED)
-   #error X509_ED25519_SUPPORT parameter is not valid
-#endif
-
-//Ed448 elliptic curve support
-#ifndef X509_ED448_SUPPORT
-   #define X509_ED448_SUPPORT DISABLED
-#elif (X509_ED448_SUPPORT != ENABLED && X509_ED448_SUPPORT != DISABLED)
-   #error X509_ED448_SUPPORT parameter is not valid
-#endif
-
 //Minimum acceptable size for RSA modulus
 #ifndef X509_MIN_RSA_MODULUS_SIZE
    #define X509_MIN_RSA_MODULUS_SIZE 1024
@@ -642,7 +664,10 @@ typedef enum
    X509_KEY_TYPE_X25519  = 6,
    X509_KEY_TYPE_ED25519 = 7,
    X509_KEY_TYPE_X448    = 8,
-   X509_KEY_TYPE_ED448   = 9
+   X509_KEY_TYPE_ED448   = 9,
+   X509_KEY_TYPE_MLDSA44 = 10,
+   X509_KEY_TYPE_MLDSA65 = 11,
+   X509_KEY_TYPE_MLDSA87 = 12
 } X509KeyType;
 
 
@@ -659,7 +684,10 @@ typedef enum
    X509_SIGN_ALGO_ECDSA   = 4,
    X509_SIGN_ALGO_SM2     = 5,
    X509_SIGN_ALGO_ED25519 = 6,
-   X509_SIGN_ALGO_ED448   = 7
+   X509_SIGN_ALGO_ED448   = 7,
+   X509_SIGN_ALGO_MLDSA44 = 8,
+   X509_SIGN_ALGO_MLDSA65 = 9,
+   X509_SIGN_ALGO_MLDSA87 = 10
 } X509SignatureAlgo;
 
 
@@ -833,6 +861,16 @@ typedef struct
 
 
 /**
+ * @brief ML-DSA public key
+ **/
+
+typedef struct
+{
+   X509OctetString pk;
+} X509MldsaPublicKey;
+
+
+/**
  * @brief Subject Public Key Information extension
  **/
 
@@ -848,9 +886,14 @@ typedef struct
    X509DsaParameters dsaParams;
    X509DsaPublicKey dsaPublicKey;
 #endif
-#if (EC_SUPPORT == ENABLED || ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
+#if (EC_SUPPORT == ENABLED || ED25519_SUPPORT == ENABLED || \
+   ED448_SUPPORT == ENABLED)
    X509EcParameters ecParams;
    X509EcPublicKey ecPublicKey;
+#endif
+#if (MLDSA44_SUPPORT == ENABLED || MLDSA65_SUPPORT == ENABLED || \
+   MLDSA87_SUPPORT == ENABLED)
+   X509MldsaPublicKey mldsaPublicKey;
 #endif
 } X509SubjectPublicKeyInfo;
 

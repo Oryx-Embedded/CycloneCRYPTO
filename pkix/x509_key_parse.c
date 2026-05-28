@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 //Switch to the appropriate trace level
@@ -132,7 +132,8 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
       OID_COMP(oid, oidLen, RSASSA_PSS_OID) == 0)
    {
       //Read RSAPublicKey structure
-      error = x509ParseRsaPublicKey(data, length, &publicKeyInfo->rsaPublicKey);
+      error = x509ParseRsaPublicKey(data, length,
+         &publicKeyInfo->rsaPublicKey);
    }
    else
 #endif
@@ -141,7 +142,8 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
    if(OID_COMP(oid, oidLen, DSA_OID) == 0)
    {
       //Read DSAPublicKey structure
-      error = x509ParseDsaPublicKey(data, length, &publicKeyInfo->dsaPublicKey);
+      error = x509ParseDsaPublicKey(data, length,
+         &publicKeyInfo->dsaPublicKey);
    }
    else
 #endif
@@ -150,7 +152,8 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
    if(OID_COMP(oid, oidLen, EC_PUBLIC_KEY_OID) == 0)
    {
       //Read ECPublicKey structure
-      error = x509ParseEcPublicKey(data, length, &publicKeyInfo->ecPublicKey);
+      error = x509ParseEcPublicKey(data, length,
+         &publicKeyInfo->ecPublicKey);
    }
    else
 #endif
@@ -160,7 +163,8 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
       OID_COMP(oid, oidLen, ED25519_OID) == 0)
    {
       //Read ECPublicKey structure
-      error = x509ParseEcPublicKey(data, length, &publicKeyInfo->ecPublicKey);
+      error = x509ParseEcPublicKey(data, length,
+         &publicKeyInfo->ecPublicKey);
    }
    else
 #endif
@@ -170,7 +174,38 @@ error_t x509ParseSubjectPublicKeyInfo(const uint8_t *data, size_t length,
       OID_COMP(oid, oidLen, ED448_OID) == 0)
    {
       //Read ECPublicKey structure
-      error = x509ParseEcPublicKey(data, length, &publicKeyInfo->ecPublicKey);
+      error = x509ParseEcPublicKey(data, length,
+         &publicKeyInfo->ecPublicKey);
+   }
+   else
+#endif
+#if (MLDSA44_SUPPORT == ENABLED)
+   //ML-DSA-44 algorithm identifier?
+   if(OID_COMP(oid, oidLen, MLDSA44_OID) == 0)
+   {
+      //Read ML-DSA-44-PublicKey structure
+      error = x509ParseMldsaPublicKey(data, length,
+         &publicKeyInfo->mldsaPublicKey);
+   }
+   else
+#endif
+#if (MLDSA65_SUPPORT == ENABLED)
+   //ML-DSA-65 algorithm identifier?
+   if(OID_COMP(oid, oidLen, MLDSA65_OID) == 0)
+   {
+      //Read ML-DSA-65-PublicKey structure
+      error = x509ParseMldsaPublicKey(data, length,
+         &publicKeyInfo->mldsaPublicKey);
+   }
+   else
+#endif
+#if (MLDSA87_SUPPORT == ENABLED)
+   //ML-DSA-87 algorithm identifier?
+   if(OID_COMP(oid, oidLen, MLDSA87_OID) == 0)
+   {
+      //Read ML-DSA-87-PublicKey structure
+      error = x509ParseMldsaPublicKey(data, length,
+         &publicKeyInfo->mldsaPublicKey);
    }
    else
 #endif
@@ -283,6 +318,36 @@ error_t x509ParseAlgoId(const uint8_t *data, size_t length,
    {
       //For all of the OIDs, the parameters must be absent (refer to RFC 8410,
       //section 3)
+      error = NO_ERROR;
+   }
+   else
+#endif
+#if (MLDSA44_SUPPORT == ENABLED)
+   //ML-DSA-44 algorithm identifier?
+   if(!asn1CheckOid(&tag, MLDSA44_OID, sizeof(MLDSA44_OID)))
+   {
+      //The contents of the parameters component must be absent (refer to
+      //RFC 9881, section 2)
+      error = NO_ERROR;
+   }
+   else
+#endif
+#if (MLDSA65_SUPPORT == ENABLED)
+   //ML-DSA-65 algorithm identifier?
+   if(!asn1CheckOid(&tag, MLDSA65_OID, sizeof(MLDSA65_OID)))
+   {
+      //The contents of the parameters component must be absent (refer to
+      //RFC 9881, section 2)
+      error = NO_ERROR;
+   }
+   else
+#endif
+#if (MLDSA87_SUPPORT == ENABLED)
+   //ML-DSA-87 algorithm identifier?
+   if(!asn1CheckOid(&tag, MLDSA87_OID, sizeof(MLDSA87_OID)))
+   {
+      //The contents of the parameters component must be absent (refer to
+      //RFC 9881, section 2)
       error = NO_ERROR;
    }
    else
@@ -547,6 +612,38 @@ error_t x509ParseEcParameters(const uint8_t *data, size_t length,
    //identifier
    ecParams->namedCurve.value = tag.value;
    ecParams->namedCurve.length = tag.length;
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Parse ML-DSA-PublicKey structure
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] mldsaPublicKey Information resulting from the parsing process
+ * @return Error code
+ **/
+
+
+error_t x509ParseMldsaPublicKey(const uint8_t *data, size_t length,
+   X509MldsaPublicKey *mldsaPublicKey)
+{
+   //Debug message
+   TRACE_DEBUG("      Parsing ML-DSA-PublicKey...\r\n");
+
+   //Make sure the ML-DSA public key is valid
+   if(length != MLDSA44_PUBLIC_KEY_LEN &&
+      length != MLDSA65_PUBLIC_KEY_LEN &&
+      length != MLDSA87_PUBLIC_KEY_LEN)
+   {
+      return ERROR_BAD_CERTIFICATE;
+   }
+
+   //Save the ML-DSA public key
+   mldsaPublicKey->pk.value = data;
+   mldsaPublicKey->pk.length = length;
 
    //Successful processing
    return NO_ERROR;
@@ -819,6 +916,75 @@ error_t x509ImportEddsaPublicKey(EddsaPublicKey *publicKey,
       //Dump EdDSA public key
       TRACE_DEBUG("EdDSA public key:\r\n");
       TRACE_DEBUG_ARRAY("  ", publicKey->q, publicKeyInfo->ecPublicKey.q.length);
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief Import an ML-DSA public key
+ * @param[out] publicKey ML-DSA public key
+ * @param[in] publicKeyInfo Public key information
+ * @return Error code
+ **/
+
+error_t x509ImportMldsaPublicKey(MldsaPublicKey *publicKey,
+   const X509SubjectPublicKeyInfo *publicKeyInfo)
+{
+#if (MLDSA44_SUPPORT == ENABLED || MLDSA65_SUPPORT == ENABLED || \
+   MLDSA87_SUPPORT == ENABLED)
+   error_t error;
+   uint_t level;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Check algorithm identifier
+   if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      MLDSA44_OID) == 0)
+   {
+      //ML-DSA-44
+      level = MLDSA44_SECURITY_LEVEL;
+   }
+   else if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      MLDSA65_OID) == 0)
+   {
+      //ML-DSA-65
+      level = MLDSA65_SECURITY_LEVEL;
+   }
+   else if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
+      MLDSA87_OID) == 0)
+   {
+      //ML-DSA-87
+      level = MLDSA87_SECURITY_LEVEL;
+   }
+   else
+   {
+      //Invalid algorithm identifier
+      error = ERROR_WRONG_IDENTIFIER;
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Read the ML-DSA public key
+      error = mldsaImportPublicKey(publicKey, level,
+         publicKeyInfo->mldsaPublicKey.pk.value,
+         publicKeyInfo->mldsaPublicKey.pk.length);
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Dump ML-DSA public key
+      TRACE_DEBUG("ML-DSA public key:\r\n");
+      TRACE_DEBUG_ARRAY("  ", publicKey->pk, publicKeyInfo->mldsaPublicKey.pk.length);
    }
 
    //Return status code

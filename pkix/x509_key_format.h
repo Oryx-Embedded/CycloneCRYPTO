@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 #ifndef _X509_KEY_FORMAT_H
@@ -65,6 +65,9 @@ error_t x509FormatEcPublicKey(const X509EcPublicKey *ecPublicKey,
 error_t x509FormatEcParameters(const X509EcParameters *ecParams,
    uint8_t *output, size_t *written);
 
+error_t x509FormatMldsaPublicKey(const X509MldsaPublicKey *mldsaPublicKey,
+   uint8_t *output, size_t *written);
+
 error_t x509ExportRsaPublicKey(const RsaPublicKey *publicKey,
    uint8_t *output, size_t *written);
 
@@ -91,6 +94,9 @@ error_t x509ExportEcParameters(const EcCurve *curve, uint8_t *output,
    size_t *written);
 
 error_t x509ExportEddsaPrivateKey(const EddsaPrivateKey *privateKey,
+   uint8_t *output, size_t *written);
+
+error_t x509ExportMldsaPrivateKey(const MldsaPrivateKey *privateKey,
    uint8_t *output, size_t *written);
 
 //C++ guard

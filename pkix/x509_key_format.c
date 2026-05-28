@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 //Switch to the appropriate trace level
@@ -245,6 +245,36 @@ error_t x509FormatAlgoId(const X509SubjectPublicKeyInfo *publicKeyInfo,
    }
    else
 #endif
+#if (MLDSA44_SUPPORT == ENABLED)
+   //ML-DSA-44 algorithm identifier?
+   if(OID_COMP(oid, oidLen, MLDSA44_OID) == 0)
+   {
+      //The contents of the parameters component must be absent (refer to
+      //RFC 9881, section 2)
+      n = 0;
+   }
+   else
+#endif
+#if (MLDSA65_SUPPORT == ENABLED)
+   //ML-DSA-65 algorithm identifier?
+   if(OID_COMP(oid, oidLen, MLDSA65_OID) == 0)
+   {
+      //The contents of the parameters component must be absent (refer to
+      //RFC 9881, section 2)
+      n = 0;
+   }
+   else
+#endif
+#if (MLDSA87_SUPPORT == ENABLED)
+   //ML-DSA-87 algorithm identifier?
+   if(OID_COMP(oid, oidLen, MLDSA87_OID) == 0)
+   {
+      //The contents of the parameters component must be absent (refer to
+      //RFC 9881, section 2)
+      n = 0;
+   }
+   else
+#endif
    //Unknown algorithm identifier?
    {
       //Report an error
@@ -405,6 +435,60 @@ error_t x509FormatSubjectPublicKey(const X509SubjectPublicKeyInfo *publicKeyInfo
       {
          //The SubjectPublicKey contains the byte stream of the public key
          error = x509FormatEcPublicKey(&publicKeyInfo->ecPublicKey, p, &n);
+      }
+   }
+   else
+#endif
+#if (MLDSA44_SUPPORT == ENABLED)
+   //ML-DSA-44 algorithm identifier?
+   if(OID_COMP(oid, oidLen, MLDSA44_OID) == 0)
+   {
+      //Valid ML-DSA public key?
+      if(publicKey != NULL)
+      {
+         //Export the ML-DSA public key
+         error = mldsaExportPublicKey(publicKey, p, &n);
+      }
+      else
+      {
+         //The SubjectPublicKey contains the byte stream of the public key
+         error = x509FormatMldsaPublicKey(&publicKeyInfo->mldsaPublicKey, p, &n);
+      }
+   }
+   else
+#endif
+#if (MLDSA65_SUPPORT == ENABLED)
+   //ML-DSA-65 algorithm identifier?
+   if(OID_COMP(oid, oidLen, MLDSA65_OID) == 0)
+   {
+      //Valid ML-DSA public key?
+      if(publicKey != NULL)
+      {
+         //Export the ML-DSA public key
+         error = mldsaExportPublicKey(publicKey, p, &n);
+      }
+      else
+      {
+         //The SubjectPublicKey contains the byte stream of the public key
+         error = x509FormatMldsaPublicKey(&publicKeyInfo->mldsaPublicKey, p, &n);
+      }
+   }
+   else
+#endif
+#if (MLDSA87_SUPPORT == ENABLED)
+   //ML-DSA-87 algorithm identifier?
+   if(OID_COMP(oid, oidLen, MLDSA87_OID) == 0)
+   {
+      //Valid ML-DSA public key?
+      if(publicKey != NULL)
+      {
+         //Export the ML-DSA public key
+         error = mldsaExportPublicKey(publicKey, p, &n);
+      }
+      else
+      {
+         //The SubjectPublicKey contains the byte stream of the public key
+         error = x509FormatMldsaPublicKey(&publicKeyInfo->mldsaPublicKey, p, &n);
       }
    }
    else
@@ -715,6 +799,34 @@ error_t x509FormatEcParameters(const X509EcParameters *ecParams,
 
    //Total number of bytes that have been written
    *written = n;
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Format ML-DSA-PublicKey structure
+ * @param[in] mldsaPublicKey Pointer to the ML-DSA public key
+ * @param[out] output Buffer where to format the ASN.1 structure
+ * @param[out] written Length of the resulting ASN.1 structure
+ * @return Error code
+ **/
+
+
+error_t x509FormatMldsaPublicKey(const X509MldsaPublicKey *mldsaPublicKey,
+   uint8_t *output, size_t *written)
+{
+   //If the output parameter is NULL, then the function calculates the length
+   //of the octet string without copying any data
+   if(output != NULL)
+   {
+      //Copy the ML-DSA public key
+      osMemcpy(output, mldsaPublicKey->pk.value, mldsaPublicKey->pk.length);
+   }
+
+   //Total number of bytes that have been written
+   *written = mldsaPublicKey->pk.length;
 
    //Successful processing
    return NO_ERROR;
@@ -1333,6 +1445,158 @@ error_t x509ExportEddsaPrivateKey(const EddsaPrivateKey *privateKey,
 
    //Return status code
    return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief Export an ML-DSA private key to ASN.1 format
+ * @param[in] privateKey Pointer to the ML-DSA private key
+ * @param[out] output Buffer where to store the ASN.1 structure
+ * @param[out] written Length of the resulting ASN.1 structure
+ * @return Error code
+ **/
+
+error_t x509ExportMldsaPrivateKey(const MldsaPrivateKey *privateKey,
+   uint8_t *output, size_t *written)
+{
+#if (MLDSA44_SUPPORT == ENABLED || MLDSA65_SUPPORT == ENABLED || \
+   MLDSA87_SUPPORT == ENABLED)
+   error_t error;
+   size_t n;
+   size_t length;
+   uint8_t *p;
+   Asn1Tag tag;
+
+   //The CHOICE allows three representations of the private key
+   if(privateKey->seed != NULL &&
+      privateKey->sk == NULL)
+   {
+      //The seed format contains just the 32-byte seed value from which both
+      //the expanded private key and public key can be derived
+      error = mldsaExportSeed(privateKey, output, &n);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //Implicit tagging shall be used to encode the seed
+      tag.constructed = FALSE;
+      tag.objClass = ASN1_CLASS_CONTEXT_SPECIFIC;
+      tag.objType = 0;
+      tag.length = n;
+
+      //Write the corresponding ASN.1 tag
+      error = asn1InsertHeader(&tag, output, &n);
+      //Any error to report?
+      if(error)
+         return error;
+   }
+   else if(privateKey->seed == NULL &&
+      privateKey->sk != NULL)
+   {
+      //The expandedKey format contains the expanded private key that was
+      //derived from the seed
+      error = mldsaExportPrivateKey(privateKey, output, &n);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //The private key is encapsulated within an octet string
+      tag.constructed = FALSE;
+      tag.objClass = ASN1_CLASS_UNIVERSAL;
+      tag.objType = ASN1_TYPE_OCTET_STRING;
+      tag.length = n;
+
+      //Write the corresponding ASN.1 tag
+      error = asn1InsertHeader(&tag, output, &n);
+      //Any error to report?
+      if(error)
+         return error;
+   }
+   else if(privateKey->seed != NULL &&
+      privateKey->sk != NULL)
+   {
+      //Point to the buffer where to write the ASN.1 structure
+      p = output;
+      //Length of the ASN.1 structure
+      length = 0;
+
+      //The both format contains both the seed and expanded private key
+      error = mldsaExportSeed(privateKey, p, &n);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //The seed is encapsulated within an octet string
+      tag.constructed = FALSE;
+      tag.objClass = ASN1_CLASS_UNIVERSAL;
+      tag.objType = ASN1_TYPE_OCTET_STRING;
+      tag.length = n;
+
+      //Write the corresponding ASN.1 tag
+      error = asn1InsertHeader(&tag, p, &n);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //Get the length of the seed field
+      n = tag.totalLength;
+
+      //Advance data pointer
+      ASN1_INC_POINTER(p, n);
+      length += n;
+
+      //Write the private key
+      error = mldsaExportPrivateKey(privateKey, p, &n);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //The private key is encapsulated within an octet string
+      tag.constructed = FALSE;
+      tag.objClass = ASN1_CLASS_UNIVERSAL;
+      tag.objType = ASN1_TYPE_OCTET_STRING;
+      tag.length = n;
+
+      //Write the corresponding ASN.1 tag
+      error = asn1InsertHeader(&tag, p, &n);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //Get the length of the expandedKey field
+      n = tag.totalLength;
+
+      //Advance data pointer
+      ASN1_INC_POINTER(p, n);
+      length += n;
+
+      //Format both structure
+      tag.constructed = TRUE;
+      tag.objClass = ASN1_CLASS_UNIVERSAL;
+      tag.objType = ASN1_TYPE_SEQUENCE;
+      tag.length = length;
+
+      //Write the corresponding ASN.1 tag
+      error = asn1InsertHeader(&tag, output, &n);
+      //Any error to report?
+      if(error)
+         return error;
+   }
+   else
+   {
+      //Malformed private key
+      return ERROR_INVALID_KEY;
+   }
+
+   //Total number of bytes that have been written
+   *written = tag.totalLength;
+
+   //Successful processing
+   return NO_ERROR;
 #else
    //Not implemented
    return ERROR_NOT_IMPLEMENTED;

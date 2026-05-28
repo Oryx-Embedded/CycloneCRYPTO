@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 //Switch to the appropriate trace level
@@ -162,6 +162,36 @@ error_t pkcs8ParsePrivateKeyInfo(const uint8_t *data, size_t length,
       //Read CurvePrivateKey structure
       error = pkcs8ParseEddsaPrivateKey(tag.value, tag.length,
          &privateKeyInfo->eddsaPrivateKey);
+   }
+   else
+#endif
+#if (MLDSA44_SUPPORT == ENABLED)
+   //ML-DSA-44 algorithm identifier?
+   if(OID_COMP(oid, oidLen, MLDSA44_OID) == 0)
+   {
+      //Read ML-DSA-44-PrivateKey structure
+      error = pkcs8ParseMldsaPrivateKey(tag.value, tag.length,
+         &privateKeyInfo->mldsaPrivateKey);
+   }
+   else
+#endif
+#if (MLDSA65_SUPPORT == ENABLED)
+   //ML-DSA-65 algorithm identifier?
+   if(OID_COMP(oid, oidLen, MLDSA65_OID) == 0)
+   {
+      //Read ML-DSA-65-PrivateKey structure
+      error = pkcs8ParseMldsaPrivateKey(tag.value, tag.length,
+         &privateKeyInfo->mldsaPrivateKey);
+   }
+   else
+#endif
+#if (MLDSA87_SUPPORT == ENABLED)
+   //ML-DSA-87 algorithm identifier?
+   if(OID_COMP(oid, oidLen, MLDSA87_OID) == 0)
+   {
+      //Read ML-DSA-87-PrivateKey structure
+      error = pkcs8ParseMldsaPrivateKey(tag.value, tag.length,
+         &privateKeyInfo->mldsaPrivateKey);
    }
    else
 #endif
@@ -342,6 +372,36 @@ error_t pkcs8ParsePrivateKeyAlgo(const uint8_t *data, size_t length,
    {
       //For all of the OIDs, the parameters must be absent (refer to RFC 8410,
       //section 3)
+      error = NO_ERROR;
+   }
+   else
+#endif
+#if (MLDSA44_SUPPORT == ENABLED)
+   //ML-DSA-44 algorithm identifier?
+   if(!asn1CheckOid(&tag, MLDSA44_OID, sizeof(MLDSA44_OID)))
+   {
+      //The contents of the parameters component must be absent (refer to
+      //RFC 9881, section 2)
+      error = NO_ERROR;
+   }
+   else
+#endif
+#if (MLDSA65_SUPPORT == ENABLED)
+   //ML-DSA-65 algorithm identifier?
+   if(!asn1CheckOid(&tag, MLDSA65_OID, sizeof(MLDSA65_OID)))
+   {
+      //The contents of the parameters component must be absent (refer to
+      //RFC 9881, section 2)
+      error = NO_ERROR;
+   }
+   else
+#endif
+#if (MLDSA87_SUPPORT == ENABLED)
+   //ML-DSA-87 algorithm identifier?
+   if(!asn1CheckOid(&tag, MLDSA87_OID, sizeof(MLDSA87_OID)))
+   {
+      //The contents of the parameters component must be absent (refer to
+      //RFC 9881, section 2)
       error = NO_ERROR;
    }
    else
@@ -893,6 +953,86 @@ error_t pkcs8ParseEddsaPublicKey(const uint8_t *data, size_t length,
 
 
 /**
+ * @brief Parse ML-DSA-PrivateKey structure
+ * @param[in] data Pointer to the ASN.1 structure to parse
+ * @param[in] length Length of the ASN.1 structure
+ * @param[out] mldsaPrivateKey ML-DSA private key
+ * @return Error code
+ **/
+
+error_t pkcs8ParseMldsaPrivateKey(const uint8_t *data, size_t length,
+   Pkcs8MldsaPrivateKey *mldsaPrivateKey)
+{
+   error_t error;
+   Asn1Tag tag;
+
+   //For ML-DSA private keys, the privateKey field in OneAsymmetricKey contains
+   //a CHOICE structure (refer to RFC 9881, section 6)
+   error = asn1ReadTag(data, length, &tag);
+   //Failed to decode ASN.1 tag?
+   if(error)
+      return error;
+
+   //The CHOICE allows three representations of the private key
+   if(!tag.constructed && tag.objClass == ASN1_CLASS_CONTEXT_SPECIFIC &&
+      tag.objType == 0)
+   {
+      //The seed format contains just the 32-byte seed value from which both
+      //the expanded private key and public key can be derived
+      mldsaPrivateKey->seed.value = tag.value;
+      mldsaPrivateKey->seed.length = tag.length;
+   }
+   else if(!tag.constructed && tag.objClass == ASN1_CLASS_UNIVERSAL &&
+      tag.objType == ASN1_TYPE_OCTET_STRING)
+   {
+      //The expandedKey format contains the expanded private key that was
+      //derived from the seed
+      mldsaPrivateKey->expandedKey.value = tag.value;
+      mldsaPrivateKey->expandedKey.length = tag.length;
+   }
+   else if(tag.constructed && tag.objClass == ASN1_CLASS_UNIVERSAL &&
+      tag.objType == ASN1_TYPE_SEQUENCE)
+   {
+      //The both format contains both the seed and expanded private key
+      data = tag.value;
+      length = tag.length;
+
+      //Read seed field
+      error = asn1ReadOctetString(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         return error;
+
+      //Save the seed
+      mldsaPrivateKey->seed.value = tag.value;
+      mldsaPrivateKey->seed.length = tag.length;
+
+      //Point to the next field
+      data += tag.totalLength;
+      length -= tag.totalLength;
+
+      //Read expandedKey field
+      error = asn1ReadOctetString(data, length, &tag);
+      //Failed to decode ASN.1 tag?
+      if(error)
+         return error;
+
+      //Save the expanded private key
+      mldsaPrivateKey->expandedKey.value = tag.value;
+      mldsaPrivateKey->expandedKey.length = tag.length;
+   }
+   else
+   {
+      //Malformed structure
+      return ERROR_WRONG_ENCODING;
+   }
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
  * @brief Parse EncryptedPrivateKeyInfo structure
  * @param[in] data Pointer to the ASN.1 structure to parse
  * @param[in] length Length of the ASN.1 structure
@@ -1408,6 +1548,107 @@ error_t pkcs8ImportEddsaPrivateKey(EddsaPrivateKey *privateKey,
          //Dump EdDSA public key
          TRACE_DEBUG("EdDSA public key:\r\n");
          TRACE_DEBUG_ARRAY("  ", privateKey->q.q, privateKeyInfo->eddsaPublicKey.q.length);
+      }
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief Import an ML-DSA private key
+ * @param[out] privateKey ML-DSA private key
+ * @param[in] privateKeyInfo Private key information
+ * @return Error code
+ **/
+
+error_t pkcs8ImportMldsaPrivateKey(MldsaPrivateKey *privateKey,
+   const Pkcs8PrivateKeyInfo *privateKeyInfo)
+{
+#if (MLDSA44_SUPPORT == ENABLED || MLDSA65_SUPPORT == ENABLED || \
+   MLDSA87_SUPPORT == ENABLED)
+   error_t error;
+   uint_t level;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Check algorithm identifier
+   if(OID_COMP(privateKeyInfo->oid.value, privateKeyInfo->oid.length,
+      MLDSA44_OID) == 0)
+   {
+      //ML-DSA-44
+      level = MLDSA44_SECURITY_LEVEL;
+   }
+   else if(OID_COMP(privateKeyInfo->oid.value, privateKeyInfo->oid.length,
+      MLDSA65_OID) == 0)
+   {
+      //ML-DSA-65
+      level = MLDSA65_SECURITY_LEVEL;
+   }
+   else if(OID_COMP(privateKeyInfo->oid.value, privateKeyInfo->oid.length,
+      MLDSA87_OID) == 0)
+   {
+      //ML-DSA-87
+      level = MLDSA87_SECURITY_LEVEL;
+   }
+   else
+   {
+      //Invalid algorithm identifier
+      error = ERROR_WRONG_IDENTIFIER;
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Valid seed?
+      if(privateKeyInfo->mldsaPrivateKey.seed.length > 0)
+      {
+         //Read the seed
+         error = mldsaImportSeed(privateKey, level,
+            privateKeyInfo->mldsaPrivateKey.seed.value,
+            privateKeyInfo->mldsaPrivateKey.seed.length);
+      }
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Valid expanded key?
+      if(privateKeyInfo->mldsaPrivateKey.expandedKey.length > 0)
+      {
+         //Read the expanded key
+         error = mldsaImportPrivateKey(privateKey, level,
+            privateKeyInfo->mldsaPrivateKey.expandedKey.value,
+            privateKeyInfo->mldsaPrivateKey.expandedKey.length);
+      }
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Dump ML-DSA private key
+      TRACE_DEBUG("ML-DSA private key:\r\n");
+
+      //Valid seed?
+      if(privateKey->seed != NULL)
+      {
+         TRACE_DEBUG("  Seed:\r\n");
+         TRACE_DEBUG_ARRAY("    ", privateKey->seed,
+            privateKeyInfo->mldsaPrivateKey.seed.length);
+      }
+
+      //Valid secret key?
+      if(privateKey->sk != NULL)
+      {
+         TRACE_DEBUG("  Expanded key:\r\n");
+         TRACE_DEBUG_ARRAY("    ", privateKey->sk,
+            privateKeyInfo->mldsaPrivateKey.expandedKey.length);
       }
    }
 

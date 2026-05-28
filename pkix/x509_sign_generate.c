@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 //Switch to the appropriate trace level
@@ -179,6 +179,36 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
          {
             //Generate Ed448 signature (PureEdDSA mode)
             error = x509GenerateEd448Signature(tbsData, privateKey, output,
+               written);
+         }
+         else
+#endif
+#if (X509_MLDSA44_SUPPORT == ENABLED && MLDSA44_SUPPORT == ENABLED)
+         //ML-DSA-44 signature algorithm?
+         if(signAlgo == X509_SIGN_ALGO_MLDSA44)
+         {
+            //Generate ML-DSA-44 signature
+            error = x509GenerateMldsa44Signature(tbsData, privateKey, output,
+               written);
+         }
+         else
+#endif
+#if (X509_MLDSA65_SUPPORT == ENABLED && MLDSA65_SUPPORT == ENABLED)
+         //ML-DSA-65 signature algorithm?
+         if(signAlgo == X509_SIGN_ALGO_MLDSA65)
+         {
+            //Generate ML-DSA-65 signature
+            error = x509GenerateMldsa65Signature(tbsData, privateKey, output,
+               written);
+         }
+         else
+#endif
+#if (X509_MLDSA87_SUPPORT == ENABLED && MLDSA87_SUPPORT == ENABLED)
+         //ML-DSA-87 signature algorithm?
+         if(signAlgo == X509_SIGN_ALGO_MLDSA87)
+         {
+            //Generate ML-DSA-87 signature
+            error = x509GenerateMldsa87Signature(tbsData, privateKey, output,
                written);
          }
          else
@@ -614,6 +644,165 @@ error_t x509GenerateEd448Signature(const X509OctetString *tbsData,
       {
          //Length of the resulting EdDSA signature
          *written = ED448_SIGNATURE_LEN;
+      }
+   }
+   else
+   {
+      //The private key is not valid
+      error = ERROR_INVALID_KEY;
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief ML-DSA-44 signature generation
+ * @param[in] tbsData Pointer to the data to be signed
+ * @param[in] privateKey Signer's private key
+ * @param[out] output Resulting signature
+ * @param[out] written Length of the resulting signature
+ * @return Error code
+ **/
+
+error_t x509GenerateMldsa44Signature(const X509OctetString *tbsData,
+   const MldsaPrivateKey *privateKey, uint8_t *output, size_t *written)
+{
+#if (X509_MLDSA44_SUPPORT == ENABLED && MLDSA44_SUPPORT == ENABLED)
+   error_t error;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Check security level
+   if(privateKey->level == MLDSA44_SECURITY_LEVEL &&
+      privateKey->skLen == MLDSA44_PRIVATE_KEY_LEN)
+   {
+      //If the output parameter is NULL, then the function calculates the
+      //length of the resulting signature but will not generate a signature
+      if(output != NULL)
+      {
+         //Generate ML-DSA-44 signature
+         error = mldsa44GenerateSignature(privateKey->sk, tbsData->value,
+            tbsData->length, NULL, 0, output);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Length of the resulting ML-DSA-44 signature
+         *written = MLDSA44_SIGNATURE_LEN;
+      }
+   }
+   else
+   {
+      //The private key is not valid
+      error = ERROR_INVALID_KEY;
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief ML-DSA-65 signature generation
+ * @param[in] tbsData Pointer to the data to be signed
+ * @param[in] privateKey Signer's private key
+ * @param[out] output Resulting signature
+ * @param[out] written Length of the resulting signature
+ * @return Error code
+ **/
+
+error_t x509GenerateMldsa65Signature(const X509OctetString *tbsData,
+   const MldsaPrivateKey *privateKey, uint8_t *output, size_t *written)
+{
+#if (X509_MLDSA65_SUPPORT == ENABLED && MLDSA65_SUPPORT == ENABLED)
+   error_t error;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Check security level
+   if(privateKey->level == MLDSA65_SECURITY_LEVEL &&
+      privateKey->skLen == MLDSA65_PRIVATE_KEY_LEN)
+   {
+      //If the output parameter is NULL, then the function calculates the
+      //length of the resulting signature but will not generate a signature
+      if(output != NULL)
+      {
+         //Generate ML-DSA-65 signature
+         error = mldsa65GenerateSignature(privateKey->sk, tbsData->value,
+            tbsData->length, NULL, 0, output);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Length of the resulting ML-DSA-65 signature
+         *written = MLDSA65_SIGNATURE_LEN;
+      }
+   }
+   else
+   {
+      //The private key is not valid
+      error = ERROR_INVALID_KEY;
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief ML-DSA-87 signature generation
+ * @param[in] tbsData Pointer to the data to be signed
+ * @param[in] privateKey Signer's private key
+ * @param[out] output Resulting signature
+ * @param[out] written Length of the resulting signature
+ * @return Error code
+ **/
+
+error_t x509GenerateMldsa87Signature(const X509OctetString *tbsData,
+   const MldsaPrivateKey *privateKey, uint8_t *output, size_t *written)
+{
+#if (X509_MLDSA87_SUPPORT == ENABLED && MLDSA87_SUPPORT == ENABLED)
+   error_t error;
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //Check security level
+   if(privateKey->level == MLDSA87_SECURITY_LEVEL &&
+      privateKey->skLen == MLDSA87_PRIVATE_KEY_LEN)
+   {
+      //If the output parameter is NULL, then the function calculates the
+      //length of the resulting signature but will not generate a signature
+      if(output != NULL)
+      {
+         //Generate ML-DSA-87 signature
+         error = mldsa87GenerateSignature(privateKey->sk, tbsData->value,
+            tbsData->length, NULL, 0, output);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Length of the resulting ML-DSA-87 signature
+         *written = MLDSA87_SIGNATURE_LEN;
       }
    }
    else

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 #ifndef _PRNG_ALGORITHMS_H
@@ -54,11 +54,6 @@
    #include "rng/xdrbg.h"
 #endif
 
-//Yarrow PRNG support?
-#if (YARROW_SUPPORT == ENABLED)
-   #include "rng/yarrow.h"
-#endif
-
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
@@ -82,9 +77,6 @@ typedef union
 #endif
 #if (XDRBG_SUPPORT == ENABLED)
    XdrbgContext xdrbgContext;
-#endif
-#if (YARROW_SUPPORT == ENABLED)
-   YarrowContext yarrowContext;
 #endif
 } PrngContext;
 

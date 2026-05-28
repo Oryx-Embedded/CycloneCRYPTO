@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 //Switch to the appropriate trace level
@@ -1156,6 +1156,234 @@ error_t pemImportEddsaPrivateKey(EddsaPrivateKey *privateKey,
    {
       //Clean up side effects
       eddsaFreePrivateKey(privateKey);
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief Decode a PEM file containing a ML-DSA public key
+ * @param[out] publicKey ML-DSA public key resulting from the parsing process
+ * @param[in] input Pointer to the PEM string
+ * @param[in] length Length of the PEM string
+ * @return Error code
+ **/
+
+error_t pemImportMldsaPublicKey(MldsaPublicKey *publicKey, const char_t *input,
+   size_t length)
+{
+#if (MLDSA44_SUPPORT == ENABLED || MLDSA65_SUPPORT == ENABLED || \
+   MLDSA87_SUPPORT == ENABLED)
+   error_t error;
+   size_t n;
+   uint8_t *buffer;
+   X509SubjectPublicKeyInfo publicKeyInfo;
+
+   //Check parameters
+   if(publicKey == NULL || input == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Public keys are encoded using the "PUBLIC KEY" label
+   error = pemDecodeFile(input, length, "PUBLIC KEY", NULL, &n, NULL, NULL);
+
+   //Check status code
+   if(!error)
+   {
+      //Allocate a memory buffer to hold the ASN.1 data
+      buffer = cryptoAllocMem(n);
+
+      //Successful memory allocation?
+      if(buffer != NULL)
+      {
+         //Decode the content of the PEM container
+         error = pemDecodeFile(input, length, "PUBLIC KEY", buffer, &n, NULL,
+            NULL);
+
+         //Check status code
+         if(!error)
+         {
+            //The ASN.1 encoded data of the public key is the SubjectPublicKeyInfo
+            //structure (refer to RFC 7468, section 13)
+            error = x509ParseSubjectPublicKeyInfo(buffer, n, &n, &publicKeyInfo);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Import the ML-DSA public key
+            error = x509ImportMldsaPublicKey(publicKey, &publicKeyInfo);
+         }
+
+         //Release previously allocated memory
+         cryptoFreeMem(buffer);
+      }
+      else
+      {
+         //Failed to allocate memory
+         error = ERROR_OUT_OF_MEMORY;
+      }
+   }
+
+   //Any error to report?
+   if(error)
+   {
+      //Clean up side effects
+      mldsaFreePublicKey(publicKey);
+   }
+
+   //Return status code
+   return error;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
+}
+
+
+/**
+ * @brief Decode a PEM file containing a ML-DSA private key
+ * @param[out] privateKey ML-DSA private key resulting from the parsing process
+ * @param[in] input Pointer to the PEM string
+ * @param[in] length Length of the PEM string
+ * @param[in] password NULL-terminated string containing the password. This
+ *   parameter is required if the private key is encrypted
+ * @return Error code
+ **/
+
+error_t pemImportMldsaPrivateKey(MldsaPrivateKey *privateKey,
+   const char_t *input, size_t length, const char_t *password)
+{
+#if (MLDSA44_SUPPORT == ENABLED || MLDSA65_SUPPORT == ENABLED || \
+   MLDSA87_SUPPORT == ENABLED)
+   error_t error;
+   size_t n;
+   uint8_t *buffer;
+   Pkcs8PrivateKeyInfo privateKeyInfo;
+
+   //Check parameters
+   if(privateKey == NULL || input == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //The type of data encoded is labeled depending on the type label in
+   //the "-----BEGIN " line (refer to RFC 7468, section 2)
+   if(pemDecodeFile(input, length, "PRIVATE KEY", NULL, &n, NULL,
+      NULL) == NO_ERROR)
+   {
+      //Allocate a memory buffer to hold the ASN.1 data
+      buffer = cryptoAllocMem(n);
+
+      //Successful memory allocation?
+      if(buffer != NULL)
+      {
+         //Decode the content of the PEM container
+         error = pemDecodeFile(input, length, "PRIVATE KEY", buffer, &n,
+            NULL, NULL);
+
+         //Check status code
+         if(!error)
+         {
+            //Read the PrivateKeyInfo structure (refer to RFC 5208, section 5)
+            error = pkcs8ParsePrivateKeyInfo(buffer, n, &privateKeyInfo);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Import the ML-DSA private key
+            error = pkcs8ImportMldsaPrivateKey(privateKey, &privateKeyInfo);
+         }
+
+         //Release previously allocated memory
+         cryptoFreeMem(buffer);
+      }
+      else
+      {
+         //Failed to allocate memory
+         error = ERROR_OUT_OF_MEMORY;
+      }
+   }
+   else if(pemDecodeFile(input, length, "ENCRYPTED PRIVATE KEY", NULL, &n, NULL,
+      NULL) == NO_ERROR)
+   {
+#if (PEM_ENCRYPTED_KEY_SUPPORT == ENABLED)
+      //Allocate a memory buffer to hold the ASN.1 data
+      buffer = cryptoAllocMem(n);
+
+      //Successful memory allocation?
+      if(buffer != NULL)
+      {
+         uint8_t *data;
+         Pkcs8EncryptedPrivateKeyInfo encryptedPrivateKeyInfo;
+
+         //Decode the content of the PEM container
+         error = pemDecodeFile(input, length, "ENCRYPTED PRIVATE KEY", buffer, &n,
+            NULL, NULL);
+
+         //Check status code
+         if(!error)
+         {
+            //Read the EncryptedPrivateKeyInfo structure (refer to RFC 5208,
+            //section 6)
+            error = pkcs8ParseEncryptedPrivateKeyInfo(buffer, n,
+               &encryptedPrivateKeyInfo);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Point to the encrypted data
+            data = (uint8_t *) encryptedPrivateKeyInfo.encryptedData.value;
+            n = encryptedPrivateKeyInfo.encryptedData.length;
+
+            //Decrypt the private key information
+            error = pkcs5Decrypt(&encryptedPrivateKeyInfo.encryptionAlgo,
+               password, data, n, data, &n);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Read the PrivateKeyInfo structure (refer to RFC 5208, section 5)
+            error = pkcs8ParsePrivateKeyInfo(data, n, &privateKeyInfo);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Import the ML-DSA private key
+            error = pkcs8ImportMldsaPrivateKey(privateKey, &privateKeyInfo);
+         }
+
+         //Release previously allocated memory
+         cryptoFreeMem(buffer);
+      }
+      else
+      {
+         //Failed to allocate memory
+         error = ERROR_OUT_OF_MEMORY;
+      }
+#else
+      //The PEM file contains an encrypted private key
+      error = ERROR_DECRYPTION_FAILED;
+#endif
+   }
+   else
+   {
+      //The PEM file does not contain a valid private key
+      error = ERROR_END_OF_FILE;
+   }
+
+   //Any error to report?
+   if(error)
+   {
+      //Clean up side effects
+      mldsaFreePrivateKey(privateKey);
    }
 
    //Return status code

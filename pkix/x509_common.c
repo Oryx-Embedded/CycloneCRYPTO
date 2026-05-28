@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 //Switch to the appropriate trace level
@@ -261,6 +261,27 @@ bool_t x509IsSignAlgoSupported(X509SignatureAlgo signAlgo)
 #if (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED)
    //Ed448 signature algorithm?
    else if(signAlgo == X509_SIGN_ALGO_ED448)
+   {
+      acceptable = TRUE;
+   }
+#endif
+#if (X509_MLDSA44_SUPPORT == ENABLED && MLDSA44_SUPPORT == ENABLED)
+   //ML-DSA-44 signature algorithm?
+   else if(signAlgo == X509_SIGN_ALGO_MLDSA44)
+   {
+      acceptable = TRUE;
+   }
+#endif
+#if (X509_MLDSA65_SUPPORT == ENABLED && MLDSA65_SUPPORT == ENABLED)
+   //ML-DSA-65 signature algorithm?
+   else if(signAlgo == X509_SIGN_ALGO_MLDSA65)
+   {
+      acceptable = TRUE;
+   }
+#endif
+#if (X509_MLDSA87_SUPPORT == ENABLED && MLDSA87_SUPPORT == ENABLED)
+   //ML-DSA-87 signature algorithm?
+   else if(signAlgo == X509_SIGN_ALGO_MLDSA87)
    {
       acceptable = TRUE;
    }
@@ -819,6 +840,33 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
    }
    else
 #endif
+#if (X509_MLDSA44_SUPPORT == ENABLED && MLDSA44_SUPPORT == ENABLED)
+   //ML-DSA-44 signature algorithm?
+   if(OID_COMP(oid, oidLen, MLDSA44_OID) == 0)
+   {
+      *signAlgo = X509_SIGN_ALGO_MLDSA44;
+      *hashAlgo = NULL;
+   }
+   else
+#endif
+#if (X509_MLDSA65_SUPPORT == ENABLED && MLDSA65_SUPPORT == ENABLED)
+   //ML-DSA-65 signature algorithm?
+   if(OID_COMP(oid, oidLen, MLDSA65_OID) == 0)
+   {
+      *signAlgo = X509_SIGN_ALGO_MLDSA65;
+      *hashAlgo = NULL;
+   }
+   else
+#endif
+#if (X509_MLDSA87_SUPPORT == ENABLED && MLDSA87_SUPPORT == ENABLED)
+   //ML-DSA-87 signature algorithm?
+   if(OID_COMP(oid, oidLen, MLDSA87_OID) == 0)
+   {
+      *signAlgo = X509_SIGN_ALGO_MLDSA87;
+      *hashAlgo = NULL;
+   }
+   else
+#endif
    //Unknown signature algorithm?
    {
       error = ERROR_UNSUPPORTED_SIGNATURE_ALGO;
@@ -897,6 +945,27 @@ X509KeyType x509GetPublicKeyType(const uint8_t *oid, size_t length)
    else if(OID_COMP(oid, length, ED448_OID) == 0)
    {
       keyType = X509_KEY_TYPE_ED448;
+   }
+#endif
+#if (MLDSA44_SUPPORT == ENABLED)
+   //ML-DSA-44 algorithm identifier?
+   else if(OID_COMP(oid, length, MLDSA44_OID) == 0)
+   {
+      keyType = X509_KEY_TYPE_MLDSA44;
+   }
+#endif
+#if (MLDSA65_SUPPORT == ENABLED)
+   //ML-DSA-65 algorithm identifier?
+   else if(OID_COMP(oid, length, MLDSA65_OID) == 0)
+   {
+      keyType = X509_KEY_TYPE_MLDSA65;
+   }
+#endif
+#if (MLDSA87_SUPPORT == ENABLED)
+   //ML-DSA-87 algorithm identifier?
+   else if(OID_COMP(oid, length, MLDSA87_OID) == 0)
+   {
+      keyType = X509_KEY_TYPE_MLDSA87;
    }
 #endif
    //Unknown algorithm identifier?

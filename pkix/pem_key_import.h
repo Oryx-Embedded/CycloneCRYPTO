@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 #ifndef _PEM_KEY_IMPORT_H
@@ -35,10 +35,6 @@
 #include "core/crypto.h"
 #include "pkix/pem_common.h"
 #include "pkix/x509_common.h"
-#include "pkc/rsa.h"
-#include "pkc/dsa.h"
-#include "ecc/ec.h"
-#include "ecc/eddsa.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -68,6 +64,12 @@ error_t pemImportEddsaPublicKey(EddsaPublicKey *publicKey, const char_t *input,
    size_t length);
 
 error_t pemImportEddsaPrivateKey(EddsaPrivateKey *privateKey,
+   const char_t *input, size_t length, const char_t *password);
+
+error_t pemImportMldsaPublicKey(MldsaPublicKey *publicKey, const char_t *input,
+   size_t length);
+
+error_t pemImportMldsaPrivateKey(MldsaPrivateKey *privateKey,
    const char_t *input, size_t length, const char_t *password);
 
 X509KeyType pemGetPublicKeyType(const char_t *input, size_t length);

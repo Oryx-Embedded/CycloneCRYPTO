@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 #ifndef _X509_KEY_PARSE_H
@@ -62,6 +62,9 @@ error_t x509ParseEcPublicKey(const uint8_t *data, size_t length,
 error_t x509ParseEcParameters(const uint8_t *data, size_t length,
    X509EcParameters *ecParams);
 
+error_t x509ParseMldsaPublicKey(const uint8_t *data, size_t length,
+   X509MldsaPublicKey *mldsaPublicKey);
+
 error_t x509ImportRsaPublicKey(RsaPublicKey *publicKey,
    const X509SubjectPublicKeyInfo *publicKeyInfo);
 
@@ -72,6 +75,9 @@ error_t x509ImportEcPublicKey(EcPublicKey *publicKey,
    const X509SubjectPublicKeyInfo *publicKeyInfo);
 
 error_t x509ImportEddsaPublicKey(EddsaPublicKey *publicKey,
+   const X509SubjectPublicKeyInfo *publicKeyInfo);
+
+error_t x509ImportMldsaPublicKey(MldsaPublicKey *publicKey,
    const X509SubjectPublicKeyInfo *publicKeyInfo);
 
 //C++ guard

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 #ifndef _X509_SIGN_GENERATE_H
@@ -83,6 +83,15 @@ error_t x509GenerateEd25519Signature(const X509OctetString *tbsData,
 
 error_t x509GenerateEd448Signature(const X509OctetString *tbsData,
    const EddsaPrivateKey *privateKey, uint8_t *output, size_t *written);
+
+error_t x509GenerateMldsa44Signature(const X509OctetString *tbsData,
+   const MldsaPrivateKey *privateKey, uint8_t *output, size_t *written);
+
+error_t x509GenerateMldsa65Signature(const X509OctetString *tbsData,
+   const MldsaPrivateKey *privateKey, uint8_t *output, size_t *written);
+
+error_t x509GenerateMldsa87Signature(const X509OctetString *tbsData,
+   const MldsaPrivateKey *privateKey, uint8_t *output, size_t *written);
 
 //C++ guard
 #ifdef __cplusplus

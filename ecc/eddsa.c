@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.2
+ * @version 2.6.4
  **/
 
 //Switch to the appropriate trace level
@@ -375,13 +375,13 @@ error_t eddsaExportPublicKey(const EddsaPublicKey *key, uint8_t *output,
  * @brief Import an EdDSA private key
  * @param[out] key EdDSA private key
  * @param[in] curve Elliptic curve parameters
- * @param[in] data Pointer to the octet string
+ * @param[in] input Pointer to the octet string
  * @param[in] length Length of the octet string, in bytes
  * @return Error code
  **/
 
 error_t eddsaImportPrivateKey(EddsaPrivateKey *key, const EcCurve *curve,
-   const uint8_t *data, size_t length)
+   const uint8_t *input, size_t length)
 {
    error_t error;
 
@@ -389,7 +389,7 @@ error_t eddsaImportPrivateKey(EddsaPrivateKey *key, const EcCurve *curve,
    error = NO_ERROR;
 
    //Check parameters
-   if(key != NULL && curve != NULL && data != NULL)
+   if(key != NULL && curve != NULL && input != NULL)
    {
       //Edwards elliptic curve?
       if(curve->type == EC_CURVE_TYPE_EDWARDS)
@@ -400,7 +400,7 @@ error_t eddsaImportPrivateKey(EddsaPrivateKey *key, const EcCurve *curve,
             //Save elliptic curve parameters
             key->curve = curve;
             //Copy the private key
-            osMemcpy(key->d, data, length);
+            osMemcpy(key->d, input, length);
          }
          else
          {
