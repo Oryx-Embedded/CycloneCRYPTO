@@ -51,6 +51,9 @@ error_t pkcs7DecryptKey(const Pkcs7RecipientInfo *recipientInfo,
 error_t pkcs7DecryptData(const Pkcs7EncryptedContentInfo *encryptedContentInfo,
    const uint8_t *key, size_t keyLen, uint8_t *plaintext, size_t *plaintextLen);
 
+uint32_t pkcs7VerifyPadding(const uint8_t *data, size_t dataLen,
+   size_t blockSize, size_t *paddingLen);
+
 error_t pkcs7FindRecipient(const Pkcs7RecipientInfos *recipientInfos,
    const X509CertInfo *recipientCertInfo, Pkcs7RecipientInfo *recipientInfo);
 
