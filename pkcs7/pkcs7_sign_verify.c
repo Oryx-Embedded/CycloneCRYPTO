@@ -97,7 +97,7 @@ error_t pkcs7VerifySignedData(const Pkcs7SignedData *signedData,
          TRACE_DEBUG_ARRAY("  ", calcDigest, hashAlgo->digestSize);
 
          //Check the message digest of the content
-         if(msgDigest->length == hashAlgo->digestSize ||
+         if(msgDigest->length == hashAlgo->digestSize &&
             osMemcmp(msgDigest->value, calcDigest, hashAlgo->digestSize) == 0)
          {
             //Digest the DER encoding of the authenticatedAttributes field
