@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _HMAC_DRBG_H
@@ -92,8 +92,8 @@ error_t hmacDrbgGenerateEx(HmacDrbgContext *context,
 
 void hmacDrbgDeinit(HmacDrbgContext *context);
 
-void hmacDrbgUpdate(HmacDrbgContext *context, const DataChunk *providedData,
-   uint_t providedDataLen);
+void hmacDrbgUpdate(HmacDrbgContext *context, const DataFrag *providedDataFrags,
+   uint_t providedDataNumFrags);
 
 //C++ guard
 #ifdef __cplusplus

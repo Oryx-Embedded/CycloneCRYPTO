@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -34,6 +34,7 @@
 //Dependencies
 #include "core/crypto.h"
 #include "pkix/x509_sign_generate.h"
+#include "encoding/oid.h"
 #include "ecc/ec_misc.h"
 #include "debug.h"
 
@@ -126,10 +127,67 @@ error_t x509GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
          //RSA-PSS signature algorithm?
          if(signAlgo == X509_SIGN_ALGO_RSA_PSS)
          {
-            //Generate RSA signature (RSASSA-PSS signature scheme)
-            error = x509GenerateRsaPssSignature(prngAlgo, prngContext, tbsData,
-               hashAlgo, signAlgoId->rsaPssParams.saltLen, privateKey, output,
-               written);
+            size_t oidLen;
+            const uint8_t *oid;
+            const HashAlgo *mgfHashAlgo;
+
+            //Get the OID of the signature algorithm
+            oid = signAlgoId->oid.value;
+            oidLen = signAlgoId->oid.length;
+
+            //Check signature algorithm
+            if(OID_COMP(oid, oidLen, RSASSA_PSS_SHAKE128_OID) == 0)
+            {
+               //The saltLength must be 32 bytes for id-RSASSA-PSS-SHAKE128
+               //(refer to RFC 8692, section 4.1.1)
+               error = x509GenerateRsaPssSignature(prngAlgo, prngContext,
+                  tbsData, hashAlgo, hashAlgo, 32, privateKey, output, written);
+            }
+            else if(OID_COMP(oid, oidLen, RSASSA_PSS_SHAKE256_OID) == 0)
+            {
+               //The saltLength must be 64 bytes for id-RSASSA-PSS-SHAKE256
+               //(refer to RFC 8692, section 4.1.1)
+               error = x509GenerateRsaPssSignature(prngAlgo, prngContext,
+                  tbsData, hashAlgo, hashAlgo, 64, privateKey, output, written);
+            }
+            else
+            {
+               //Get the OID of the MGF algorithm
+               oid = signAlgoId->rsaPssParams.maskGenAlgo.value;
+               oidLen = signAlgoId->rsaPssParams.maskGenAlgo.length;
+
+               //MGF1 mask generation function?
+               if(OID_COMP(oid, oidLen, MGF1_OID) == 0)
+               {
+                  //Get the OID of the MGF hash algorithm
+                  oid = signAlgoId->rsaPssParams.maskGenHashAlgo.value;
+                  oidLen = signAlgoId->rsaPssParams.maskGenHashAlgo.length;
+
+                  //Select the MGF hash algorithm
+                  mgfHashAlgo = x509GetHashAlgo(oid, oidLen);
+
+                  //Valid MGF hash algorithm?
+                  if(mgfHashAlgo != NULL)
+                  {
+                     //The saltLength field of the RSASSA-PSS-params is the
+                     //octet length of the salt
+                     error = x509GenerateRsaPssSignature(prngAlgo, prngContext,
+                        tbsData, hashAlgo, mgfHashAlgo,
+                        signAlgoId->rsaPssParams.saltLen, privateKey, output,
+                        written);
+                  }
+                  else
+                  {
+                     //The MGF hash algorithm is not supported
+                     error = ERROR_UNSUPPORTED_SIGNATURE_ALGO;
+                  }
+               }
+               else
+               {
+                  //The MGF algorithm is not supported
+                  error = ERROR_UNSUPPORTED_SIGNATURE_ALGO;
+               }
+            }
          }
          else
 #endif
@@ -282,7 +340,8 @@ error_t x509GenerateRsaSignature(const X509OctetString *tbsData,
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
  * @param[in] tbsData Pointer to the data to be signed
- * @param[in] hashAlgo Underlying hash function
+ * @param[in] hashAlgo Hash function
+ * @param[in] mgfHashAlgo MGF hash function
  * @param[in] saltLen Length of the salt, in bytes
  * @param[in] privateKey Signer's private key
  * @param[out] output Resulting signature
@@ -291,8 +350,9 @@ error_t x509GenerateRsaSignature(const X509OctetString *tbsData,
  **/
 
 error_t x509GenerateRsaPssSignature(const PrngAlgo *prngAlgo, void *prngContext,
-   const X509OctetString *tbsData, const HashAlgo *hashAlgo, size_t saltLen,
-   const RsaPrivateKey *privateKey, uint8_t *output, size_t *written)
+   const X509OctetString *tbsData, const HashAlgo *hashAlgo,
+   const HashAlgo *mgfHashAlgo, size_t saltLen, const RsaPrivateKey *privateKey,
+   uint8_t *output, size_t *written)
 {
 #if (X509_RSA_PSS_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
    error_t error;
@@ -313,7 +373,7 @@ error_t x509GenerateRsaPssSignature(const PrngAlgo *prngAlgo, void *prngContext,
       {
          //Generate RSA-PSS signature
          error = rsassaPssSign(prngAlgo, prngContext, privateKey, hashAlgo,
-            saltLen, digest, output, written);
+            mgfHashAlgo, saltLen, digest, output, written);
       }
    }
    else

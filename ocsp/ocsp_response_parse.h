@@ -1,5 +1,5 @@
 /**
- * @file ocsp_resp_parse.h
+ * @file ocsp_response_parse.h
  * @brief OCSP response parsing
  *
  * @section License
@@ -25,11 +25,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
-#ifndef _OCSP_RESP_PARSE_H
-#define _OCSP_RESP_PARSE_H
+#ifndef _OCSP_RESPONSE_PARSE_H
+#define _OCSP_RESPONSE_PARSE_H
 
 //Dependencies
 #include "ocsp/ocsp_common.h"

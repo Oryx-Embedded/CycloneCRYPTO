@@ -30,7 +30,7 @@
  * one-way hash function described in American National Standard X9.63
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level

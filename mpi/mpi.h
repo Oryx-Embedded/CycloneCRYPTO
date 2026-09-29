@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _MPI_H
@@ -45,7 +45,7 @@
 //Size of the MPI base type, in bits
 #ifndef MPI_BITS_PER_WORD
    #define MPI_BITS_PER_WORD 32
-#elif (MPI_BITS_PER_WORD != 8 || MPI_BITS_PER_WORD != 16 || MPI_BITS_PER_WORD != 32)
+#elif (MPI_BITS_PER_WORD != 8 && MPI_BITS_PER_WORD != 16 && MPI_BITS_PER_WORD != 32)
    #error MPI_BITS_PER_WORD parameter is not valid
 #endif
 

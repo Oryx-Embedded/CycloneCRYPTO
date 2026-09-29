@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -319,8 +319,10 @@ uint32_t emePkcs1v15Decode(uint8_t *em, size_t k, size_t *messageLen)
  * @brief EME-OAEP encoding operation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] hash Underlying hash function
+ * @param[in] hash Hash function
+ * @param[in] mgfHash MGF hash function
  * @param[in] label Optional label to be associated with the message
+ * @param[in] labelLen Length of the label, in bytes
  * @param[in] message Message to be encrypted
  * @param[in] messageLen Length of the message to be encrypted
  * @param[out] em Encoded message
@@ -329,8 +331,9 @@ uint32_t emePkcs1v15Decode(uint8_t *em, size_t k, size_t *messageLen)
  **/
 
 error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
-   const HashAlgo *hash, const char_t *label, const uint8_t *message,
-   size_t messageLen, uint8_t *em, size_t k)
+   const HashAlgo *hash, const HashAlgo *mgfHash, const char_t *label,
+   size_t labelLen, const uint8_t *message, size_t messageLen, uint8_t *em,
+   size_t k)
 {
    error_t error;
    size_t n;
@@ -341,6 +344,10 @@ error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
 #else
    HashContext hashContext[1];
 #endif
+
+   //The label is optional
+   if(label == NULL && labelLen != 0)
+      return ERROR_INVALID_PARAMETER;
 
    //Check the length of the message
    if(messageLen > (k - 2 * hash->digestSize - 2))
@@ -359,21 +366,15 @@ error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the hash context
-   hashContext = cryptoAllocMem(hash->contextSize);
+   hashContext = cryptoAllocMem(sizeof(HashContext));
    //Failed to allocate memory?
    if(hashContext == NULL)
       return ERROR_OUT_OF_MEMORY;
 #endif
 
-   //If the label L is not provided, let L be the empty string
-   if(label == NULL)
-   {
-      label = "";
-   }
-
    //Let lHash = Hash(L)
    hash->init(hashContext);
-   hash->update(hashContext, label, osStrlen(label));
+   hash->update(hashContext, label, labelLen);
    hash->final(hashContext, db);
 
    //The padding string PS consists of k - mLen - 2hLen - 2 zero octets
@@ -390,9 +391,9 @@ error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
    n = k - hash->digestSize - 1;
 
    //Let maskedDB = DB xor MGF(seed, k - hLen - 1)
-   mgf1(hash, hashContext, seed, hash->digestSize, db, n);
+   mgf(mgfHash, hashContext, seed, hash->digestSize, db, n);
    //Let maskedSeed = seed xor MGF(maskedDB, hLen)
-   mgf1(hash, hashContext, db, n, seed, hash->digestSize);
+   mgf(mgfHash, hashContext, db, n, seed, hash->digestSize);
 
    //Concatenate a single octet with hexadecimal value 0x00, maskedSeed, and
    //maskedDB to form an encoded message EM of length k octets
@@ -410,16 +411,19 @@ error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
 
 /**
  * @brief EME-OAEP decoding operation
- * @param[in] hash Underlying hash function
+ * @param[in] hash Hash function
+ * @param[in] mgfHash MGF hash function
  * @param[in] label Optional label to be associated with the message
+ * @param[in] labelLen Length of the label, in bytes
  * @param[in] em Encoded message
  * @param[in] k Length of the encoded message
  * @param[out] messageLen Length of the decrypted message
  * @return The function returns 0 on success, 1 on failure
  **/
 
-uint32_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
-   size_t k, size_t *messageLen)
+uint32_t emeOaepDecode(const HashAlgo *hash, const HashAlgo *mgfHash,
+   const char_t *label, size_t labelLen, uint8_t *em, size_t k,
+   size_t *messageLen)
 {
    size_t i;
    size_t m;
@@ -435,23 +439,21 @@ uint32_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
    HashContext hashContext[1];
 #endif
 
+   //The label is optional
+   if(label == NULL && labelLen != 0)
+      return ERROR_INVALID_PARAMETER;
+
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the hash context
-   hashContext = cryptoAllocMem(hash->contextSize);
+   hashContext = cryptoAllocMem(sizeof(HashContext));
    //Failed to allocate memory?
    if(hashContext == NULL)
       return TRUE;
 #endif
 
-   //If the label L is not provided, let L be the empty string
-   if(label == NULL)
-   {
-      label = "";
-   }
-
    //Let lHash = Hash(L)
    hash->init(hashContext);
-   hash->update(hashContext, label, osStrlen(label));
+   hash->update(hashContext, label, labelLen);
    hash->final(hashContext, lHash);
 
    //Separate the encoded message EM into a single octet Y, an octet string
@@ -463,9 +465,9 @@ uint32_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
    n = k - hash->digestSize - 1;
 
    //Let seed = maskedSeed xor MGF(maskedDB, hLen)
-   mgf1(hash, hashContext, db, n, seed, hash->digestSize);
+   mgf(mgfHash, hashContext, db, n, seed, hash->digestSize);
    //Let DB = maskedDB xor MGF(seed, k - hLen - 1)
-   mgf1(hash, hashContext, seed, hash->digestSize, db, n);
+   mgf(mgfHash, hashContext, seed, hash->digestSize, db, n);
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release hash context
@@ -648,7 +650,8 @@ error_t emsaPkcs1v15Verify(const HashAlgo *hash, const uint8_t *digest,
  * @brief EMSA-PSS encoding operation
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
- * @param[in] hash Underlying hash function
+ * @param[in] hash Hash function
+ * @param[in] mgfHash MGF hash function
  * @param[in] saltLen Length of the salt, in bytes
  * @param[in] digest Digest of the message to be signed
  * @param[out] em Encoded message
@@ -657,8 +660,8 @@ error_t emsaPkcs1v15Verify(const HashAlgo *hash, const uint8_t *digest,
  **/
 
 error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
-   const HashAlgo *hash, size_t saltLen, const uint8_t *digest,
-   uint8_t *em, uint_t emBits)
+   const HashAlgo *hash, const HashAlgo *mgfHash, size_t saltLen,
+   const uint8_t *digest, uint8_t *em, uint_t emBits)
 {
    error_t error;
    size_t n;
@@ -695,7 +698,7 @@ error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the hash context
-   hashContext = cryptoAllocMem(hash->contextSize);
+   hashContext = cryptoAllocMem(sizeof(HashContext));
    //Failed to allocate memory?
    if(hashContext == NULL)
       return ERROR_OUT_OF_MEMORY;
@@ -716,7 +719,7 @@ error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
    n += saltLen + 1;
 
    //Let maskedDB = DB xor MGF(H, emLen - hLen - 1)
-   mgf1(hash, hashContext, h, hash->digestSize, db, n);
+   mgf(mgfHash, hashContext, h, hash->digestSize, db, n);
 
    //Set the leftmost 8emLen - emBits bits of the leftmost octet in maskedDB
    //to zero
@@ -738,7 +741,8 @@ error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
 
 /**
  * @brief EMSA-PSS verification operation
- * @param[in] hash Underlying hash function
+ * @param[in] hash Hash function
+ * @param[in] mgfHash MGF hash function
  * @param[in] saltLen Length of the salt, in bytes
  * @param[in] digest Digest of the message to be signed
  * @param[out] em Encoded message
@@ -746,8 +750,8 @@ error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
  * @return Error code
  **/
 
-error_t emsaPssVerify(const HashAlgo *hash, size_t saltLen,
-   const uint8_t *digest, uint8_t *em, uint_t emBits)
+error_t emsaPssVerify(const HashAlgo *hash, const HashAlgo *mgfHash,
+   size_t saltLen, const uint8_t *digest, uint8_t *em, uint_t emBits)
 {
    size_t i;
    size_t n;
@@ -773,7 +777,7 @@ error_t emsaPssVerify(const HashAlgo *hash, size_t saltLen,
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the hash context
-   hashContext = cryptoAllocMem(hash->contextSize);
+   hashContext = cryptoAllocMem(sizeof(HashContext));
    //Failed to allocate memory?
    if(hashContext == NULL)
       return ERROR_OUT_OF_MEMORY;
@@ -797,7 +801,7 @@ error_t emsaPssVerify(const HashAlgo *hash, size_t saltLen,
    bad |= db[0] & ~mask;
 
    //Let DB = maskedDB xor MGF(H, emLen - hLen - 1)
-   mgf1(hash, hashContext, h, hash->digestSize, db, n);
+   mgf(mgfHash, hashContext, h, hash->digestSize, db, n);
 
    //Set the leftmost 8emLen - emBits bits of the leftmost octet in DB to zero
    db[0] &= mask;
@@ -843,8 +847,95 @@ error_t emsaPssVerify(const HashAlgo *hash, size_t saltLen,
 
 
 /**
+ * @brief Mask generation function
+ * @param[in] hash MGF hash function
+ * @param[in] hashContext Hash function context
+ * @param[in] seed Seed from which the mask is generated
+ * @param[in] seedLen Length of the seed in bytes
+ * @param[in,out] data Data block to be masked
+ * @param[in] dataLen Length of the data block in bytes
+ **/
+
+void mgf(const HashAlgo *hash, HashContext *hashContext, const uint8_t *seed,
+   size_t seedLen, uint8_t *data, size_t dataLen)
+{
+#if (SHAKE128_256_SUPPORT == ENABLED)
+   //SHAKE128 mask generation function?
+   if(hash == SHAKE128_256_HASH_ALGO)
+   {
+      size_t i;
+      size_t j;
+      size_t n;
+      uint8_t mask[16];
+
+      //In RSASSA-PSS with SHAKEs, the SHAKEs must be used natively as the MGF
+      //(refer to RFC 8692, section 4.1.1)
+      shakeInit(&hashContext->shake128_256Context, 128);
+      shakeAbsorb(&hashContext->shake128_256Context, seed, seedLen);
+      shakeFinal(&hashContext->shake128_256Context);
+
+      //The MGF outputs an octet string of the desired length
+      for(i = 0; i < dataLen; i += n)
+      {
+         //Number of bytes to generate at a time
+         n = MIN(dataLen - i, sizeof(mask));
+
+         //Generate the mask
+         shakeSqueeze(&hashContext->shake128_256Context, mask, n);
+
+         //Apply the mask
+         for(j = 0; j < n; j++)
+         {
+            data[i + j] ^= mask[j];
+         }
+      }  
+   }
+   else
+#endif
+#if (SHAKE256_512_SUPPORT == ENABLED)
+   //SHAKE256 mask generation function?
+   if(hash == SHAKE256_512_HASH_ALGO)
+   {
+      size_t i;
+      size_t j;
+      size_t n;
+      uint8_t mask[16];
+
+      //In RSASSA-PSS with SHAKEs, the SHAKEs must be used natively as the MGF
+      //(refer to RFC 8692, section 4.1.1)
+      shakeInit(&hashContext->shake256_512Context, 256);
+      shakeAbsorb(&hashContext->shake256_512Context, seed, seedLen);
+      shakeFinal(&hashContext->shake256_512Context);
+
+      //The MGF outputs an octet string of the desired length
+      for(i = 0; i < dataLen; i += n)
+      {
+         //Number of bytes to generate at a time
+         n = MIN(dataLen - i, sizeof(mask));
+
+         //Generate the mask
+         shakeSqueeze(&hashContext->shake256_512Context, mask, n);
+
+         //Apply the mask
+         for(j = 0; j < n; j++)
+         {
+            data[i + j] ^= mask[j];
+         }
+      }  
+   }
+   else
+#endif
+   //MGF1 mask generation function?
+   {
+      //The MGF1 algorithm uses the hash function in multiple iterations
+      mgf1(hash, hashContext, seed, seedLen, data, dataLen);
+   }
+}
+
+
+/**
  * @brief MGF1 mask generation function
- * @param[in] hash Hash function
+ * @param[in] hash MGF hash function
  * @param[in] hashContext Hash function context
  * @param[in] seed Seed from which the mask is generated
  * @param[in] seedLen Length of the seed in bytes

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _MIMXRT1180_CRYPTO_CONFIG_H
@@ -35,19 +35,19 @@
 #include "ele_crypto.h"
 
 //ELE-specific context (SHA-1)
-#define SHA1_PRIVATE_CONTEXT \
+#define SHA1_CONTEXT_PRIVATE \
    ele_hash_ctx_t eleContext;
 
 //ELE-specific context (SHA-256)
-#define SHA256_PRIVATE_CONTEXT \
+#define SHA256_CONTEXT_PRIVATE \
    ele_hash_ctx_t eleContext;
 
 //ELE-specific context (SHA-512)
-#define SHA512_PRIVATE_CONTEXT \
+#define SHA512_CONTEXT_PRIVATE \
    ele_hash_ctx_t eleContext;
 
 //ELE-specific context (SM3)
-#define SM3_PRIVATE_CONTEXT \
+#define SM3_CONTEXT_PRIVATE \
    ele_hash_ctx_t eleContext;
 
 #endif

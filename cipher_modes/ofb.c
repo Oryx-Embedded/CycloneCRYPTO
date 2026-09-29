@@ -34,7 +34,7 @@
  * Refer to SP 800-38A for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -94,9 +94,13 @@ __weak_func error_t ofbEncrypt(const CipherAlgo *cipher, void *context, uint_t s
          c[i] = p[i] ^ o[i];
       }
 
-      //Compute I(j+1) = LSB(I(j)) | O(j)
-      osMemmove(iv, iv + s, cipher->blockSize - s);
-      osMemcpy(iv + cipher->blockSize - s, o, s);
+      //Complete block?
+      if(n == s)
+      {
+         //Compute I(j+1) = LSB(I(j)) | O(j)
+         osMemmove(iv, iv + s, cipher->blockSize - s);
+         osMemcpy(iv + cipher->blockSize - s, o, s);
+      }
 
       //Next block
       p += n;

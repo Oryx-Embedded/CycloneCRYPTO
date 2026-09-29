@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -206,12 +206,11 @@ error_t rsaesPkcs1v15Encrypt(const PrngAlgo *prngAlgo, void *prngContext,
    ele_generic_rsa_t genericRsa = {0};
 
    //Check parameters
-   if(prngAlgo == NULL || prngContext == NULL)
+   if(prngAlgo == NULL || prngContext == NULL || key == NULL ||
+      message == NULL || ciphertext == NULL || ciphertextLen == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
-   if(key == NULL || message == NULL)
-      return ERROR_INVALID_PARAMETER;
-   if(ciphertext == NULL || ciphertextLen == NULL)
-      return ERROR_INVALID_PARAMETER;
+   }
 
    //Get the length of the modulus, in bits
    nLen = mpiGetBitLength(&key->n);
@@ -301,10 +300,11 @@ error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
    ele_generic_rsa_t genericRsa = {0};
 
    //Check parameters
-   if(key == NULL || ciphertext == NULL)
+   if(key == NULL || ciphertext == NULL || message == NULL ||
+      messageSize == 0 || messageLen == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
-   if(message == NULL || messageSize == 0 || messageLen == NULL)
-      return ERROR_INVALID_PARAMETER;
+   }
 
    //Get the length of the modulus, in bits
    nLen = mpiGetBitLength(&key->n);
@@ -386,8 +386,10 @@ error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
  * @param[in] key Recipient's RSA public key
- * @param[in] hash Underlying hash function
+ * @param[in] hash Hash function
+ * @param[in] mgfHash MGF hash function
  * @param[in] label Optional label to be associated with the message
+ * @param[in] labelLen Length of the label, in bytes
  * @param[in] message Message to be encrypted
  * @param[in] messageLen Length of the message to be encrypted
  * @param[out] ciphertext Ciphertext resulting from the encryption operation
@@ -396,9 +398,9 @@ error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
  **/
 
 error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo, void *prngContext,
-   const RsaPublicKey *key, const HashAlgo *hash, const char_t *label,
-   const uint8_t *message, size_t messageLen, uint8_t *ciphertext,
-   size_t *ciphertextLen)
+   const RsaPublicKey *key, const HashAlgo *hash, const HashAlgo *mgfHash,
+   const char_t *label, size_t labelLen, const uint8_t *message,
+   size_t messageLen, uint8_t *ciphertext, size_t *ciphertextLen)
 {
    error_t error;
    size_t nLen;
@@ -409,12 +411,12 @@ error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo, void *prngContext,
    ele_generic_rsa_t genericRsa = {0};
 
    //Check parameters
-   if(prngAlgo == NULL || prngContext == NULL)
+   if(prngAlgo == NULL || prngContext == NULL || key == NULL || hash == NULL ||
+      mgfHash == NULL || message == NULL || ciphertext == NULL ||
+      ciphertextLen == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
-   if(key == NULL || message == NULL)
-      return ERROR_INVALID_PARAMETER;
-   if(ciphertext == NULL || ciphertextLen == NULL)
-      return ERROR_INVALID_PARAMETER;
+   }
 
    //Select the relevant algorithm
    if(osStrcmp(hash->name, "SHA-1") == 0)
@@ -524,8 +526,10 @@ error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo, void *prngContext,
 /**
  * @brief RSAES-OAEP decryption operation
  * @param[in] key Recipient's RSA private key
- * @param[in] hash Underlying hash function
+ * @param[in] hash Hash function
+ * @param[in] mgfHash MGF hash function
  * @param[in] label Optional label to be associated with the message
+ * @param[in] labelLen Length of the label, in bytes
  * @param[in] ciphertext Ciphertext to be decrypted
  * @param[in] ciphertextLen Length of the ciphertext to be decrypted
  * @param[out] message Output buffer where to store the decrypted message
@@ -535,8 +539,9 @@ error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo, void *prngContext,
  **/
 
 error_t rsaesOaepDecrypt(const RsaPrivateKey *key, const HashAlgo *hash,
-   const char_t *label, const uint8_t *ciphertext, size_t ciphertextLen,
-   uint8_t *message, size_t messageSize, size_t *messageLen)
+   const HashAlgo *mgfHash, const char_t *label, size_t labelLen,
+   const uint8_t *ciphertext, size_t ciphertextLen, uint8_t *message,
+   size_t messageSize, size_t *messageLen)
 {
    error_t error;
    size_t nLen;
@@ -547,10 +552,11 @@ error_t rsaesOaepDecrypt(const RsaPrivateKey *key, const HashAlgo *hash,
    ele_generic_rsa_t genericRsa = {0};
 
    //Check parameters
-   if(key == NULL || ciphertext == NULL)
+   if(key == NULL || hash == NULL || mgfHash == NULL || ciphertext == NULL ||
+      message == NULL || messageSize == 0 || messageLen == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
-   if(message == NULL || messageSize == 0 || messageLen == NULL)
-      return ERROR_INVALID_PARAMETER;
+   }
 
    //Select the relevant algorithm
    if(osStrcmp(hash->name, "SHA-1") == 0)
@@ -687,10 +693,11 @@ error_t rsassaPkcs1v15Sign(const RsaPrivateKey *key, const HashAlgo *hash,
    ele_generic_rsa_t genericRsa = {0};
 
    //Check parameters
-   if(key == NULL || hash == NULL || digest == NULL)
+   if(key == NULL || hash == NULL || digest == NULL || signature == NULL ||
+      signatureLen == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
-   if(signature == NULL || signatureLen == NULL)
-      return ERROR_INVALID_PARAMETER;
+   }
 
    //Select the relevant algorithm
    if(osStrcmp(hash->name, "SHA-224") == 0)
@@ -906,6 +913,7 @@ error_t rsassaPkcs1v15Verify(const RsaPublicKey *key, const HashAlgo *hash,
  * @param[in] prngContext Pointer to the PRNG context
  * @param[in] key Signer's RSA private key
  * @param[in] hash Hash function used to digest the message
+ * @param[in] mgfHash MGF hash function
  * @param[in] saltLen Length of the salt, in bytes
  * @param[in] digest Digest of the message to be signed
  * @param[out] signature Resulting signature
@@ -914,8 +922,9 @@ error_t rsassaPkcs1v15Verify(const RsaPublicKey *key, const HashAlgo *hash,
  **/
 
 error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
-   const RsaPrivateKey *key, const HashAlgo *hash, size_t saltLen,
-   const uint8_t *digest, uint8_t *signature, size_t *signatureLen)
+   const RsaPrivateKey *key, const HashAlgo *hash, const HashAlgo *mgfHash,
+   size_t saltLen, const uint8_t *digest, uint8_t *signature,
+   size_t *signatureLen)
 {
    error_t error;
    size_t nLen;
@@ -925,10 +934,12 @@ error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
    ele_generic_rsa_t genericRsa = {0};
 
    //Check parameters
-   if(key == NULL || hash == NULL || digest == NULL)
+   if(prngAlgo == NULL || prngContext == NULL || key == NULL || hash == NULL ||
+      mgfHash == NULL || digest == NULL || signature == NULL ||
+      signatureLen == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
-   if(signature == NULL || signatureLen == NULL)
-      return ERROR_INVALID_PARAMETER;
+   }
 
    //Select the relevant algorithm
    if(osStrcmp(hash->name, "SHA-224") == 0)
@@ -1022,6 +1033,7 @@ error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
  * @brief RSASSA-PSS signature verification operation
  * @param[in] key Signer's RSA public key
  * @param[in] hash Hash function used to digest the message
+ * @param[in] mgfHash MGF hash function
  * @param[in] saltLen Length of the salt, in bytes
  * @param[in] digest Digest of the message whose signature is to be verified
  * @param[in] signature Signature to be verified
@@ -1030,8 +1042,8 @@ error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
  **/
 
 error_t rsassaPssVerify(const RsaPublicKey *key, const HashAlgo *hash,
-   size_t saltLen, const uint8_t *digest, const uint8_t *signature,
-   size_t signatureLen)
+   const HashAlgo *mgfHash, size_t saltLen, const uint8_t *digest,
+   const uint8_t *signature, size_t signatureLen)
 {
    error_t error;
    size_t nLen;
@@ -1041,8 +1053,11 @@ error_t rsassaPssVerify(const RsaPublicKey *key, const HashAlgo *hash,
    ele_generic_rsa_t genericRsa = {0};
 
    //Check parameters
-   if(key == NULL || hash == NULL || digest == NULL || signature == NULL)
+   if(key == NULL || hash == NULL || mgfHash == NULL || digest == NULL ||
+      signature == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Select the relevant algorithm
    if(osStrcmp(hash->name, "SHA-224") == 0)

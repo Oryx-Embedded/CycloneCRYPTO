@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -347,6 +347,16 @@ error_t x509FormatExtensionRequest(const X509Extensions *extensionReq,
 
    //Format KeyUsage extension
    error = x509FormatKeyUsage(&extensionReq->keyUsage, p, &n);
+   //Any error to report?
+   if(error)
+      return error;
+
+   //Advance data pointer
+   ASN1_INC_POINTER(p, n);
+   length += n;
+
+   //Format ExtendedKeyUsage extension
+   error = x509FormatExtendedKeyUsage(&extensionReq->extKeyUsage, p, &n);
    //Any error to report?
    if(error)
       return error;

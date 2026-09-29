@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _CIPHER_MODES_H
@@ -62,6 +62,39 @@
 //XTS mode support?
 #if (XTS_SUPPORT == ENABLED)
    #include "cipher_modes/xts.h"
+#endif
+
+//C++ guard
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+/**
+ * @brief Cipher operation modes
+ **/
+
+typedef enum
+{
+   CIPHER_MODE_NULL              = 0,
+   CIPHER_MODE_STREAM            = 1,
+   CIPHER_MODE_ECB               = 2,
+   CIPHER_MODE_CBC               = 3,
+   CIPHER_MODE_CFB               = 4,
+   CIPHER_MODE_OFB               = 5,
+   CIPHER_MODE_CTR               = 6,
+   CIPHER_MODE_CCM               = 7,
+   CIPHER_MODE_GCM               = 8,
+   CIPHER_MODE_GMAC              = 9,
+   CIPHER_MODE_XTS               = 10,
+   CIPHER_MODE_ASCON_AEAD128     = 11,
+   CIPHER_MODE_CHACHA20_POLY1305 = 12
+} CipherMode;
+
+
+//C++ guard
+#ifdef __cplusplus
+}
 #endif
 
 #endif

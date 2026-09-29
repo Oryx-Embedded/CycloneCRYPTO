@@ -1,6 +1,6 @@
 /**
- * @file ocsp_req_format.h
- * @brief OCSP request formatting
+ * @file tuple_hash_xof.h
+ * @brief TupleHashXOF (TupleHash with arbitrary-length output)
  *
  * @section License
  *
@@ -25,47 +25,47 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
-#ifndef _OCSP_REQ_FORMAT_H
-#define _OCSP_REQ_FORMAT_H
+#ifndef _TUPLE_HASH_XOF_H
+#define _TUPLE_HASH_XOF_H
 
 //Dependencies
-#include "ocsp/ocsp_common.h"
+#include "core/crypto.h"
+#include "xof/cshake.h"
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//OCSP related functions
-error_t ocspFormatRequest(const OcspRequest *request, uint8_t *output,
-   size_t *written);
 
-error_t ocspFormatTbsRequest(const OcspTbsRequest *tbsRequest, uint8_t *output,
-   size_t *written);
+/**
+ * @brief TupleHashXOF algorithm context
+ **/
 
-error_t ocspFormatVersion(OcspVersion version, uint8_t *output,
-   size_t *written);
+typedef struct
+{
+   CshakeContext cshakeContext;
+} TupleHashXofContext;
 
-error_t ocspFormatRequestList(const OcspSingleRequest *requestList,
-   uint_t numRequests, uint8_t *output, size_t *written);
 
-error_t ocspFormatSingleRequest(const OcspSingleRequest *singleRequest,
-   uint8_t *output, size_t *written);
+//TupleHashXOF related functions
+error_t tupleHashXofCompute(uint_t strength, const DataFrag *inputFrags,
+   uint_t inputNumFrags, const char_t *custom, size_t customLen,
+   uint8_t *output, size_t outputLen);
 
-error_t ocspFormatCertId(const OcspCertId *certId, uint8_t *output,
-   size_t *written);
+error_t tupleHashXofInit(TupleHashXofContext *context, uint_t strength,
+   const char_t *custom, size_t customLen);
 
-error_t ocspFormatHashAlgo(const OcspCertId *certId, uint8_t *output,
-   size_t *written);
+void tupleHashXofAbsorb(TupleHashXofContext *context, const void *input,
+   size_t length);
 
-error_t ocspFormatRequestExtensions(const OcspExtensions *extensions,
-   uint8_t *output, size_t *written);
+void tupleHashXofFinal(TupleHashXofContext *context);
 
-error_t ocspFormatNonceExtension(const X509OctetString *nonce, uint8_t *output,
-   size_t *written);
+void tupleHashXofSqueeze(TupleHashXofContext *context, uint8_t *output,
+   size_t length);
 
 //C++ guard
 #ifdef __cplusplus

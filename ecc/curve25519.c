@@ -1,6 +1,6 @@
 /**
  * @file curve25519.c
- * @brief Curve25519 elliptic curve (constant-time implementation)
+ * @brief Curve25519 elliptic curve
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -78,25 +78,6 @@ void curve25519SetInt(int32_t *a, int32_t b)
 
 void curve25519Add(int32_t *r, const int32_t *a, const int32_t *b)
 {
-#if (CURVE25519_SPEED_OPTIMIZATION_LEVEL <= 1)
-   uint_t i;
-   int32_t temp;
-
-   //Compute R = A + B
-   for(temp = 0, i = 0; i < 8; i++)
-   {
-      temp += a[i] + b[i];
-      r[i] = temp & 0x1FFFFFFF;
-      temp = ASR32(temp, 29);
-   }
-
-   temp += a[8] + b[8];
-   r[8] = temp & 0x007FFFFF;
-   temp = ASR32(temp, 23);
-
-   //Perform modular reduction (2^255 = 19)
-   r[0] += temp * 19;
-#else
    int32_t temp;
 
    //Compute R = A + B
@@ -130,7 +111,6 @@ void curve25519Add(int32_t *r, const int32_t *a, const int32_t *b)
 
    //Perform modular reduction (2^255 = 19)
    r[0] += temp * 19;
-#endif
 }
 
 
@@ -172,25 +152,6 @@ void curve25519AddInt(int32_t *r, const int32_t *a, int32_t b)
 
 void curve25519Sub(int32_t *r, const int32_t *a, const int32_t *b)
 {
-#if (CURVE25519_SPEED_OPTIMIZATION_LEVEL <= 1)
-   uint_t i;
-   int32_t temp;
-
-   //Compute R = A - B
-   for(temp = 0, i = 0; i < 8; i++)
-   {
-      temp += a[i] - b[i];
-      r[i] = temp & 0x1FFFFFFF;
-      temp = ASR32(temp, 29);
-   }
-
-   temp += a[8] - b[8];
-   r[8] = temp & 0x007FFFFF;
-   temp = ASR32(temp, 23);
-
-   //Perform modular reduction (2^255 = 19)
-   r[0] += temp * 19;
-#else
    int32_t temp;
 
    //Compute R = A - B
@@ -224,7 +185,6 @@ void curve25519Sub(int32_t *r, const int32_t *a, const int32_t *b)
 
    //Perform modular reduction
    r[0] += temp * 19;
-#endif
 }
 
 
@@ -266,60 +226,6 @@ void curve25519SubInt(int32_t *r, const int32_t *a, int32_t b)
 
 __weak_func void curve25519Mul(int32_t *r, const int32_t *a, const int32_t *b)
 {
-#if (CURVE25519_SPEED_OPTIMIZATION_LEVEL == 0)
-   uint_t i;
-   uint_t j;
-   int64_t temp;
-   int32_t u[18];
-
-   //Comba's method is used to perform multiplication
-   for(temp = 0, i = 0; i < 18; i++)
-   {
-      //The algorithm computes the products, column by column
-      if(i < 9)
-      {
-         //Inner loop
-         for(j = 0; j <= i; j++)
-         {
-            temp += (int64_t) a[j] * b[i - j];
-         }
-      }
-      else
-      {
-         //Inner loop
-         for(j = i - 8; j < 9; j++)
-         {
-            temp += (int64_t) a[j] * b[i - j];
-         }
-      }
-
-      //At the bottom of each column, the final result is written to memory
-      u[i] = temp & 0x1FFFFFFF;
-      //Propagate the carry upwards
-      temp = ASR64(temp, 29);
-   }
-
-   //Perform modular reduction (first pass)
-   for(temp = 0, i = 0; i < 8; i++)
-   {
-      temp += u[i];
-      temp += (int64_t) u[i + 9] * 1216;
-      r[i] = temp & 0x1FFFFFFF;
-      temp = ASR64(temp, 29);
-   }
-
-   temp += u[8];
-   temp += (int64_t) u[17] * 1216;
-   r[8] = temp & 0x007FFFFF;
-   temp = ASR64(temp, 23);
-
-   //Perform modular reduction (second pass)
-   temp *= 19;
-   temp += r[0];
-   r[0] = temp & 0x1FFFFFFF;
-   temp = ASR64(temp, 29);
-   r[1] += temp & 0xFFFFFFFF;
-#else
    int64_t temp;
    int32_t u[18];
 
@@ -485,7 +391,6 @@ __weak_func void curve25519Mul(int32_t *r, const int32_t *a, const int32_t *b)
    r[0] = temp & 0x1FFFFFFF;
    temp = ASR64(temp, 29);
    r[1] += temp & 0xFFFFFFFF;
-#endif
 }
 
 
@@ -496,31 +401,8 @@ __weak_func void curve25519Mul(int32_t *r, const int32_t *a, const int32_t *b)
  * @param[in] b An integer such as 0 <= B < (2^29 - 1)
  **/
 
-void curve25519MulInt(int32_t *r, const int32_t *a, int32_t b)
+__weak_func void curve25519MulInt(int32_t *r, const int32_t *a, int32_t b)
 {
-#if (CURVE25519_SPEED_OPTIMIZATION_LEVEL == 0)
-   int_t i;
-   int64_t temp;
-
-   //Compute R = A * B
-   for(temp = 0, i = 0; i < 8; i++)
-   {
-      temp += (int64_t) a[i] * b;
-      r[i] = temp & 0x1FFFFFFF;
-      temp = ASR64(temp, 29);
-   }
-
-   temp += (int64_t) a[8] * b;
-   r[8] = temp & 0x007FFFFF;
-   temp = ASR64(temp, 23);
-
-   //Perform modular reduction (2^255 = 19)
-   temp *= 19;
-   temp += r[0];
-   r[0] = temp & 0x1FFFFFFF;
-   temp = ASR64(temp, 29);
-   r[1] += temp & 0xFFFFFFFF;
-#else
    int64_t temp;
 
    //Compute R = A * B
@@ -558,7 +440,6 @@ void curve25519MulInt(int32_t *r, const int32_t *a, int32_t b)
    r[0] = temp & 0x1FFFFFFF;
    temp = ASR64(temp, 29);
    r[1] += temp & 0xFFFFFFFF;
-#endif
 }
 
 

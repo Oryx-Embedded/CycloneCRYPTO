@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _CONCAT_KDF_H
@@ -40,7 +40,7 @@ extern "C" {
 #endif
 
 //Concat KDF related functions
-error_t concatKdf(const HashAlgo *hash, const uint8_t *z, size_t zLen,
+error_t concatKdf(const HashAlgo *hashAlgo, const uint8_t *z, size_t zLen,
    const uint8_t *otherInfo, size_t otherInfoLen, uint8_t *dk, size_t dkLen);
 
 //C++ guard

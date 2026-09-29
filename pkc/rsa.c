@@ -33,7 +33,7 @@
  * - RFC 8017: PKCS #1: RSA Cryptography Specifications Version 2.2
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -417,12 +417,11 @@ __weak_func error_t rsaesPkcs1v15Encrypt(const PrngAlgo *prngAlgo,
    Mpi c;
 
    //Check parameters
-   if(prngAlgo == NULL || prngContext == NULL)
+   if(prngAlgo == NULL || prngContext == NULL || key == NULL ||
+      message == NULL || ciphertext == NULL || ciphertextLen == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
-   if(key == NULL || message == NULL)
-      return ERROR_INVALID_PARAMETER;
-   if(ciphertext == NULL || ciphertextLen == NULL)
-      return ERROR_INVALID_PARAMETER;
+   }
 
    //Debug message
    TRACE_DEBUG("RSAES-PKCS1-v1_5 encryption...\r\n");
@@ -526,10 +525,11 @@ __weak_func error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
 #endif
 
    //Check parameters
-   if(key == NULL || ciphertext == NULL)
+   if(key == NULL || ciphertext == NULL || message == NULL ||
+      messageSize == 0 || messageLen == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
-   if(message == NULL || messageSize == 0 || messageLen == NULL)
-      return ERROR_INVALID_PARAMETER;
+   }
 
    //Debug message
    TRACE_DEBUG("RSAES-PKCS1-v1_5 decryption...\r\n");
@@ -656,8 +656,10 @@ __weak_func error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
  * @param[in] key Recipient's RSA public key
- * @param[in] hash Underlying hash function
+ * @param[in] hash Hash function
+ * @param[in] mgfHash MGF hash function
  * @param[in] label Optional label to be associated with the message
+ * @param[in] labelLen Length of the label, in bytes
  * @param[in] message Message to be encrypted
  * @param[in] messageLen Length of the message to be encrypted
  * @param[out] ciphertext Ciphertext resulting from the encryption operation
@@ -667,8 +669,9 @@ __weak_func error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
 
 __weak_func error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo,
    void *prngContext, const RsaPublicKey *key, const HashAlgo *hash,
-   const char_t *label, const uint8_t *message, size_t messageLen,
-   uint8_t *ciphertext, size_t *ciphertextLen)
+   const HashAlgo *mgfHash, const char_t *label, size_t labelLen,
+   const uint8_t *message, size_t messageLen, uint8_t *ciphertext,
+   size_t *ciphertextLen)
 {
    error_t error;
    uint_t k;
@@ -677,12 +680,12 @@ __weak_func error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo,
    Mpi c;
 
    //Check parameters
-   if(prngAlgo == NULL || prngContext == NULL)
+   if(prngAlgo == NULL || prngContext == NULL || key == NULL || hash == NULL ||
+      mgfHash == NULL || message == NULL || ciphertext == NULL ||
+      ciphertextLen == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
-   if(key == NULL || message == NULL)
-      return ERROR_INVALID_PARAMETER;
-   if(ciphertext == NULL || ciphertextLen == NULL)
-      return ERROR_INVALID_PARAMETER;
+   }
 
    //Debug message
    TRACE_DEBUG("RSAES-OAEP encryption...\r\n");
@@ -708,8 +711,8 @@ __weak_func error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo,
    em = ciphertext;
 
    //EME-OAEP encoding
-   error = emeOaepEncode(prngAlgo, prngContext, hash, label, message,
-      messageLen, em, k);
+   error = emeOaepEncode(prngAlgo, prngContext, hash, mgfHash, label, labelLen,
+      message, messageLen, em, k);
    //Any error to report?
    if(error)
       return error;
@@ -761,8 +764,10 @@ __weak_func error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo,
 /**
  * @brief RSAES-OAEP decryption operation
  * @param[in] key Recipient's RSA private key
- * @param[in] hash Underlying hash function
+ * @param[in] hash Hash function
+ * @param[in] mgfHash MGF hash function
  * @param[in] label Optional label to be associated with the message
+ * @param[in] labelLen Length of the label, in bytes
  * @param[in] ciphertext Ciphertext to be decrypted
  * @param[in] ciphertextLen Length of the ciphertext to be decrypted
  * @param[out] message Output buffer where to store the decrypted message
@@ -772,9 +777,9 @@ __weak_func error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo,
  **/
 
 __weak_func error_t rsaesOaepDecrypt(const RsaPrivateKey *key,
-   const HashAlgo *hash, const char_t *label, const uint8_t *ciphertext,
-   size_t ciphertextLen, uint8_t *message, size_t messageSize,
-   size_t *messageLen)
+   const HashAlgo *hash, const HashAlgo *mgfHash, const char_t *label,
+   size_t labelLen, const uint8_t *ciphertext, size_t ciphertextLen,
+   uint8_t *message, size_t messageSize, size_t *messageLen)
 {
    error_t error;
    uint_t k;
@@ -794,10 +799,11 @@ __weak_func error_t rsaesOaepDecrypt(const RsaPrivateKey *key,
 #endif
 
    //Check parameters
-   if(key == NULL || ciphertext == NULL)
+   if(key == NULL || hash == NULL || mgfHash == NULL || ciphertext == NULL ||
+      message == NULL || messageSize == 0 || messageLen == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
-   if(message == NULL || messageSize == 0 || messageLen == NULL)
-      return ERROR_INVALID_PARAMETER;
+   }
 
    //Debug message
    TRACE_DEBUG("RSAES-OAEP decryption...\r\n");
@@ -874,7 +880,7 @@ __weak_func error_t rsaesOaepDecrypt(const RsaPrivateKey *key,
       TRACE_DEBUG_ARRAY("    ", em, k);
 
       //EME-OAEP decoding
-      badPadding = emeOaepDecode(hash, label, em, k, &n);
+      badPadding = emeOaepDecode(hash, mgfHash, label, labelLen, em, k, &n);
 
       //Check whether the output buffer is large enough to hold the decrypted
       //message
@@ -945,10 +951,11 @@ __weak_func error_t rsassaPkcs1v15Sign(const RsaPrivateKey *key,
    Mpi t;
 
    //Check parameters
-   if(key == NULL || hash == NULL || digest == NULL)
+   if(key == NULL || hash == NULL || digest == NULL || signature == NULL ||
+      signatureLen == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
-   if(signature == NULL || signatureLen == NULL)
-      return ERROR_INVALID_PARAMETER;
+   }
 
    //Debug message
    TRACE_DEBUG("RSASSA-PKCS1-v1_5 signature generation...\r\n");
@@ -1184,6 +1191,7 @@ __weak_func error_t rsassaPkcs1v15Verify(const RsaPublicKey *key,
  * @param[in] prngContext Pointer to the PRNG context
  * @param[in] key Signer's RSA private key
  * @param[in] hash Hash function used to digest the message
+ * @param[in] mgfHash MGF hash function
  * @param[in] saltLen Length of the salt, in bytes
  * @param[in] digest Digest of the message to be signed
  * @param[out] signature Resulting signature
@@ -1192,8 +1200,9 @@ __weak_func error_t rsassaPkcs1v15Verify(const RsaPublicKey *key,
  **/
 
 __weak_func error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
-   const RsaPrivateKey *key, const HashAlgo *hash, size_t saltLen,
-   const uint8_t *digest, uint8_t *signature, size_t *signatureLen)
+   const RsaPrivateKey *key, const HashAlgo *hash, const HashAlgo *mgfHash,
+   size_t saltLen, const uint8_t *digest, uint8_t *signature,
+   size_t *signatureLen)
 {
    error_t error;
    uint_t k;
@@ -1203,12 +1212,12 @@ __weak_func error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
    Mpi s;
 
    //Check parameters
-   if(prngAlgo == NULL || prngContext == NULL)
+   if(prngAlgo == NULL || prngContext == NULL || key == NULL || hash == NULL ||
+      mgfHash == NULL || digest == NULL || signature == NULL ||
+      signatureLen == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
-   if(key == NULL || hash == NULL || digest == NULL)
-      return ERROR_INVALID_PARAMETER;
-   if(signature == NULL || signatureLen == NULL)
-      return ERROR_INVALID_PARAMETER;
+   }
 
    //Debug message
    TRACE_DEBUG("RSASSA-PSS signature generation...\r\n");
@@ -1250,7 +1259,7 @@ __weak_func error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
 
    //Apply the EMSA-PSS encoding operation to the message M to produce an
    //encoded message EM of length ceil((modBits - 1) / 8) octets
-   error = emsaPssEncode(prngAlgo, prngContext, hash, saltLen, digest,
+   error = emsaPssEncode(prngAlgo, prngContext, hash, mgfHash, saltLen, digest,
       em, modBits - 1);
    //Any error to report?
    if(error)
@@ -1304,6 +1313,7 @@ __weak_func error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
  * @brief RSASSA-PSS signature verification operation
  * @param[in] key Signer's RSA public key
  * @param[in] hash Hash function used to digest the message
+ * @param[in] mgfHash MGF hash function
  * @param[in] saltLen Length of the salt, in bytes
  * @param[in] digest Digest of the message whose signature is to be verified
  * @param[in] signature Signature to be verified
@@ -1312,8 +1322,8 @@ __weak_func error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
  **/
 
 __weak_func error_t rsassaPssVerify(const RsaPublicKey *key,
-   const HashAlgo *hash, size_t saltLen, const uint8_t *digest,
-   const uint8_t *signature, size_t signatureLen)
+   const HashAlgo *hash, const HashAlgo *mgfHash, size_t saltLen,
+   const uint8_t *digest, const uint8_t *signature, size_t signatureLen)
 {
    error_t error;
    uint_t k;
@@ -1327,8 +1337,11 @@ __weak_func error_t rsassaPssVerify(const RsaPublicKey *key,
 #endif
 
    //Check parameters
-   if(key == NULL || hash == NULL || digest == NULL || signature == NULL)
+   if(key == NULL || hash == NULL || mgfHash == NULL || digest == NULL ||
+      signature == NULL)
+   {
       return ERROR_INVALID_PARAMETER;
+   }
 
    //Debug message
    TRACE_DEBUG("RSASSA-PSS signature verification...\r\n");
@@ -1399,7 +1412,7 @@ __weak_func error_t rsassaPssVerify(const RsaPublicKey *key,
 
       //Apply the EMSA-PSS verification operation to the message M and the
       //encoded message EM to determine whether they are consistent
-      error = emsaPssVerify(hash, saltLen, digest, em, modBits - 1);
+      error = emsaPssVerify(hash, mgfHash, saltLen, digest, em, modBits - 1);
       //Any error to report?
       if(error)
       {

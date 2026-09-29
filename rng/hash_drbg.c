@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -144,7 +144,7 @@ error_t hashDrbgSeedEx(HashDrbgContext *context, const uint8_t *entropyInput,
    const uint8_t *personalizationString, size_t personalizationStringLen)
 {
    uint8_t k;
-   DataChunk input[3];
+   DataFrag inputFrags[3];
 
    //Check parameters
    if(context == NULL || entropyInput == NULL)
@@ -181,27 +181,27 @@ error_t hashDrbgSeedEx(HashDrbgContext *context, const uint8_t *entropyInput,
    osAcquireMutex(&context->mutex);
 
    //Let seed_material = entropy_input || nonce || personalization_string
-   input[0].buffer = entropyInput;
-   input[0].length = entropyInputLen;
-   input[1].buffer = nonce;
-   input[1].length = nonceLen;
-   input[2].buffer = personalizationString;
-   input[2].length = personalizationStringLen;
+   inputFrags[0].buffer = entropyInput;
+   inputFrags[0].length = entropyInputLen;
+   inputFrags[1].buffer = nonce;
+   inputFrags[1].length = nonceLen;
+   inputFrags[2].buffer = personalizationString;
+   inputFrags[2].length = personalizationStringLen;
 
    //Compute V = Hash_df(seed_material, seedlen)
-   hashDf(context, input, 3, context->v, context->seedLen);
+   hashDf(context, inputFrags, 3, context->v, context->seedLen);
 
    //Constant byte 0x00
    k = 0;
 
    //Precede V with a byte of zeros
-   input[0].buffer = &k;
-   input[0].length = sizeof(k);
-   input[1].buffer = context->v;
-   input[1].length = context->seedLen;
+   inputFrags[0].buffer = &k;
+   inputFrags[0].length = sizeof(k);
+   inputFrags[1].buffer = context->v;
+   inputFrags[1].length = context->seedLen;
 
    //Compute C = Hash_df((0x00 || V), seedlen)
-   hashDf(context, input, 2, context->c, context->seedLen);
+   hashDf(context, inputFrags, 2, context->c, context->seedLen);
 
    //Reset reseed_counter
    context->reseedCounter = 1;
@@ -246,7 +246,7 @@ error_t hashDrbgReseedEx(HashDrbgContext *context, const uint8_t *entropyInput,
    size_t additionalInputLen)
 {
    uint8_t k;
-   DataChunk input[4];
+   DataFrag inputFrags[4];
    uint8_t seed[HASH_DRBG_MAX_SEED_LEN];
 
    //Check parameters
@@ -279,17 +279,17 @@ error_t hashDrbgReseedEx(HashDrbgContext *context, const uint8_t *entropyInput,
    k = 1;
 
    //Let seed_material = 0x01 || V || entropy_input || additional_input
-   input[0].buffer = &k;
-   input[0].length = sizeof(k);
-   input[1].buffer = context->v;
-   input[1].length = context->seedLen;
-   input[2].buffer = entropyInput;
-   input[2].length = entropyInputLen;
-   input[3].buffer = additionalInput;
-   input[3].length = additionalInputLen;
+   inputFrags[0].buffer = &k;
+   inputFrags[0].length = sizeof(k);
+   inputFrags[1].buffer = context->v;
+   inputFrags[1].length = context->seedLen;
+   inputFrags[2].buffer = entropyInput;
+   inputFrags[2].length = entropyInputLen;
+   inputFrags[3].buffer = additionalInput;
+   inputFrags[3].length = additionalInputLen;
 
    //Compute seed = Hash_df(seed_material, seedlen)
-   hashDf(context, input, 4, seed, context->seedLen);
+   hashDf(context, inputFrags, 4, seed, context->seedLen);
    //Set V = seed
    osMemcpy(context->v, seed, context->seedLen);
 
@@ -297,13 +297,13 @@ error_t hashDrbgReseedEx(HashDrbgContext *context, const uint8_t *entropyInput,
    k = 0;
 
    //Precede V with a byte of zeros
-   input[0].buffer = &k;
-   input[0].length = sizeof(k);
-   input[1].buffer = context->v;
-   input[1].length = context->seedLen;
+   inputFrags[0].buffer = &k;
+   inputFrags[0].length = sizeof(k);
+   inputFrags[1].buffer = context->v;
+   inputFrags[1].length = context->seedLen;
 
    //Compute C = Hash_df((0x00 || V), seedlen)
-   hashDf(context, input, 2, context->c, context->seedLen);
+   hashDf(context, inputFrags, 2, context->c, context->seedLen);
 
    //Reset reseed_counter
    context->reseedCounter = 1;
@@ -454,14 +454,14 @@ void hashDrbgDeinit(HashDrbgContext *context)
 /**
  * @brief Hash derivation function
  * @param[in] context Pointer to the Hash_DRBG context
- * @param[in] input The string to be hashed
- * @param[in] inputLen Number of data chunks representing the input
+ * @param[in] inputFrags Array of fragments representing the string to be hashed
+ * @param[in] inputNumFrags Number of fragments representing the input string
  * @param[out] output Buffer where to store the output value
  * @param[out] outputLen The number of bytes to be returned
  **/
 
-void hashDf(HashDrbgContext *context, const DataChunk *input, uint_t inputLen,
-   uint8_t *output, size_t outputLen)
+void hashDf(HashDrbgContext *context, const DataFrag *inputFrags,
+   uint_t inputNumFrags, uint8_t *output, size_t outputLen)
 {
    size_t i;
    size_t n;
@@ -490,9 +490,10 @@ void hashDf(HashDrbgContext *context, const DataChunk *input, uint_t inputLen,
       hashAlgo->update(hashContext, &counter, sizeof(counter));
       hashAlgo->update(hashContext, buffer, sizeof(buffer));
 
-      for(i = 0; i < inputLen; i++)
+      for(i = 0; i < inputNumFrags; i++)
       {
-         hashAlgo->update(hashContext, input[i].buffer, input[i].length);
+         hashAlgo->update(hashContext, inputFrags[i].buffer,
+            inputFrags[i].length);
       }
 
       hashAlgo->final(hashContext, digest);

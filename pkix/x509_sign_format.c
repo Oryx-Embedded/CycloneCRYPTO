@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -36,6 +36,7 @@
 #include "pkix/x509_sign_format.h"
 #include "pkix/x509_sign_generate.h"
 #include "encoding/asn1.h"
+#include "encoding/oid.h"
 #include "debug.h"
 
 //Check crypto library configuration
@@ -111,9 +112,29 @@ error_t x509FormatSignatureAlgo(const X509SignAlgoId *signatureAlgo,
    //RSA-PSS signature algorithm?
    if(signAlgo == X509_SIGN_ALGO_RSA_PSS)
    {
-      //The parameters must be present when used in the algorithm identifier
-      //associated with a signature value (refer to RFC 4055, section 3.1)
-      error = x509FormatRsaPssParameters(&signatureAlgo->rsaPssParams, p, &n);
+      size_t oidLen;
+      const uint8_t *oid;
+
+      //Point to the object identifier
+      oid = signatureAlgo->oid.value;
+      oidLen = signatureAlgo->oid.length;
+
+      //RSA-PSS with SHAKE signature algorithm?
+      if(OID_COMP(oid, oidLen, RSASSA_PSS_SHAKE128_OID) == 0 ||
+         OID_COMP(oid, oidLen, RSASSA_PSS_SHAKE256_OID) == 0)
+      {
+         //The encoding must omit the parameters field. Parameters are not used
+         //because the hash, mask generation algorithm, trailer, and salt are
+         //embedded in the OID definition (refer to RFC 8692, section 4.1.1)
+         n = 0;
+      }
+      else
+      {
+         //The parameters must be present when used in the algorithm identifier
+         //associated with a signature value (refer to RFC 4055, section 3.1)
+         error = x509FormatRsaPssParameters(&signatureAlgo->rsaPssParams, p,
+            &n);
+      }
    }
    else
 #endif

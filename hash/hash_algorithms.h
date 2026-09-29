@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _HASH_ALGORITHMS_H
@@ -114,6 +114,26 @@
    #include "hash/sha3_512.h"
 #endif
 
+//SHAKE128/256 hash support?
+#if (SHAKE128_256_SUPPORT == ENABLED)
+   #include "hash/shake128_256.h"
+#endif
+
+//SHAKE256/512 hash support?
+#if (SHAKE256_512_SUPPORT == ENABLED)
+   #include "hash/shake256_512.h"
+#endif
+
+//TupleHash hash support?
+#if (TUPLE_HASH_SUPPORT == ENABLED)
+   #include "hash/tuple_hash.h"
+#endif
+
+//ParallelHash hash support?
+#if (PARALLEL_HASH_SUPPORT == ENABLED)
+   #include "hash/parallel_hash.h"
+#endif
+
 //Ascon-Hash256 hash support?
 #if (ASCON_HASH256_SUPPORT == ENABLED)
    #include "lwc/ascon_hash256.h"
@@ -175,8 +195,12 @@
 #endif
 
 //Maximum block size
-#if (SHA3_224_SUPPORT == ENABLED)
+#if (SHAKE128_256_SUPPORT == ENABLED)
+   #define MAX_HASH_BLOCK_SIZE SHAKE128_256_BLOCK_SIZE
+#elif (SHA3_224_SUPPORT == ENABLED)
    #define MAX_HASH_BLOCK_SIZE SHA3_224_BLOCK_SIZE
+#elif (SHAKE256_512_SUPPORT == ENABLED)
+   #define MAX_HASH_BLOCK_SIZE SHAKE256_512_BLOCK_SIZE
 #elif (SHA3_256_SUPPORT == ENABLED)
    #define MAX_HASH_BLOCK_SIZE SHA3_256_BLOCK_SIZE
 #elif (BLAKE2B512_SUPPORT == ENABLED)
@@ -238,6 +262,8 @@
    #define MAX_HASH_DIGEST_SIZE WHIRLPOOL_DIGEST_SIZE
 #elif (BLAKE2B512_SUPPORT == ENABLED)
    #define MAX_HASH_DIGEST_SIZE BLAKE2B512_DIGEST_SIZE
+#elif (SHAKE256_512_SUPPORT == ENABLED)
+   #define MAX_HASH_DIGEST_SIZE SHAKE256_512_DIGEST_SIZE
 #elif (SHA3_512_SUPPORT == ENABLED)
    #define MAX_HASH_DIGEST_SIZE SHA3_512_DIGEST_SIZE
 #elif (SHA512_SUPPORT == ENABLED)
@@ -252,6 +278,8 @@
    #define MAX_HASH_DIGEST_SIZE BLAKE2B256_DIGEST_SIZE
 #elif (BLAKE2S256_SUPPORT == ENABLED)
    #define MAX_HASH_DIGEST_SIZE BLAKE2S256_DIGEST_SIZE
+#elif (SHAKE128_256_SUPPORT == ENABLED)
+   #define MAX_HASH_DIGEST_SIZE SHAKE128_256_DIGEST_SIZE
 #elif (SHA3_256_SUPPORT == ENABLED)
    #define MAX_HASH_DIGEST_SIZE SHA3_256_DIGEST_SIZE
 #elif (SHA512_256_SUPPORT == ENABLED)
@@ -351,6 +379,18 @@ typedef union
 #endif
 #if (SHA3_512_SUPPORT == ENABLED)
    Sha3_512Context sha3_512Context;
+#endif
+#if (SHAKE128_256_SUPPORT == ENABLED)
+   Shake128_256Context shake128_256Context;
+#endif
+#if (SHAKE256_512_SUPPORT == ENABLED)
+   Shake256_512Context shake256_512Context;
+#endif
+#if (TUPLE_HASH_SUPPORT == ENABLED)
+   TupleHashContext tupleHashContext;
+#endif
+#if (PARALLEL_HASH_SUPPORT == ENABLED)
+   ParallelHashContext parallelHashContext;
 #endif
 #if (ASCON_HASH256_SUPPORT == ENABLED)
    AsconHash256Context asconHash256Context;

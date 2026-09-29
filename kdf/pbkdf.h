@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _PBKDF_H
@@ -39,15 +39,34 @@
 extern "C" {
 #endif
 
+
+/**
+ * @brief PBKDF2 pseudorandom functions
+ **/
+
+typedef enum
+{
+   PBKDF2_TYPE_HMAC             = 1,
+   PBKDF2_TYPE_AES_CMAC_PRF_128 = 2
+} Pbkdf2Type;
+
+
 //PBKDF related constants
 extern const uint8_t PBKDF2_OID[9];
 
 //PBKDF related functions
-error_t pbkdf1(const HashAlgo *hash, const uint8_t *p, size_t pLen,
+error_t pbkdf1(const HashAlgo *hashAlgo, const uint8_t *p, size_t pLen,
    const uint8_t *s, size_t sLen, uint_t c, uint8_t *dk, size_t dkLen);
 
-error_t pbkdf2(const HashAlgo *hash, const uint8_t *p, size_t pLen,
+error_t pbkdf2(Pbkdf2Type type, const HashAlgo *hashAlgo, const uint8_t *p,
+   size_t pLen, const uint8_t *s, size_t sLen, uint_t c, uint8_t *dk,
+   size_t dkLen);
+
+error_t pbkdf2Hmac(const HashAlgo *hashAlgo, const uint8_t *p, size_t pLen,
    const uint8_t *s, size_t sLen, uint_t c, uint8_t *dk, size_t dkLen);
+
+error_t pbkdf2AesCmacPrf128(const uint8_t *p, size_t pLen, const uint8_t *s,
+   size_t sLen, uint_t c, uint8_t *dk, size_t dkLen);
 
 //C++ guard
 #ifdef __cplusplus

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _ASCON_CXOF128_H
@@ -34,6 +34,9 @@
 //Dependencies
 #include "core/crypto.h"
 #include "lwc/ascon.h"
+
+//Common interface for XOF algorithms
+#define ASCON_CXOF128_XOF_ALGO (&asconCxof128XofAlgo)
 
 //C++ guard
 #ifdef __cplusplus
@@ -52,6 +55,10 @@ typedef struct
    size_t length;
 } AsconCxof128Context;
 
+
+//Ascon-CXOF128 related constants
+extern const uint8_t ASCON_CXOF128_OID[1];
+extern const XofAlgo asconCxof128XofAlgo;
 
 //Ascon-CXOF128 related functions
 error_t asconCxof128Compute(const void *input, size_t inputLen,

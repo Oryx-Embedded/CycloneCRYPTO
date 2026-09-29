@@ -34,7 +34,7 @@
  * unpredictable. Refer to SP 800-38A for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -94,9 +94,13 @@ __weak_func error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s
          c[i] = p[i] ^ o[i];
       }
 
-      //Compute I(j+1) = LSB(I(j)) | C(j)
-      osMemmove(iv, iv + s, cipher->blockSize - s);
-      osMemcpy(iv + cipher->blockSize - s, c, s);
+      //Complete block?
+      if(n == s)
+      {
+         //Compute I(j+1) = LSB(I(j)) | C(j)
+         osMemmove(iv, iv + s, cipher->blockSize - s);
+         osMemcpy(iv + cipher->blockSize - s, c, s);
+      }
 
       //Next block
       p += n;
@@ -148,9 +152,13 @@ __weak_func error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s
       //Compute O(j) = CIPH(I(j))
       cipher->encryptBlock(context, iv, o);
 
-      //Compute I(j+1) = LSB(I(j)) | C(j)
-      osMemmove(iv, iv + s, cipher->blockSize - s);
-      osMemcpy(iv + cipher->blockSize - s, c, s);
+      //Complete block?
+      if(n == s)
+      {
+         //Compute I(j+1) = LSB(I(j)) | C(j)
+         osMemmove(iv, iv + s, cipher->blockSize - s);
+         osMemcpy(iv + cipher->blockSize - s, c, s);
+      }
 
       //Compute P(j) = C(j) XOR MSB(O(j))
       for(i = 0; i < n; i++)

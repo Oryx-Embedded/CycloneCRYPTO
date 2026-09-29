@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -139,7 +139,6 @@ error_t pkcs7DecryptData(const Pkcs7EncryptedContentInfo *encryptedContentInfo,
    const uint8_t *key, size_t keyLen, uint8_t *plaintext, size_t *plaintextLen)
 {
    error_t error;
-   uint32_t bad;
    size_t n;
    size_t ivLen;
    size_t paddingLen;
@@ -192,13 +191,16 @@ error_t pkcs7DecryptData(const Pkcs7EncryptedContentInfo *encryptedContentInfo,
       return error;
 
    //Verify padding string
-   bad = pkcs7VerifyPadding(plaintext, n, cipherAlgo->blockSize, &paddingLen);
+   error = pkcs7VerifyPadding(plaintext, n, cipherAlgo->blockSize, &paddingLen);
+   //Any error to report?
+   if(error)
+      return error;
 
    //Strip padding bytes from the plaintext
    *plaintextLen = n - paddingLen;
 
-   //Return status code
-   return bad ? ERROR_DECRYPTION_FAILED : NO_ERROR;
+   //Successful processing
+   return NO_ERROR;
 }
 
 
@@ -208,10 +210,10 @@ error_t pkcs7DecryptData(const Pkcs7EncryptedContentInfo *encryptedContentInfo,
  * @param[in] dataLen Length of the plaintext data
  * @param[in] blockSize Block size of the underlying cipher algorithm
  * @param[out] paddingLen Length of the padding string
- * @return The function returns 0 if the padding is correct, 1 on failure
+ * @return Error code
  **/
 
-uint32_t pkcs7VerifyPadding(const uint8_t *data, size_t dataLen,
+error_t pkcs7VerifyPadding(const uint8_t *data, size_t dataLen,
    size_t blockSize, size_t *paddingLen)
 {
    size_t i;
@@ -230,7 +232,7 @@ uint32_t pkcs7VerifyPadding(const uint8_t *data, size_t dataLen,
    bad |= CRYPTO_TEST_GT_32(n, dataLen);
 
    //Each byte in the padding data must be filled with the padding length value
-   for(i = 1; i < dataLen && i < 256; i++)
+   for(i = 1; i < dataLen && i < blockSize; i++)
    {
       //Read current byte
       b = data[dataLen - 1 - i];
@@ -245,7 +247,7 @@ uint32_t pkcs7VerifyPadding(const uint8_t *data, size_t dataLen,
    *paddingLen = CRYPTO_SELECT_32(n, 0, bad);
 
    //Return status code
-   return bad;
+   return bad ? ERROR_DECRYPTION_FAILED : NO_ERROR;
 }
 
 

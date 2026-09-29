@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -123,9 +123,66 @@ error_t x509VerifySignature(const X509OctetString *tbsData,
          //RSA-PSS signature algorithm?
          if(signAlgo == X509_SIGN_ALGO_RSA_PSS)
          {
-            //Verify RSA signature (RSASSA-PSS signature scheme)
-            error = x509VerifyRsaPssSignature(tbsData, hashAlgo,
-               signAlgoId->rsaPssParams.saltLen, publicKeyInfo, signature);
+            size_t oidLen;
+            const uint8_t *oid;
+            const HashAlgo *mgfHashAlgo;
+
+            //Get the OID of the signature algorithm
+            oid = signAlgoId->oid.value;
+            oidLen = signAlgoId->oid.length;
+
+            //Check signature algorithm
+            if(OID_COMP(oid, oidLen, RSASSA_PSS_SHAKE128_OID) == 0)
+            {
+               //The saltLength must be 32 bytes for id-RSASSA-PSS-SHAKE128
+               //(refer to RFC 8692, section 4.1.1)
+               error = x509VerifyRsaPssSignature(tbsData, hashAlgo, hashAlgo,
+                  32, publicKeyInfo, signature);
+            }
+            else if(OID_COMP(oid, oidLen, RSASSA_PSS_SHAKE256_OID) == 0)
+            {
+               //The saltLength must be 64 bytes for id-RSASSA-PSS-SHAKE256
+               //(refer to RFC 8692, section 4.1.1)
+               error = x509VerifyRsaPssSignature(tbsData, hashAlgo, hashAlgo,
+                  64, publicKeyInfo, signature);
+            }
+            else
+            {
+               //Get the OID of the MGF algorithm
+               oid = signAlgoId->rsaPssParams.maskGenAlgo.value;
+               oidLen = signAlgoId->rsaPssParams.maskGenAlgo.length;
+
+               //MGF1 mask generation function?
+               if(OID_COMP(oid, oidLen, MGF1_OID) == 0)
+               {
+                  //Get the OID of the MGF hash algorithm
+                  oid = signAlgoId->rsaPssParams.maskGenHashAlgo.value;
+                  oidLen = signAlgoId->rsaPssParams.maskGenHashAlgo.length;
+
+                  //Select the MGF hash algorithm
+                  mgfHashAlgo = x509GetHashAlgo(oid, oidLen);
+
+                  //Valid MGF hash algorithm?
+                  if(mgfHashAlgo != NULL)
+                  {
+                     //The saltLength field of the RSASSA-PSS-params is the
+                     //octet length of the salt
+                     error = x509VerifyRsaPssSignature(tbsData, hashAlgo,
+                        mgfHashAlgo, signAlgoId->rsaPssParams.saltLen,
+                        publicKeyInfo, signature);
+                  }
+                  else
+                  {
+                     //The MGF hash algorithm is not supported
+                     error = ERROR_UNSUPPORTED_SIGNATURE_ALGO;
+                  }
+               }
+               else
+               {
+                  //The MGF algorithm is not supported
+                  error = ERROR_UNSUPPORTED_SIGNATURE_ALGO;
+               }
+            }
          }
          else
 #endif
@@ -244,7 +301,7 @@ error_t x509VerifyRsaSignature(const X509OctetString *tbsData,
    //Initialize RSA public key
    rsaInitPublicKey(&rsaPublicKey);
 
-   //Check algorithm identifier
+   //Check public key identifier
    if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
       RSA_ENCRYPTION_OID) == 0)
    {
@@ -301,7 +358,8 @@ error_t x509VerifyRsaSignature(const X509OctetString *tbsData,
 /**
  * @brief RSA-PSS signature verification
  * @param[in] tbsData Data whose signature is to be verified
- * @param[in] hashAlgo Underlying hash function
+ * @param[in] hashAlgo Hash function
+ * @param[in] mgfHashAlgo MGF hash function
  * @param[in] saltLen Length of the salt, in bytes
  * @param[in] publicKeyInfo Issuer's public key
  * @param[in] signature Signature to be verified
@@ -309,7 +367,7 @@ error_t x509VerifyRsaSignature(const X509OctetString *tbsData,
  **/
 
 error_t x509VerifyRsaPssSignature(const X509OctetString *tbsData,
-   const HashAlgo *hashAlgo, size_t saltLen,
+   const HashAlgo *hashAlgo, const HashAlgo *mgfHashAlgo, size_t saltLen,
    const X509SubjectPublicKeyInfo *publicKeyInfo,
    const X509OctetString *signature)
 {
@@ -322,7 +380,7 @@ error_t x509VerifyRsaPssSignature(const X509OctetString *tbsData,
    //Initialize RSA public key
    rsaInitPublicKey(&rsaPublicKey);
 
-   //Check algorithm identifier
+   //Check public key identifier
    if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
       RSASSA_PSS_OID) == 0)
    {
@@ -354,8 +412,8 @@ error_t x509VerifyRsaPssSignature(const X509OctetString *tbsData,
       if(!error)
       {
          //Verify RSA signature (RSASSA-PSS signature scheme)
-         error = rsassaPssVerify(&rsaPublicKey, hashAlgo, saltLen, digest,
-            signature->value, signature->length);
+         error = rsassaPssVerify(&rsaPublicKey, hashAlgo, mgfHashAlgo, saltLen,
+            digest, signature->value, signature->length);
       }
    }
    else
@@ -401,7 +459,7 @@ error_t x509VerifyDsaSignature(const X509OctetString *tbsData,
    //Initialize DSA signature
    dsaInitSignature(&dsaSignature);
 
-   //Check algorithm identifier
+   //Check public key identifier
    if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
       DSA_OID) == 0)
    {
@@ -489,7 +547,7 @@ error_t x509VerifyEcdsaSignature(const X509OctetString *tbsData,
    //Initialize ECDSA signature
    ecdsaInitSignature(&ecdsaSignature);
 
-   //Check algorithm identifier
+   //Check public key identifier
    if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
       EC_PUBLIC_KEY_OID) == 0)
    {
@@ -576,7 +634,7 @@ error_t x509VerifySm2Signature(const X509OctetString *tbsData,
    //Initialize SM2 signature
    ecdsaInitSignature(&sm2Signature);
 
-   //Check algorithm identifier
+   //Check public key identifier
    if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
       EC_PUBLIC_KEY_OID) == 0)
    {
@@ -646,7 +704,7 @@ error_t x509VerifyEd25519Signature(const X509OctetString *tbsData,
 #if (X509_ED25519_SUPPORT == ENABLED && ED25519_SUPPORT == ENABLED)
    error_t error;
 
-   //Check algorithm identifier
+   //Check public key identifier
    if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
       ED25519_OID) == 0)
    {
@@ -702,7 +760,7 @@ error_t x509VerifyEd448Signature(const X509OctetString *tbsData,
 #if (X509_ED448_SUPPORT == ENABLED && ED448_SUPPORT == ENABLED)
    error_t error;
 
-   //Check algorithm identifier
+   //Check public key identifier
    if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
       ED448_OID) == 0)
    {
@@ -758,7 +816,7 @@ error_t x509VerifyMldsa44Signature(const X509OctetString *tbsData,
 #if (X509_MLDSA44_SUPPORT == ENABLED && MLDSA44_SUPPORT == ENABLED)
    error_t error;
 
-   //Check algorithm identifier
+   //Check public key identifier
    if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
       MLDSA44_OID) == 0)
    {
@@ -814,7 +872,7 @@ error_t x509VerifyMldsa65Signature(const X509OctetString *tbsData,
 #if (X509_MLDSA65_SUPPORT == ENABLED && MLDSA65_SUPPORT == ENABLED)
    error_t error;
 
-   //Check algorithm identifier
+   //Check public key identifier
    if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
       MLDSA65_OID) == 0)
    {
@@ -870,7 +928,7 @@ error_t x509VerifyMldsa87Signature(const X509OctetString *tbsData,
 #if (X509_MLDSA87_SUPPORT == ENABLED && MLDSA87_SUPPORT == ENABLED)
    error_t error;
 
-   //Check algorithm identifier
+   //Check public key identifier
    if(OID_COMP(publicKeyInfo->oid.value, publicKeyInfo->oid.length,
       MLDSA87_OID) == 0)
    {

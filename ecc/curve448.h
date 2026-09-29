@@ -1,6 +1,6 @@
 /**
  * @file curve448.h
- * @brief Curve448 elliptic curve (constant-time implementation)
+ * @brief Curve448 elliptic curve
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _CURVE448_H
@@ -33,13 +33,6 @@
 
 //Dependencies
 #include "core/crypto.h"
-
-//Speed optimization level
-#ifndef CURVE448_SPEED_OPTIMIZATION_LEVEL
-   #define CURVE448_SPEED_OPTIMIZATION_LEVEL 2
-#elif (CURVE448_SPEED_OPTIMIZATION_LEVEL < 0)
-   #error CURVE448_SPEED_OPTIMIZATION_LEVEL parameter is not valid
-#endif
 
 //Length of the elliptic curve
 #define CURVE448_BIT_LEN 448

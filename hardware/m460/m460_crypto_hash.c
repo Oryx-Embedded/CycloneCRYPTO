@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -70,7 +70,8 @@ void hashProcessData(uint32_t opmode, const uint8_t *data,
       CRPT_HMAC_CTL_DMACSCAD_Msk | opmode;
 
    //SHA-1, SHA-224 or SHA-256 algorithm?
-   if(opmode == CRPT_HMAC_CTL_OPMODE_SHA1 || opmode == CRPT_HMAC_CTL_OPMODE_SHA224 ||
+   if(opmode == CRPT_HMAC_CTL_OPMODE_SHA1 ||
+      opmode == CRPT_HMAC_CTL_OPMODE_SHA224 ||
       opmode == CRPT_HMAC_CTL_OPMODE_SHA256)
    {
       //Restore initial hash value
@@ -109,7 +110,8 @@ void hashProcessData(uint32_t opmode, const uint8_t *data,
    }
 
    //SHA-1, SHA-224 or SHA-256 algorithm?
-   if(opmode == CRPT_HMAC_CTL_OPMODE_SHA1 || opmode == CRPT_HMAC_CTL_OPMODE_SHA224 ||
+   if(opmode == CRPT_HMAC_CTL_OPMODE_SHA1 ||
+      opmode == CRPT_HMAC_CTL_OPMODE_SHA224 ||
       opmode == CRPT_HMAC_CTL_OPMODE_SHA256)
    {
       //Save intermediate hash value

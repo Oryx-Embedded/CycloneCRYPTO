@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _SHA1_H
@@ -35,8 +35,8 @@
 #include "core/crypto.h"
 
 //Application specific context
-#ifndef SHA1_PRIVATE_CONTEXT
-   #define SHA1_PRIVATE_CONTEXT
+#ifndef SHA1_CONTEXT_PRIVATE
+   #define SHA1_CONTEXT_PRIVATE
 #endif
 
 //SHA-1 block size
@@ -68,7 +68,7 @@ typedef struct
    };
    size_t size;
    uint64_t totalSize;
-   SHA1_PRIVATE_CONTEXT
+   SHA1_CONTEXT_PRIVATE
 } Sha1Context;
 
 

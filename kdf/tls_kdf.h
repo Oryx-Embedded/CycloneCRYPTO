@@ -1,6 +1,6 @@
 /**
- * @file ocsp_req_create.h
- * @brief OCSP request generation
+ * @file tls_kdf.h
+ * @brief TLS key derivation functions
  *
  * @section License
  *
@@ -25,24 +25,32 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
-#ifndef _OCSP_REQ_CREATE_H
-#define _OCSP_REQ_CREATE_H
+#ifndef _TLS_KDF_H
+#define _TLS_KDF_H
 
 //Dependencies
-#include "ocsp/ocsp_common.h"
+#include "core/crypto.h"
 
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//OCSP related functions
-error_t ocspCreateRequest(const X509CertInfo *certInfo,
-   const X509CertInfo *issuerCertInfo, const uint8_t *nonce,
-   size_t nonceLen, uint8_t *output, size_t *written);
+//TLS KDF related functions
+error_t tlsPrf(const uint8_t *secret, size_t secretLen, const char_t *label,
+   const uint8_t *seed, size_t seedLen, uint8_t *output, size_t outputLen);
+
+error_t tls12Prf(const HashAlgo *hashAlgo, const uint8_t *secret,
+   size_t secretLen, const char_t *label, const uint8_t *seed, size_t seedLen,
+   uint8_t *output, size_t outputLen);
+
+error_t hkdfExpandLabel(const HashAlgo *hashAlgo, const uint8_t *secret,
+   size_t secretLen, const char_t *prefix, const char_t *label,
+   const uint8_t *context, size_t contextLen, uint8_t *output,
+   size_t outputLen);
 
 //C++ guard
 #ifdef __cplusplus

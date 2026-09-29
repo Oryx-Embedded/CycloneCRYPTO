@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _X509_SIGN_VERIFY_H
@@ -64,7 +64,7 @@ error_t x509VerifyRsaSignature(const X509OctetString *tbsData,
    const X509OctetString *signature);
 
 error_t x509VerifyRsaPssSignature(const X509OctetString *tbsData,
-   const HashAlgo *hashAlgo, size_t saltLen,
+   const HashAlgo *hashAlgo, const HashAlgo *mgfHashAlgo, size_t saltLen,
    const X509SubjectPublicKeyInfo *publicKeyInfo,
    const X509OctetString *signature);
 

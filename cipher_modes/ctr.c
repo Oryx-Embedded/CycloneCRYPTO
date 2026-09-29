@@ -32,7 +32,7 @@
  * produce the ciphertext, and vice versa. Refer to SP 800-38A for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -93,8 +93,12 @@ __weak_func error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m
          c[i] = p[i] ^ o[i];
       }
 
-      //Standard incrementing function
-      ctrIncBlock(t, 1, cipher->blockSize, m);
+      //Complete block?
+      if(n == cipher->blockSize)
+      {
+         //Standard incrementing function
+         ctrIncBlock(t, 1, cipher->blockSize, m);
+      }
 
       //Next block
       p += n;

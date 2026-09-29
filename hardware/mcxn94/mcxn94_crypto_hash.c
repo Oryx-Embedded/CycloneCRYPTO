@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -79,7 +79,7 @@ error_t hashProcessData(uint32_t algo, const uint8_t *data, size_t length,
    //Get block size
    blockSize = (algo == MCUXCLELS_HASH_MODE_SHA_256) ? 64 : 128;
 
-   //Acquire exclusive access to the ELS module
+   //Acquire exclusive access to the ELS PKC module
    osAcquireMutex(&mcxn94CryptoMutex);
 
    //Configure hash operation
@@ -163,7 +163,7 @@ error_t hashProcessData(uint32_t algo, const uint8_t *data, size_t length,
       MCUX_CSSL_FP_FUNCTION_CALL_END();
    }
 
-   //Release exclusive access to the ELS module
+   //Release exclusive access to the ELS PKC module
    osReleaseMutex(&mcxn94CryptoMutex);
 
    //Return status code

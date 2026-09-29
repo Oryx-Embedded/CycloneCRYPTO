@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _OCSP_CLIENT_H
@@ -86,8 +86,8 @@
 #endif
 
 //Application specific context
-#ifndef OCSP_CLIENT_PRIVATE_CONTEXT
-   #define OCSP_CLIENT_PRIVATE_CONTEXT
+#ifndef OCSP_CLIENT_CONTEXT_PRIVATE
+   #define OCSP_CLIENT_CONTEXT_PRIVATE
 #endif
 
 //Forward declaration of OcspClientContext structure
@@ -160,7 +160,7 @@ struct _OcspClientContext
    size_t bufferPos;                                ///<Current position in the buffer
    uint_t httpStatusCode;                           ///<HTTP status code
    OcspResponse ocspResponse;                       ///<OCSP response
-   OCSP_CLIENT_PRIVATE_CONTEXT                      ///<Application specific context
+   OCSP_CLIENT_CONTEXT_PRIVATE                      ///<Application specific context
 };
 
 

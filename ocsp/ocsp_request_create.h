@@ -1,6 +1,6 @@
 /**
- * @file ocsp_resp_validate.h
- * @brief OCSP response validation
+ * @file ocsp_request_create.h
+ * @brief OCSP request generation
  *
  * @section License
  *
@@ -25,11 +25,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
-#ifndef _OCSP_RESP_VALIDATE_H
-#define _OCSP_RESP_VALIDATE_H
+#ifndef _OCSP_REQUEST_CREATE_H
+#define _OCSP_REQUEST_CREATE_H
 
 //Dependencies
 #include "ocsp/ocsp_common.h"
@@ -40,26 +40,9 @@ extern "C" {
 #endif
 
 //OCSP related functions
-error_t ocspValidateResponse(const OcspResponse *response,
-   const X509CertInfo *certInfo, const X509CertInfo *issuerCertInfo,
-   const uint8_t *nonce, size_t nonceLen);
-
-error_t ocspCheckResponseSignature(const OcspBasicResponse *basicResponse,
-   const X509CertInfo *issuerCertInfo);
-
-error_t ocspCheckResponderCert(const OcspResponderId *responderId,
-   const X509CertInfo *responderCertInfo, const X509CertInfo *issuerCertInfo);
-
-error_t ocspCheckResponderId(const OcspResponderId *responderId,
-   const X509CertInfo *issuerCertInfo);
-
-error_t ocspCheckCertId(const OcspCertId *certId, const X509CertInfo *certInfo,
-   const X509CertInfo *issuerCertInfo);
-
-error_t ocspCheckValidity(const OcspSingleResponse *singleResponse);
-
-error_t ocspCheckNonce(const OcspExtensions *extensions, const uint8_t *nonce,
-   size_t nonceLen);
+error_t ocspCreateRequest(const X509CertInfo *certInfo,
+   const X509CertInfo *issuerCertInfo, const uint8_t *nonce,
+   size_t nonceLen, uint8_t *output, size_t *written);
 
 //C++ guard
 #ifdef __cplusplus

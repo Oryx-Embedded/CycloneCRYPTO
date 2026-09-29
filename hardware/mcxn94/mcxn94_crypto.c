@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -74,7 +74,7 @@
 
 //Global variables
 OsMutex mcxn94CryptoMutex;
-mcuxClSession_Descriptor_t elsSession;
+mcuxClSession_Descriptor_t elsPkcSession;
 
 //cpuWA buffer
 static uint32_t cpuWaBuffer[MAX_CPUWA_SIZE / 4];
@@ -176,7 +176,7 @@ error_t mcxn94CryptoInit(void)
    {
       //Allocate and initialize session with pkcWA on the beginning of PKC RAM
       MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClSession_init(
-         &elsSession, cpuWaBuffer, MAX_CPUWA_SIZE, (uint32_t *) PKC_RAM_ADDR,
+         &elsPkcSession, cpuWaBuffer, MAX_CPUWA_SIZE, (uint32_t *) PKC_RAM_ADDR,
          MAX_PKCWA_SIZE));
 
       //Check the protection token and the return value
@@ -195,7 +195,7 @@ error_t mcxn94CryptoInit(void)
    {
       //Initialize RNG context
       MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClRandom_init(
-         &elsSession, NULL, mcuxClRandomModes_Mode_ELS_Drbg));
+         &elsPkcSession, NULL, mcuxClRandomModes_Mode_ELS_Drbg));
 
       //Check the protection token and the return value
       if(token != MCUX_CSSL_FP_FUNCTION_CALLED(mcuxClRandom_init) ||
@@ -212,7 +212,7 @@ error_t mcxn94CryptoInit(void)
    if(!error)
    {
       //Initialize PRNG
-      MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClRandom_ncInit(&elsSession));
+      MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClRandom_ncInit(&elsPkcSession));
 
       //Check the protection token and the return value
       if(token != MCUX_CSSL_FP_FUNCTION_CALLED(mcuxClRandom_ncInit) ||

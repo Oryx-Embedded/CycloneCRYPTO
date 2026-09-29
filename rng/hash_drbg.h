@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _HASH_DRBG_H
@@ -95,8 +95,8 @@ error_t hashDrbgGenerateEx(HashDrbgContext *context,
 
 void hashDrbgDeinit(HashDrbgContext *context);
 
-void hashDf(HashDrbgContext *context, const DataChunk *input, uint_t inputLen,
-   uint8_t *output, size_t outputLen);
+void hashDf(HashDrbgContext *context, const DataFrag *inputFrags,
+   uint_t inputNumFrags, uint8_t *output, size_t outputLen);
 
 void hashGen(HashDrbgContext *context, uint8_t *output, size_t outputLen);
 

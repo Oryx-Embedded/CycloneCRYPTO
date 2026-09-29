@@ -31,7 +31,7 @@
  * message hash. It supports a security strength of up to 128 bits
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -43,6 +43,25 @@
 
 //Check crypto library configuration
 #if (ASCON_CXOF128_SUPPORT == ENABLED)
+
+//Ascon-CXOF128 object identifier (0.0)
+const uint8_t ASCON_CXOF128_OID[1] = {0x00};
+
+//Common interface for XOF algorithms
+const XofAlgo asconCxof128XofAlgo =
+{
+   "Ascon-CXOF128",
+   ASCON_CXOF128_OID,
+   sizeof(ASCON_CXOF128_OID),
+   sizeof(AsconCxof128Context),
+   (XofAlgoCompute) NULL,
+   (XofAlgoComputeEx) asconCxof128Compute,
+   (XofAlgoInit) NULL,
+   (XofAlgoInitEx) asconCxof128Init,
+   (XofAlgoAbsorb) asconCxof128Absorb,
+   (XofAlgoFinal) asconCxof128Final,
+   (XofAlgoSqueeze) asconCxof128Squeeze
+};
 
 
 /**

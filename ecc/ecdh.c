@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -277,13 +277,20 @@ error_t ecdhImportPeerPublicKey(EcdhContext *context, const uint8_t *input,
    error_t error;
 
    //Import peer's public key
-   error = ecImportPublicKey(&context->qb, context->curve, input, length, format);
+   error = ecImportPublicKey(&context->qb, context->curve, input, length,
+      format);
 
    //Check status code
    if(!error)
    {
-      //Ensure the public key is acceptable
-      error = ecdhCheckPublicKey(context, &context->qb);
+      //Check the format of the public key
+      if(format == EC_PUBLIC_KEY_FORMAT_X963 ||
+         format == EC_PUBLIC_KEY_FORMAT_RAW ||
+         format == EC_PUBLIC_KEY_FORMAT_RAW_Y)
+      {
+         //Ensure the public key is acceptable
+         error = ecdhCheckPublicKey(context, &context->qb);
+      }
    }
 
    //Return status code

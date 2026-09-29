@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _CTR_DRBG_H
@@ -76,7 +76,7 @@ extern const PrngAlgo ctrDrbgPrngAlgo;
 
 //CTR_DRBG related functions
 error_t ctrDrbgInit(CtrDrbgContext *context, const CipherAlgo *cipherAlgo,
-   size_t keyLen, bool_t df);
+   size_t keyLen, uint_t ctrLen, bool_t df);
 
 error_t ctrDrbgSeed(CtrDrbgContext *context, const uint8_t *seed,
    size_t length);
@@ -101,11 +101,11 @@ error_t ctrDrbgGenerateEx(CtrDrbgContext *context,
 
 void ctrDrbgDeinit(CtrDrbgContext *context);
 
-error_t blockCipherDf(CtrDrbgContext *context, const DataChunk *input,
-   uint_t inputLen, uint8_t *output, size_t outputLen);
+error_t blockCipherDf(CtrDrbgContext *context, const DataFrag *inputFrags,
+   uint_t inputNumFrags, uint8_t *output, size_t outputLen);
 
 error_t ctrDrbgBcc(CtrDrbgContext *context, const uint8_t *key,
-   const DataChunk *data, uint_t dataLen, uint8_t *output);
+   const DataFrag *dataFrags, uint_t dataNumFrags, uint8_t *output);
 
 error_t ctrDrbgUpdate(CtrDrbgContext *context, const uint8_t *providedData,
    size_t providedDataLen);

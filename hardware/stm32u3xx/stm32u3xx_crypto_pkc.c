@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -88,6 +88,9 @@ void pkaImportArray(const uint8_t *src, size_t srcLen, uint_t destLen,
    uint_t i;
    uint_t j;
    uint32_t temp;
+
+   //Initialize variable
+   temp = 0;
 
    //Get the length of the operand, in 64-bit words
    destLen = (destLen + 63) / 64;

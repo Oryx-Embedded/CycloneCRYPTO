@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -594,7 +594,7 @@ void ecScalarSelect(uint32_t *r, const uint32_t *a, const uint32_t *b,
 /**
  * @brief Generate a random value
  * @param[in] curve Elliptic curve parameters
- * @param[out] r Random integer in range such as 1 < R < q - 1
+ * @param[out] r Random integer in range such as 0 < R < q - 1
  * @param[in] prngAlgo PRNG algorithm
  * @param[in] prngContext Pointer to the PRNG context
  * @return Error code

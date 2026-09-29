@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _KMAC_H
@@ -36,8 +36,8 @@
 #include "xof/cshake.h"
 
 //Application specific context
-#ifndef KMAC_PRIVATE_CONTEXT
-   #define KMAC_PRIVATE_CONTEXT
+#ifndef KMAC_CONTEXT_PRIVATE
+   #define KMAC_CONTEXT_PRIVATE
 #endif
 
 //C++ guard
@@ -53,7 +53,7 @@ extern "C" {
 typedef struct
 {
    CshakeContext cshakeContext;
-   KMAC_PRIVATE_CONTEXT
+   KMAC_CONTEXT_PRIVATE
 } KmacContext;
 
 
@@ -72,8 +72,6 @@ error_t kmacInit(KmacContext *context, uint_t strength, const void *key,
 void kmacUpdate(KmacContext *context, const void *data, size_t dataLen);
 error_t kmacFinal(KmacContext *context, uint8_t *mac, size_t macLen);
 void kmacDeinit(KmacContext *context);
-
-void kmacRightEncode(size_t value, uint8_t *buffer, size_t *length);
 
 //C++ guard
 #ifdef __cplusplus

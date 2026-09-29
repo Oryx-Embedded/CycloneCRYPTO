@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -92,7 +92,7 @@ error_t shaCrypt(const HashAlgo *hashAlgo, const char_t *password,
    }
    else if(osStrcmp(hashAlgo->name, "SHA-512") == 0)
    {
-      //The magic prefix is $6$ for SHA-256
+      //The magic prefix is $6$ for SHA-512
       prefix = "$6$";
    }
    else

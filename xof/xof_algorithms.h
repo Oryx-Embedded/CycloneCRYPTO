@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _XOF_ALGORITHMS_H
@@ -47,6 +47,21 @@
 //cSHAKE support?
 #if (CSHAKE_SUPPORT == ENABLED)
    #include "xof/cshake.h"
+#endif
+
+//KMACXOF support?
+#if (KMAC_XOF_SUPPORT == ENABLED)
+   #include "xof/kmac_xof.h"
+#endif
+
+//TupleHashXOF support?
+#if (TUPLE_HASH_XOF_SUPPORT == ENABLED)
+   #include "xof/tuple_hash_xof.h"
+#endif
+
+//ParallelHashXOF support?
+#if (PARALLEL_HASH_XOF_SUPPORT == ENABLED)
+   #include "xof/parallel_hash_xof.h"
 #endif
 
 //Ascon-XOF128 support?
@@ -79,6 +94,15 @@ typedef union
 #endif
 #if (CSHAKE_SUPPORT == ENABLED)
    CshakeContext cshakeContext;
+#endif
+#if (KMAC_XOF_SUPPORT == ENABLED)
+   KmacXofContext kmacXofContext;
+#endif
+#if (TUPLE_HASH_XOF_SUPPORT == ENABLED)
+   TupleHashXofContext tupleHashXofContext;
+#endif
+#if (PARALLEL_HASH_XOF_SUPPORT == ENABLED)
+   ParallelHashXofContext parallelHashXofContext;
 #endif
 #if (ASCON_XOF128_SUPPORT == ENABLED)
    AsconXof128Context asconXof128Context;

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -60,12 +60,13 @@ const PrngAlgo ctrDrbgPrngAlgo =
  * @param[in] context Pointer to the CTR_DRBG context to initialize
  * @param[in] cipherAlgo Approved block cipher algorithm
  * @param[in] keyLen Key length, in bits
+ * @param[in] ctrLen Counter field length, in bits
  * @param[in] df Use key derivation function
  * @return Error code
  **/
 
 error_t ctrDrbgInit(CtrDrbgContext *context, const CipherAlgo *cipherAlgo,
-   size_t keyLen, bool_t df)
+   size_t keyLen, uint_t ctrLen, bool_t df)
 {
    //Check parameters
    if(context == NULL || cipherAlgo == NULL)
@@ -113,10 +114,18 @@ error_t ctrDrbgInit(CtrDrbgContext *context, const CipherAlgo *cipherAlgo,
       return ERROR_UNSUPPORTED_CIPHER_ALGO;
    }
 
+   //Check the length of the counter field
+   if(ctrLen < 4 || ctrLen > (cipherAlgo->blockSize * 8))
+      return ERROR_INVALID_PARAMETER;
+
+   //The implementation only supports values that are multiples of 8
+   if((ctrLen % 8) != 0)
+      return ERROR_INVALID_PARAMETER;
+
    //Save parameters
    context->cipherAlgo = cipherAlgo;
    context->keyLen = keyLen / 8;
-   context->ctrLen = cipherAlgo->blockSize;
+   context->ctrLen = ctrLen / 8;
    context->df = df;
 
    //Determine the seed length
@@ -215,19 +224,19 @@ error_t ctrDrbgSeedEx(CtrDrbgContext *context, const uint8_t *entropyInput,
    //Check is derivation function is used
    if(context->df)
    {
-      DataChunk input[3];
+      DataFrag inputFrags[3];
 
       //Let seed_material = entropy_input || nonce || personalization_string
-      input[0].buffer = entropyInput;
-      input[0].length = entropyInputLen;
-      input[1].buffer = nonce;
-      input[1].length = nonceLen;
-      input[2].buffer = personalizationString;
-      input[2].length = personalizationStringLen;
+      inputFrags[0].buffer = entropyInput;
+      inputFrags[0].length = entropyInputLen;
+      inputFrags[1].buffer = nonce;
+      inputFrags[1].length = nonceLen;
+      inputFrags[2].buffer = personalizationString;
+      inputFrags[2].length = personalizationStringLen;
 
       //Compute seed_material = df(seed_material, seedlen)
-      error = blockCipherDf(context, input, arraysize(input), seedMaterial,
-         context->seedLen);
+      error = blockCipherDf(context, inputFrags, arraysize(inputFrags),
+         seedMaterial, context->seedLen);
    }
    else
    {
@@ -347,17 +356,17 @@ error_t ctrDrbgReseedEx(CtrDrbgContext *context, const uint8_t *entropyInput,
    //Check is derivation function is used
    if(context->df)
    {
-      DataChunk input[2];
+      DataFrag inputFrags[2];
 
       //Let seed_material = entropy_input || additional_input
-      input[0].buffer = entropyInput;
-      input[0].length = entropyInputLen;
-      input[1].buffer = additionalInput;
-      input[1].length = additionalInputLen;
+      inputFrags[0].buffer = entropyInput;
+      inputFrags[0].length = entropyInputLen;
+      inputFrags[1].buffer = additionalInput;
+      inputFrags[1].length = additionalInputLen;
 
       //Compute seed_material = df(seed_material, seedlen)
-      error = blockCipherDf(context, input, arraysize(input), seedMaterial,
-         context->seedLen);
+      error = blockCipherDf(context, inputFrags, arraysize(inputFrags),
+         seedMaterial, context->seedLen);
    }
    else
    {
@@ -471,14 +480,14 @@ error_t ctrDrbgGenerateEx(CtrDrbgContext *context,
       //Check is derivation function is used
       if(context->df)
       {
-         DataChunk input[1];
+         DataFrag inputFrags[1];
 
          //Let seed_material = entropy_input || additional_input
-         input[0].buffer = additionalInput;
-         input[0].length = additionalInputLen;
+         inputFrags[0].buffer = additionalInput;
+         inputFrags[0].length = additionalInputLen;
 
          //Compute additional_input = Block_Cipher_df(additional_input, seedlen)
-         error = blockCipherDf(context, input, arraysize(input), temp,
+         error = blockCipherDf(context, inputFrags, arraysize(inputFrags), temp,
             context->seedLen);
       }
       else
@@ -584,15 +593,15 @@ void ctrDrbgDeinit(CtrDrbgContext *context)
 /**
  * @brief Block cipher derivation function
  * @param[in] context Pointer to the CTR_DRBG context
- * @param[in] input The string to be operated on
- * @param[in] inputLen Number of data chunks representing the input
+ * @param[in] inputFrags Array of fragments representing the input string
+ * @param[in] inputNumFrags Number of fragments representing the input string
  * @param[out] output Buffer where to store the output value
  * @param[out] outputLen The number of bytes to be returned
  * @return Error code
  **/
 
-error_t blockCipherDf(CtrDrbgContext *context, const DataChunk *input,
-   uint_t inputLen, uint8_t *output, size_t outputLen)
+error_t blockCipherDf(CtrDrbgContext *context, const DataFrag *inputFrags,
+   uint_t inputNumFrags, uint8_t *output, size_t outputLen)
 {
    error_t error;
    uint32_t i;
@@ -608,7 +617,7 @@ error_t blockCipherDf(CtrDrbgContext *context, const DataChunk *input,
    uint8_t iv[MAX_CIPHER_BLOCK_SIZE];
    uint8_t block[MAX_CIPHER_BLOCK_SIZE];
    uint8_t temp[CTR_DRBG_MAX_SEED_LEN];
-   DataChunk s[8];
+   DataFrag sFrags[8];
    const CipherAlgo *cipherAlgo;
 
    //The maximum length (max_number_of_bits) is 512 bits for the currently
@@ -617,16 +626,16 @@ error_t blockCipherDf(CtrDrbgContext *context, const DataChunk *input,
       return ERROR_INVALID_PARAMETER;
 
    //Sanity check
-   if((inputLen + 5) > arraysize(s))
+   if((inputNumFrags + 5) > arraysize(sFrags))
       return ERROR_INVALID_PARAMETER;
 
    //The block cipher operation uses the selected block cipher algorithm
    cipherAlgo = context->cipherAlgo;
 
    //Determine the length of the input string
-   for(totalInputLen = 0, i = 0; i < inputLen; i++)
+   for(totalInputLen = 0, i = 0; i < inputNumFrags; i++)
    {
-      totalInputLen += input[i].length;
+      totalInputLen += inputFrags[i].length;
    }
 
    //L is the bitstring representation of the integer resulting from
@@ -644,21 +653,21 @@ error_t blockCipherDf(CtrDrbgContext *context, const DataChunk *input,
    osMemset(iv, 0, cipherAlgo->blockSize);
 
    //Let S = L || N || input_string || 0x80
-   s[0].buffer = iv;
-   s[0].length = cipherAlgo->blockSize;
-   s[1].buffer = l;
-   s[1].length = sizeof(l);
-   s[2].buffer = n;
-   s[2].length = sizeof(n);
+   sFrags[0].buffer = iv;
+   sFrags[0].length = cipherAlgo->blockSize;
+   sFrags[1].buffer = l;
+   sFrags[1].length = sizeof(l);
+   sFrags[2].buffer = n;
+   sFrags[2].length = sizeof(n);
 
-   for(i = 0; i < inputLen; i++)
+   for(i = 0; i < inputNumFrags; i++)
    {
-      s[3 + i].buffer = input[i].buffer;
-      s[3 + i].length = input[i].length;
+      sFrags[3 + i].buffer = inputFrags[i].buffer;
+      sFrags[3 + i].length = inputFrags[i].length;
    }
 
-   s[3 + i].buffer = &separator;
-   s[3 + i].length = sizeof(separator);
+   sFrags[3 + i].buffer = &separator;
+   sFrags[3 + i].length = sizeof(separator);
 
    //Get the actual amount of bytes in the last block
    paddingLen = (totalInputLen + 9) % cipherAlgo->blockSize;
@@ -670,8 +679,8 @@ error_t blockCipherDf(CtrDrbgContext *context, const DataChunk *input,
    }
 
    //Pad S with zeros, if necessary
-   s[4 + i].buffer = padding;
-   s[4 + i].length = paddingLen;
+   sFrags[4 + i].buffer = padding;
+   sFrags[4 + i].length = paddingLen;
 
    //Set K = leftmost(0x00010203...1D1E1F, keylen)
    for(i = 0; i < context->keyLen; i++)
@@ -693,7 +702,7 @@ error_t blockCipherDf(CtrDrbgContext *context, const DataChunk *input,
       STORE32BE(i, iv);
 
       //Compute BCC(K, (IV || S)
-      error = ctrDrbgBcc(context, k, s, inputLen + 5, block);
+      error = ctrDrbgBcc(context, k, sFrags, inputNumFrags + 5, block);
       //Any error to report?
       if(error)
          return error;
@@ -745,14 +754,14 @@ error_t blockCipherDf(CtrDrbgContext *context, const DataChunk *input,
  * @brief BCC function
  * @param[in] context Pointer to the CTR_DRBG context
  * @param[in] key The key to be used for the block cipher operation
- * @param[in] data The data to be operated on
- * @param[in] dataLen Number of data chunks representing the data
+ * @param[in] dataFrags Array of fragments representing the input data
+ * @param[in] dataNumFrags Number of fragments representing the input data
  * @param[out] output The result to be returned from the BCC operation
  * @return Error code
  **/
 
 error_t ctrDrbgBcc(CtrDrbgContext *context, const uint8_t *key,
-   const DataChunk *data, uint_t dataLen, uint8_t *output)
+   const DataFrag *dataFrags, uint_t dataNumFrags, uint8_t *output)
 {
    error_t error;
    uint_t i;
@@ -767,9 +776,9 @@ error_t ctrDrbgBcc(CtrDrbgContext *context, const uint8_t *key,
    cipherAlgo = context->cipherAlgo;
 
    //Determine the length of the input data
-   for(n = 0, i = 0; i < dataLen; i++)
+   for(n = 0, i = 0; i < dataNumFrags; i++)
    {
-      n += data[i].length;
+      n += dataFrags[i].length;
    }
 
    //The length of data must be a multiple of outlen
@@ -789,15 +798,15 @@ error_t ctrDrbgBcc(CtrDrbgContext *context, const uint8_t *key,
    blockLen = 0;
 
    //Process input data
-   for(i = 0; i < dataLen; i++)
+   for(i = 0; i < dataNumFrags; i++)
    {
-      for(j = 0; j < data[i].length; j += n)
+      for(j = 0; j < dataFrags[i].length; j += n)
       {
          //Number of bytes to process at a time
-         n = MIN(data[i].length - j, cipherAlgo->blockSize - blockLen);
+         n = MIN(dataFrags[i].length - j, cipherAlgo->blockSize - blockLen);
 
          //Copy the data to the buffer
-         osMemcpy(block + blockLen, (uint8_t *) data[i].buffer + j, n);
+         osMemcpy(block + blockLen, (uint8_t *) dataFrags[i].buffer + j, n);
          //Adjust the length of the buffer
          blockLen += n;
 

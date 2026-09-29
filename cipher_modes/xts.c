@@ -30,7 +30,7 @@
  * storage. Refer to IEEE Std 1619 and SP 800-38E for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -138,10 +138,10 @@ error_t xtsEncrypt(XtsContext *context, const uint8_t *i, const uint8_t *p,
    //Any partial block?
    if(length > 0)
    {
-      //Copy the final ciphertext bytes
-      osMemcpy(c, c - 16, length);
       //Copy the final plaintext bytes
       osMemcpy(x, p, length);
+      //Copy the final ciphertext bytes
+      osMemcpy(c, c - 16, length);
       //Steal ciphertext to complete the block
       osMemcpy(x + length, c + length - 16, 16 - length);
 
@@ -218,10 +218,10 @@ error_t xtsDecrypt(XtsContext *context, const uint8_t *i, const uint8_t *c,
       //Retrieve the length of the final block
       length -= 16;
 
-      //Copy the final plaintext bytes
-      osMemcpy(p + 16, p, length);
       //Copy the final ciphertext bytes
       osMemcpy(x, c + 16, length);
+      //Copy the final plaintext bytes
+      osMemcpy(p + 16, p, length);
       //Steal ciphertext to complete the block
       osMemcpy(x + length, p + length, 16 - length);
    }

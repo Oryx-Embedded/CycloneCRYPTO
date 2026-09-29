@@ -1,6 +1,6 @@
 /**
  * @file shake.c
- * @brief SHAKE128 and SHAKE256 extendable-output functions
+ * @brief SHAKE extendable-output function
  *
  * @section License
  *
@@ -31,7 +31,7 @@
  * supports 256 bits of security strength. Refer to FIPS 202 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -57,7 +57,9 @@ const XofAlgo shake128XofAlgo =
    sizeof(SHAKE128_OID),
    sizeof(ShakeContext),
    (XofAlgoCompute) shake128Compute,
+   (XofAlgoComputeEx) NULL,
    (XofAlgoInit) shake128Init,
+   (XofAlgoInitEx) NULL,
    (XofAlgoAbsorb) shakeAbsorb,
    (XofAlgoFinal) shakeFinal,
    (XofAlgoSqueeze) shakeSqueeze
@@ -71,7 +73,9 @@ const XofAlgo shake256XofAlgo =
    sizeof(SHAKE256_OID),
    sizeof(ShakeContext),
    (XofAlgoCompute) shake256Compute,
+   (XofAlgoComputeEx) NULL,
    (XofAlgoInit) shake256Init,
+   (XofAlgoInitEx) NULL,
    (XofAlgoAbsorb) shakeAbsorb,
    (XofAlgoFinal) shakeFinal,
    (XofAlgoSqueeze) shakeSqueeze
@@ -79,7 +83,7 @@ const XofAlgo shake256XofAlgo =
 
 
 /**
- * @brief Digest a message using SHAKE128 or SHAKE256
+ * @brief Digest a message using SHAKE
  * @param[in] strength Number of bits of security (128 for SHAKE128 and
  *   256 for SHAKE256)
  * @param[in] input Pointer to the input data

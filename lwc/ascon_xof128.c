@@ -31,7 +31,7 @@
  * security strength is up to 128 bits
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -55,7 +55,9 @@ const XofAlgo asconXof128XofAlgo =
    sizeof(ASCON_XOF128_OID),
    sizeof(AsconXof128Context),
    (XofAlgoCompute) asconXof128Compute,
+   (XofAlgoComputeEx) NULL,
    (XofAlgoInit) asconXof128Init,
+   (XofAlgoInitEx) NULL,
    (XofAlgoAbsorb) asconXof128Absorb,
    (XofAlgoFinal) asconXof128Final,
    (XofAlgoSqueeze) asconXof128Squeeze
@@ -117,10 +119,15 @@ error_t asconXof128Compute(const void *input, size_t inputLen, uint8_t *output,
 /**
  * @brief Initialize Ascon-XOF128 context
  * @param[in] context Pointer to the Ascon-XOF128 context to initialize
+ * @return Error code
  **/
 
-void asconXof128Init(AsconXof128Context *context)
+error_t asconXof128Init(AsconXof128Context *context)
 {
+   //Make sure the Ascon-XOF128 context is valid
+   if(context == NULL)
+      return ERROR_INVALID_PARAMETER;
+
    //The 320-bit internal state of Ascon-XOF128 is initialized with the
    //concatenation of the 64-bit IV and 256 zeroes
    context->state.x[0] = 0x00CC0003;
@@ -139,6 +146,9 @@ void asconXof128Init(AsconXof128Context *context)
 
    //Number of bytes in the buffer
    context->length = 0;
+
+   //Successful operation
+   return NO_ERROR;
 }
 
 

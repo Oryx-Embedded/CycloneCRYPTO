@@ -31,7 +31,7 @@
  * for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -53,8 +53,8 @@
  * @param[in] cipher Cipher algorithm
  * @param[in] k Pointer to the secret key
  * @param[in] kLen Length of the secret key
- * @param[in] ad Vector of associated data
- * @param[in] adLen Number of components in the vector of associated data
+ * @param[in] adFrags Vector of associated data
+ * @param[in] adNumFrags Number of components in the vector of associated data
  * @param[in] p Plaintext to be encrypted
  * @param[out] c Ciphertext resulting from the encryption
  * @param[in] length Total number of data bytes to be encrypted
@@ -63,7 +63,7 @@
  **/
 
 error_t sivEncrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
-   const DataChunk *ad, uint_t adLen, const uint8_t *p, uint8_t *c,
+   const DataFrag *adFrags, uint_t adNumFrags, const uint8_t *p, uint8_t *c,
    size_t length, uint8_t *v)
 {
    const uint8_t *k1;
@@ -85,7 +85,7 @@ error_t sivEncrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
 
    //The number of components in the vector is not greater than 126 (refer to
    //RFC 5297, section 2.6)
-   if(adLen > 126)
+   if(adNumFrags > 126)
       return ERROR_INVALID_PARAMETER;
 
    //The key is split into equal halves. K1 is used for S2V and K2 is used
@@ -95,7 +95,7 @@ error_t sivEncrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
    k2 = k + kLen;
 
    //Compute V = S2V(K1, AD, P)
-   s2v(cipher, k1, kLen, ad, adLen, p, length, v);
+   s2v(cipher, k1, kLen, adFrags, adNumFrags, p, length, v);
 
    //The output of S2V is a synthetic IV that represents the initial counter
    //to CTR
@@ -121,8 +121,8 @@ error_t sivEncrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
  * @param[in] cipher Cipher algorithm
  * @param[in] k Pointer to the secret key
  * @param[in] kLen Length of the secret key
- * @param[in] ad Vector of associated data
- * @param[in] adLen Number of components in the vector of associated data
+ * @param[in] adFrags Vector of associated data
+ * @param[in] adNumFrags Number of components in the vector of associated data
  * @param[in] c Ciphertext to be decrypted
  * @param[out] p Plaintext resulting from the decryption
  * @param[in] length Total number of data bytes to be decrypted
@@ -131,7 +131,7 @@ error_t sivEncrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
  **/
 
 error_t sivDecrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
-   const DataChunk *ad, uint_t adLen, const uint8_t *c, uint8_t *p,
+   const DataFrag *adFrags, uint_t adNumFrags, const uint8_t *c, uint8_t *p,
    size_t length, const uint8_t *v)
 {
    size_t i;
@@ -156,7 +156,7 @@ error_t sivDecrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
 
    //The number of components in the vector is not greater than 126 (refer to
    //RFC 5297, section 2.7)
-   if(adLen > 126)
+   if(adNumFrags > 126)
       return ERROR_INVALID_PARAMETER;
 
    //The key is split into equal halves. K1 is used for S2V and K2 is used
@@ -179,7 +179,7 @@ error_t sivDecrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
    ctrDecrypt(cipher, &cipherContext, 128, q, c, p, length);
 
    //T = S2V(K1, AD1, ..., ADn, P)
-   s2v(cipher, k1, kLen, ad, adLen, p, length, t);
+   s2v(cipher, k1, kLen, adFrags, adNumFrags, p, length, t);
 
    //The calculated synthetic IV is bitwise compared to the received IV. The
    //message is authenticated if and only if the IVs match
@@ -189,7 +189,7 @@ error_t sivDecrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
    }
 
    //Return status code
-   return (mask == 0) ? NO_ERROR : ERROR_FAILURE;
+   return (mask == 0) ? NO_ERROR : ERROR_INVALID_TAG;
 }
 
 
@@ -198,15 +198,15 @@ error_t sivDecrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
  * @param[in] cipher Cipher algorithm
  * @param[in] k Pointer to the S2V key
  * @param[in] kLen Length of the S2V key
- * @param[in] ad Vector of associated data
- * @param[in] adLen Number of components in the vector of associated data
+ * @param[in] adFrags Vector of associated data
+ * @param[in] adNumFrags Number of components in the vector of associated data
  * @param[in] p Payload data
  * @param[in] pLen Length of the payload data
  * @param[out] v synthetic IV
  **/
 
 void s2v(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
-   const DataChunk *ad, uint_t adLen, const uint8_t *p, size_t pLen,
+   const DataFrag *adFrags, uint_t adNumFrags, const uint8_t *p, size_t pLen,
    uint8_t *v)
 {
    uint_t i;
@@ -224,14 +224,14 @@ void s2v(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
    cmacFinal(&cmacContext, d, 16);
 
    //Process the vector of associated data
-   for(i = 0; i < adLen; i++)
+   for(i = 0; i < adNumFrags; i++)
    {
       //Perform doubling
       cmacMul(d, d, 16, 0x87);
 
       //Compute AES-CMAC(K, Si)
       cmacReset(&cmacContext);
-      cmacUpdate(&cmacContext, ad[i].buffer, ad[i].length);
+      cmacUpdate(&cmacContext, adFrags[i].buffer, adFrags[i].length);
       cmacFinal(&cmacContext, t, 16);
 
       //Compute D = dbl(D) xor AES-CMAC(K, Si)

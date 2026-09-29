@@ -1,6 +1,6 @@
 /**
  * @file cshake.h
- * @brief cSHAKE128 and cSHAKE256 (customizable SHAKE function)
+ * @brief cSHAKE (customizable SHAKE function)
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _CSHAKE_H
@@ -66,6 +66,7 @@ void cshakeFinal(CshakeContext *context);
 void cshakeSqueeze(CshakeContext *context, uint8_t *output, size_t length);
 
 void cshakeLeftEncode(size_t value, uint8_t *buffer, size_t *length);
+void cshakeRightEncode(size_t value, uint8_t *buffer, size_t *length);
 
 //C++ guard
 #ifdef __cplusplus

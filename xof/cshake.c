@@ -1,6 +1,6 @@
 /**
  * @file cshake.c
- * @brief cSHAKE128 and cSHAKE256 (customizable SHAKE function)
+ * @brief cSHAKE (customizable SHAKE function)
  *
  * @section License
  *
@@ -30,7 +30,7 @@
  * NIST SP 800-185 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -45,7 +45,7 @@
 
 
 /**
- * @brief Digest a message using cSHAKE128 or cSHAKE256
+ * @brief Digest a message using cSHAKE
  * @param[in] strength Number of bits of security (128 for cSHAKE128 and
  *   256 for cSHAKE256)
  * @param[in] input Pointer to the input data (X)
@@ -282,6 +282,42 @@ void cshakeLeftEncode(size_t value, uint8_t *buffer, size_t *length)
    {
       buffer[i] = value >> ((n - i) * 8);
    }
+
+   //Return the length of the byte string representation
+   *length = n + 1;
+}
+
+
+/**
+ * @brief Encode integer as byte string
+ * @param[in] value Value of the integer to be encoded
+ * @param[out] buffer Buffer where to store the byte string representation
+ * @param[out] length Length of the resulting byte string
+ **/
+
+void cshakeRightEncode(size_t value, uint8_t *buffer, size_t *length)
+{
+   size_t i;
+   size_t n;
+   size_t temp;
+
+   //Get the value of the integer to be encoded
+   temp = value;
+
+   //Let n be the smallest positive integer for which 2^(8*n) > x
+   for(n = 1; n < sizeof(size_t) && (temp >> 8) != 0; n++)
+   {
+      temp >>= 8;
+   }
+
+   //Encode O(1) || ... || O(n)
+   for(i = 0; i < n; i++)
+   {
+      buffer[i] = value >> ((n - i - 1) * 8);
+   }
+
+   //Encode O(n+1)
+   buffer[i] = n;
 
    //Return the length of the byte string representation
    *length = n + 1;

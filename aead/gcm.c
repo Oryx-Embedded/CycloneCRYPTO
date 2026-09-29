@@ -31,7 +31,7 @@
  * Refer to SP 800-38D for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -490,7 +490,7 @@ __weak_func error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    }
 
    //Return status code
-   return (mask == 0) ? NO_ERROR : ERROR_FAILURE;
+   return (mask == 0) ? NO_ERROR : ERROR_INVALID_TAG;
 }
 
 

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _RSA_MISC_H
@@ -53,11 +53,13 @@ error_t emePkcs1v15Encode(const PrngAlgo *prngAlgo, void *prngContext,
 uint32_t emePkcs1v15Decode(uint8_t *em, size_t k, size_t *messageLen);
 
 error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
-   const HashAlgo *hash, const char_t *label, const uint8_t *message,
-   size_t messageLen, uint8_t *em, size_t k);
+   const HashAlgo *hash, const HashAlgo *mgfHash, const char_t *label,
+   size_t labelLen, const uint8_t *message, size_t messageLen, uint8_t *em,
+   size_t k);
 
-uint32_t emeOaepDecode(const HashAlgo *hash, const char_t *label, uint8_t *em,
-   size_t k, size_t *messageLen);
+uint32_t emeOaepDecode(const HashAlgo *hash, const HashAlgo *mgfHash,
+   const char_t *label, size_t labelLen, uint8_t *em, size_t k,
+   size_t *messageLen);
 
 error_t emsaPkcs1v15Encode(const HashAlgo *hash,
    const uint8_t *digest, uint8_t *em, size_t emLen);
@@ -66,11 +68,14 @@ error_t emsaPkcs1v15Verify(const HashAlgo *hash, const uint8_t *digest,
    const uint8_t *em, size_t emLen);
 
 error_t emsaPssEncode(const PrngAlgo *prngAlgo, void *prngContext,
-   const HashAlgo *hash, size_t saltLen, const uint8_t *digest,
-   uint8_t *em, uint_t emBits);
-
-error_t emsaPssVerify(const HashAlgo *hash, size_t saltLen,
+   const HashAlgo *hash, const HashAlgo *mgfHash, size_t saltLen,
    const uint8_t *digest, uint8_t *em, uint_t emBits);
+
+error_t emsaPssVerify(const HashAlgo *hash, const HashAlgo *mgfHash,
+   size_t saltLen, const uint8_t *digest, uint8_t *em, uint_t emBits);
+
+void mgf(const HashAlgo *hash, HashContext *hashContext, const uint8_t *seed,
+   size_t seedLen, uint8_t *data, size_t dataLen);
 
 void mgf1(const HashAlgo *hash, HashContext *hashContext, const uint8_t *seed,
    size_t seedLen, uint8_t *data, size_t dataLen);

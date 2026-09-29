@@ -1,6 +1,6 @@
 /**
  * @file ed448.c
- * @brief Ed448 elliptic curve (constant-time implementation)
+ * @brief Ed448 elliptic curve
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -208,6 +208,26 @@ error_t ed448GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey)
 
 
 /**
+ * @brief Check whether the EdDSA public key is valid
+ * @param[in] publicKey EdDSA public key (57 bytes)
+ * @return The function returns TRUE if the EdDSA public key is valid, else
+ *   FALSE
+ **/
+
+bool_t ed448CheckPublicKey(const uint8_t *publicKey)
+{
+   uint32_t ret;
+   Ed448Point p;
+
+   //Decode the public key
+   ret = ed448Decode(&p, publicKey);
+
+   //Return TRUE if the public key is valid
+   return (ret == 0) ? TRUE : FALSE;
+}
+
+
+/**
  * @brief EdDSA signature generation
  * @param[in] privateKey Signer's EdDSA private key (57 bytes)
  * @param[in] publicKey Signer's EdDSA public key (57 bytes)
@@ -215,7 +235,7 @@ error_t ed448GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey)
  * @param[in] messageLen Length of the message, in bytes
  * @param[in] context Constant string specified by the protocol using it
  * @param[in] contextLen Length of the context, in bytes
- * @param[in] flag Prehash flag for Ed448ph scheme
+ * @param[in] flag Prehash flag for Ed448ph scheme (ED448_PH_FLAG)
  * @param[out] signature EdDSA signature (114 bytes)
  * @return Error code
  **/
@@ -225,15 +245,15 @@ error_t ed448GenerateSignature(const uint8_t *privateKey,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature)
 {
    error_t error;
-   DataChunk messageChunks[1];
+   DataFrag messageFrags[1];
 
-   //The message fits in a single chunk
-   messageChunks[0].buffer = message;
-   messageChunks[0].length = messageLen;
+   //The message fits in a single fragment
+   messageFrags[0].buffer = message;
+   messageFrags[0].length = messageLen;
 
    //Ed448 signature generation
-   error = ed448GenerateSignatureEx(privateKey, publicKey, messageChunks,
-      arraysize(messageChunks), context, contextLen, flag, signature);
+   error = ed448GenerateSignatureEx(privateKey, publicKey, messageFrags,
+      arraysize(messageFrags), context, contextLen, flag, signature);
 
    //Return status code
    return error;
@@ -244,19 +264,20 @@ error_t ed448GenerateSignature(const uint8_t *privateKey,
  * @brief EdDSA signature generation
  * @param[in] privateKey Signer's EdDSA private key (57 bytes)
  * @param[in] publicKey Signer's EdDSA public key (57 bytes)
- * @param[in] message Array of data chunks representing the message to be
+ * @param[in] messageFrags Array of fragments representing the message to be
  *   signed
- * @param[in] messageLen Number of data chunks representing the message
+ * @param[in] messageNumFrags Number of fragments representing the message
  * @param[in] context Constant string specified by the protocol using it
  * @param[in] contextLen Length of the context, in bytes
- * @param[in] flag Prehash flag for Ed448ph scheme
+ * @param[in] flag Prehash flag for Ed448ph scheme (ED448_PH_FLAG)
  * @param[out] signature EdDSA signature (114 bytes)
  * @return Error code
  **/
 
 error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
-   const uint8_t *publicKey, const DataChunk *message, uint_t messageLen,
-   const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature)
+   const uint8_t *publicKey, const DataFrag *messageFrags,
+   uint_t messageNumFrags, const void *context, uint8_t contextLen,
+   uint8_t flag, uint8_t *signature)
 {
    uint_t i;
    uint8_t c;
@@ -267,7 +288,7 @@ error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
 #endif
 
    //Check parameters
-   if(privateKey == NULL || message == NULL || signature == NULL)
+   if(privateKey == NULL || messageFrags == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //The context is an optional constant string specified by the protocol using
@@ -324,11 +345,11 @@ error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
    shakeAbsorb(&state->shakeContext, state->p, 57);
 
    //The message is split over multiple chunks
-   for(i = 0; i < messageLen; i++)
+   for(i = 0; i < messageNumFrags; i++)
    {
       //Absorb current chunk
-      shakeAbsorb(&state->shakeContext, message[i].buffer,
-         message[i].length);
+      shakeAbsorb(&state->shakeContext, messageFrags[i].buffer,
+         messageFrags[i].length);
    }
 
    //Compute SHAKE256(dom4(F, C) || prefix || PH(M), 114)
@@ -354,11 +375,11 @@ error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
    shakeAbsorb(&state->shakeContext, publicKey, ED448_PUBLIC_KEY_LEN);
 
    //The message is split over multiple chunks
-   for(i = 0; i < messageLen; i++)
+   for(i = 0; i < messageNumFrags; i++)
    {
       //Absorb current chunk
-      shakeAbsorb(&state->shakeContext, message[i].buffer,
-         message[i].length);
+      shakeAbsorb(&state->shakeContext, messageFrags[i].buffer,
+         messageFrags[i].length);
    }
 
    //Compute SHAKE256(dom4(F, C) || R || A || PH(M), 114) and interpret the
@@ -396,7 +417,7 @@ error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
  * @param[in] messageLen Length of the message, in bytes
  * @param[in] context Constant string specified by the protocol using it
  * @param[in] contextLen Length of the context, in bytes
- * @param[in] flag Prehash flag for Ed448ph scheme
+ * @param[in] flag Prehash flag for Ed448ph scheme (ED448_PH_FLAG)
  * @param[in] signature EdDSA signature (114 bytes)
  * @return Error code
  **/
@@ -406,15 +427,15 @@ error_t ed448VerifySignature(const uint8_t *publicKey, const void *message,
    const uint8_t *signature)
 {
    error_t error;
-   DataChunk messageChunks[1];
+   DataFrag messageFrags[1];
 
-   //The message fits in a single chunk
-   messageChunks[0].buffer = message;
-   messageChunks[0].length = messageLen;
+   //The message fits in a single fragment
+   messageFrags[0].buffer = message;
+   messageFrags[0].length = messageLen;
 
    //Ed448 signature verification
-   error = ed448VerifySignatureEx(publicKey, messageChunks,
-      arraysize(messageChunks), context, contextLen, flag, signature);
+   error = ed448VerifySignatureEx(publicKey, messageFrags,
+      arraysize(messageFrags), context, contextLen, flag, signature);
 
    //Return status code
    return error;
@@ -424,18 +445,18 @@ error_t ed448VerifySignature(const uint8_t *publicKey, const void *message,
 /**
  * @brief EdDSA signature verification
  * @param[in] publicKey Signer's EdDSA public key (57 bytes)
- * @param[in] message Array of data chunks representing the message whose
+ * @param[in] message Array of fragments representing the message whose
  *   signature is to be verified
- * @param[in] messageLen Number of data chunks representing the message
+ * @param[in] messageLen Number of fragments representing the message
  * @param[in] context Constant string specified by the protocol using it
  * @param[in] contextLen Length of the context, in bytes
- * @param[in] flag Prehash flag for Ed448ph scheme
+ * @param[in] flag Prehash flag for Ed448ph scheme (ED448_PH_FLAG)
  * @param[in] signature EdDSA signature (114 bytes)
  * @return Error code
  **/
 
 error_t ed448VerifySignatureEx(const uint8_t *publicKey,
-   const DataChunk *message, uint_t messageLen, const void *context,
+   const DataFrag *messageFrags, uint_t messageNumFrags, const void *context,
    uint8_t contextLen, uint8_t flag, const uint8_t *signature)
 {
    uint_t i;
@@ -447,7 +468,7 @@ error_t ed448VerifySignatureEx(const uint8_t *publicKey,
 #endif
 
    //Check parameters
-   if(publicKey == NULL || message == NULL || signature == NULL)
+   if(publicKey == NULL || messageFrags == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //The context is an optional constant string specified by the protocol using
@@ -490,11 +511,11 @@ error_t ed448VerifySignatureEx(const uint8_t *publicKey,
    shakeAbsorb(&state->shakeContext, publicKey, ED448_PUBLIC_KEY_LEN);
 
    //The message is split over multiple chunks
-   for(i = 0; i < messageLen; i++)
+   for(i = 0; i < messageNumFrags; i++)
    {
       //Absorb current chunk
-      shakeAbsorb(&state->shakeContext, message[i].buffer,
-         message[i].length);
+      shakeAbsorb(&state->shakeContext, messageFrags[i].buffer,
+         messageFrags[i].length);
    }
 
    //Compute SHAKE256(dom4(F, C) || R || A || PH(M), 114) and interpret the
@@ -760,6 +781,8 @@ void ed448Encode(Ed448Point *p, uint8_t *data)
  * @brief Point decoding
  * @param[out] p Point representation
  * @param[in] data Octet string to be converted
+ * @return The function returns 0 if the point has been successfully decoded,
+ *   else 1
  **/
 
 uint32_t ed448Decode(Ed448Point *p, const uint8_t *data)

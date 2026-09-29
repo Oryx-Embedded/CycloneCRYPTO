@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -87,7 +87,7 @@ error_t aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
    options.bits.cphmde = algo;
    options.bits.extkey = MCUXCLELS_CIPHER_EXTERNAL_KEY;
 
-   //Acquire exclusive access to the ELS module
+   //Acquire exclusive access to the ELS PKC module
    osAcquireMutex(&mcxn94CryptoMutex);
 
    //Perform AES encryption/decryption
@@ -122,7 +122,7 @@ error_t aesProcessData(AesContext *context, uint8_t *iv, const uint8_t *input,
       MCUX_CSSL_FP_FUNCTION_CALL_END();
    }
 
-   //Release exclusive access to the ELS module
+   //Release exclusive access to the ELS PKC module
    osReleaseMutex(&mcxn94CryptoMutex);
 
    //Return status code
@@ -649,7 +649,7 @@ error_t gcmProcessData(AesContext *context, const uint8_t *iv,
    block[14] = 0;
    block[15] = 1;
 
-   //Acquire exclusive access to the ELS module
+   //Acquire exclusive access to the ELS PKC module
    osAcquireMutex(&mcxn94CryptoMutex);
 
    //Initialize GCM encryption/decryption
@@ -871,7 +871,7 @@ error_t gcmProcessData(AesContext *context, const uint8_t *iv,
       MCUX_CSSL_FP_FUNCTION_CALL_END();
    }
 
-   //Release exclusive access to the ELS module
+   //Release exclusive access to the ELS PKC module
    osReleaseMutex(&mcxn94CryptoMutex);
 
    //Return status code
@@ -1135,7 +1135,7 @@ error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
    if(error)
       return error;
 
-   //Acquire exclusive access to the ELS module
+   //Acquire exclusive access to the ELS PKC module
    osAcquireMutex(&mcxn94CryptoMutex);
 
    //Calculate CIPH(B0)
@@ -1300,7 +1300,7 @@ error_t ccmEncrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
       }
    }
 
-   //Release exclusive access to the ELS module
+   //Release exclusive access to the ELS PKC module
    osReleaseMutex(&mcxn94CryptoMutex);
 
    //Check status code
@@ -1362,7 +1362,7 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
    //Increment counter block
    ccmIncCounter(ctr, 15 - nLen);
 
-   //Acquire exclusive access to the ELS module
+   //Acquire exclusive access to the ELS PKC module
    osAcquireMutex(&mcxn94CryptoMutex);
 
    //Calculate CIPH(B0)
@@ -1518,7 +1518,7 @@ error_t ccmDecrypt(const CipherAlgo *cipher, void *context, const uint8_t *n,
          MCUXCLELS_CIPHERPARAM_ALGORITHM_AES_ECB, MCUXCLELS_CIPHER_ENCRYPT);
    }
 
-   //Release exclusive access to the ELS module
+   //Release exclusive access to the ELS PKC module
    osReleaseMutex(&mcxn94CryptoMutex);
 
    //Check status code

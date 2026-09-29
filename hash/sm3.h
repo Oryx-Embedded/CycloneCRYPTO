@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _SM3_H
@@ -35,8 +35,8 @@
 #include "core/crypto.h"
 
 //Application specific context
-#ifndef SM3_PRIVATE_CONTEXT
-   #define SM3_PRIVATE_CONTEXT
+#ifndef SM3_CONTEXT_PRIVATE
+   #define SM3_CONTEXT_PRIVATE
 #endif
 
 //SM3 block size
@@ -68,7 +68,7 @@ typedef struct
    };
    size_t size;
    uint64_t totalSize;
-   SM3_PRIVATE_CONTEXT
+   SM3_CONTEXT_PRIVATE
 } Sm3Context;
 
 

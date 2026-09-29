@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _SIV_H
@@ -44,15 +44,15 @@ extern "C" {
 
 //SIV related functions
 error_t sivEncrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
-   const DataChunk *ad, uint_t adLen, const uint8_t *p, uint8_t *c,
+   const DataFrag *adFrags, uint_t adNumFrags, const uint8_t *p, uint8_t *c,
    size_t length, uint8_t *v);
 
 error_t sivDecrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
-   const DataChunk *ad, uint_t adLen, const uint8_t *c, uint8_t *p,
+   const DataFrag *adFrags, uint_t adNumFrags, const uint8_t *c, uint8_t *p,
    size_t length, const uint8_t *v);
 
 void s2v(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
-   const DataChunk *ad, uint_t adLen, const uint8_t *p, size_t pLen,
+   const DataFrag *adFrags, uint_t adNumFrags, const uint8_t *p, size_t pLen,
    uint8_t *v);
 
 //C++ guard

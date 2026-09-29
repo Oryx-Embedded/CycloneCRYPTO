@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -34,8 +34,8 @@
 //Dependencies
 #include "ocsp/ocsp_client.h"
 #include "ocsp/ocsp_client_misc.h"
-#include "ocsp/ocsp_req_create.h"
-#include "ocsp/ocsp_resp_parse.h"
+#include "ocsp/ocsp_request_create.h"
+#include "ocsp/ocsp_response_parse.h"
 #include "pkix/pem_import.h"
 #include "pkix/x509_cert_parse.h"
 #include "debug.h"

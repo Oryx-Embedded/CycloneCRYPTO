@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _RSA_H
@@ -123,13 +123,14 @@ error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
    size_t messageSize, size_t *messageLen);
 
 error_t rsaesOaepEncrypt(const PrngAlgo *prngAlgo, void *prngContext,
-   const RsaPublicKey *key, const HashAlgo *hash, const char_t *label,
-   const uint8_t *message, size_t messageLen, uint8_t *ciphertext,
-   size_t *ciphertextLen);
+   const RsaPublicKey *key, const HashAlgo *hash, const HashAlgo *mgfHash,
+   const char_t *label, size_t labelLen, const uint8_t *message,
+   size_t messageLen, uint8_t *ciphertext, size_t *ciphertextLen);
 
 error_t rsaesOaepDecrypt(const RsaPrivateKey *key, const HashAlgo *hash,
-   const char_t *label, const uint8_t *ciphertext, size_t ciphertextLen,
-   uint8_t *message, size_t messageSize, size_t *messageLen);
+   const HashAlgo *mgfHash, const char_t *label, size_t labelLen,
+   const uint8_t *ciphertext, size_t ciphertextLen, uint8_t *message,
+   size_t messageSize, size_t *messageLen);
 
 error_t rsassaPkcs1v15Sign(const RsaPrivateKey *key, const HashAlgo *hash,
    const uint8_t *digest, uint8_t *signature, size_t *signatureLen);
@@ -138,12 +139,13 @@ error_t rsassaPkcs1v15Verify(const RsaPublicKey *key, const HashAlgo *hash,
    const uint8_t *digest, const uint8_t *signature, size_t signatureLen);
 
 error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
-   const RsaPrivateKey *key, const HashAlgo *hash, size_t saltLen,
-   const uint8_t *digest, uint8_t *signature, size_t *signatureLen);
+   const RsaPrivateKey *key, const HashAlgo *hash, const HashAlgo *mgfHash,
+   size_t saltLen, const uint8_t *digest, uint8_t *signature,
+   size_t *signatureLen);
 
 error_t rsassaPssVerify(const RsaPublicKey *key, const HashAlgo *hash,
-   size_t saltLen, const uint8_t *digest, const uint8_t *signature,
-   size_t signatureLen);
+   const HashAlgo *mgfHash, size_t saltLen, const uint8_t *digest,
+   const uint8_t *signature, size_t signatureLen);
 
 //C++ guard
 #ifdef __cplusplus

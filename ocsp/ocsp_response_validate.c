@@ -1,5 +1,5 @@
 /**
- * @file ocsp_resp_validate.c
+ * @file ocsp_response_validate.c
  * @brief OCSP response validation
  *
  * @section License
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL OCSP_TRACE_LEVEL
 
 //Dependencies
-#include "ocsp/ocsp_resp_validate.h"
+#include "ocsp/ocsp_response_validate.h"
 #include "pkix/x509_cert_parse.h"
 #include "pkix/x509_cert_validate.h"
 #include "pkix/x509_sign_verify.h"

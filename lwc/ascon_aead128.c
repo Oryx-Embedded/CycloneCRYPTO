@@ -30,7 +30,7 @@
  * that provides 128-bit security strength
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -311,13 +311,13 @@ error_t asconAead128Decrypt(const uint8_t *k, size_t kLen, const uint8_t *n,
    {
       //The plaintext block Pi is obtained as Pi = S[0:127] + Ci
       temp1 = state.x[0] ^ LOAD32LE(c);
-      STORE32LE(temp1, p);
+      STORE32LE(temp1, buffer);
       temp1 = state.x[1] ^ LOAD32LE(c + 4);
-      STORE32LE(temp1, p + 4);
+      STORE32LE(temp1, buffer + 4);
       temp1 = state.x[2] ^ LOAD32LE(c + 8);
-      STORE32LE(temp1, p + 8);
+      STORE32LE(temp1, buffer + 8);
       temp1 = state.x[3] ^ LOAD32LE(c + 12);
-      STORE32LE(temp1, p + 12);
+      STORE32LE(temp1, buffer + 12);
 
       //Update the state S with Ci
       state.x[0] = LOAD32LE(c);
@@ -327,6 +327,9 @@ error_t asconAead128Decrypt(const uint8_t *k, size_t kLen, const uint8_t *n,
 
       //The permutation Ascon-p[8] is applied to the state
       asconP(&state, 8);
+
+      //Copy the plaintext block Pi
+      osMemcpy(p, buffer, 16);
 
       //Next block
       length -= 16;
@@ -392,7 +395,7 @@ error_t asconAead128Decrypt(const uint8_t *k, size_t kLen, const uint8_t *n,
    }
 
    //Return status code
-   return (mask == 0) ? NO_ERROR : ERROR_FAILURE;
+   return (mask == 0) ? NO_ERROR : ERROR_INVALID_TAG;
 }
 
 #endif

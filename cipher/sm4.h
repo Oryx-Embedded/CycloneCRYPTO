@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _SM4_H
@@ -35,8 +35,8 @@
 #include "core/crypto.h"
 
 //Application specific context
-#ifndef SM4_PRIVATE_CONTEXT
-   #define SM4_PRIVATE_CONTEXT
+#ifndef SM4_CONTEXT_PRIVATE
+   #define SM4_CONTEXT_PRIVATE
 #endif
 
 //SM4 block size
@@ -58,7 +58,7 @@ typedef struct
 {
    uint_t nr;
    uint32_t rk[32];
-   SM4_PRIVATE_CONTEXT
+   SM4_CONTEXT_PRIVATE
 } Sm4Context;
 
 

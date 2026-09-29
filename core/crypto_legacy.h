@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _CRYPTO_LEGACY_H
@@ -61,7 +61,8 @@
 #define X509CertificateInfo X509CertInfo
 #define X509SignatureAlgoId X509SignAlgoId
 
-#define EddsaMessageChunk DataChunk
+#define EddsaMessageChunk DataFrag
+#define DataChunk DataFrag
 
 #define MPI_MAX_BIT_SIZE MPI_MAX_BITS
 

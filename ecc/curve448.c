@@ -1,6 +1,6 @@
 /**
  * @file curve448.c
- * @brief Curve448 elliptic curve (constant-time implementation)
+ * @brief Curve448 elliptic curve
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -71,22 +71,6 @@ void curve448SetInt(int32_t *a, int32_t b)
 
 void curve448Add(int32_t *r, const int32_t *a, const int32_t *b)
 {
-#if (CURVE448_SPEED_OPTIMIZATION_LEVEL <= 1)
-   uint_t i;
-   int32_t temp;
-
-   //Compute R = A + B
-   for(temp = 0, i = 0; i < 16; i++)
-   {
-      temp += a[i] + b[i];
-      r[i] = temp & 0x0FFFFFFF;
-      temp = ASR32(temp, 28);
-   }
-
-   //Perform modular reduction (2^448 = 2^224 + 1)
-   r[0] += temp;
-   r[8] += temp;
-#else
    int32_t temp;
 
    //Compute R = A + B
@@ -142,7 +126,6 @@ void curve448Add(int32_t *r, const int32_t *a, const int32_t *b)
    //Perform modular reduction (2^448 = 2^224 + 1)
    r[0] += temp;
    r[8] += temp;
-#endif
 }
 
 
@@ -181,22 +164,6 @@ void curve448AddInt(int32_t *r, const int32_t *a, int32_t b)
 
 void curve448Sub(int32_t *r, const int32_t *a, const int32_t *b)
 {
-#if (CURVE448_SPEED_OPTIMIZATION_LEVEL <= 1)
-   uint_t i;
-   int32_t temp;
-
-   //Compute R = A - B
-   for(temp = 0, i = 0; i < 16; i++)
-   {
-      temp += a[i] - b[i];
-      r[i] = temp & 0x0FFFFFFF;
-      temp = ASR32(temp, 28);
-   }
-
-   //Perform modular reduction (2^448 = 2^224 + 1)
-   r[0] += temp;
-   r[8] += temp;
-#else
    int32_t temp;
 
    //Compute R = A - B
@@ -252,7 +219,6 @@ void curve448Sub(int32_t *r, const int32_t *a, const int32_t *b)
    //Perform modular reduction (2^448 = 2^224 + 1)
    r[0] += temp;
    r[8] += temp;
-#endif
 }
 
 
@@ -289,44 +255,8 @@ void curve448SubInt(int32_t *r, const int32_t *a, int32_t b)
  * @param[in] b An integer such as 0 <= B < (2^224 - 1)
  **/
 
-void curve448Mul224(int32_t *r, const int32_t *a, const int32_t *b)
+__weak_func void curve448Mul224(int32_t *r, const int32_t *a, const int32_t *b)
 {
-#if (CURVE448_SPEED_OPTIMIZATION_LEVEL == 0)
-   uint_t i;
-   uint_t j;
-   int64_t acc;
-
-   //Comba's method is used to perform multiplication
-   for(acc = 0, i = 0; i < 16; i++)
-   {
-      //The algorithm computes the products, column by column
-      if(i < 8)
-      {
-         //Inner loop
-         for(j = 0; j <= i; j++)
-         {
-            acc += (int64_t) a[j] * b[i - j];
-         }
-      }
-      else
-      {
-         //Inner loop
-         for(j = i - 7; j < 8; j++)
-         {
-            acc += (int64_t) a[j] * b[i - j];
-         }
-      }
-
-      //At the bottom of each column, the final result is written to memory
-      r[i] = acc & 0x0FFFFFFF;
-      //Propagate the carry upwards
-      acc = ASR64(acc, 28);
-   }
-
-   //Perform modular reduction (2^448 = 2^224 + 1)
-   r[0] += (int32_t) acc;
-   r[8] += (int32_t) acc;
-#else
    int64_t acc;
 
    //Compute R = A * B
@@ -430,7 +360,6 @@ void curve448Mul224(int32_t *r, const int32_t *a, const int32_t *b)
    //Perform modular reduction (2^448 = 2^224 + 1)
    r[0] += (int32_t) acc;
    r[8] += (int32_t) acc;
-#endif
 }
 
 
@@ -443,126 +372,6 @@ void curve448Mul224(int32_t *r, const int32_t *a, const int32_t *b)
 
 __weak_func void curve448Mul(int32_t *r, const int32_t *a, const int32_t *b)
 {
-#if (CURVE448_SPEED_OPTIMIZATION_LEVEL == 0)
-   uint_t i;
-   uint_t j;
-   int64_t acc1;
-   int64_t acc2;
-   int64_t acc3;
-   int32_t aa[8];
-   int32_t bb[8];
-   int32_t u[16];
-
-   //Let A = A0+(A1*w) and B = B0+(B1*w). Precompute AA = A0+A1 and BB = B0+B1
-   for(i = 0; i < 8; i++)
-   {
-      aa[i] = a[i] + a[i + 8];
-      bb[i] = b[i] + b[i + 8];
-   }
-
-   //Clear accumulators
-   acc1 = 0;
-   acc2 = 0;
-
-   //Karatsuba multiplication can be fused with reduction mod p, and it doesn't
-   //make the multiplication algorithm more complex
-   for(i = 0; i < 8; i++)
-   {
-      //Compute the lower part of A1*B1, AA*BB and A0*B0
-      for(acc3 = 0, j = 0; j <= i; j++)
-      {
-         acc1 += (int64_t) a[8 + j] * b[8 + i - j];
-         acc2 += (int64_t) aa[j] * bb[i - j];
-         acc3 += (int64_t) a[j] * b[i - j];
-      }
-
-      //Update accumulators
-      acc1 += acc3;
-      acc2 -= acc3;
-
-      //Compute the upper part of A0*B0, A1*B1 and AA*BB
-      for(acc3 = 0, j = i + 1; j < 8; j++)
-      {
-         acc1 -= (int64_t) a[j] * b[8 + i - j];
-         acc2 += (int64_t) a[8 + j] * b[16 + i - j];
-         acc3 += (int64_t) aa[j] * bb[8 + i - j];
-      }
-
-      //Update accumulators
-      acc1 += acc3;
-      acc2 += acc3;
-
-      //The 2 columns are written to memory
-      u[i] = (int32_t) acc1 & 0x0FFFFFFF;
-      acc1 = ASR64(acc1, 28);
-      u[i + 8] = (int32_t) acc2 & 0x0FFFFFFF;
-      acc2 = ASR64(acc2, 28);
-   }
-
-   //Perform modular reduction (2^448 = 2^224 + 1)
-   acc1 += acc2;
-
-   //Propagate carries
-   acc2 += u[0];
-   u[0] = (int32_t) acc2 & 0x0FFFFFFF;
-   acc2 = ASR64(acc2, 28);
-   u[1] += (int32_t) acc2;
-   acc1 += u[8];
-   u[8] = (int32_t) acc1 & 0x0FFFFFFF;
-   acc1 = ASR64(acc1, 28);
-   u[9] += (int32_t) acc1;
-
-   //Copy result
-   curve448Copy(r, u);
-#elif (CURVE448_SPEED_OPTIMIZATION_LEVEL == 1)
-   uint_t i;
-   int32_t c;
-   int32_t temp;
-   int32_t u[16];
-   int32_t v[16];
-   int32_t w[16];
-
-   //Precompute A0+A1 and B0+B1
-   for(temp = 0, i = 0; i < 8; i++)
-   {
-      u[i] = a[i] + a[i + 8];
-      v[i] = b[i] + b[i + 8];
-   }
-
-   //Compute W = (A0+A1)*(B0+B1)
-   curve448Mul224(w, u, v);
-   //Compute U = A0*B0
-   curve448Mul224(u, a, b);
-   //Compute V = A1*B1
-   curve448Mul224(v, a + 8, b + 8);
-
-   //Karatsuba multiplication can be fused with reduction mod p, and it doesn't
-   //make the multiplication algorithm more complex
-   for(temp = 0, i = 0; i < 8; i++)
-   {
-      temp += u[i] - u[i + 8] + v[i] + w[i + 8];
-      r[i] = temp & 0x0FFFFFFF;
-      temp = ASR32(temp, 28);
-   }
-
-   for(i = 0; i < 8; i++)
-   {
-      temp += -u[i] + v[i + 8] + w[i] + w[i + 8];
-      r[i + 8] = temp & 0x0FFFFFFF;
-      temp = ASR32(temp, 28);
-   }
-
-   //Perform modular reduction (2^448 = 2^224 + 1)
-   c = temp;
-   temp = r[0] + c;
-   r[0] = temp & 0x0FFFFFFF;
-   temp = ASR32(temp, 28);
-   r[1] += temp;
-   temp = r[8] + c;
-   r[8] = temp & 0x0FFFFFFF;
-   temp = ASR32(temp, 28);
-   r[9] += temp;
-#else
    int32_t c;
    int32_t temp;
    int32_t u[16];
@@ -657,7 +466,6 @@ __weak_func void curve448Mul(int32_t *r, const int32_t *a, const int32_t *b)
    r[8] = temp & 0x0FFFFFFF;
    temp = ASR32(temp, 28);
    r[9] += temp;
-#endif
 }
 
 
@@ -668,7 +476,7 @@ __weak_func void curve448Mul(int32_t *r, const int32_t *a, const int32_t *b)
  * @param[in] b An integer such as 0 <= B < (2^28 - 1)
  **/
 
-void curve448MulInt(int32_t *r, const int32_t *a, int32_t b)
+__weak_func void curve448MulInt(int32_t *r, const int32_t *a, int32_t b)
 {
    uint_t i;
    int64_t temp;

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -220,6 +220,139 @@ error_t mpiExpMod(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
          //Release exclusive access to the CAAM module
          osReleaseMutex(&mimxrt1170CryptoMutex);
       }
+   }
+   else
+   {
+      //Report an error
+      error = ERROR_FAILURE;
+   }
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief Test whether a number is probable prime
+ * @param[in] a Pointer to a multiple precision integer
+ * @return Error code
+ **/
+
+error_t mpiCheckProbablePrime(const Mpi *a)
+{
+   error_t error;
+   status_t status;
+   bool result;
+   size_t n;
+   uint8_t k;
+   caam_handle_t caamHandle;
+
+   //Get the length of the input integer, in bits
+   n = mpiGetBitLength(a);
+
+   //The accelerator supports operand lengths up to 4096 bits
+   if(n > 0 && n <= 4096)
+   {
+      //The number of repetitions controls the error probability
+      if(n >= 1300)
+      {
+         k = 2;
+      }
+      else if(n >= 850)
+      {
+         k = 3;
+      }
+      else if(n >= 650)
+      {
+         k = 4;
+      }
+      else if(n >= 550)
+      {
+         k = 5;
+      }
+      else if(n >= 450)
+      {
+         k = 6;
+      }
+      else if(n >= 400)
+      {
+         k = 7;
+      }
+      else if(n >= 350)
+      {
+         k = 8;
+      }
+      else if(n >= 300)
+      {
+         k = 9;
+      }
+      else if(n >= 250)
+      {
+         k = 12;
+      }
+      else if(n >= 200)
+      {
+         k = 15;
+      }
+      else if(n >= 150)
+      {
+         k = 18;
+      }
+      else
+      {
+         k = 27;
+      }
+
+      //Get the length of the input integer, in bytes
+      n = (n + 7) / 8;
+
+      //Set CAAM job ring
+      caamHandle.jobRing = kCAAM_JobRing0;
+
+      //Acquire exclusive access to the CAAM module
+      osAcquireMutex(&mimxrt1170CryptoMutex);
+
+      //Copy input integer
+      mpiWriteRaw(a, pkhaArgs.a, n);
+
+      //Generate a random seed
+      status = CAAM_RNG_GetRandomData(CAAM, &caamHandle, kCAAM_RngStateHandle0,
+         pkhaArgs.r, n, kCAAM_RngDataAny, NULL);
+
+      //Check status code
+      if(status == kStatus_Success)
+      {
+         //Clear result first
+         result = false;
+
+         //Test candidate prime number
+         status = CAAM_PKHA_PrimalityTest(CAAM, &caamHandle, pkhaArgs.r, n,
+            &k, sizeof(k), pkhaArgs.a, n, &result);
+
+         //Check status code
+         if(status == kStatus_Success)
+         {
+            //Check result
+            if(result)
+            {
+               //The number is probably prime
+               error = NO_ERROR;
+            }
+            else
+            {
+               //The number is not prime
+               error = ERROR_INVALID_VALUE;
+            }
+         }
+         else
+         {
+            //Report an error
+            error = ERROR_FAILURE;
+         }
+      }
+
+      //Release exclusive access to the CAAM module
+      osReleaseMutex(&mimxrt1170CryptoMutex);
    }
    else
    {

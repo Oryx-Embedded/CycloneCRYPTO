@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _TEA_H
@@ -35,8 +35,8 @@
 #include "core/crypto.h"
 
 //Application specific context
-#ifndef TEA_PRIVATE_CONTEXT
-   #define TEA_PRIVATE_CONTEXT
+#ifndef TEA_CONTEXT_PRIVATE
+   #define TEA_CONTEXT_PRIVATE
 #endif
 
 //TEA block size
@@ -59,7 +59,7 @@ extern "C" {
 typedef struct
 {
    uint32_t k[4];
-   TEA_PRIVATE_CONTEXT
+   TEA_CONTEXT_PRIVATE
 } TeaContext;
 
 

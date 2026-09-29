@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _MAC_ALGORITHMS_H
@@ -72,6 +72,69 @@
 //Poly1305 support?
 #if (POLY1305_SUPPORT == ENABLED)
    #include "mac/poly1305.h"
+#endif
+
+//C++ guard
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+/**
+ * @brief MAC algorithms
+ **/
+
+typedef enum
+{
+   MAC_ALGO_NONE     = 0,
+   MAC_ALGO_CMAC     = 1,
+   MAC_ALGO_HMAC     = 2,
+   MAC_ALGO_GMAC     = 3,
+   MAC_ALGO_KMAC128  = 4,
+   MAC_ALGO_KMAC256  = 5,
+   MAC_ALGO_XCBC_MAC = 6,
+   MAC_ALGO_BLAKE2B  = 7,
+   MAC_ALGO_BLAKE2S  = 8,
+   MAC_ALGO_POLY1305 = 9
+} MacAlgo;
+
+
+/**
+ * @brief Generic MAC algorithm context
+ **/
+
+typedef union
+{
+#if (CMAC_SUPPORT == ENABLED)
+   CmacContext cmacContext;
+#endif
+#if (HMAC_SUPPORT == ENABLED)
+   HmacContext hmacContext;
+#endif
+#if (GMAC_SUPPORT == ENABLED)
+   GmacContext gmacContext;
+#endif
+#if (KMAC_SUPPORT == ENABLED)
+   KmacContext kmacContext;
+#endif
+#if (XCBC_MAC_SUPPORT == ENABLED)
+   XcbcMacContext xcbcMacContext;
+#endif
+#if (BLAKE2B_SUPPORT == ENABLED)
+   Blake2bContext blake2bContext;
+#endif
+#if (BLAKE2S_SUPPORT == ENABLED)
+   Blake2sContext blake2sContext;
+#endif
+#if (POLY1305_SUPPORT == ENABLED)
+   Poly1305Context poly1305Context;
+#endif
+} MacContext;
+
+
+//C++ guard
+#ifdef __cplusplus
+}
 #endif
 
 #endif

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _ASCON_HASH256_H
@@ -36,8 +36,8 @@
 #include "lwc/ascon.h"
 
 //Application specific context
-#ifndef ASCON_HASH256_PRIVATE_CONTEXT
-   #define ASCON_HASH256_PRIVATE_CONTEXT
+#ifndef ASCON_HASH256_CONTEXT_PRIVATE
+   #define ASCON_HASH256_CONTEXT_PRIVATE
 #endif
 
 //Ascon-Hash256 block size

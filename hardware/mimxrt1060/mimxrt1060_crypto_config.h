@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _MIMXRT1060_CRYPTO_CONFIG_H
@@ -35,12 +35,12 @@
 #include "fsl_dcp.h"
 
 //DCP-specific context (SHA-1)
-#define SHA1_PRIVATE_CONTEXT \
+#define SHA1_CONTEXT_PRIVATE \
    dcp_handle_t dcpHandle; \
    dcp_hash_ctx_t dcpContext;
 
 //DCP-specific context (SHA-256)
-#define SHA256_PRIVATE_CONTEXT \
+#define SHA256_CONTEXT_PRIVATE \
    dcp_handle_t dcpHandle; \
    dcp_hash_ctx_t dcpContext;
 

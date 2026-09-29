@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _XCBC_MAC_H
@@ -36,8 +36,8 @@
 #include "cipher/cipher_algorithms.h"
 
 //Application specific context
-#ifndef XCBC_MAC_PRIVATE_CONTEXT
-   #define XCBC_MAC_PRIVATE_CONTEXT
+#ifndef XCBC_MAC_CONTEXT_PRIVATE
+   #define XCBC_MAC_CONTEXT_PRIVATE
 #endif
 
 //C++ guard
@@ -60,7 +60,7 @@ typedef struct
    uint8_t buffer[MAX_CIPHER_BLOCK_SIZE];
    size_t bufferLength;
    uint8_t mac[MAX_CIPHER_BLOCK_SIZE];
-   XCBC_MAC_PRIVATE_CONTEXT
+   XCBC_MAC_CONTEXT_PRIVATE
 } XcbcMacContext;
 
 

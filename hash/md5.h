@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _MD5_H
@@ -35,8 +35,8 @@
 #include "core/crypto.h"
 
 //Application specific context
-#ifndef MD5_PRIVATE_CONTEXT
-   #define MD5_PRIVATE_CONTEXT
+#ifndef MD5_CONTEXT_PRIVATE
+   #define MD5_CONTEXT_PRIVATE
 #endif
 
 //MD5 block size
@@ -68,7 +68,7 @@ typedef struct
    };
    size_t size;
    uint64_t totalSize;
-   MD5_PRIVATE_CONTEXT
+   MD5_CONTEXT_PRIVATE
 } Md5Context;
 
 

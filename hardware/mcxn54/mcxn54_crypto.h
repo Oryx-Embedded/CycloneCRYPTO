@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _MCXN54_CRYPTO_H
@@ -43,7 +43,7 @@ extern "C" {
 
 //Global variables
 extern OsMutex mcxn54CryptoMutex;
-extern mcuxClSession_Descriptor_t elsSession;
+extern mcuxClSession_Descriptor_t elsPkcSession;
 
 //MCX N54 hardware cryptographic accelerator related functions
 error_t mcxn54CryptoInit(void);

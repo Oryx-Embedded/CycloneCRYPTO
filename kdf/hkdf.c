@@ -31,7 +31,7 @@
  * more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -48,7 +48,7 @@
 
 /**
  * @brief HKDF key derivation function
- * @param[in] hash Underlying hash function
+ * @param[in] hashAlgo Underlying hash function
  * @param[in] ikm input keying material
  * @param[in] ikmLen Length in the input keying material
  * @param[in] salt Optional salt value (a non-secret random value)
@@ -60,7 +60,7 @@
  * @return Error code
  **/
 
-error_t hkdf(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
+error_t hkdf(const HashAlgo *hashAlgo, const uint8_t *ikm, size_t ikmLen,
    const uint8_t *salt, size_t saltLen, const uint8_t *info, size_t infoLen,
    uint8_t *okm, size_t okmLen)
 {
@@ -68,13 +68,13 @@ error_t hkdf(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
    uint8_t prk[MAX_HASH_DIGEST_SIZE];
 
    //Perform HKDF extract step
-   error = hkdfExtract(hash, ikm, ikmLen, salt, saltLen, prk);
+   error = hkdfExtract(hashAlgo, ikm, ikmLen, salt, saltLen, prk);
 
    //Check status code
    if(!error)
    {
       //Perform HKDF expand step
-      error = hkdfExpand(hash, prk, hash->digestSize, info, infoLen,
+      error = hkdfExpand(hashAlgo, prk, hashAlgo->digestSize, info, infoLen,
          okm, okmLen);
    }
 
@@ -85,7 +85,7 @@ error_t hkdf(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
 
 /**
  * @brief HKDF extract step
- * @param[in] hash Underlying hash function
+ * @param[in] hashAlgo Underlying hash function
  * @param[in] ikm input keying material
  * @param[in] ikmLen Length in the input keying material
  * @param[in] salt Optional salt value (a non-secret random value)
@@ -94,7 +94,7 @@ error_t hkdf(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
  * @return Error code
  **/
 
-error_t hkdfExtract(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
+error_t hkdfExtract(const HashAlgo *hashAlgo, const uint8_t *ikm, size_t ikmLen,
    const uint8_t *salt, size_t saltLen, uint8_t *prk)
 {
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
@@ -104,7 +104,7 @@ error_t hkdfExtract(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
 #endif
 
    //Check parameters
-   if(hash == NULL || ikm == NULL || prk == NULL)
+   if(hashAlgo == NULL || ikm == NULL || prk == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //The salt parameter is optional
@@ -123,13 +123,13 @@ error_t hkdfExtract(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
    if(salt == NULL)
    {
       //If the salt is not provided, it is set to a string of HashLen zeros
-      osMemset(hmacContext->digest, 0, hash->digestSize);
+      osMemset(hmacContext->digest, 0, hashAlgo->digestSize);
       salt = hmacContext->digest;
-      saltLen = hash->digestSize;
+      saltLen = hashAlgo->digestSize;
    }
 
    //Compute PRK = HMAC-Hash(salt, IKM)
-   hmacInit(hmacContext, hash, salt, saltLen);
+   hmacInit(hmacContext, hashAlgo, salt, saltLen);
    hmacUpdate(hmacContext, ikm, ikmLen);
    hmacFinal(hmacContext, prk);
 
@@ -145,7 +145,7 @@ error_t hkdfExtract(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
 
 /**
  * @brief HKDF expand step
- * @param[in] hash Underlying hash function
+ * @param[in] hashAlgo Underlying hash function
  * @param[in] prk Pseudorandom key
  * @param[in] prkLen Length of the pseudorandom key
  * @param[in] info Optional application specific information
@@ -155,10 +155,49 @@ error_t hkdfExtract(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
  * @return Error code
  **/
 
-error_t hkdfExpand(const HashAlgo *hash, const uint8_t *prk, size_t prkLen,
+error_t hkdfExpand(const HashAlgo *hashAlgo, const uint8_t *prk, size_t prkLen,
    const uint8_t *info, size_t infoLen, uint8_t *okm, size_t okmLen)
 {
+   error_t error;
+   DataFrag infoFrags[1];
+
+   //The application specific information parameter is optional
+   if(info == NULL && infoLen != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   //The application specific information fits in a single fragment
+   infoFrags[0].buffer = info;
+   infoFrags[0].length = infoLen;
+
+   //Perform HKDF expand step
+   error = hkdfExpandEx(hashAlgo, prk, prkLen, infoFrags, arraysize(infoFrags),
+      okm, okmLen);
+
+   //Return status code
+   return error;
+}
+
+
+/**
+ * @brief HKDF expand step
+ * @param[in] hashAlgo Underlying hash function
+ * @param[in] prk Pseudorandom key
+ * @param[in] prkLen Length of the pseudorandom key
+ * @param[in] infoFrags Array of fragments representing the application
+ *   specific information
+ * @param[in] infoNumFrags Number of fragments representing the application
+ *   specific information
+ * @param[out] okm output keying material
+ * @param[in] okmLen Length of the output keying material
+ * @return Error code
+ **/
+
+error_t hkdfExpandEx(const HashAlgo *hashAlgo, const uint8_t *prk,
+   size_t prkLen, const DataFrag *infoFrags, size_t infoNumFrags, uint8_t *okm,
+   size_t okmLen)
+{
    uint8_t i;
+   uint_t j;
    size_t tLen;
    uint8_t t[MAX_HASH_DIGEST_SIZE];
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
@@ -168,19 +207,15 @@ error_t hkdfExpand(const HashAlgo *hash, const uint8_t *prk, size_t prkLen,
 #endif
 
    //Check parameters
-   if(hash == NULL || prk == NULL || okm == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //The application specific information parameter is optional
-   if(info == NULL && infoLen != 0)
+   if(hashAlgo == NULL || prk == NULL || okm == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //PRK must be at least HashLen octets
-   if(prkLen < hash->digestSize)
+   if(prkLen < hashAlgo->digestSize)
       return ERROR_INVALID_LENGTH;
 
    //Check the length of the output keying material
-   if(okmLen > (255 * hash->digestSize))
+   if(okmLen > (255 * hashAlgo->digestSize))
       return ERROR_INVALID_LENGTH;
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
@@ -198,14 +233,19 @@ error_t hkdfExpand(const HashAlgo *hash, const uint8_t *prk, size_t prkLen,
    for(i = 1; okmLen > 0; i++)
    {
       //Compute T(i) = HMAC-Hash(PRK, T(i-1) | info | i)
-      hmacInit(hmacContext, hash, prk, prkLen);
+      hmacInit(hmacContext, hashAlgo, prk, prkLen);
       hmacUpdate(hmacContext, t, tLen);
-      hmacUpdate(hmacContext, info, infoLen);
+
+      for(j = 0; j < infoNumFrags; j++)
+      {
+         hmacUpdate(hmacContext, infoFrags[j].buffer, infoFrags[j].length);
+      }
+
       hmacUpdate(hmacContext, &i, sizeof(i));
       hmacFinal(hmacContext, t);
 
       //Number of octets in the current block
-      tLen = MIN(okmLen, hash->digestSize);
+      tLen = MIN(okmLen, hashAlgo->digestSize);
       //Save the resulting block
       osMemcpy(okm, t, tLen);
 

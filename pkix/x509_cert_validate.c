@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -627,7 +627,9 @@ error_t x509ParseIpv4Addr(const char_t *str, uint8_t *ipAddr)
       {
          //First digit to be decoded?
          if(value < 0)
+         {
             value = 0;
+         }
 
          //Update the value of the current byte
          value = (value * 10) + (*str - '0');

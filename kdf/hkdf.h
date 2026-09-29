@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _HKDF_H
@@ -40,15 +40,19 @@ extern "C" {
 #endif
 
 //HKDF related functions
-error_t hkdf(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
+error_t hkdf(const HashAlgo *hashAlgo, const uint8_t *ikm, size_t ikmLen,
    const uint8_t *salt, size_t saltLen, const uint8_t *info, size_t infoLen,
    uint8_t *okm, size_t okmLen);
 
-error_t hkdfExtract(const HashAlgo *hash, const uint8_t *ikm, size_t ikmLen,
+error_t hkdfExtract(const HashAlgo *hashAlgo, const uint8_t *ikm, size_t ikmLen,
    const uint8_t *salt, size_t saltLen, uint8_t *prk);
 
-error_t hkdfExpand(const HashAlgo *hash, const uint8_t *prk, size_t prkLen,
+error_t hkdfExpand(const HashAlgo *hashAlgo, const uint8_t *prk, size_t prkLen,
    const uint8_t *info, size_t infoLen, uint8_t *okm, size_t okmLen);
+
+error_t hkdfExpandEx(const HashAlgo *hashAlgo, const uint8_t *prk,
+   size_t prkLen, const DataFrag *infoFrags, size_t infoNumFrags, uint8_t *okm,
+   size_t okmLen);
 
 //C++ guard
 #ifdef __cplusplus

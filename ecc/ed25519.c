@@ -1,6 +1,6 @@
 /**
  * @file ed25519.c
- * @brief Ed25519 elliptic curve (constant-time implementation)
+ * @brief Ed25519 elliptic curve
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -219,6 +219,26 @@ error_t ed25519GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey)
 
 
 /**
+ * @brief Check whether the EdDSA public key is valid
+ * @param[in] publicKey EdDSA public key (32 bytes)
+ * @return The function returns TRUE if the EdDSA public key is valid, else
+ *   FALSE
+ **/
+
+bool_t ed25519CheckPublicKey(const uint8_t *publicKey)
+{
+   uint32_t ret;
+   Ed25519Point p;
+
+   //Decode the public key
+   ret = ed25519Decode(&p, publicKey);
+
+   //Return TRUE if the public key is valid
+   return (ret == 0) ? TRUE : FALSE;
+}
+
+
+/**
  * @brief EdDSA signature generation
  * @param[in] privateKey Signer's EdDSA private key (32 bytes)
  * @param[in] publicKey Signer's EdDSA public key (32 bytes)
@@ -226,7 +246,7 @@ error_t ed25519GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey)
  * @param[in] messageLen Length of the message, in bytes
  * @param[in] context Constant string specified by the protocol using it
  * @param[in] contextLen Length of the context, in bytes
- * @param[in] flag Prehash flag for Ed25519ph scheme
+ * @param[in] flag Prehash flag for Ed25519ph scheme (ED25519_PH_FLAG)
  * @param[out] signature EdDSA signature (64 bytes)
  * @return Error code
  **/
@@ -236,15 +256,15 @@ __weak_func error_t ed25519GenerateSignature(const uint8_t *privateKey,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature)
 {
    error_t error;
-   DataChunk messageChunks[1];
+   DataFrag messageFrags[1];
 
-   //The message fits in a single chunk
-   messageChunks[0].buffer = message;
-   messageChunks[0].length = messageLen;
+   //The message fits in a single fragment
+   messageFrags[0].buffer = message;
+   messageFrags[0].length = messageLen;
 
    //Ed25519 signature generation
-   error = ed25519GenerateSignatureEx(privateKey, publicKey, messageChunks,
-      arraysize(messageChunks), context, contextLen, flag, signature);
+   error = ed25519GenerateSignatureEx(privateKey, publicKey, messageFrags,
+      arraysize(messageFrags), context, contextLen, flag, signature);
 
    //Return status code
    return error;
@@ -255,19 +275,20 @@ __weak_func error_t ed25519GenerateSignature(const uint8_t *privateKey,
  * @brief EdDSA signature generation
  * @param[in] privateKey Signer's EdDSA private key (32 bytes)
  * @param[in] publicKey Signer's EdDSA public key (32 bytes)
- * @param[in] message Array of data chunks representing the message to be
+ * @param[in] messageFrags Array of fragments representing the message to be
  *   signed
- * @param[in] messageLen Number of data chunks representing the message
+ * @param[in] messageNumFrags Number of fragments representing the message
  * @param[in] context Constant string specified by the protocol using it
  * @param[in] contextLen Length of the context, in bytes
- * @param[in] flag Prehash flag for Ed25519ph scheme
+ * @param[in] flag Prehash flag for Ed25519ph scheme (ED25519_PH_FLAG)
  * @param[out] signature EdDSA signature (64 bytes)
  * @return Error code
  **/
 
 error_t ed25519GenerateSignatureEx(const uint8_t *privateKey,
-   const uint8_t *publicKey, const DataChunk *message, uint_t messageLen,
-   const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature)
+   const uint8_t *publicKey, const DataFrag *messageFrags,
+   uint_t messageNumFrags, const void *context, uint8_t contextLen,
+   uint8_t flag, uint8_t *signature)
 {
    uint_t i;
    uint8_t c;
@@ -278,7 +299,7 @@ error_t ed25519GenerateSignatureEx(const uint8_t *privateKey,
 #endif
 
    //Check parameters
-   if(privateKey == NULL || message == NULL || signature == NULL)
+   if(privateKey == NULL || messageFrags == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //The context is an optional constant string specified by the protocol using
@@ -342,11 +363,11 @@ error_t ed25519GenerateSignatureEx(const uint8_t *privateKey,
    sha512Update(&state->sha512Context, state->p, 32);
 
    //The message is split over multiple chunks
-   for(i = 0; i < messageLen; i++)
+   for(i = 0; i < messageNumFrags; i++)
    {
       //Digest current chunk
-      sha512Update(&state->sha512Context, message[i].buffer,
-         message[i].length);
+      sha512Update(&state->sha512Context, messageFrags[i].buffer,
+         messageFrags[i].length);
    }
 
    //Compute SHA-512(dom2(F, C) || prefix || PH(M))
@@ -378,11 +399,11 @@ error_t ed25519GenerateSignatureEx(const uint8_t *privateKey,
    sha512Update(&state->sha512Context, publicKey, ED25519_PUBLIC_KEY_LEN);
 
    //The message is split over multiple chunks
-   for(i = 0; i < messageLen; i++)
+   for(i = 0; i < messageNumFrags; i++)
    {
       //Digest current chunk
-      sha512Update(&state->sha512Context, message[i].buffer,
-         message[i].length);
+      sha512Update(&state->sha512Context, messageFrags[i].buffer,
+         messageFrags[i].length);
    }
 
    //Compute SHA512(dom2(F, C) || R || A || PH(M)) and interpret the 64-octet
@@ -419,7 +440,7 @@ error_t ed25519GenerateSignatureEx(const uint8_t *privateKey,
  * @param[in] messageLen Length of the message, in bytes
  * @param[in] context Constant string specified by the protocol using it
  * @param[in] contextLen Length of the context, in bytes
- * @param[in] flag Prehash flag for Ed25519ph scheme
+ * @param[in] flag Prehash flag for Ed25519ph scheme (ED25519_PH_FLAG)
  * @param[in] signature EdDSA signature (64 bytes)
  * @return Error code
  **/
@@ -429,15 +450,15 @@ __weak_func error_t ed25519VerifySignature(const uint8_t *publicKey,
    uint8_t contextLen, uint8_t flag, const uint8_t *signature)
 {
    error_t error;
-   DataChunk messageChunks[1];
+   DataFrag messageFrags[1];
 
-   //The message fits in a single chunk
-   messageChunks[0].buffer = message;
-   messageChunks[0].length = messageLen;
+   //The message fits in a single fragment
+   messageFrags[0].buffer = message;
+   messageFrags[0].length = messageLen;
 
    //Ed25519 signature verification
-   error = ed25519VerifySignatureEx(publicKey, messageChunks,
-      arraysize(messageChunks), context, contextLen, flag, signature);
+   error = ed25519VerifySignatureEx(publicKey, messageFrags,
+      arraysize(messageFrags), context, contextLen, flag, signature);
 
    //Return status code
    return error;
@@ -447,18 +468,18 @@ __weak_func error_t ed25519VerifySignature(const uint8_t *publicKey,
 /**
  * @brief EdDSA signature verification
  * @param[in] publicKey Signer's EdDSA public key (32 bytes)
- * @param[in] message Array of data chunks representing the message whose
+ * @param[in] messageFrags Array of fragments representing the message whose
  *   signature is to be verified
- * @param[in] messageLen Number of data chunks representing the message
+ * @param[in] messageNumFrags Number of fragments representing the message
  * @param[in] context Constant string specified by the protocol using it
  * @param[in] contextLen Length of the context, in bytes
- * @param[in] flag Prehash flag for Ed25519ph scheme
+ * @param[in] flag Prehash flag for Ed25519ph scheme (ED25519_PH_FLAG)
  * @param[in] signature EdDSA signature (64 bytes)
  * @return Error code
  **/
 
 error_t ed25519VerifySignatureEx(const uint8_t *publicKey,
-   const DataChunk *message, uint_t messageLen, const void *context,
+   const DataFrag *messageFrags, uint_t messageNumFrags, const void *context,
    uint8_t contextLen, uint8_t flag, const uint8_t *signature)
 {
    uint_t i;
@@ -470,7 +491,7 @@ error_t ed25519VerifySignatureEx(const uint8_t *publicKey,
 #endif
 
    //Check parameters
-   if(publicKey == NULL || message == NULL || signature == NULL)
+   if(publicKey == NULL || messageFrags == NULL || signature == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //The context is an optional constant string specified by the protocol using
@@ -521,11 +542,11 @@ error_t ed25519VerifySignatureEx(const uint8_t *publicKey,
    sha512Update(&state->sha512Context, publicKey, ED25519_PUBLIC_KEY_LEN);
 
    //The message is split over multiple chunks
-   for(i = 0; i < messageLen; i++)
+   for(i = 0; i < messageNumFrags; i++)
    {
       //Digest current chunk
-      sha512Update(&state->sha512Context, message[i].buffer,
-         message[i].length);
+      sha512Update(&state->sha512Context, messageFrags[i].buffer,
+         messageFrags[i].length);
    }
 
    //Compute SHA512(dom2(F, C) || R || A || PH(M)) and interpret the 64-octet
@@ -799,6 +820,8 @@ void ed25519Encode(Ed25519Point *p, uint8_t *data)
  * @brief Point decoding
  * @param[out] p Point representation
  * @param[in] data Octet string to be converted
+ * @return The function returns 0 if the point has been successfully decoded,
+ *   else 1
  **/
 
 uint32_t ed25519Decode(Ed25519Point *p, const uint8_t *data)

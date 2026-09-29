@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _MCXN94_CRYPTO_PKC_H
@@ -49,7 +49,7 @@ extern "C" {
 
 
 /**
- * @brief RSA primitive arguments
+ * @brief PKC RSA primitive arguments
  **/
 
 typedef struct
@@ -64,11 +64,11 @@ typedef struct
    uint8_t qinv[512];
    uint8_t m[512];
    uint8_t c[512];
-} ElsRsaArgs;
+} PkcRsaArgs;
 
 
 /**
- * @brief ELS ECC primitive arguments
+ * @brief PKC ECC primitive arguments
  **/
 
 typedef struct
@@ -81,11 +81,11 @@ typedef struct
    uint8_t d[66];
    uint8_t input[132];
    uint8_t output[132];
-} ElsEccArgs;
+} PkcEccArgs;
 
 
 /**
- * @brief ELS ECDSA primitive arguments
+ * @brief PKC ECDSA primitive arguments
  **/
 
 typedef struct
@@ -99,11 +99,11 @@ typedef struct
    uint8_t publicKey[132];
    uint8_t signature[132];
    uint8_t r[66];
-} ElsEcdsaArgs;
+} PkcEcdsaArgs;
 
 
 /**
- * @brief ELS MontDH primitive arguments
+ * @brief PKC MontDH primitive arguments
  **/
 
 typedef struct
@@ -111,11 +111,11 @@ typedef struct
    uint32_t privKeyDesc[MCUXCLKEY_DESCRIPTOR_SIZE_IN_WORDS];
    uint32_t pubKeyDesc[MCUXCLKEY_DESCRIPTOR_SIZE_IN_WORDS];
    uint8_t sharedSecret[MCUXCLECC_MONTDH_CURVE448_SIZE_SHAREDSECRET];
-} ElsMontDhArgs;
+} PkcMontDhArgs;
 
 
 /**
- * @brief ELS EdDSA primitive arguments
+ * @brief PKC EdDSA primitive arguments
  **/
 
 typedef struct
@@ -127,7 +127,7 @@ typedef struct
    uint32_t keyPairDesc[MCUXCLECC_EDDSA_GENERATEKEYPAIR_DESCRIPTOR_SIZE_IN_WORDS];
    uint32_t protocolDesc[MCUXCLECC_EDDSA_ED25519_SIGNATURE_PROTOCOL_DESCRIPTOR_SIZE_IN_WORD(256)];
    uint8_t signature[MCUXCLECC_EDDSA_ED25519_SIZE_SIGNATURE];
-} ElsEddsaArgs;
+} PkcEddsaArgs;
 
 
 //C++ guard

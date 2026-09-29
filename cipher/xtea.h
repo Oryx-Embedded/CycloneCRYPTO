@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _XTEA_H
@@ -35,8 +35,8 @@
 #include "core/crypto.h"
 
 //Application specific context
-#ifndef XTEA_PRIVATE_CONTEXT
-   #define XTEA_PRIVATE_CONTEXT
+#ifndef XTEA_CONTEXT_PRIVATE
+   #define XTEA_CONTEXT_PRIVATE
 #endif
 
 //XTEA block size
@@ -59,7 +59,7 @@ extern "C" {
 typedef struct
 {
    uint32_t k[4];
-   XTEA_PRIVATE_CONTEXT
+   XTEA_CONTEXT_PRIVATE
 } XteaContext;
 
 

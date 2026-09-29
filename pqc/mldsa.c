@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -597,6 +597,8 @@ error_t mldsa65GenerateSignature(const uint8_t *secretKey, const void *message,
  * @param[in] secretKey Pointer to the secret key (4896 bytes)
  * @param[in] message Pointer to the message to be signed
  * @param[in] messageLen Length of the message, in bytes
+ * @param[in] context Context string (a byte string of 255 or fewer bytes)
+ * @param[in] contextLen Length of the context, in bytes
  * @param[out] signature ML-DSA-87 signature (4627 bytes)
  * @return Error code
  **/

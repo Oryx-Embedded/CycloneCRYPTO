@@ -30,7 +30,7 @@
  * revision 1, section 5.8.1
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -38,26 +38,26 @@
 
 //Dependencies
 #include "core/crypto.h"
-#include "kdf/pbkdf.h"
-#include "mac/hmac.h"
+#include "kdf/concat_kdf.h"
+#include "hash/hash_algorithms.h"
 
 //Check crypto library configuration
 #if (CONCAT_KDF_SUPPORT == ENABLED)
 
 
 /**
- * @brief Concat KDF key derivation function
- * @param[in] hash Underlying hash function
+ * @brief Concat KDF function
+ * @param[in] hashAlgo Underlying hash function
  * @param[in] z Shared secret Z
- * @param[in] zLen Length in octets of the shared secret Z
+ * @param[in] zLen Length of the shared secret Z, in bytes
  * @param[in] otherInfo Context-specific information (optional parameter)
- * @param[in] otherInfoLen Length in octets of the context-specific information
+ * @param[in] otherInfoLen Length of the context-specific information, in bytes
  * @param[out] dk Derived keying material
- * @param[in] dkLen Length in octets of the keying material to be generated
+ * @param[in] dkLen Length of the keying material to be generated, in bytes
  * @return Error code
  **/
 
-error_t concatKdf(const HashAlgo *hash, const uint8_t *z, size_t zLen,
+error_t concatKdf(const HashAlgo *hashAlgo, const uint8_t *z, size_t zLen,
    const uint8_t *otherInfo, size_t otherInfoLen, uint8_t *dk, size_t dkLen)
 {
    size_t n;
@@ -71,7 +71,7 @@ error_t concatKdf(const HashAlgo *hash, const uint8_t *z, size_t zLen,
 #endif
 
    //Check parameters
-   if(hash == NULL || z == NULL || dk == NULL)
+   if(hashAlgo == NULL || z == NULL || dk == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //The OtherInfo parameter is optional
@@ -80,7 +80,7 @@ error_t concatKdf(const HashAlgo *hash, const uint8_t *z, size_t zLen,
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the hash context
-   hashContext = cryptoAllocMem(hash->contextSize);
+   hashContext = cryptoAllocMem(hashAlgo->contextSize);
    //Failed to allocate memory?
    if(hashContext == NULL)
       return ERROR_OUT_OF_MEMORY;
@@ -93,21 +93,14 @@ error_t concatKdf(const HashAlgo *hash, const uint8_t *z, size_t zLen,
       STORE32BE(i, counter);
 
       //Compute H(counter || Z || OtherInfo)
-      hash->init(hashContext);
-      hash->update(hashContext, counter, sizeof(uint32_t));
-      hash->update(hashContext, z, zLen);
-
-      //The OtherInfo parameter is optional
-      if(otherInfoLen > 0)
-      {
-         hash->update(hashContext, otherInfo, otherInfoLen);
-      }
-
-      //Finalize hash calculation
-      hash->final(hashContext, digest);
+      hashAlgo->init(hashContext);
+      hashAlgo->update(hashContext, counter, sizeof(uint32_t));
+      hashAlgo->update(hashContext, z, zLen);
+      hashAlgo->update(hashContext, otherInfo, otherInfoLen);
+      hashAlgo->final(hashContext, digest);
 
       //Number of octets in the current block
-      n = MIN(dkLen, hash->digestSize);
+      n = MIN(dkLen, hashAlgo->digestSize);
       //Save the resulting block
       osMemcpy(dk, digest, n);
 

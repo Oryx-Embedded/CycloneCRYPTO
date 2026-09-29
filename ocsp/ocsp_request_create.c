@@ -1,5 +1,5 @@
 /**
- * @file ocsp_req_create.c
+ * @file ocsp_request_create.c
  * @brief OCSP request generation
  *
  * @section License
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL OCSP_TRACE_LEVEL
 
 //Dependencies
-#include "ocsp/ocsp_req_create.h"
-#include "ocsp/ocsp_req_format.h"
+#include "ocsp/ocsp_request_create.h"
+#include "ocsp/ocsp_request_format.h"
 #include "encoding/asn1.h"
 #include "debug.h"
 

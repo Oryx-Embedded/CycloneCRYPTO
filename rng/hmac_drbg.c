@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -133,7 +133,7 @@ error_t hmacDrbgSeedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
    const uint8_t *personalizationString, size_t personalizationStringLen)
 {
    size_t outLen;
-   DataChunk seedMaterial[3];
+   DataFrag seedMaterialFrags[3];
 
    //Check parameters
    if(context == NULL || entropyInput == NULL)
@@ -172,12 +172,12 @@ error_t hmacDrbgSeedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
    outLen = context->hashAlgo->digestSize;
 
    //Let seed_material = entropy_input || nonce || personalization_string
-   seedMaterial[0].buffer = entropyInput;
-   seedMaterial[0].length = entropyInputLen;
-   seedMaterial[1].buffer = nonce;
-   seedMaterial[1].length = nonceLen;
-   seedMaterial[2].buffer = personalizationString;
-   seedMaterial[2].length = personalizationStringLen;
+   seedMaterialFrags[0].buffer = entropyInput;
+   seedMaterialFrags[0].length = entropyInputLen;
+   seedMaterialFrags[1].buffer = nonce;
+   seedMaterialFrags[1].length = nonceLen;
+   seedMaterialFrags[2].buffer = personalizationString;
+   seedMaterialFrags[2].length = personalizationStringLen;
 
    //Set Key = 0x00 00...00
    osMemset(context->k, 0x00, outLen);
@@ -185,7 +185,7 @@ error_t hmacDrbgSeedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
    osMemset(context->v, 0x01, outLen);
 
    //Compute (Key, V) = HMAC_DRBG_Update(seed_material, Key, V)
-   hmacDrbgUpdate(context, seedMaterial, arraysize(seedMaterial));
+   hmacDrbgUpdate(context, seedMaterialFrags, arraysize(seedMaterialFrags));
 
    //Reset reseed_counter
    context->reseedCounter = 1;
@@ -229,7 +229,7 @@ error_t hmacDrbgReseedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
    size_t entropyInputLen, const uint8_t *additionalInput,
    size_t additionalInputLen)
 {
-   DataChunk seedMaterial[2];
+   DataFrag seedMaterialFrags[2];
 
    //Check parameters
    if(context == NULL || entropyInput == NULL)
@@ -257,13 +257,13 @@ error_t hmacDrbgReseedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
    osAcquireMutex(&context->mutex);
 
    //Let seed_material = entropy_input || additional_input
-   seedMaterial[0].buffer = entropyInput;
-   seedMaterial[0].length = entropyInputLen;
-   seedMaterial[1].buffer = additionalInput;
-   seedMaterial[1].length = additionalInputLen;
+   seedMaterialFrags[0].buffer = entropyInput;
+   seedMaterialFrags[0].length = entropyInputLen;
+   seedMaterialFrags[1].buffer = additionalInput;
+   seedMaterialFrags[1].length = additionalInputLen;
 
    //Compute (Key, V) = HMAC_DRBG_Update(seed_material, Key, V)
-   hmacDrbgUpdate(context, seedMaterial, arraysize(seedMaterial));
+   hmacDrbgUpdate(context, seedMaterialFrags, arraysize(seedMaterialFrags));
 
    //Reset reseed_counter
    context->reseedCounter = 1;
@@ -309,7 +309,7 @@ error_t hmacDrbgGenerateEx(HmacDrbgContext *context,
 {
    size_t n;
    size_t outLen;
-   DataChunk providedData[1];
+   DataFrag providedDataFrags[1];
    HmacContext *hmacContext;
 
    //Check parameters
@@ -343,14 +343,14 @@ error_t hmacDrbgGenerateEx(HmacDrbgContext *context,
    outLen = context->hashAlgo->digestSize;
 
    //The additional input string is received from the consuming application
-   providedData[0].buffer = additionalInput;
-   providedData[0].length = additionalInputLen;
+   providedDataFrags[0].buffer = additionalInput;
+   providedDataFrags[0].length = additionalInputLen;
 
    //The length of the additional input string may be zero
    if(additionalInputLen > 0)
    {
       //Compute (Key, V) = HMAC_DRBG_Update(additional_input, Key, V)
-      hmacDrbgUpdate(context, providedData, arraysize(providedData));
+      hmacDrbgUpdate(context, providedDataFrags, arraysize(providedDataFrags));
    }
 
    //Generate the requested number of bytes
@@ -375,7 +375,7 @@ error_t hmacDrbgGenerateEx(HmacDrbgContext *context,
    //Compute (Key, V) = HMAC_DRBG_Update(additional_input, Key, V)
    if(additionalInputLen > 0)
    {
-      hmacDrbgUpdate(context, providedData, arraysize(providedData));
+      hmacDrbgUpdate(context, providedDataFrags, arraysize(providedDataFrags));
    }
    else
    {
@@ -415,12 +415,12 @@ void hmacDrbgDeinit(HmacDrbgContext *context)
 /**
  * @brief Update internal state
  * @param[in] context Pointer to the HMAC_DRBG context
- * @param[in] providedData The data to be used
- * @param[in] providedDataLen Number of data chunks representing the data
+ * @param[in] providedDataFrags Array of fragments representing the data
+ * @param[in] providedDataNumFrags Number of fragments representing the data
  **/
 
-void hmacDrbgUpdate(HmacDrbgContext *context, const DataChunk *providedData,
-   uint_t providedDataLen)
+void hmacDrbgUpdate(HmacDrbgContext *context, const DataFrag *providedDataFrags,
+   uint_t providedDataNumFrags)
 {
    uint8_t c;
    size_t i;
@@ -440,10 +440,10 @@ void hmacDrbgUpdate(HmacDrbgContext *context, const DataChunk *providedData,
    hmacUpdate(hmacContext, context->v, outLen);
    hmacUpdate(hmacContext, &c, sizeof(c));
 
-   for(i = 0; i < providedDataLen; i++)
+   for(i = 0; i < providedDataNumFrags; i++)
    {
-      hmacUpdate(hmacContext, providedData[i].buffer,
-         providedData[i].length);
+      hmacUpdate(hmacContext, providedDataFrags[i].buffer,
+         providedDataFrags[i].length);
    }
 
    hmacFinal(hmacContext, context->k);
@@ -454,7 +454,7 @@ void hmacDrbgUpdate(HmacDrbgContext *context, const DataChunk *providedData,
    hmacFinal(hmacContext, context->v);
 
    //Any data provided?
-   if(providedDataLen > 0)
+   if(providedDataNumFrags > 0)
    {
       //Constant byte 0x01
       c = 1;
@@ -464,10 +464,10 @@ void hmacDrbgUpdate(HmacDrbgContext *context, const DataChunk *providedData,
       hmacUpdate(hmacContext, context->v, outLen);
       hmacUpdate(hmacContext, &c, sizeof(c));
 
-      for(i = 0; i < providedDataLen; i++)
+      for(i = 0; i < providedDataNumFrags; i++)
       {
-         hmacUpdate(hmacContext, providedData[i].buffer,
-            providedData[i].length);
+         hmacUpdate(hmacContext, providedDataFrags[i].buffer,
+            providedDataFrags[i].length);
       }
 
       hmacFinal(hmacContext, context->k);

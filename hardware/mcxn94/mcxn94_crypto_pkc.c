@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -53,11 +53,11 @@
 #if (MCXN94_CRYPTO_PKC_SUPPORT == ENABLED)
 
 //Global variables
-ALIGNED ElsRsaArgs elsRsaArgs;
-ALIGNED ElsEccArgs elsEccArgs;
-ALIGNED ElsEcdsaArgs elsEcdsaArgs;
-ALIGNED ElsMontDhArgs elsMontDhArgs;
-ALIGNED ElsEddsaArgs elsEddsaArgs;
+ALIGNED PkcRsaArgs pkcRsaArgs;
+ALIGNED PkcEccArgs pkcEccArgs;
+ALIGNED PkcEcdsaArgs pkcEcdsaArgs;
+ALIGNED PkcMontDhArgs pkcMontDhArgs;
+ALIGNED PkcEddsaArgs pkcEddsaArgs;
 
 //Pre-computed value of (2 ^ (byteLenN * 4)) * G (secp192r1)
 static const uint8_t SECP192R1_PRECG[] =
@@ -187,22 +187,22 @@ error_t mpiExpModRegular(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
    //Check the length of the operands
    if(aLen <= pLen && eLen <= 512 && pLen <= 512)
    {
-      //Acquire exclusive access to the ELS module
+      //Acquire exclusive access to the ELS PKC module
       osAcquireMutex(&mcxn94CryptoMutex);
 
       //Copy the input integer
-      mpiWriteRaw(a, elsRsaArgs.c, pLen);
+      mpiWriteRaw(a, pkcRsaArgs.c, pLen);
       //Copy the public exponent
-      mpiWriteRaw(e, elsRsaArgs.e, eLen);
+      mpiWriteRaw(e, pkcRsaArgs.e, eLen);
       //Copy the modulus
-      mpiWriteRaw(p, elsRsaArgs.n, pLen);
+      mpiWriteRaw(p, pkcRsaArgs.n, pLen);
 
       //Set the public exponent
-      ee.pKeyEntryData = elsRsaArgs.e;
+      ee.pKeyEntryData = pkcRsaArgs.e;
       ee.keyEntryLength = eLen;
 
       //Set the modulus
-      pp.pKeyEntryData = elsRsaArgs.n;
+      pp.pKeyEntryData = pkcRsaArgs.n;
       pp.keyEntryLength = pLen;
 
       //Set the RSA private key
@@ -216,9 +216,9 @@ error_t mpiExpModRegular(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
 
       //Apply RSAVP1 primitive
       MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClRsa_sign(
-         &elsSession, &privateKey, elsRsaArgs.c, pLen,
+         &elsPkcSession, &privateKey, pkcRsaArgs.c, pLen,
          (mcuxClRsa_SignVerifyMode_t *) &mcuxClRsa_Mode_Sign_NoEncode,
-         0, 0, elsRsaArgs.m));
+         0, 0, pkcRsaArgs.m));
 
       //Check the protection token and the return value
       if(token != MCUX_CSSL_FP_FUNCTION_CALLED(mcuxClRsa_sign) ||
@@ -234,10 +234,10 @@ error_t mpiExpModRegular(Mpi *r, const Mpi *a, const Mpi *e, const Mpi *p)
       if(!error)
       {
          //Copy the output
-         error = mpiReadRaw(r, elsRsaArgs.m, pLen);
+         error = mpiReadRaw(r, pkcRsaArgs.m, pLen);
       }
 
-      //Release exclusive access to the ELS module
+      //Release exclusive access to the ELS PKC module
       osReleaseMutex(&mcxn94CryptoMutex);
    }
    else
@@ -289,20 +289,20 @@ error_t rsaep(const RsaPublicKey *key, const Mpi *m, Mpi *c)
    //Check the length of the operands
    if(nLen <= 512 && eLen <= 512)
    {
-      //Acquire exclusive access to the ELS module
+      //Acquire exclusive access to the ELS PKC module
       osAcquireMutex(&mcxn94CryptoMutex);
 
       //Copy the modulus
-      mpiWriteRaw(&key->n, elsRsaArgs.n, nLen);
+      mpiWriteRaw(&key->n, pkcRsaArgs.n, nLen);
       //Copy the public exponent
-      mpiWriteRaw(&key->e, elsRsaArgs.e, eLen);
+      mpiWriteRaw(&key->e, pkcRsaArgs.e, eLen);
 
       //Set the modulus
-      n.pKeyEntryData = elsRsaArgs.n;
+      n.pKeyEntryData = pkcRsaArgs.n;
       n.keyEntryLength = nLen;
 
       //Set the public exponent
-      e.pKeyEntryData = elsRsaArgs.e;
+      e.pKeyEntryData = pkcRsaArgs.e;
       e.keyEntryLength = eLen;
 
       //Set the RSA public key
@@ -315,13 +315,13 @@ error_t rsaep(const RsaPublicKey *key, const Mpi *m, Mpi *c)
       publicKey.pExp3 = NULL;
 
       //Copy the message representative
-      mpiWriteRaw(m, elsRsaArgs.m, nLen);
+      mpiWriteRaw(m, pkcRsaArgs.m, nLen);
 
       //Apply RSASP1 primitive
       MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClRsa_verify(
-         &elsSession, &publicKey, NULL, 0, elsRsaArgs.m,
+         &elsPkcSession, &publicKey, NULL, 0, pkcRsaArgs.m,
          (mcuxClRsa_SignVerifyMode_t *) &mcuxClRsa_Mode_Verify_NoVerify,
-         0, 0, elsRsaArgs.c));
+         0, 0, pkcRsaArgs.c));
 
       //Check the protection token and the return value
       if(token != MCUX_CSSL_FP_FUNCTION_CALLED(mcuxClRsa_verify) ||
@@ -337,10 +337,10 @@ error_t rsaep(const RsaPublicKey *key, const Mpi *m, Mpi *c)
       if(!error)
       {
          //Copy the ciphertext representative
-         error = mpiReadRaw(c, elsRsaArgs.c, nLen);
+         error = mpiReadRaw(c, pkcRsaArgs.c, nLen);
       }
 
-      //Release exclusive access to the ELS module
+      //Release exclusive access to the ELS PKC module
       osReleaseMutex(&mcxn94CryptoMutex);
    }
    else
@@ -395,7 +395,7 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
    //Check the length of the operands
    if(nLen <= 512 && dLen <= 512)
    {
-      //Acquire exclusive access to the ELS module
+      //Acquire exclusive access to the ELS PKC module
       osAcquireMutex(&mcxn94CryptoMutex);
 
       //Use the Chinese remainder algorithm?
@@ -404,34 +404,34 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
          mpiGetLength(&key->qinv) > 0)
       {
          //Copy the first factor
-         mpiWriteRaw(&key->p, elsRsaArgs.p, nLen / 2);
+         mpiWriteRaw(&key->p, pkcRsaArgs.p, nLen / 2);
          //Copy the second factor
-         mpiWriteRaw(&key->q, elsRsaArgs.q, nLen / 2);
+         mpiWriteRaw(&key->q, pkcRsaArgs.q, nLen / 2);
          //Copy the first factor's CRT exponent
-         mpiWriteRaw(&key->dp, elsRsaArgs.dp, nLen / 2);
+         mpiWriteRaw(&key->dp, pkcRsaArgs.dp, nLen / 2);
          //Copy the second factor's CRT exponent
-         mpiWriteRaw(&key->dq, elsRsaArgs.dq, nLen / 2);
+         mpiWriteRaw(&key->dq, pkcRsaArgs.dq, nLen / 2);
          //Copy the CRT coefficient
-         mpiWriteRaw(&key->qinv, elsRsaArgs.qinv, nLen / 2);
+         mpiWriteRaw(&key->qinv, pkcRsaArgs.qinv, nLen / 2);
 
          //Set the first factor
-         p.pKeyEntryData = elsRsaArgs.p;
+         p.pKeyEntryData = pkcRsaArgs.p;
          p.keyEntryLength = nLen / 2;
 
          //Set the second factor
-         q.pKeyEntryData = elsRsaArgs.q;
+         q.pKeyEntryData = pkcRsaArgs.q;
          q.keyEntryLength = nLen / 2;
 
          //Set the first factor's CRT exponent
-         dp.pKeyEntryData = elsRsaArgs.dp;
+         dp.pKeyEntryData = pkcRsaArgs.dp;
          dp.keyEntryLength = nLen / 2;
 
          //Set the second factor's CRT exponent
-         dq.pKeyEntryData = elsRsaArgs.dq;
+         dq.pKeyEntryData = pkcRsaArgs.dq;
          dq.keyEntryLength = nLen / 2;
 
          //Set the CRT coefficient
-         qinv.pKeyEntryData = elsRsaArgs.qinv;
+         qinv.pKeyEntryData = pkcRsaArgs.qinv;
          qinv.keyEntryLength = nLen / 2;
 
          //Set the RSA private key
@@ -446,16 +446,16 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
       else
       {
          //Copy the modulus
-         mpiWriteRaw(&key->n, elsRsaArgs.n, nLen);
+         mpiWriteRaw(&key->n, pkcRsaArgs.n, nLen);
          //Copy the private exponent
-         mpiWriteRaw(&key->d, elsRsaArgs.d, dLen);
+         mpiWriteRaw(&key->d, pkcRsaArgs.d, dLen);
 
          //Set the modulus
-         n.pKeyEntryData = elsRsaArgs.n;
+         n.pKeyEntryData = pkcRsaArgs.n;
          n.keyEntryLength = nLen;
 
          //Set the private exponent
-         d.pKeyEntryData = elsRsaArgs.d;
+         d.pKeyEntryData = pkcRsaArgs.d;
          d.keyEntryLength = dLen;
 
          //Set the RSA private key
@@ -469,13 +469,13 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
       }
 
       //Copy the ciphertext representative
-      mpiWriteRaw(c, elsRsaArgs.c, nLen);
+      mpiWriteRaw(c, pkcRsaArgs.c, nLen);
 
       //Apply RSAVP1 primitive
       MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClRsa_sign(
-         &elsSession, &privateKey, elsRsaArgs.c, nLen,
+         &elsPkcSession, &privateKey, pkcRsaArgs.c, nLen,
          (mcuxClRsa_SignVerifyMode_t *) &mcuxClRsa_Mode_Sign_NoEncode,
-         0, 0, elsRsaArgs.m));
+         0, 0, pkcRsaArgs.m));
 
       //Check the protection token and the return value
       if(token != MCUX_CSSL_FP_FUNCTION_CALLED(mcuxClRsa_sign) ||
@@ -491,10 +491,10 @@ error_t rsadp(const RsaPrivateKey *key, const Mpi *c, Mpi *m)
       if(!error)
       {
          //Copy the message representative
-         error = mpiReadRaw(m, elsRsaArgs.m, nLen);
+         error = mpiReadRaw(m, pkcRsaArgs.m, nLen);
       }
 
-      //Release exclusive access to the ELS module
+      //Release exclusive access to the ELS PKC module
       osReleaseMutex(&mcxn94CryptoMutex);
    }
    else
@@ -555,54 +555,54 @@ error_t ecMulRegular(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
    //Check the length of the operands
    if(modLen <= 66 && orderLen <= 66)
    {
-      //Acquire exclusive access to the ELS module
+      //Acquire exclusive access to the ELS PKC module
       osAcquireMutex(&mcxn94CryptoMutex);
 
       //Copy domain parameters
-      ecScalarExport(curve->p, (modLen + 3) / 4, elsEccArgs.p, modLen,
+      ecScalarExport(curve->p, (modLen + 3) / 4, pkcEccArgs.p, modLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->a, (modLen + 3) / 4, elsEccArgs.a, modLen,
+      ecScalarExport(curve->a, (modLen + 3) / 4, pkcEccArgs.a, modLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->b, (modLen + 3) / 4, elsEccArgs.b, modLen,
+      ecScalarExport(curve->b, (modLen + 3) / 4, pkcEccArgs.b, modLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->g.x, (modLen + 3) / 4, elsEccArgs.g, modLen,
+      ecScalarExport(curve->g.x, (modLen + 3) / 4, pkcEccArgs.g, modLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->g.y, (modLen + 3) / 4, elsEccArgs.g + modLen,
+      ecScalarExport(curve->g.y, (modLen + 3) / 4, pkcEccArgs.g + modLen,
          modLen, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->q, (modLen + 3) / 4, elsEccArgs.q, orderLen,
+      ecScalarExport(curve->q, (modLen + 3) / 4, pkcEccArgs.q, orderLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
       //Copy scalar
-      ecScalarExport(d, (orderLen + 3) / 4, elsEccArgs.d, orderLen,
+      ecScalarExport(d, (orderLen + 3) / 4, pkcEccArgs.d, orderLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
       //Copy input point
-      ecScalarExport(s->x, (modLen + 3) / 4, elsEccArgs.input, modLen,
+      ecScalarExport(s->x, (modLen + 3) / 4, pkcEccArgs.input, modLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(s->y, (modLen + 3) / 4, elsEccArgs.input + modLen,
+      ecScalarExport(s->y, (modLen + 3) / 4, pkcEccArgs.input + modLen,
          modLen, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
       //Set point multiplication parameters
-      pointMultParam.curveParam.pA = elsEccArgs.a;
-      pointMultParam.curveParam.pB = elsEccArgs.b;
-      pointMultParam.curveParam.pP = elsEccArgs.p;
-      pointMultParam.curveParam.pG = elsEccArgs.g;
-      pointMultParam.curveParam.pN = elsEccArgs.q;
+      pointMultParam.curveParam.pA = pkcEccArgs.a;
+      pointMultParam.curveParam.pB = pkcEccArgs.b;
+      pointMultParam.curveParam.pP = pkcEccArgs.p;
+      pointMultParam.curveParam.pG = pkcEccArgs.g;
+      pointMultParam.curveParam.pN = pkcEccArgs.q;
       pointMultParam.curveParam.misc = (orderLen << 8) | modLen;
-      pointMultParam.pScalar = elsEccArgs.d;
-      pointMultParam.pPoint = elsEccArgs.input;
-      pointMultParam.pResult = elsEccArgs.output;
+      pointMultParam.pScalar = pkcEccArgs.d;
+      pointMultParam.pPoint = pkcEccArgs.input;
+      pointMultParam.pResult = pkcEccArgs.output;
       pointMultParam.optLen = 0;
 
       //Perform scalar multiplication
       MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClEcc_PointMult(
-         &elsSession, &pointMultParam));
+         &elsPkcSession, &pointMultParam));
 
       //Check the protection token and the return value
       if(token != MCUX_CSSL_FP_FUNCTION_CALLED(mcuxClEcc_PointMult) ||
@@ -618,14 +618,14 @@ error_t ecMulRegular(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
       if(!error)
       {
          //Copy the x-coordinate of the result
-         error = ecScalarImport(r->x, EC_MAX_MODULUS_SIZE, elsEccArgs.output,
+         error = ecScalarImport(r->x, EC_MAX_MODULUS_SIZE, pkcEccArgs.output,
             modLen, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
          //Check status code
          if(!error)
          {
             //Copy the y-coordinate of the result
-            error = ecScalarImport(r->y, EC_MAX_MODULUS_SIZE, elsEccArgs.output +
+            error = ecScalarImport(r->y, EC_MAX_MODULUS_SIZE, pkcEccArgs.output +
                modLen, modLen, EC_SCALAR_FORMAT_BIG_ENDIAN);
          }
 
@@ -637,7 +637,7 @@ error_t ecMulRegular(const EcCurve *curve, EcPoint3 *r, const uint32_t *d,
          }
       }
 
-      //Release exclusive access to the ELS module
+      //Release exclusive access to the ELS PKC module
       osReleaseMutex(&mcxn94CryptoMutex);
    }
    else
@@ -753,48 +753,48 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    //Check the length of the operands
    if(modLen <= 66 && orderLen <= 66)
    {
-      //Acquire exclusive access to the ELS module
+      //Acquire exclusive access to the ELS PKC module
       osAcquireMutex(&mcxn94CryptoMutex);
 
       //Copy domain parameters
-      ecScalarExport(curve->p, (modLen + 3) / 4, elsEcdsaArgs.p, modLen,
+      ecScalarExport(curve->p, (modLen + 3) / 4, pkcEcdsaArgs.p, modLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->a, (modLen + 3) / 4, elsEcdsaArgs.a, modLen,
+      ecScalarExport(curve->a, (modLen + 3) / 4, pkcEcdsaArgs.a, modLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->b, (modLen + 3) / 4, elsEcdsaArgs.b, modLen,
+      ecScalarExport(curve->b, (modLen + 3) / 4, pkcEcdsaArgs.b, modLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->g.x, (modLen + 3) / 4, elsEcdsaArgs.g, modLen,
+      ecScalarExport(curve->g.x, (modLen + 3) / 4, pkcEcdsaArgs.g, modLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->g.y, (modLen + 3) / 4, elsEcdsaArgs.g + modLen,
+      ecScalarExport(curve->g.y, (modLen + 3) / 4, pkcEcdsaArgs.g + modLen,
          modLen, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->q, (modLen + 3) / 4, elsEcdsaArgs.q, orderLen,
+      ecScalarExport(curve->q, (modLen + 3) / 4, pkcEcdsaArgs.q, orderLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
       //Copy private key
-      ecScalarExport(privateKey->d, (orderLen + 3) / 4, elsEcdsaArgs.privateKey,
+      ecScalarExport(privateKey->d, (orderLen + 3) / 4, pkcEcdsaArgs.privateKey,
          orderLen, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
       //Set point multiplication parameters
-      signParam.curveParam.pA = elsEcdsaArgs.a;
-      signParam.curveParam.pB = elsEcdsaArgs.b;
-      signParam.curveParam.pP = elsEcdsaArgs.p;
-      signParam.curveParam.pG = elsEcdsaArgs.g;
-      signParam.curveParam.pN = elsEcdsaArgs.q;
+      signParam.curveParam.pA = pkcEcdsaArgs.a;
+      signParam.curveParam.pB = pkcEcdsaArgs.b;
+      signParam.curveParam.pP = pkcEcdsaArgs.p;
+      signParam.curveParam.pG = pkcEcdsaArgs.g;
+      signParam.curveParam.pN = pkcEcdsaArgs.q;
       signParam.curveParam.misc = (orderLen << 8) | modLen;
       signParam.pHash = digest;
-      signParam.pPrivateKey = elsEcdsaArgs.privateKey;
-      signParam.pSignature = elsEcdsaArgs.signature;
+      signParam.pPrivateKey = pkcEcdsaArgs.privateKey;
+      signParam.pSignature = pkcEcdsaArgs.signature;
       signParam.optLen = mcuxClEcc_Sign_Param_optLen_Pack(digestLen);
       signParam.pMode = &mcuxClEcc_ECDSA_ProtocolDescriptor;
 
       //Generate ECDSA signature
       MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClEcc_Sign(
-         &elsSession, &signParam));
+         &elsPkcSession, &signParam));
 
       //Check the protection token and the return value
       if(token != MCUX_CSSL_FP_FUNCTION_CALLED(mcuxClEcc_Sign) ||
@@ -814,19 +814,19 @@ error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
 
          //Copy integer R
          error = ecScalarImport(signature->r, EC_MAX_ORDER_SIZE,
-            elsEcdsaArgs.signature, orderLen, EC_SCALAR_FORMAT_BIG_ENDIAN);
+            pkcEcdsaArgs.signature, orderLen, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
          //Check status code
          if(!error)
          {
             //Copy integer S
             error = ecScalarImport(signature->s, EC_MAX_ORDER_SIZE,
-               elsEcdsaArgs.signature + orderLen, orderLen,
+               pkcEcdsaArgs.signature + orderLen, orderLen,
                EC_SCALAR_FORMAT_BIG_ENDIAN);
          }
       }
 
-      //Release exclusive access to the ELS module
+      //Release exclusive access to the ELS PKC module
       osReleaseMutex(&mcxn94CryptoMutex);
    }
    else
@@ -923,59 +923,59 @@ error_t ecdsaVerifySignature(const EcPublicKey *publicKey,
    //Check the length of the operands
    if(modLen <= 66 && orderLen <= 66)
    {
-      //Acquire exclusive access to the ELS module
+      //Acquire exclusive access to the ELS PKC module
       osAcquireMutex(&mcxn94CryptoMutex);
 
       //Copy domain parameters
-      ecScalarExport(curve->p, (modLen + 3) / 4, elsEcdsaArgs.p, modLen,
+      ecScalarExport(curve->p, (modLen + 3) / 4, pkcEcdsaArgs.p, modLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->a, (modLen + 3) / 4, elsEcdsaArgs.a, modLen,
+      ecScalarExport(curve->a, (modLen + 3) / 4, pkcEcdsaArgs.a, modLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->b, (modLen + 3) / 4, elsEcdsaArgs.b, modLen,
+      ecScalarExport(curve->b, (modLen + 3) / 4, pkcEcdsaArgs.b, modLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->g.x, (modLen + 3) / 4, elsEcdsaArgs.g, modLen,
+      ecScalarExport(curve->g.x, (modLen + 3) / 4, pkcEcdsaArgs.g, modLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->g.y, (modLen + 3) / 4, elsEcdsaArgs.g + modLen,
+      ecScalarExport(curve->g.y, (modLen + 3) / 4, pkcEcdsaArgs.g + modLen,
          modLen, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(curve->q, (modLen + 3) / 4, elsEcdsaArgs.q, orderLen,
+      ecScalarExport(curve->q, (modLen + 3) / 4, pkcEcdsaArgs.q, orderLen,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
 
       //Copy public key
-      ecScalarExport(publicKey->q.x, (modLen + 3) / 4, elsEcdsaArgs.publicKey,
+      ecScalarExport(publicKey->q.x, (modLen + 3) / 4, pkcEcdsaArgs.publicKey,
          modLen, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(publicKey->q.y, (modLen + 3) / 4, elsEcdsaArgs.publicKey +
+      ecScalarExport(publicKey->q.y, (modLen + 3) / 4, pkcEcdsaArgs.publicKey +
          modLen, modLen, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
       //Copy signature
-      ecScalarExport(signature->r, (modLen + 3) / 4, elsEcdsaArgs.signature,
+      ecScalarExport(signature->r, (orderLen + 3) / 4, pkcEcdsaArgs.signature,
          orderLen, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
-      ecScalarExport(signature->s, (modLen + 3) / 4, elsEcdsaArgs.signature +
+      ecScalarExport(signature->s, (orderLen + 3) / 4, pkcEcdsaArgs.signature +
          orderLen, orderLen, EC_SCALAR_FORMAT_BIG_ENDIAN);
 
       //Set point multiplication parameters
-      verifyParam.curveParam.pA = elsEcdsaArgs.a;
-      verifyParam.curveParam.pB = elsEcdsaArgs.b;
-      verifyParam.curveParam.pP = elsEcdsaArgs.p;
-      verifyParam.curveParam.pG = elsEcdsaArgs.g;
-      verifyParam.curveParam.pN = elsEcdsaArgs.q;
+      verifyParam.curveParam.pA = pkcEcdsaArgs.a;
+      verifyParam.curveParam.pB = pkcEcdsaArgs.b;
+      verifyParam.curveParam.pP = pkcEcdsaArgs.p;
+      verifyParam.curveParam.pG = pkcEcdsaArgs.g;
+      verifyParam.curveParam.pN = pkcEcdsaArgs.q;
       verifyParam.curveParam.misc = (orderLen << 8) | modLen;
       verifyParam.pPrecG = precG;
       verifyParam.pHash = digest;
-      verifyParam.pSignature = elsEcdsaArgs.signature;
-      verifyParam.pPublicKey = elsEcdsaArgs.publicKey;
-      verifyParam.pOutputR = elsEcdsaArgs.r;
+      verifyParam.pSignature = pkcEcdsaArgs.signature;
+      verifyParam.pPublicKey = pkcEcdsaArgs.publicKey;
+      verifyParam.pOutputR = pkcEcdsaArgs.r;
       verifyParam.optLen = mcuxClEcc_Sign_Param_optLen_Pack(digestLen);
 
       //Verify ECDSA signature
       MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClEcc_Verify(
-         &elsSession, &verifyParam));
+         &elsPkcSession, &verifyParam));
 
       //Check the protection token and the return value
       if(token != MCUX_CSSL_FP_FUNCTION_CALLED(mcuxClEcc_Verify))
@@ -998,7 +998,7 @@ error_t ecdsaVerifySignature(const EcPublicKey *publicKey,
       //End of function call
       MCUX_CSSL_FP_FUNCTION_CALL_END();
 
-      //Release exclusive access to the ELS module
+      //Release exclusive access to the ELS PKC module
       osReleaseMutex(&mcxn94CryptoMutex);
    }
    else
@@ -1028,17 +1028,17 @@ error_t x25519(uint8_t *r, const uint8_t *k, const uint8_t *u)
    uint32_t n;
 
    //Point to the private and public key descriptors
-   mcuxClKey_Handle_t privKeyHandle = (mcuxClKey_Handle_t) elsMontDhArgs.privKeyDesc;
-   mcuxClKey_Handle_t pubKeyHandle = (mcuxClKey_Handle_t) elsMontDhArgs.pubKeyDesc;
+   mcuxClKey_Handle_t privKeyHandle = (mcuxClKey_Handle_t) pkcMontDhArgs.privKeyDesc;
+   mcuxClKey_Handle_t pubKeyHandle = (mcuxClKey_Handle_t) pkcMontDhArgs.pubKeyDesc;
 
    //Initialize status code
    error = NO_ERROR;
 
-   //Acquire exclusive access to the ELS module
+   //Acquire exclusive access to the ELS PKC module
    osAcquireMutex(&mcxn94CryptoMutex);
 
    //Load input scalar
-   MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClKey_init(&elsSession,
+   MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClKey_init(&elsPkcSession,
       privKeyHandle, mcuxClKey_Type_Ecc_MontDH_Curve25519_PrivateKey, k,
       MCUXCLECC_MONTDH_CURVE25519_SIZE_PRIVATEKEY));
 
@@ -1056,7 +1056,7 @@ error_t x25519(uint8_t *r, const uint8_t *k, const uint8_t *u)
    if(!error)
    {
       //Load input u-coordinate
-      MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClKey_init(&elsSession,
+      MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClKey_init(&elsPkcSession,
          pubKeyHandle, mcuxClKey_Type_Ecc_MontDH_Curve25519_PublicKey, u,
          MCUXCLECC_MONTDH_CURVE25519_SIZE_PUBLICKEY));
 
@@ -1076,7 +1076,7 @@ error_t x25519(uint8_t *r, const uint8_t *k, const uint8_t *u)
    {
       //Perform scalar multiplication
       MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClEcc_MontDH_KeyAgreement(
-         &elsSession, privKeyHandle, pubKeyHandle, elsMontDhArgs.sharedSecret, &n));
+         &elsPkcSession, privKeyHandle, pubKeyHandle, pkcMontDhArgs.sharedSecret, &n));
 
       //Check the protection token and the return value
       if(token != MCUX_CSSL_FP_FUNCTION_CALLED(mcuxClEcc_MontDH_KeyAgreement) ||
@@ -1093,10 +1093,10 @@ error_t x25519(uint8_t *r, const uint8_t *k, const uint8_t *u)
    if(!error)
    {
       //Copy output u-coordinate
-      osMemcpy(r, elsMontDhArgs.sharedSecret, n);
+      osMemcpy(r, pkcMontDhArgs.sharedSecret, n);
    }
 
-   //Release exclusive access to the ELS module
+   //Release exclusive access to the ELS PKC module
    osReleaseMutex(&mcxn94CryptoMutex);
 
    //Return status code
@@ -1120,17 +1120,17 @@ error_t x448(uint8_t *r, const uint8_t *k, const uint8_t *u)
    uint32_t n;
 
    //Point to the private and public key descriptors
-   mcuxClKey_Handle_t privKeyHandle = (mcuxClKey_Handle_t) elsMontDhArgs.privKeyDesc;
-   mcuxClKey_Handle_t pubKeyHandle = (mcuxClKey_Handle_t) elsMontDhArgs.pubKeyDesc;
+   mcuxClKey_Handle_t privKeyHandle = (mcuxClKey_Handle_t) pkcMontDhArgs.privKeyDesc;
+   mcuxClKey_Handle_t pubKeyHandle = (mcuxClKey_Handle_t) pkcMontDhArgs.pubKeyDesc;
 
    //Initialize status code
    error = NO_ERROR;
 
-   //Acquire exclusive access to the ELS module
+   //Acquire exclusive access to the ELS PKC module
    osAcquireMutex(&mcxn94CryptoMutex);
 
    //Load input scalar
-   MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClKey_init(&elsSession,
+   MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClKey_init(&elsPkcSession,
       privKeyHandle, mcuxClKey_Type_Ecc_MontDH_Curve448_PrivateKey, k,
       MCUXCLECC_MONTDH_CURVE448_SIZE_PRIVATEKEY));
 
@@ -1148,7 +1148,7 @@ error_t x448(uint8_t *r, const uint8_t *k, const uint8_t *u)
    if(!error)
    {
       //Load input u-coordinate
-      MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClKey_init(&elsSession,
+      MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClKey_init(&elsPkcSession,
          pubKeyHandle, mcuxClKey_Type_Ecc_MontDH_Curve448_PublicKey, u,
          MCUXCLECC_MONTDH_CURVE448_SIZE_PUBLICKEY));
 
@@ -1168,7 +1168,7 @@ error_t x448(uint8_t *r, const uint8_t *k, const uint8_t *u)
    {
       //Perform scalar multiplication
       MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClEcc_MontDH_KeyAgreement(
-         &elsSession, privKeyHandle, pubKeyHandle, elsMontDhArgs.sharedSecret, &n));
+         &elsPkcSession, privKeyHandle, pubKeyHandle, pkcMontDhArgs.sharedSecret, &n));
 
       //Check the protection token and the return value
       if(token != MCUX_CSSL_FP_FUNCTION_CALLED(mcuxClEcc_MontDH_KeyAgreement) ||
@@ -1185,10 +1185,10 @@ error_t x448(uint8_t *r, const uint8_t *k, const uint8_t *u)
    if(!error)
    {
       //Copy output u-coordinate
-      osMemcpy(r, elsMontDhArgs.sharedSecret, n);
+      osMemcpy(r, pkcMontDhArgs.sharedSecret, n);
    }
 
-   //Release exclusive access to the ELS module
+   //Release exclusive access to the ELS PKC module
    osReleaseMutex(&mcxn94CryptoMutex);
 
    //Return status code
@@ -1220,8 +1220,8 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
    const mcuxClEcc_EdDSA_SignatureProtocolDescriptor_t *protocolDesc;
 
    //Point to the private and public key descriptors
-   mcuxClKey_Handle_t privKeyHandle = (mcuxClKey_Handle_t) elsEddsaArgs.privKeyDesc;
-   mcuxClKey_Handle_t pubKeyHandle = (mcuxClKey_Handle_t) elsEddsaArgs.pubKeyDesc;
+   mcuxClKey_Handle_t privKeyHandle = (mcuxClKey_Handle_t) pkcEddsaArgs.privKeyDesc;
+   mcuxClKey_Handle_t pubKeyHandle = (mcuxClKey_Handle_t) pkcEddsaArgs.pubKeyDesc;
 
    //Ed25519ph scheme is not supported
    if(flag != 0)
@@ -1230,12 +1230,12 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
    //Initialize status code
    error = NO_ERROR;
 
-   //Acquire exclusive access to the ELS module
+   //Acquire exclusive access to the ELS PKC module
    osAcquireMutex(&mcxn94CryptoMutex);
 
    //Initialize private key
-   MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClKey_init(&elsSession,
-      privKeyHandle, mcuxClKey_Type_EdDSA_Ed25519_Priv, elsEddsaArgs.privKeyData,
+   MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClKey_init(&elsPkcSession,
+      privKeyHandle, mcuxClKey_Type_EdDSA_Ed25519_Priv, pkcEddsaArgs.privKeyData,
       MCUXCLECC_EDDSA_ED25519_SIZE_PRIVATEKEYDATA));
 
    //Check the protection token and the return value
@@ -1252,8 +1252,8 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
    if(!error)
    {
       //Initialize public key
-      MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClKey_init(&elsSession,
-         pubKeyHandle, mcuxClKey_Type_EdDSA_Ed25519_Pub, elsEddsaArgs.pubKeyData,
+      MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClKey_init(&elsPkcSession,
+         pubKeyHandle, mcuxClKey_Type_EdDSA_Ed25519_Pub, pkcEddsaArgs.pubKeyData,
          MCUXCLECC_EDDSA_ED25519_SIZE_PUBLICKEY));
 
       //Check the protection token and the return value
@@ -1272,8 +1272,8 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
    {
       //Load private key
       MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token,
-         mcuxClEcc_EdDSA_InitPrivKeyInputMode(&elsSession,
-         (mcuxClEcc_EdDSA_GenerateKeyPairDescriptor_t *) &elsEddsaArgs.keyPairDesc,
+         mcuxClEcc_EdDSA_InitPrivKeyInputMode(&elsPkcSession,
+         (mcuxClEcc_EdDSA_GenerateKeyPairDescriptor_t *) pkcEddsaArgs.keyPairDesc,
          privateKey));
 
       //Check the protection token and the return value
@@ -1292,8 +1292,8 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
    {
       //Derive the public key from the private key
       MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token,
-         mcuxClEcc_EdDSA_GenerateKeyPair(&elsSession,
-         (mcuxClEcc_EdDSA_GenerateKeyPairDescriptor_t *) &elsEddsaArgs.keyPairDesc,
+         mcuxClEcc_EdDSA_GenerateKeyPair(&elsPkcSession,
+         (mcuxClEcc_EdDSA_GenerateKeyPairDescriptor_t *) pkcEddsaArgs.keyPairDesc,
          privKeyHandle, pubKeyHandle));
 
       //Check the protection token and the return value
@@ -1314,11 +1314,11 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
       if(context != NULL)
       {
          //Point to the protocol descriptor
-         protocolDesc = (mcuxClEcc_EdDSA_SignatureProtocolDescriptor_t *) elsEddsaArgs.protocolDesc;
+         protocolDesc = (mcuxClEcc_EdDSA_SignatureProtocolDescriptor_t *) pkcEddsaArgs.protocolDesc;
 
          //Generate Ed25519ctx protocol descriptor
          MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token,
-            mcuxClEcc_EdDSA_GenerateProtocolDescriptor(&elsSession,
+            mcuxClEcc_EdDSA_GenerateProtocolDescriptor(&elsPkcSession,
             &mcuxClEcc_EdDSA_DomainParams_Ed25519,
             (mcuxClEcc_EdDSA_SignatureProtocolDescriptor_t *) protocolDesc,
             MCUXCLECC_EDDSA_PHFLAG_ZERO, context, contextLen));
@@ -1345,8 +1345,8 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
    {
       //Generate Ed25519 signature
       MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token,
-         mcuxClEcc_EdDSA_GenerateSignature(&elsSession, privKeyHandle,
-         protocolDesc, message, messageLen, elsEddsaArgs.signature, &n));
+         mcuxClEcc_EdDSA_GenerateSignature(&elsPkcSession, privKeyHandle,
+         protocolDesc, message, messageLen, pkcEddsaArgs.signature, &n));
 
       //Check the protection token and the return value
       if(token != MCUX_CSSL_FP_FUNCTION_CALLED(mcuxClEcc_EdDSA_GenerateSignature) ||
@@ -1363,10 +1363,10 @@ error_t ed25519GenerateSignature(const uint8_t *privateKey,
    if(!error)
    {
       //Copy signature
-      osMemcpy(signature, elsEddsaArgs.signature, n);
+      osMemcpy(signature, pkcEddsaArgs.signature, n);
    }
 
-   //Release exclusive access to the ELS module
+   //Release exclusive access to the ELS PKC module
    osReleaseMutex(&mcxn94CryptoMutex);
 
    //Return status code
@@ -1394,7 +1394,7 @@ error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
    const mcuxClEcc_EdDSA_SignatureProtocolDescriptor_t *protocolDesc;
 
    //Point to the public key descriptor
-   mcuxClKey_Handle_t pubKeyHandle = (mcuxClKey_Handle_t) elsEddsaArgs.pubKeyDesc;
+   mcuxClKey_Handle_t pubKeyHandle = (mcuxClKey_Handle_t) pkcEddsaArgs.pubKeyDesc;
 
    //Ed25519ph scheme is not supported
    if(flag != 0)
@@ -1403,11 +1403,11 @@ error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
    //Initialize status code
    error = NO_ERROR;
 
-   //Acquire exclusive access to the ELS module
+   //Acquire exclusive access to the ELS PKC module
    osAcquireMutex(&mcxn94CryptoMutex);
 
    //Load public key
-   MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClKey_init(&elsSession,
+   MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClKey_init(&elsPkcSession,
       pubKeyHandle, mcuxClKey_Type_EdDSA_Ed25519_Pub, publicKey,
       MCUXCLECC_EDDSA_ED25519_SIZE_PUBLICKEY));
 
@@ -1428,11 +1428,11 @@ error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
       if(context != NULL)
       {
          //Point to the protocol descriptor
-         protocolDesc = (mcuxClEcc_EdDSA_SignatureProtocolDescriptor_t *) elsEddsaArgs.protocolDesc;
+         protocolDesc = (mcuxClEcc_EdDSA_SignatureProtocolDescriptor_t *) pkcEddsaArgs.protocolDesc;
 
          //Generate Ed25519ctx protocol descriptor
          MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token,
-            mcuxClEcc_EdDSA_GenerateProtocolDescriptor(&elsSession,
+            mcuxClEcc_EdDSA_GenerateProtocolDescriptor(&elsPkcSession,
             &mcuxClEcc_EdDSA_DomainParams_Ed25519,
             (mcuxClEcc_EdDSA_SignatureProtocolDescriptor_t *) protocolDesc,
             MCUXCLECC_EDDSA_PHFLAG_ZERO, context, contextLen));
@@ -1458,12 +1458,12 @@ error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
    if(!error)
    {
       //Copy signature
-      osMemcpy(elsEddsaArgs.signature, signature, ED25519_SIGNATURE_LEN);
+      osMemcpy(pkcEddsaArgs.signature, signature, ED25519_SIGNATURE_LEN);
 
       //Verify Ed25519 signature
       MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token,
-         mcuxClEcc_EdDSA_VerifySignature(&elsSession, pubKeyHandle,
-         protocolDesc, message, messageLen, elsEddsaArgs.signature,
+         mcuxClEcc_EdDSA_VerifySignature(&elsPkcSession, pubKeyHandle,
+         protocolDesc, message, messageLen, pkcEddsaArgs.signature,
          ED25519_SIGNATURE_LEN));
 
       //Check the protection token and the return value
@@ -1488,7 +1488,7 @@ error_t ed25519VerifySignature(const uint8_t *publicKey, const void *message,
       MCUX_CSSL_FP_FUNCTION_CALL_END();
    }
 
-   //Release exclusive access to the ELS module
+   //Release exclusive access to the ELS PKC module
    osReleaseMutex(&mcxn94CryptoMutex);
 
    //Return status code

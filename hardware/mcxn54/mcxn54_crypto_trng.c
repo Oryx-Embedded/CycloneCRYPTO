@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -95,7 +95,7 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
    //Initialize status code
    error = NO_ERROR;
 
-   //Acquire exclusive access to the ELS module
+   //Acquire exclusive access to the ELS PKC module
    osAcquireMutex(&mcxn54CryptoMutex);
 
    //Generate random data
@@ -106,7 +106,7 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
       {
          //Generate random bytes
          MCUX_CSSL_FP_FUNCTION_CALL_BEGIN(status, token, mcuxClTrng_getEntropyInput(
-            &elsSession, buffer, MCUXCLTRNG_ELS_TRNG_OUTPUT_SIZE));
+            &elsPkcSession, buffer, MCUXCLTRNG_ELS_TRNG_OUTPUT_SIZE));
 
          //Check the protection token and the return value
          if(token != MCUX_CSSL_FP_FUNCTION_CALLED(mcuxClTrng_getEntropyInput) ||
@@ -128,7 +128,7 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
       bufferPos++;
    }
 
-   //Release exclusive access to the ELS module
+   //Release exclusive access to the ELS PKC module
    osReleaseMutex(&mcxn54CryptoMutex);
 
    //Return status code

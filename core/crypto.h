@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _CRYPTO_H
@@ -66,13 +66,13 @@
 #endif
 
 //Version string
-#define CYCLONE_CRYPTO_VERSION_STRING "2.6.4"
+#define CYCLONE_CRYPTO_VERSION_STRING "2.6.6"
 //Major version
 #define CYCLONE_CRYPTO_MAJOR_VERSION 2
 //Minor version
 #define CYCLONE_CRYPTO_MINOR_VERSION 6
 //Revision number
-#define CYCLONE_CRYPTO_REV_NUMBER 4
+#define CYCLONE_CRYPTO_REV_NUMBER 6
 
 //Static memory allocation
 #ifndef CRYPTO_STATIC_MEM_SUPPORT
@@ -228,6 +228,34 @@
    #error SHA3_512_SUPPORT parameter is not valid
 #endif
 
+//SHAKE128/256 hash support
+#ifndef SHAKE128_256_SUPPORT
+   #define SHAKE128_256_SUPPORT DISABLED
+#elif (SHAKE128_256_SUPPORT != ENABLED && SHAKE128_256_SUPPORT != DISABLED)
+   #error SHAKE128_256_SUPPORT parameter is not valid
+#endif
+
+//SHAKE256/512 hash support
+#ifndef SHAKE256_512_SUPPORT
+   #define SHAKE256_512_SUPPORT DISABLED
+#elif (SHAKE256_512_SUPPORT != ENABLED && SHAKE256_512_SUPPORT != DISABLED)
+   #error SHAKE256_512_SUPPORT parameter is not valid
+#endif
+
+//TupleHash hash support
+#ifndef TUPLE_HASH_SUPPORT
+   #define TUPLE_HASH_SUPPORT DISABLED
+#elif (TUPLE_HASH_SUPPORT != ENABLED && TUPLE_HASH_SUPPORT != DISABLED)
+   #error TUPLE_HASH_SUPPORT parameter is not valid
+#endif
+
+//ParallelHash hash support
+#ifndef PARALLEL_HASH_SUPPORT
+   #define PARALLEL_HASH_SUPPORT DISABLED
+#elif (PARALLEL_HASH_SUPPORT != ENABLED && PARALLEL_HASH_SUPPORT != DISABLED)
+   #error PARALLEL_HASH_SUPPORT parameter is not valid
+#endif
+
 //Ascon-Hash256 hash support
 #ifndef ASCON_HASH256_SUPPORT
    #define ASCON_HASH256_SUPPORT DISABLED
@@ -345,6 +373,27 @@
    #define CSHAKE_SUPPORT DISABLED
 #elif (CSHAKE_SUPPORT != ENABLED && CSHAKE_SUPPORT != DISABLED)
    #error CSHAKE_SUPPORT parameter is not valid
+#endif
+
+//KMACXOF support
+#ifndef KMAC_XOF_SUPPORT
+   #define KMAC_XOF_SUPPORT DISABLED
+#elif (KMAC_XOF_SUPPORT != ENABLED && KMAC_XOF_SUPPORT != DISABLED)
+   #error KMAC_XOF_SUPPORT parameter is not valid
+#endif
+
+//TupleHashXOF hash support
+#ifndef TUPLE_HASH_XOF_SUPPORT
+   #define TUPLE_HASH_XOF_SUPPORT DISABLED
+#elif (TUPLE_HASH_XOF_SUPPORT != ENABLED && TUPLE_HASH_XOF_SUPPORT != DISABLED)
+   #error TUPLE_HASH_XOF_SUPPORT parameter is not valid
+#endif
+
+//ParallelHashXOF hash support
+#ifndef PARALLEL_HASH_XOF_SUPPORT
+   #define PARALLEL_HASH_XOF_SUPPORT DISABLED
+#elif (PARALLEL_HASH_XOF_SUPPORT != ENABLED && PARALLEL_HASH_XOF_SUPPORT != DISABLED)
+   #error PARALLEL_HASH_XOF_SUPPORT parameter is not valid
 #endif
 
 //Ascon-XOF128 support
@@ -753,6 +802,13 @@
    #error HKDF_SUPPORT parameter is not valid
 #endif
 
+//KBKDF support
+#ifndef KBKDF_SUPPORT
+   #define KBKDF_SUPPORT DISABLED
+#elif (KBKDF_SUPPORT != ENABLED && KBKDF_SUPPORT != DISABLED)
+   #error KBKDF_SUPPORT parameter is not valid
+#endif
+
 //PBKDF support
 #ifndef PBKDF_SUPPORT
    #define PBKDF_SUPPORT DISABLED
@@ -765,6 +821,41 @@
    #define CONCAT_KDF_SUPPORT DISABLED
 #elif (CONCAT_KDF_SUPPORT != ENABLED && CONCAT_KDF_SUPPORT != DISABLED)
    #error CONCAT_KDF_SUPPORT parameter is not valid
+#endif
+
+//One-Step KDF support
+#ifndef ONE_STEP_KDF_SUPPORT
+   #define ONE_STEP_KDF_SUPPORT DISABLED
+#elif (ONE_STEP_KDF_SUPPORT != ENABLED && ONE_STEP_KDF_SUPPORT != DISABLED)
+   #error ONE_STEP_KDF_SUPPORT parameter is not valid
+#endif
+
+//ANSI X9.63 KDF support
+#ifndef X963_KDF_SUPPORT
+   #define X963_KDF_SUPPORT DISABLED
+#elif (X963_KDF_SUPPORT != ENABLED && X963_KDF_SUPPORT != DISABLED)
+   #error X963_KDF_SUPPORT parameter is not valid
+#endif
+
+//TLS KDF support
+#ifndef TLS_KDF_SUPPORT
+   #define TLS_KDF_SUPPORT DISABLED
+#elif (TLS_KDF_SUPPORT != ENABLED && TLS_KDF_SUPPORT != DISABLED)
+   #error TLS_KDF_SUPPORT parameter is not valid
+#endif
+
+//SSH KDF support
+#ifndef SSH_KDF_SUPPORT
+   #define SSH_KDF_SUPPORT DISABLED
+#elif (SSH_KDF_SUPPORT != ENABLED && SSH_KDF_SUPPORT != DISABLED)
+   #error SSH_KDF_SUPPORT parameter is not valid
+#endif
+
+//IKE KDF support
+#ifndef IKE_KDF_SUPPORT
+   #define IKE_KDF_SUPPORT DISABLED
+#elif (IKE_KDF_SUPPORT != ENABLED && IKE_KDF_SUPPORT != DISABLED)
+   #error IKE_KDF_SUPPORT parameter is not valid
 #endif
 
 //bcrypt support
@@ -1066,34 +1157,14 @@ typedef enum
 
 
 /**
- * @brief Cipher operation modes
- **/
-
-typedef enum
-{
-   CIPHER_MODE_NULL              = 0,
-   CIPHER_MODE_STREAM            = 1,
-   CIPHER_MODE_ECB               = 2,
-   CIPHER_MODE_CBC               = 3,
-   CIPHER_MODE_CFB               = 4,
-   CIPHER_MODE_OFB               = 5,
-   CIPHER_MODE_CTR               = 6,
-   CIPHER_MODE_CCM               = 7,
-   CIPHER_MODE_GCM               = 8,
-   CIPHER_MODE_ASCON_AEAD128     = 9,
-   CIPHER_MODE_CHACHA20_POLY1305 = 10
-} CipherMode;
-
-
-/**
- * @brief Data chunk descriptor
+ * @brief Data fragment descriptor
  **/
 
 typedef struct
 {
    const void *buffer;
    size_t length;
-} DataChunk;
+} DataFrag;
 
 
 //Common API for hash algorithms
@@ -1109,7 +1180,14 @@ typedef void (*HashAlgoFinalRaw)(void *context, uint8_t *digest);
 typedef error_t (*XofAlgoCompute)(const void *input, size_t inputLen,
    uint8_t *output, size_t outputLen);
 
-typedef void (*XofAlgoInit)(void *context);
+typedef error_t (*XofAlgoComputeEx)(const void *input, size_t inputLen,
+   const char_t *custom, size_t customLen, uint8_t *output, size_t outputLen);
+
+typedef error_t (*XofAlgoInit)(void *context);
+
+typedef error_t (*XofAlgoInitEx)(void *context, const char_t *custom,
+   size_t customLen);
+
 typedef void (*XofAlgoAbsorb)(void *context, const void *input, size_t length);
 typedef void (*XofAlgoFinal)(void *context);
 typedef void (*XofAlgoSqueeze)(void *context, uint8_t *output, size_t length);
@@ -1190,7 +1268,9 @@ typedef struct
    size_t oidSize;
    size_t contextSize;
    XofAlgoCompute compute;
+   XofAlgoComputeEx computeEx;
    XofAlgoInit init;
+   XofAlgoInitEx initEx;
    XofAlgoAbsorb absorb;
    XofAlgoFinal final;
    XofAlgoSqueeze squeeze;

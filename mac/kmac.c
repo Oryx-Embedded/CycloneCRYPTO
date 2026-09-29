@@ -31,7 +31,7 @@
  * built from cSHAKE128 and cSHAKE256, respectively
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -75,6 +75,10 @@ error_t kmacCompute(uint_t strength, const void *key, size_t keyLen,
 #else
    KmacContext context[1];
 #endif
+
+   //Check parameters
+   if(data == NULL && dataLen != 0)
+      return ERROR_INVALID_PARAMETER;
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the KMAC context
@@ -211,7 +215,7 @@ error_t kmacFinal(KmacContext *context, uint8_t *mac, size_t macLen)
       return ERROR_INVALID_PARAMETER;
 
    //Absorb the string representation of L
-   kmacRightEncode(macLen * 8, buffer, &n);
+   cshakeRightEncode(macLen * 8, buffer, &n);
    cshakeAbsorb(&context->cshakeContext, buffer, n);
 
    //Finish absorbing phase
@@ -237,42 +241,6 @@ void kmacDeinit(KmacContext *context)
       //Clear KMAC context
       osMemset(context, 0, sizeof(KmacContext));
    }
-}
-
-
-/**
- * @brief Encode integer as byte string
- * @param[in] value Value of the integer to be encoded
- * @param[out] buffer Buffer where to store the byte string representation
- * @param[out] length Length of the resulting byte string
- **/
-
-void kmacRightEncode(size_t value, uint8_t *buffer, size_t *length)
-{
-   size_t i;
-   size_t n;
-   size_t temp;
-
-   //Get the value of the integer to be encoded
-   temp = value;
-
-   //Let n be the smallest positive integer for which 2^(8*n) > x
-   for(n = 1; n < sizeof(size_t) && (temp >> 8) != 0; n++)
-   {
-      temp >>= 8;
-   }
-
-   //Encode O(1) || ... || O(n)
-   for(i = 0; i < n; i++)
-   {
-      buffer[i] = value >> ((n - i - 1) * 8);
-   }
-
-   //Encode O(n+1)
-   buffer[i] = n;
-
-   //Return the length of the byte string representation
-   *length = n + 1;
 }
 
 #endif

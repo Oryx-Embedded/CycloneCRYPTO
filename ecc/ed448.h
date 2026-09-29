@@ -1,6 +1,6 @@
 /**
  * @file ed448.h
- * @brief Ed448 elliptic curve (constant-time implementation)
+ * @brief Ed448 elliptic curve
  *
  * @section License
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _ED448_H
@@ -137,21 +137,23 @@ error_t ed448GeneratePrivateKey(const PrngAlgo *prngAlgo, void *prngContext,
    uint8_t *privateKey);
 
 error_t ed448GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey);
+bool_t ed448CheckPublicKey(const uint8_t *publicKey);
 
 error_t ed448GenerateSignature(const uint8_t *privateKey,
    const uint8_t *publicKey, const void *message, size_t messageLen,
    const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature);
 
 error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
-   const uint8_t *publicKey, const DataChunk *message, uint_t messageLen,
-   const void *context, uint8_t contextLen, uint8_t flag, uint8_t *signature);
+   const uint8_t *publicKey, const DataFrag *messageFrags,
+   uint_t messageNumFrags, const void *context, uint8_t contextLen,
+   uint8_t flag, uint8_t *signature);
 
 error_t ed448VerifySignature(const uint8_t *publicKey, const void *message,
    size_t messageLen, const void *context, uint8_t contextLen, uint8_t flag,
    const uint8_t *signature);
 
 error_t ed448VerifySignatureEx(const uint8_t *publicKey,
-   const DataChunk *message, uint_t messageLen, const void *context,
+   const DataFrag *messageFrags, uint_t messageNumFrags, const void *context,
    uint8_t contextLen, uint8_t flag, const uint8_t *signature);
 
 void ed448Mul(Ed448SubState *state, Ed448Point *r, const uint8_t *k,

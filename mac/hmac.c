@@ -32,7 +32,7 @@
  * key. Refer to RFC 2104 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -153,7 +153,7 @@ __weak_func error_t hmacInit(HmacContext *context, const HashAlgo *hash,
    //Hash algorithm used to compute HMAC
    context->hash = hash;
 
-   //The key is longer than the block size?
+   //Check whether the key is longer than the block size
    if(keyLen > hash->blockSize)
    {
       //Initialize the hash function context

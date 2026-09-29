@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _X509_COMMON_H
@@ -160,6 +160,20 @@
    #error X509_SHA512_SUPPORT parameter is not valid
 #endif
 
+//SHA-512/224 hash support
+#ifndef X509_SHA512_224_SUPPORT
+   #define X509_SHA512_224_SUPPORT DISABLED
+#elif (X509_SHA512_224_SUPPORT != ENABLED && X509_SHA512_224_SUPPORT != DISABLED)
+   #error X509_SHA512_224_SUPPORT parameter is not valid
+#endif
+
+//SHA-512/256 hash support
+#ifndef X509_SHA512_256_SUPPORT
+   #define X509_SHA512_256_SUPPORT DISABLED
+#elif (X509_SHA512_256_SUPPORT != ENABLED && X509_SHA512_256_SUPPORT != DISABLED)
+   #error X509_SHA512_256_SUPPORT parameter is not valid
+#endif
+
 //SHA3-224 hash support
 #ifndef X509_SHA3_224_SUPPORT
    #define X509_SHA3_224_SUPPORT DISABLED
@@ -186,6 +200,20 @@
    #define X509_SHA3_512_SUPPORT DISABLED
 #elif (X509_SHA3_512_SUPPORT != ENABLED && X509_SHA3_512_SUPPORT != DISABLED)
    #error X509_SHA3_512_SUPPORT parameter is not valid
+#endif
+
+//SHAKE128/256 hash support
+#ifndef X509_SHAKE128_SUPPORT
+   #define X509_SHAKE128_SUPPORT DISABLED
+#elif (X509_SHAKE128_SUPPORT != ENABLED && X509_SHAKE128_SUPPORT != DISABLED)
+   #error X509_SHAKE128_SUPPORT parameter is not valid
+#endif
+
+//SHAKE256/512 hash support
+#ifndef X509_SHAKE256_SUPPORT
+   #define X509_SHAKE256_SUPPORT DISABLED
+#elif (X509_SHAKE256_SUPPORT != ENABLED && X509_SHAKE256_SUPPORT != DISABLED)
+   #error X509_SHAKE256_SUPPORT parameter is not valid
 #endif
 
 //SM3 hash support
@@ -697,18 +725,20 @@ typedef enum
 
 typedef enum
 {
-   X509_HASH_ALGO_NONE     = 0,
-   X509_HASH_ALGO_MD5      = 1,
-   X509_HASH_ALGO_SHA1     = 2,
-   X509_HASH_ALGO_SHA224   = 3,
-   X509_HASH_ALGO_SHA256   = 4,
-   X509_HASH_ALGO_SHA384   = 5,
-   X509_HASH_ALGO_SHA512   = 6,
-   X509_HASH_ALGO_SHA3_224 = 7,
-   X509_HASH_ALGO_SHA3_256 = 8,
-   X509_HASH_ALGO_SHA3_384 = 9,
-   X509_HASH_ALGO_SHA3_512 = 10,
-   X509_HASH_ALGO_SM3      = 11
+   X509_HASH_ALGO_NONE         = 0,
+   X509_HASH_ALGO_MD5          = 1,
+   X509_HASH_ALGO_SHA1         = 2,
+   X509_HASH_ALGO_SHA224       = 3,
+   X509_HASH_ALGO_SHA256       = 4,
+   X509_HASH_ALGO_SHA384       = 5,
+   X509_HASH_ALGO_SHA512       = 6,
+   X509_HASH_ALGO_SHA3_224     = 7,
+   X509_HASH_ALGO_SHA3_256     = 8,
+   X509_HASH_ALGO_SHA3_384     = 9,
+   X509_HASH_ALGO_SHA3_512     = 10,
+   X509_HASH_ALGO_SHAKE128_256 = 11,
+   X509_HASH_ALGO_SHAKE256_512 = 12,
+   X509_HASH_ALGO_SM3          = 13
 } X509HashAlgo;
 
 
@@ -1462,6 +1492,7 @@ error_t x509GetSignHashAlgo(const X509SignAlgoId *signAlgoId,
    X509SignatureAlgo *signAlgo, const HashAlgo **hashAlgo);
 
 X509KeyType x509GetPublicKeyType(const uint8_t *oid, size_t length);
+const HashAlgo *x509GetHashAlgo(const uint8_t *oid, size_t length);
 const EcCurve *x509GetCurve(const uint8_t *oid, size_t length);
 
 //C++ guard

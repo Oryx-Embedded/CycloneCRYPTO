@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -49,11 +49,16 @@
 
 error_t trngInit(void)
 {
-   //Initialize RNG module
-   RNG_Open();
+   int32_t status;
 
-   //Successful initialization
-   return NO_ERROR;
+   //Enable TRNG clock
+   CLK_EnableModuleClock(TRNG0_MODULE);
+
+   //Initialize RNG module
+   status = TRNG_Open();
+
+   //Return status code
+   return (status == 0) ? NO_ERROR : ERROR_FAILURE;
 }
 
 
@@ -66,9 +71,11 @@ error_t trngInit(void)
 error_t trngGetRandomData(uint8_t *data, size_t length)
 {
    size_t i;
+   int32_t status;
    uint32_t value;
 
-   //Initialize variable
+   //Initialize variables
+   status = 0;
    value = 0;
 
    //Acquire exclusive access to the TRNG module
@@ -81,7 +88,12 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
       if((i % 4) == 0)
       {
          //Get 32-bit random value
-         RNG_Random(&value, 1);
+         status = TRNG_GenWord(&value);
+         //Check status code
+         if(status != 0)
+         {
+            break;
+         }
       }
 
       //Copy random byte
@@ -93,8 +105,8 @@ error_t trngGetRandomData(uint8_t *data, size_t length)
    //Release exclusive access to the TRNG module
    osReleaseMutex(&m5531CryptoMutex);
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return (status == 0) ? NO_ERROR : ERROR_FAILURE;
 }
 
 #endif

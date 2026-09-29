@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _PKCS7_DECRYPT_H
@@ -51,7 +51,7 @@ error_t pkcs7DecryptKey(const Pkcs7RecipientInfo *recipientInfo,
 error_t pkcs7DecryptData(const Pkcs7EncryptedContentInfo *encryptedContentInfo,
    const uint8_t *key, size_t keyLen, uint8_t *plaintext, size_t *plaintextLen);
 
-uint32_t pkcs7VerifyPadding(const uint8_t *data, size_t dataLen,
+error_t pkcs7VerifyPadding(const uint8_t *data, size_t dataLen,
    size_t blockSize, size_t *paddingLen);
 
 error_t pkcs7FindRecipient(const Pkcs7RecipientInfos *recipientInfos,

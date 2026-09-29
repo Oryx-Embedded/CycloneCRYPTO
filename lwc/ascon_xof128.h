@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _ASCON_XOF128_H
@@ -64,7 +64,7 @@ extern const XofAlgo asconXof128XofAlgo;
 error_t asconXof128Compute(const void *input, size_t inputLen, uint8_t *output,
    size_t outputLen);
 
-void asconXof128Init(AsconXof128Context *context);
+error_t asconXof128Init(AsconXof128Context *context);
 
 void asconXof128Absorb(AsconXof128Context *context, const void *input,
    size_t length);

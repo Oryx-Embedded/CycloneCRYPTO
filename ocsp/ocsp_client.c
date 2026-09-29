@@ -33,7 +33,7 @@
  * - RFC 8954: Online Certificate Status Protocol (OCSP) Nonce Extension
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -42,8 +42,8 @@
 //Dependencies
 #include "ocsp/ocsp_client.h"
 #include "ocsp/ocsp_client_misc.h"
-#include "ocsp/ocsp_resp_parse.h"
-#include "ocsp/ocsp_resp_validate.h"
+#include "ocsp/ocsp_response_parse.h"
+#include "ocsp/ocsp_response_validate.h"
 #include "pkix/pem_import.h"
 #include "pkix/x509_cert_parse.h"
 #include "debug.h"

@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 //Switch to the appropriate trace level
@@ -315,8 +315,8 @@ error_t pkcs5DecryptPbes2(const X509AlgoId *encryptionAlgoId,
 
    //Apply the selected KDF function to the password P, the salt S, and the
    //iteration count c to produce a derived key DK of length dkLen octets
-   error = pbkdf2(hashAlgo, (uint8_t *) password, passwordLen,
-      pbes2Params.keyDerivationFunc.salt.value,
+   error = pbkdf2(PBKDF2_TYPE_HMAC, hashAlgo, (uint8_t *) password,
+      passwordLen, pbes2Params.keyDerivationFunc.salt.value,
       pbes2Params.keyDerivationFunc.salt.length,
       pbes2Params.keyDerivationFunc.iterationCount, dk, dkLen);
    //Any error to report?

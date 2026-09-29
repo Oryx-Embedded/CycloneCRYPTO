@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.6.4
+ * @version 2.6.6
  **/
 
 #ifndef _MIMXRT1160_CRYPTO_CONFIG_H
@@ -35,17 +35,17 @@
 #include "fsl_caam.h"
 
 //CAAM-specific context (SHA-1)
-#define SHA1_PRIVATE_CONTEXT \
+#define SHA1_CONTEXT_PRIVATE \
    caam_handle_t caamHandle; \
    caam_hash_ctx_t caamContext;
 
 //CAAM-specific context (SHA-256)
-#define SHA256_PRIVATE_CONTEXT \
+#define SHA256_CONTEXT_PRIVATE \
    caam_handle_t caamHandle; \
    caam_hash_ctx_t caamContext;
 
 //CAAM-specific context (SHA-512)
-#define SHA512_PRIVATE_CONTEXT \
+#define SHA512_CONTEXT_PRIVATE \
    caam_handle_t caamHandle; \
    caam_hash_ctx_t caamContext;
 
