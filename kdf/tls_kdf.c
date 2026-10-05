@@ -69,8 +69,12 @@ error_t tlsPrf(const uint8_t *secret, size_t secretLen, const char_t *label,
    size_t sLen;
    const uint8_t *s1;
    const uint8_t *s2;
-   HmacContext *hmacContext;
    uint8_t a[SHA1_DIGEST_SIZE];
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   HmacContext *hmacContext;
+#else
+   HmacContext hmacContext[1];
+#endif
 
    //Check parameters
    if(secret == NULL || label == NULL || seed == NULL || output == NULL)
@@ -190,8 +194,12 @@ error_t tls12Prf(const HashAlgo *hashAlgo, const uint8_t *secret,
 {
    size_t n;
    size_t labelLen;
-   HmacContext *hmacContext;
    uint8_t a[MAX_HASH_DIGEST_SIZE];
+#if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
+   HmacContext *hmacContext;
+#else
+   HmacContext hmacContext[1];
+#endif
 
    //Check parameters
    if(hashAlgo == NULL || secret == NULL || label == NULL || seed == NULL ||
