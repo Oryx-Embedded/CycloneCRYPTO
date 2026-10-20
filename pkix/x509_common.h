@@ -434,8 +434,8 @@
 
 //Minimum acceptable size for RSA modulus
 #ifndef X509_MIN_RSA_MODULUS_SIZE
-   #define X509_MIN_RSA_MODULUS_SIZE 1024
-#elif (X509_MIN_RSA_MODULUS_SIZE < 512)
+   #define X509_MIN_RSA_MODULUS_SIZE 2048
+#elif (X509_MIN_RSA_MODULUS_SIZE < 1024)
    #error X509_MIN_RSA_MODULUS_SIZE parameter is not valid
 #endif
 
@@ -448,8 +448,8 @@
 
 //Minimum acceptable size for DSA prime modulus
 #ifndef X509_MIN_DSA_MODULUS_SIZE
-   #define X509_MIN_DSA_MODULUS_SIZE 1024
-#elif (X509_MIN_DSA_MODULUS_SIZE < 512)
+   #define X509_MIN_DSA_MODULUS_SIZE 2048
+#elif (X509_MIN_DSA_MODULUS_SIZE < 1024)
    #error X509_MIN_DSA_MODULUS_SIZE parameter is not valid
 #endif
 
