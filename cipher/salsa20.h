@@ -39,8 +39,30 @@
 extern "C" {
 #endif
 
+
+/**
+ * @brief Salsa20 algorithm context
+ **/
+
+typedef struct
+{
+   uint_t nr;
+   uint32_t state[16];
+   uint8_t keystream[64];
+   uint_t pos;
+} Salsa20Context;
+
+
 //Salsa20 related functions
+error_t salsa20Init(Salsa20Context *context, uint_t nr, const uint8_t *key,
+   size_t keyLen, const uint8_t *nonce, size_t nonceLen);
+
+void salsa20Cipher(Salsa20Context *context, const uint8_t *input,
+   uint8_t *output, size_t length);
+
 void salsa20ProcessBlock(const uint8_t *input, uint8_t *output, uint_t nr);
+
+void salsa20Deinit(Salsa20Context *context);
 
 //C++ guard
 #ifdef __cplusplus
