@@ -87,8 +87,10 @@ typedef enum
    CIPHER_MODE_GCM               = 8,
    CIPHER_MODE_GMAC              = 9,
    CIPHER_MODE_XTS               = 10,
-   CIPHER_MODE_ASCON_AEAD128     = 11,
-   CIPHER_MODE_CHACHA20_POLY1305 = 12
+   CIPHER_MODE_AEGIS128L         = 11,
+   CIPHER_MODE_AEGIS256          = 12,
+   CIPHER_MODE_ASCON_AEAD128     = 13,
+   CIPHER_MODE_CHACHA20_POLY1305 = 14
 } CipherMode;
 
 

@@ -85,6 +85,8 @@ extern const uint8_t AES256_CCM_OID[9];
 extern const CipherAlgo aesCipherAlgo;
 
 //AES related functions
+void aesRound(uint32_t *output, const uint32_t *input, const uint32_t *rk);
+
 error_t aesInit(AesContext *context, const uint8_t *key, size_t keyLen);
 
 void aesEncryptBlock(AesContext *context, const uint8_t *input,

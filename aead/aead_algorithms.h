@@ -49,6 +49,16 @@
    #include "aead/siv.h"
 #endif
 
+//AEGIS-128L support?
+#if (AEGIS128L_SUPPORT == ENABLED)
+   #include "aead/aegis128l.h"
+#endif
+
+//AEGIS-256 support?
+#if (AEGIS256_SUPPORT == ENABLED)
+   #include "aead/aegis256.h"
+#endif
+
 //Ascon-AEAD128 support?
 #if (ASCON_AEAD128_SUPPORT == ENABLED)
    #include "lwc/ascon_aead128.h"
@@ -102,8 +112,12 @@ typedef enum
    AEAD_CHACHA20_POLY1305     = 29, ///<RFC 8439
    AEAD_AES_128_GCM_SIV       = 30, ///<RFC 8452
    AEAD_AES_256_GCM_SIV       = 31, ///<RFC 8452
-   AEAD_AEGIS128L             = 32, ///<Draft
-   AEAD_AEGIS256              = 33  ///<Draft
+   AEAD_AEGIS128L             = 32, ///<RFC 10032
+   AEAD_AEGIS256              = 33, ///<RFC 10032
+   AEAD_AEGIS128X2            = 34, ///<RFC 10032
+   AEAD_AEGIS128X4            = 35, ///<RFC 10032
+   AEAD_AEGIS256X2            = 36, ///<RFC 10032
+   AEAD_AEGIS256X4            = 37  ///<RFC 10032
 } AeadAlgo;
 
 

@@ -683,6 +683,20 @@
    #error SIV_SUPPORT parameter is not valid
 #endif
 
+//AEGIS-128L support
+#ifndef AEGIS128L_SUPPORT
+   #define AEGIS128L_SUPPORT DISABLED
+#elif (AEGIS128L_SUPPORT != ENABLED && AEGIS128L_SUPPORT != DISABLED)
+   #error AEGIS128L_SUPPORT parameter is not valid
+#endif
+
+//AEGIS-256 support
+#ifndef AEGIS256_SUPPORT
+   #define AEGIS256_SUPPORT DISABLED
+#elif (AEGIS256_SUPPORT != ENABLED && AEGIS256_SUPPORT != DISABLED)
+   #error AEGIS256_SUPPORT parameter is not valid
+#endif
+
 //Ascon-AEAD128 support
 #ifndef ASCON_AEAD128_SUPPORT
    #define ASCON_AEAD128_SUPPORT DISABLED

@@ -232,6 +232,73 @@ const CipherAlgo aesCipherAlgo =
 
 
 /**
+ * @brief AES round function
+ * @param[in] output Output state
+ * @param[in] input Input state
+ * @param[in] rk Round key
+ **/
+
+__weak_func void aesRound(uint32_t *output, const uint32_t *input,
+   const uint32_t *rk)
+{
+   uint32_t s0;
+   uint32_t s1;
+   uint32_t s2;
+   uint32_t s3;
+   uint32_t t0;
+   uint32_t t1;
+   uint32_t t2;
+   uint32_t t3;
+   uint32_t temp;
+
+   //Load input state
+   s0 = input[0];
+   s1 = input[1];
+   s2 = input[2];
+   s3 = input[3];
+
+   //Apply round function
+   t0 = te[s0 & 0xFF];
+   temp = te[(s1 >> 8) & 0xFF];
+   t0 ^= ROL32(temp, 8);
+   temp = te[(s2 >> 16) & 0xFF];
+   t0 ^= ROL32(temp, 16);
+   temp = te[(s3 >> 24) & 0xFF];
+   t0 ^= ROL32(temp, 24);
+
+   t1 = te[s1 & 0xFF];
+   temp = te[(s2 >> 8) & 0xFF];
+   t1 ^= ROL32(temp, 8);
+   temp = te[(s3 >> 16) & 0xFF];
+   t1 ^= ROL32(temp, 16);
+   temp = te[(s0 >> 24) & 0xFF];
+   t1 ^= ROL32(temp, 24);
+
+   t2 = te[s2 & 0xFF];
+   temp = te[(s3 >> 8) & 0xFF];
+   t2 ^= ROL32(temp, 8);
+   temp = te[(s0 >> 16) & 0xFF];
+   t2 ^= ROL32(temp, 16);
+   temp = te[(s1 >> 24) & 0xFF];
+   t2 ^= ROL32(temp, 24);
+
+   t3 = te[s3 & 0xFF];
+   temp = te[(s0 >> 8) & 0xFF];
+   t3 ^= ROL32(temp, 8);
+   temp = te[(s1 >> 16) & 0xFF];
+   t3 ^= ROL32(temp, 16);
+   temp = te[(s2 >> 24) & 0xFF];
+   t3 ^= ROL32(temp, 24);
+
+   //Round key addition
+   output[0] = t0 ^ rk[0];
+   output[1] = t1 ^ rk[1];
+   output[2] = t2 ^ rk[2];
+   output[3] = t3 ^ rk[3];
+}
+
+
+/**
  * @brief Key expansion
  * @param[in] context Pointer to the AES context to initialize
  * @param[in] key Pointer to the key
