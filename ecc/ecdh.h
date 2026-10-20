@@ -84,6 +84,8 @@ error_t ecdhCheckPublicKey(EcdhContext *context, const EcPublicKey *publicKey);
 error_t ecdhComputeSharedSecret(EcdhContext *context, uint8_t *output,
    size_t outputSize, size_t *outputLen);
 
+void ecdhErasePrivateKey(EcdhContext *context);
+
 //C++ guard
 #ifdef __cplusplus
 }

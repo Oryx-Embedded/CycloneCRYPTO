@@ -86,6 +86,8 @@ error_t dhCheckPublicKey(DhContext *context, const Mpi *publicKey);
 error_t dhComputeSharedSecret(DhContext *context, uint8_t *output,
    size_t outputSize, size_t *outputLen);
 
+void dhErasePrivateKey(DhContext *context);
+
 //C++ guard
 #ifdef __cplusplus
 }

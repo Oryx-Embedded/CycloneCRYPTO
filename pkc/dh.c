@@ -339,4 +339,16 @@ error_t dhComputeSharedSecret(DhContext *context, uint8_t *output,
    return error;
 }
 
+
+/**
+ * @brief Erase private key
+ * @param[in] context Pointer to the Diffie-Hellman context
+ **/
+
+void dhErasePrivateKey(DhContext *context)
+{
+   //Destroy the ephemeral private key
+   mpiFree(&context->xa);
+}
+
 #endif

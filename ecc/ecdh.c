@@ -611,4 +611,16 @@ error_t ecdhComputeSharedSecret(EcdhContext *context, uint8_t *output,
    return error;
 }
 
+
+/**
+ * @brief Erase private key
+ * @param[in] context Pointer to the Diffie-Hellman context
+ **/
+
+void ecdhErasePrivateKey(EcdhContext *context)
+{
+   //Destroy the ephemeral private key
+   ecScalarSetInt(context->da.d, 0, EC_MAX_ORDER_SIZE);
+}
+
 #endif
