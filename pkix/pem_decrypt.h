@@ -105,6 +105,9 @@ error_t pemKdf(const char_t *p, size_t pLen, const uint8_t *s, size_t sLen,
 const CipherAlgo *pemGetCipherAlgo(const PemString *algo);
 uint_t pemGetKeyLength(const PemString *algo);
 
+error_t pemVerifyPadding(const uint8_t *data, size_t dataLen,
+   size_t blockSize, size_t *paddingLen);
+
 //C++ guard
 #ifdef __cplusplus
 }

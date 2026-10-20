@@ -110,7 +110,6 @@ error_t pkcs5DecryptPbes1(const X509AlgoId *encryptionAlgoId,
    uint8_t *plaintext, size_t *plaintextLen)
 {
    error_t error;
-   size_t i;
    size_t psLen;
    size_t passwordLen;
    uint8_t *k;
@@ -206,24 +205,11 @@ error_t pkcs5DecryptPbes1(const X509AlgoId *encryptionAlgoId,
    if(error)
       return error;
 
-   //Retrieve the length of the padding string PS
-   psLen = plaintext[ciphertextLen - 1];
-
-   //Ensure that psLen is between 1 and 8
-   if(psLen < 1 || psLen > 8)
-      return ERROR_DECRYPTION_FAILED;
-
-   //Malformed padding?
-   if(psLen > ciphertextLen)
-      return ERROR_DECRYPTION_FAILED;
-
    //Verify padding string
-   for(i = 0; i < psLen; i++)
-   {
-      //The padding string PS consists of psLen octets each with value psLen
-      if(plaintext[ciphertextLen - i - 1] != psLen)
-         return ERROR_DECRYPTION_FAILED;
-   }
+   error = pkcs5VerifyPadding(plaintext, ciphertextLen, 8, &psLen);
+   //Any error to report?
+   if(error)
+      return error;
 
    //Strip padding bytes from the encoded message EM
    *plaintextLen = ciphertextLen - psLen;
@@ -249,7 +235,6 @@ error_t pkcs5DecryptPbes2(const X509AlgoId *encryptionAlgoId,
    uint8_t *plaintext, size_t *plaintextLen)
 {
    error_t error;
-   size_t i;
    size_t dkLen;
    size_t psLen;
    size_t passwordLen;
@@ -355,24 +340,12 @@ error_t pkcs5DecryptPbes2(const X509AlgoId *encryptionAlgoId,
    if(error)
       return error;
 
-   //Retrieve the length of the padding string PS
-   psLen = plaintext[ciphertextLen - 1];
-
-   //Ensure that psLen is valid
-   if(psLen < 1 || psLen > cipherAlgo->blockSize)
-      return ERROR_DECRYPTION_FAILED;
-
-   //Malformed padding?
-   if(psLen > ciphertextLen)
-      return ERROR_DECRYPTION_FAILED;
-
    //Verify padding string
-   for(i = 0; i < psLen; i++)
-   {
-      //The padding string PS consists of psLen octets each with value psLen
-      if(plaintext[ciphertextLen - i - 1] != psLen)
-         return ERROR_DECRYPTION_FAILED;
-   }
+   error = pkcs5VerifyPadding(plaintext, ciphertextLen, cipherAlgo->blockSize,
+      &psLen);
+   //Any error to report?
+   if(error)
+      return error;
 
    //Strip padding bytes from the encoded message EM
    *plaintextLen = ciphertextLen - psLen;
@@ -728,6 +701,53 @@ error_t pkcs5ParseEncryptionScheme(const uint8_t *data, size_t length,
 
    //Successful processing
    return NO_ERROR;
+}
+
+
+/**
+ * @brief CBC padding verification (constant time)
+ * @param[in] data Pointer to the plaintext data
+ * @param[in] dataLen Length of the plaintext data
+ * @param[in] blockSize Block size of the underlying cipher algorithm
+ * @param[out] paddingLen Length of the padding string
+ * @return Error code
+ **/
+
+error_t pkcs5VerifyPadding(const uint8_t *data, size_t dataLen,
+   size_t blockSize, size_t *paddingLen)
+{
+   size_t i;
+   size_t n;
+   uint8_t b;
+   uint8_t mask;
+   uint32_t c;
+   uint32_t bad;
+
+   //Retrieve the length of the padding string
+   n = data[dataLen - 1];
+
+   //Ensure that length of the padding string is valid
+   bad = CRYPTO_TEST_LT_32(n, 1);
+   bad |= CRYPTO_TEST_GT_32(n, blockSize);
+   bad |= CRYPTO_TEST_GT_32(n, dataLen);
+
+   //Each byte in the padding data must be filled with the padding length value
+   for(i = 1; i < dataLen && i < blockSize; i++)
+   {
+      //Read current byte
+      b = data[dataLen - 1 - i];
+
+      //Verify that the padding string is correct
+      c = CRYPTO_TEST_LT_32(i, n);
+      mask = CRYPTO_SELECT_8(b, n, c);
+      bad |= CRYPTO_TEST_NEQ_8(b, mask);
+   }
+
+   //Save the length of the padding string
+   *paddingLen = CRYPTO_SELECT_32(n, 0, bad);
+
+   //Return status code
+   return bad ? ERROR_DECRYPTION_FAILED : NO_ERROR;
 }
 
 #endif

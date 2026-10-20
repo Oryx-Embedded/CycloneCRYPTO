@@ -69,6 +69,9 @@ error_t pkcs5ParsePbkdf2Params(const uint8_t *data, size_t length,
 error_t pkcs5ParseEncryptionScheme(const uint8_t *data, size_t length,
    size_t *totalLength, Pkcs5EncryptionScheme *encryptionScheme);
 
+error_t pkcs5VerifyPadding(const uint8_t *data, size_t dataLen,
+   size_t blockSize, size_t *paddingLen);
+
 //C++ guard
 #ifdef __cplusplus
 }
