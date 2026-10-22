@@ -262,57 +262,58 @@ void pemParseHeaderField(PemString *line, PemHeader *header)
    PemString arg1;
    PemString arg2;
 
-   //Each header field consists of a field name followed by a colon,
-   //optional leading whitespace, and the field value
-   pemTokenizeString(line, ':', &name);
-
-   //Removes all leading and trailing whitespace from the name
-   pemTrimWhitespace(&name);
-
-   //Check header field name
-   if(pemCompareString(&name, "Proc-Type"))
+   //Each header field consists of a field name followed by a colon, optional
+   //leading whitespace, and the field value
+   if(pemTokenizeString(line, ':', &name))
    {
-      //The "Proc-Type" encapsulated header field, required for all PEM
-      //messages, identifies the type of processing performed on the
-      //transmitted message (refer to RFC 1421, section 4.6.1.1)
-      if(pemTokenizeString(line, ',', &arg1) &&
-         pemTokenizeString(line, ',', &arg2))
-      {
-         //Removes all leading and trailing whitespace characters
-         pemTrimWhitespace(&arg1);
-         pemTrimWhitespace(&arg2);
+      //Removes all leading and trailing whitespace from the name
+      pemTrimWhitespace(&name);
 
-         //Save arguments
-         if(header != NULL)
+      //Check header field name
+      if(pemCompareString(&name, "Proc-Type"))
+      {
+         //The "Proc-Type" encapsulated header field, required for all PEM
+         //messages, identifies the type of processing performed on the
+         //transmitted message (refer to RFC 1421, section 4.6.1.1)
+         if(pemTokenizeString(line, ',', &arg1) &&
+            pemTokenizeString(line, ',', &arg2))
          {
-            header->procType.version = arg1;
-            header->procType.type = arg2;
+            //Removes all leading and trailing whitespace characters
+            pemTrimWhitespace(&arg1);
+            pemTrimWhitespace(&arg2);
+
+            //Save arguments
+            if(header != NULL)
+            {
+               header->procType.version = arg1;
+               header->procType.type = arg2;
+            }
          }
       }
-   }
-   else if(pemCompareString(&name, "DEK-Info"))
-   {
-      //The "DEK-Info" encapsulated header field identifies the message text
-      //encryption algorithm and mode, and also carries the IV used for message
-      //encryption (refer to RFC 1421, section 4.6.1.3)
-      if(pemTokenizeString(line, ',', &arg1) &&
-         pemTokenizeString(line, ',', &arg2))
+      else if(pemCompareString(&name, "DEK-Info"))
       {
-         //Removes all leading and trailing whitespace characters
-         pemTrimWhitespace(&arg1);
-         pemTrimWhitespace(&arg2);
-
-         //Save arguments
-         if(header != NULL)
+         //The "DEK-Info" encapsulated header field identifies the message text
+         //encryption algorithm and mode, and also carries the IV used for
+         //message encryption (refer to RFC 1421, section 4.6.1.3)
+         if(pemTokenizeString(line, ',', &arg1) &&
+            pemTokenizeString(line, ',', &arg2))
          {
-            header->dekInfo.algo = arg1;
-            header->dekInfo.iv = arg2;
+            //Removes all leading and trailing whitespace characters
+            pemTrimWhitespace(&arg1);
+            pemTrimWhitespace(&arg2);
+
+            //Save arguments
+            if(header != NULL)
+            {
+               header->dekInfo.algo = arg1;
+               header->dekInfo.iv = arg2;
+            }
          }
       }
-   }
-   else
-   {
-      //Unknown header field name
+      else
+      {
+         //Unknown header field name
+      }
    }
 }
 
