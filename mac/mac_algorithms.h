@@ -54,6 +54,11 @@
    #include "mac/kmac.h"
 #endif
 
+//UMAC support?
+#if (UMAC_SUPPORT == ENABLED)
+   #include "mac/umac.h"
+#endif
+
 //XCBC-MAC support?
 #if (XCBC_MAC_SUPPORT == ENABLED)
    #include "mac/xcbc_mac.h"
@@ -92,10 +97,11 @@ typedef enum
    MAC_ALGO_GMAC     = 3,
    MAC_ALGO_KMAC128  = 4,
    MAC_ALGO_KMAC256  = 5,
-   MAC_ALGO_XCBC_MAC = 6,
-   MAC_ALGO_BLAKE2B  = 7,
-   MAC_ALGO_BLAKE2S  = 8,
-   MAC_ALGO_POLY1305 = 9
+   MAC_ALGO_UMAC     = 6,
+   MAC_ALGO_XCBC_MAC = 7,
+   MAC_ALGO_BLAKE2B  = 8,
+   MAC_ALGO_BLAKE2S  = 9,
+   MAC_ALGO_POLY1305 = 10
 } MacAlgo;
 
 
@@ -116,6 +122,9 @@ typedef union
 #endif
 #if (KMAC_SUPPORT == ENABLED)
    KmacContext kmacContext;
+#endif
+#if (UMAC_SUPPORT == ENABLED)
+   UmacContext umacContext;
 #endif
 #if (XCBC_MAC_SUPPORT == ENABLED)
    XcbcMacContext xcbcMacContext;

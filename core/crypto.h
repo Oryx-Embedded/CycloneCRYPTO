@@ -438,6 +438,13 @@
    #error KMAC_SUPPORT parameter is not valid
 #endif
 
+//UMAC support
+#ifndef UMAC_SUPPORT
+   #define UMAC_SUPPORT DISABLED
+#elif (UMAC_SUPPORT != ENABLED && UMAC_SUPPORT != DISABLED)
+   #error UMAC_SUPPORT parameter is not valid
+#endif
+
 //XCBC-MAC support
 #ifndef XCBC_MAC_SUPPORT
    #define XCBC_MAC_SUPPORT DISABLED
