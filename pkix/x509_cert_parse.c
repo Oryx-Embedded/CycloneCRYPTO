@@ -385,7 +385,7 @@ error_t x509ParseVersion(const uint8_t *data, size_t length,
       return error;
 
    //Check version
-   if(value > X509_VERSION_3)
+   if(value < X509_VERSION_1 || value > X509_VERSION_3)
       return ERROR_INVALID_VERSION;
 
    //Save certificate version
