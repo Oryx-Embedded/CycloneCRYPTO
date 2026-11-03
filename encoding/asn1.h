@@ -105,7 +105,7 @@ typedef struct
 {
    bool_t constructed;
    uint_t objClass;
-   uint_t objType;
+   uint32_t objType;
    size_t length;
    const uint8_t *value;
    size_t totalLength;

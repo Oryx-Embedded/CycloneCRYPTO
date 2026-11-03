@@ -51,103 +51,109 @@
 
 error_t asn1ReadTag(const uint8_t *data, size_t length, Asn1Tag *tag)
 {
-   uint_t i;
-   uint_t n;
+   size_t i;
+   size_t n;
 
    //Make sure the identifier octet is present
-   if(length == 0)
+   if(length < 1)
       return ERROR_INVALID_TAG;
 
    //Save the class of the ASN.1 tag
    tag->objClass = data[0] & ASN1_CLASS_MASK;
-   //Primitive or constructed encoding?
+   //The encoding may be primitive or constructed
    tag->constructed = (data[0] & ASN1_ENCODING_CONSTRUCTED) ? TRUE : FALSE;
 
-   //Check the tag number
+   //Low tag number?
    if((data[0] & ASN1_TAG_NUMBER_MASK) < 31)
    {
-      //Tag number is in the range 0 to 30
+      //Bits 5 to 1 encode the number of the tag as a binary integer
       tag->objType = data[0] & ASN1_TAG_NUMBER_MASK;
-      //Point to the tag length field
+
+      //Point to the length octets
       i = 1;
    }
    else
    {
-      //If the tag number is greater than or equal to 31,
-      //the subsequent octets will encode the tag number
+      //For tags with a number greater than or equal to 31, the identifier shall
+      //comprise a leading octet followed by one or more subsequent octets
       tag->objType = 0;
 
       //Decode the tag number
       for(i = 1; ; i++)
       {
-         //The field cannot exceed 5 bytes
-         if(i > (sizeof(tag->objType) + 1))
+         //At least one more octet must be available
+         if(i >= length)
             return ERROR_INVALID_TAG;
-         //Insufficient number of bytes to decode the tag number?
-         if(!(length - i))
+
+         //Reject tag numbers that would overflow
+         if(tag->objType > (UINT32_MAX >> 7))
+            return ERROR_INVALID_TAG;
+
+         //Bits 7 to 1 of the first subsequent octet shall not all be zero (refer to 
+         if(i == 1 && (data[i] & 0x7F) == 0)
             return ERROR_INVALID_TAG;
 
          //Update the tag number with bits 7 to 1
          tag->objType = (tag->objType << 7) | (data[i] & 0x7F);
 
-         //Bit 8 shall be set unless it is the last octet
-         if(!(data[i] & 0x80))
+         //Bit 8 of each octet shall be set to one unless it is the last octet
+         //of the identifier octets
+         if((data[i] & 0x80) == 0)
             break;
       }
-      //Point to the tag length field
+
+      //Point to the length octets
       i++;
    }
 
-   //Insufficient number of bytes to decode the tag length?
-   if(!(length - i))
+   //At least one octet must be available for the length field
+   if(i >= length)
       return ERROR_INVALID_TAG;
 
-   //Short form is used?
-   if(data[i] < 128)
+   //Short form, long form or indefinite form?
+   if((data[i] & 0x80) == 0)
    {
-      //Bits 7 to 1 encode the number of bytes in the contents
+      //In the short form, the length octets shall consist of a single octet in
+      //which bit 8 is zero and bits 7 to 1 encode the number of octets in the
+      //contents octet
       tag->length = data[i];
-      //Point to the contents of the tag
+
+      //Point to the contents octets
       i++;
    }
-   //Long form is used?
-   else if(data[i] > 128 && data[i] < 255)
+   else if(data[i] != 0x80 && data[i] != 0xFF)
    {
-      //Bits 7 to 1 encode the number of octets in the length field
-      n = data[i] & 0x7F;
+      //In the long form, the length octets shall consist of an initial octet
+      //and one or more subsequent octets. Bits 7 to 1 of the initial octet
+      //encode the number of octets in the length field
+      n = data[i++] & 0x7F;
 
-      //The field cannot exceed 4 bytes
-      if(n > sizeof(tag->length))
+      //Invalid number of octets?
+      if(n > (length - i) || n > sizeof(size_t))
          return ERROR_INVALID_TAG;
-      //Insufficient number of bytes to decode the tag length?
-      if((length - i) < n)
-         return ERROR_INVALID_TAG;
 
-      //Clear the tag length
-      tag->length = 0;
-
-      //Read the subsequent octets
-      for(i++; n > 0; n--)
+      //Decode the length field
+      for(tag->length = 0; n > 0; n--)
       {
          tag->length = (tag->length << 8) | data[i++];
       }
    }
-   //Indefinite form is used?
    else
    {
       //Indefinite form is not supported
       return ERROR_INVALID_TAG;
    }
 
-   //Save the pointer to the tag contents
-   tag->value = data + i;
-   //Check the length of tag
-   if((length - i) < tag->length)
+   //The contents octets must fit within what remains of the input stream
+   if(tag->length > (length - i))
       return ERROR_INVALID_TAG;
 
+   //Point to the contents octets
+   tag->value = data + i;
    //Total length occupied by the ASN.1 tag in the input stream
    tag->totalLength = i + tag->length;
-   //ASN.1 tag successfully decoded
+
+   //Successful processing
    return NO_ERROR;
 }
 
