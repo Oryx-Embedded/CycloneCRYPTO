@@ -803,7 +803,8 @@ void curve25519Export(int32_t *a, uint8_t *data)
    //Unpack the 9 words of 29 bits
    for(i = 0; i < 8; i++)
    {
-      temp = (a[i + 1] << (29 - i * 3)) | (a[i] >> (i * 3));
+      temp = (uint32_t) a[i] >> (i * 3);
+      temp |= (uint32_t) a[i + 1] << (29 - i * 3);
       STORE32LE(temp, data + i * 4);
    }
 }

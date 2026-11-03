@@ -851,13 +851,15 @@ void curve448Export(int32_t *a, uint8_t *data)
    //Unpack the 16 words of 28 bits
    for(i = 0; i < 7; i++)
    {
-      temp = (a[i + 1] << (28 - i * 4)) | (a[i] >> (i * 4));
+      temp = (uint32_t) a[i] >> (i * 4);
+      temp |= (uint32_t) a[i + 1] << (28 - i * 4);
       STORE32LE(temp, data + i * 4);
    }
 
    for(i = 0; i < 7; i++)
    {
-      temp = (a[i + 9] << (28 - 4 * i)) | (a[i + 8] >> (i * 4));
+      temp = (uint32_t) a[i + 8] >> (i * 4);
+      temp |= (uint32_t) a[i + 9] << (28 - 4 * i);
       STORE32LE(temp, data + (i + 7) * 4);
    }
 }
