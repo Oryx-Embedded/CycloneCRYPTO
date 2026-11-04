@@ -388,7 +388,7 @@ error_t x509ParseVersion(const uint8_t *data, size_t length,
    if(value < X509_VERSION_1 || value > X509_VERSION_3)
       return ERROR_INVALID_VERSION;
 
-   //Save certificate version
+   //Save version number
    *version = (X509Version) value;
 
    //Successful processing
@@ -809,6 +809,10 @@ error_t x509ParseNameAttribute(const uint8_t *data, size_t length,
 
    //Save ASN.1 string type
    nameAttribute->type = tag.objType;
+
+   //Reject attributes with an empty string value
+   if(tag.length == 0)
+      return ERROR_INVALID_SYNTAX;
 
    //Save attribute value
    nameAttribute->data.value = (char_t *) tag.value;
