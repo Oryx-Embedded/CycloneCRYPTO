@@ -502,30 +502,30 @@ bool_t x509CompareSubjectName(const char_t *subjectName, size_t subjectNameLen,
 bool_t x509CompareSubtree(const char_t *subjectName, const char_t *subtree,
    size_t subtreeLen)
 {
-   int_t i;
-   int_t j;
+   size_t i;
+   size_t j;
 
    //Point to the last character of the subtree
-   i = subtreeLen - 1;
+   i = subtreeLen;
    //Point to the last character of the subject name
-   j = osStrlen(subjectName) - 1;
+   j = osStrlen(subjectName);
 
    //Parse the subtree
-   while(i >= 0 && j >= 0)
+   while(i > 0 && j > 0)
    {
       //Perform case insensitive character comparison
-      if(osTolower(subtree[i]) != subjectName[j])
+      if(osTolower(subtree[i - 1]) != subjectName[j - 1])
       {
          break;
       }
 
       //The constraint may specify a host or a domain
-      if(subtree[i] == '.' && i == 0)
+      if(subtree[i - 1] == '.' && i == 1)
       {
          //When the constraint begins with a period, it may be expanded with
          //one or more labels (refer to RFC 5280, section 4.2.1.10)
-         i = -1;
-         j = -1;
+         i = 0;
+         j = 0;
       }
       else
       {
@@ -536,14 +536,7 @@ bool_t x509CompareSubtree(const char_t *subjectName, const char_t *subtree,
    }
 
    //Check whether the subject name matches the specified subtree
-   if(i < 0 && j < 0)
-   {
-      return TRUE;
-   }
-   else
-   {
-      return FALSE;
-   }
+   return (i == 0 && j == 0) ? TRUE : FALSE;
 }
 
 
