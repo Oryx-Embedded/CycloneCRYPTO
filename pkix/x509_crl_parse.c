@@ -285,7 +285,11 @@ error_t x509ParseCrlVersion(const uint8_t *data, size_t length,
    if(error)
       return error;
 
-   //Save the version
+   //Check version
+   if(value < X509_VERSION_1)
+      return ERROR_INVALID_VERSION;
+
+   //Save version number
    *version = (X509Version) value;
    //Save the total length of the field
    *totalLength = tag.totalLength;

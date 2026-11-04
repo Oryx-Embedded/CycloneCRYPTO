@@ -494,7 +494,11 @@ error_t ocspParseVersion(const uint8_t *data, size_t length,
    if(error)
       return error;
 
-   //Save certificate version
+   //Check version
+   if(value < OCSP_VERSION_1)
+      return ERROR_INVALID_VERSION;
+
+   //Save version number
    *version = (OcspVersion) value;
 
    //Successful processing
