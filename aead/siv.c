@@ -39,6 +39,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "aead/siv.h"
 #include "mac/cmac.h"
 #include "cipher_modes/ctr.h"
@@ -72,7 +73,13 @@ error_t sivEncrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
    CipherContext cipherContext;
 
    //Check parameters
-   if(cipher == NULL || k == NULL)
+   if(cipher == NULL || k == NULL || v == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if(adFrags == NULL && adNumFrags != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if((p == NULL || c == NULL) && length != 0)
       return ERROR_INVALID_PARAMETER;
 
    //SIV supports only symmetric block ciphers whose block size is 128 bits
@@ -111,6 +118,9 @@ error_t sivEncrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
    //Encrypt plaintext
    ctrEncrypt(cipher, &cipherContext, 128, q, p, c, length);
 
+   //Release cipher context
+   cipher->deinit(&cipherContext);
+
    //Successful processing
    return NO_ERROR;
 }
@@ -143,7 +153,13 @@ error_t sivDecrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
    CipherContext cipherContext;
 
    //Check parameters
-   if(cipher == NULL || k == NULL)
+   if(cipher == NULL || k == NULL || v == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if(adFrags == NULL && adNumFrags != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if((c == NULL || p == NULL) && length != 0)
       return ERROR_INVALID_PARAMETER;
 
    //SIV supports only symmetric block ciphers whose block size is 128 bits
@@ -186,6 +202,17 @@ error_t sivDecrypt(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
    for(mask = 0, i = 0; i < 16; i++)
    {
       mask |= t[i] ^ v[i];
+   }
+
+   //Release cipher context
+   cipher->deinit(&cipherContext);
+
+   //If tag verification fails, the decrypted message must not be given as
+   //output. The output buffer is overwritten with zeros before the function
+   //returns
+   if(mask != 0)
+   {
+      cryptoZeroizeMem(p, length);
    }
 
    //Return status code
@@ -265,6 +292,13 @@ void s2v(const CipherAlgo *cipher, const uint8_t *k, size_t kLen,
    //That result is input to a final CMAC operation to produce the output V
    cmacUpdate(&cmacContext, t, 16);
    cmacFinal(&cmacContext, v, 16);
+
+   //Release CMAC context
+   cmacDeinit(&cmacContext);
+
+   //Erase working state
+   cryptoZeroizeMem(d, sizeof(d));
+   cryptoZeroizeMem(t, sizeof(t));
 }
 
 #endif

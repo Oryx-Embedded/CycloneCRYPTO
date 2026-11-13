@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/sm4.h"
 
 //Check crypto library configuration
@@ -255,8 +256,8 @@ __weak_func void sm4DecryptBlock(Sm4Context *context, const uint8_t *input,
 
 __weak_func void sm4Deinit(Sm4Context *context)
 {
-   //Clear SM4 context
-   osMemset(context, 0, sizeof(Sm4Context));
+   //Erase SM4 context
+   cryptoZeroizeMem(context, sizeof(Sm4Context));
 }
 
 #endif

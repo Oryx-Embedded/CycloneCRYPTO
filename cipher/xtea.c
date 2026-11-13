@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/xtea.h"
 
 //XTEA magic constant
@@ -167,8 +168,8 @@ __weak_func void xteaDecryptBlock(XteaContext *context, const uint8_t *input,
 
 __weak_func void xteaDeinit(XteaContext *context)
 {
-   //Clear XTEA context
-   osMemset(context, 0, sizeof(XteaContext));
+   //Erase XTEA context
+   cryptoZeroizeMem(context, sizeof(XteaContext));
 }
 
 #endif

@@ -58,6 +58,7 @@ typedef struct
 void poly1305Init(Poly1305Context *context, const uint8_t *key);
 void poly1305Update(Poly1305Context *context, const void *data, size_t length);
 void poly1305Final(Poly1305Context *context, uint8_t *tag);
+void poly1305Deinit(Poly1305Context *context);
 
 void poly1305ProcessBlock(Poly1305Context *context);
 

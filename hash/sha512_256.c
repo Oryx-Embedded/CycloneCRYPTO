@@ -61,7 +61,8 @@ const HashAlgo sha512_256HashAlgo =
    (HashAlgoInit) sha512_256Init,
    (HashAlgoUpdate) sha512_256Update,
    (HashAlgoFinal) sha512_256Final,
-   NULL
+   NULL,
+   (HashAlgoDeinit) sha512_256Deinit
 };
 
 
@@ -166,6 +167,18 @@ __weak_func void sha512_256Final(Sha512_256Context *context, uint8_t *digest)
 
    //Copy the resulting digest
    osMemcpy(digest, temp, SHA512_256_DIGEST_SIZE);
+}
+
+
+/**
+ * @brief Release SHA-512/256 context
+ * @param[in] context Pointer to the SHA-512/256 context
+ **/
+
+void sha512_256Deinit(Sha512_256Context *context)
+{
+   //Release SHA-512 context
+   sha512Deinit(context);
 }
 
 #endif

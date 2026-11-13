@@ -65,8 +65,9 @@ const HashAlgo sha384HashAlgo =
    (defined(MIMXRT1170_CRYPTO_HASH_SUPPORT) && MIMXRT1170_CRYPTO_HASH_SUPPORT == ENABLED))
    NULL,
 #else
-   (HashAlgoFinalRaw) sha384FinalRaw
+   (HashAlgoFinalRaw) sha384FinalRaw,
 #endif
+   (HashAlgoDeinit) sha384Deinit
 };
 
 
@@ -171,6 +172,18 @@ __weak_func void sha384Final(Sha384Context *context, uint8_t *digest)
 
    //Copy the resulting digest
    osMemcpy(digest, temp, SHA384_DIGEST_SIZE);
+}
+
+
+/**
+ * @brief Release SHA-384 context
+ * @param[in] context Pointer to the SHA-384 context
+ **/
+
+void sha384Deinit(Sha384Context *context)
+{
+   //Release SHA-512 context
+   sha512Deinit(context);
 }
 
 

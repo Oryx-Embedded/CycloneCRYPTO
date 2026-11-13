@@ -38,6 +38,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "lwc/ascon_aead128.h"
 #include "debug.h"
 
@@ -65,11 +66,18 @@ error_t asconAead128Encrypt(const uint8_t *k, size_t kLen, const uint8_t *n,
    size_t nLen, const uint8_t *a, size_t aLen, const uint8_t *p, uint8_t *c,
    size_t length, uint8_t *t, size_t tLen)
 {
+   size_t i;
    uint8_t buffer[16];
    AsconState state;
 
    //Check parameters
    if(k == NULL || n == NULL || t == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if(a == NULL && aLen != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if((p == NULL || c == NULL) && length != 0)
       return ERROR_INVALID_PARAMETER;
 
    //Ascon-AEAD128.enc takes a 128-bit secret key and a 128-bit nonce as input
@@ -103,27 +111,23 @@ error_t asconAead128Encrypt(const uint8_t *k, size_t kLen, const uint8_t *n,
    if(aLen > 0)
    {
       //When associated data is non-empty, it is parsed into blocks
-      while(aLen >= 16)
+      for(i = 0; (i + 16) <= aLen; i += 16)
       {
          //Each associated data block Ai is absorbed into the first 128 bits
          //of state
-         state.x[0] ^= LOAD32LE(a);
-         state.x[1] ^= LOAD32LE(a + 4);
-         state.x[2] ^= LOAD32LE(a + 8);
-         state.x[3] ^= LOAD32LE(a + 12);
+         state.x[0] ^= LOAD32LE(a + i);
+         state.x[1] ^= LOAD32LE(a + i + 4);
+         state.x[2] ^= LOAD32LE(a + i + 8);
+         state.x[3] ^= LOAD32LE(a + i + 12);
 
          //And the permutation Ascon-p[8] is applied to the state
          asconP(&state, 8);
-
-         //Number of remaining data bytes
-         aLen -= 16;
-         a += 16;
       }
 
       //The final block Am~ can be empty. It is padded so that |Am| = 128
       osMemset(buffer, 0, 16);
-      osMemcpy(buffer, a, aLen);
-      buffer[aLen] = 0x01;
+      osMemcpy(buffer, a + i, aLen - i);
+      buffer[aLen - i] = 0x01;
 
       //Absorb the final block Am
       state.x[0] ^= LOAD32LE(buffer);
@@ -140,33 +144,34 @@ error_t asconAead128Encrypt(const uint8_t *k, size_t kLen, const uint8_t *n,
    state.x[9] ^= 0x80000000;
 
    //Plaintext P is parsed into blocks
-   while(length >= 16)
+   for(i = 0; (i + 16) <= length; i += 16)
    {
       //For each Pi, the state S is updated
-      state.x[0] ^= LOAD32LE(p);
-      state.x[1] ^= LOAD32LE(p + 4);
-      state.x[2] ^= LOAD32LE(p + 8);
-      state.x[3] ^= LOAD32LE(p + 12);
+      state.x[0] ^= LOAD32LE(p + i);
+      state.x[1] ^= LOAD32LE(p + i + 4);
+      state.x[2] ^= LOAD32LE(p + i + 8);
+      state.x[3] ^= LOAD32LE(p + i + 12);
 
       //Generate the corresponding ciphertext block Ci
-      STORE32LE(state.x[0], c);
-      STORE32LE(state.x[1], c + 4);
-      STORE32LE(state.x[2], c + 8);
-      STORE32LE(state.x[3], c + 12);
+      STORE32LE(state.x[0], c + i);
+      STORE32LE(state.x[1], c + i + 4);
+      STORE32LE(state.x[2], c + i + 8);
+      STORE32LE(state.x[3], c + i + 12);
 
       //The permutation Ascon-p[8] is applied to the state
       asconP(&state, 8);
-
-      //Next block
-      length -= 16;
-      p += 16;
-      c += 16;
    }
 
    //The final block Pn~ can be empty. It is padded so that |Pn| = 128
    osMemset(buffer, 0, 16);
-   osMemcpy(buffer, p, length);
-   buffer[length] = 0x01;
+
+   //Copy the remaining plaintext bytes, if any
+   if(i < length)
+   {
+      osMemcpy(buffer, p + i, length - i);
+   }
+
+   buffer[length - i] = 0x01;
 
    //Update the state for the last block Pn
    state.x[0] ^= LOAD32LE(buffer);
@@ -181,7 +186,10 @@ error_t asconAead128Encrypt(const uint8_t *k, size_t kLen, const uint8_t *n,
    STORE32LE(state.x[3], buffer + 12);
 
    //The last ciphertext block Cn~ is obtained as Cn~ = S[0:l-1]
-   osMemcpy(c, buffer, length);
+   if(i < length)
+   {
+      osMemcpy(c + i, buffer, length - i);
+   }
 
    //During finalization, the key is first loaded to the state S
    state.x[4] ^= LOAD32LE(k);
@@ -202,6 +210,10 @@ error_t asconAead128Encrypt(const uint8_t *k, size_t kLen, const uint8_t *n,
    STORE32LE(state.x[8], t + 8);
    state.x[9] ^= LOAD32LE(k + 12);
    STORE32LE(state.x[9], t + 12);
+
+   //Erase working state
+   cryptoZeroizeMem(&state, sizeof(AsconState));
+   cryptoZeroizeMem(buffer, sizeof(buffer));
 
    //Sucessful processing
    return NO_ERROR;
@@ -239,6 +251,12 @@ error_t asconAead128Decrypt(const uint8_t *k, size_t kLen, const uint8_t *n,
    if(k == NULL || n == NULL || t == NULL)
       return ERROR_INVALID_PARAMETER;
 
+   if(a == NULL && aLen != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if((c == NULL || p == NULL) && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
    //Ascon-AEAD128.dec takes a 128-bit secret key, a 128-bit nonce and a
    //128-bit authentication tag as input
    if(kLen != 16 || nLen != 16 || tLen != 16)
@@ -270,27 +288,23 @@ error_t asconAead128Decrypt(const uint8_t *k, size_t kLen, const uint8_t *n,
    if(aLen > 0)
    {
       //When associated data is non-empty, it is parsed into blocks
-      while(aLen >= 16)
+      for(i = 0; (i + 16) <= aLen; i += 16)
       {
          //Each associated data block Ai is absorbed into the first 128 bits
          //of state
-         state.x[0] ^= LOAD32LE(a);
-         state.x[1] ^= LOAD32LE(a + 4);
-         state.x[2] ^= LOAD32LE(a + 8);
-         state.x[3] ^= LOAD32LE(a + 12);
+         state.x[0] ^= LOAD32LE(a + i);
+         state.x[1] ^= LOAD32LE(a + i + 4);
+         state.x[2] ^= LOAD32LE(a + i + 8);
+         state.x[3] ^= LOAD32LE(a + i + 12);
 
          //And the permutation Ascon-p[8] is applied to the state
          asconP(&state, 8);
-
-         //Number of remaining data bytes
-         aLen -= 16;
-         a += 16;
       }
 
       //The final block Am~ can be empty. It is padded so that |Am| = 128
       osMemset(buffer, 0, 16);
-      osMemcpy(buffer, a, aLen);
-      buffer[aLen] = 0x01;
+      osMemcpy(buffer, a + i, aLen - i);
+      buffer[aLen - i] = 0x01;
 
       //Absorb the final block Am
       state.x[0] ^= LOAD32LE(buffer);
@@ -307,34 +321,29 @@ error_t asconAead128Decrypt(const uint8_t *k, size_t kLen, const uint8_t *n,
    state.x[9] ^= 0x80000000;
 
    //Ciphertext C is parsed into blocks
-   while(length >= 16)
+   for(i = 0; (i + 16) <= length; i += 16)
    {
       //The plaintext block Pi is obtained as Pi = S[0:127] + Ci
-      temp1 = state.x[0] ^ LOAD32LE(c);
+      temp1 = state.x[0] ^ LOAD32LE(c + i);
       STORE32LE(temp1, buffer);
-      temp1 = state.x[1] ^ LOAD32LE(c + 4);
+      temp1 = state.x[1] ^ LOAD32LE(c + i + 4);
       STORE32LE(temp1, buffer + 4);
-      temp1 = state.x[2] ^ LOAD32LE(c + 8);
+      temp1 = state.x[2] ^ LOAD32LE(c + i + 8);
       STORE32LE(temp1, buffer + 8);
-      temp1 = state.x[3] ^ LOAD32LE(c + 12);
+      temp1 = state.x[3] ^ LOAD32LE(c + i + 12);
       STORE32LE(temp1, buffer + 12);
 
       //Update the state S with Ci
-      state.x[0] = LOAD32LE(c);
-      state.x[1] = LOAD32LE(c + 4);
-      state.x[2] = LOAD32LE(c + 8);
-      state.x[3] = LOAD32LE(c + 12);
+      state.x[0] = LOAD32LE(c + i);
+      state.x[1] = LOAD32LE(c + i + 4);
+      state.x[2] = LOAD32LE(c + i + 8);
+      state.x[3] = LOAD32LE(c + i + 12);
 
       //The permutation Ascon-p[8] is applied to the state
       asconP(&state, 8);
 
       //Copy the plaintext block Pi
-      osMemcpy(p, buffer, 16);
-
-      //Next block
-      length -= 16;
-      c += 16;
-      p += 16;
+      osMemcpy(p + i, buffer, 16);
    }
 
    //Copy S[0:127]
@@ -344,8 +353,12 @@ error_t asconAead128Decrypt(const uint8_t *k, size_t kLen, const uint8_t *n,
    STORE32LE(state.x[3], buffer + 12);
 
    //The final block Cn~ can be empty
-   osMemcpy(buffer, c, length);
-   buffer[length] ^= 0x01;
+   if(i < length)
+   {
+      osMemcpy(buffer, c + i, length - i);
+   }
+
+   buffer[length - i] ^= 0x01;
 
    //For the last block of the ciphertext Cn~, the following steps are applied
    temp1 = LOAD32LE(buffer);
@@ -366,7 +379,10 @@ error_t asconAead128Decrypt(const uint8_t *k, size_t kLen, const uint8_t *n,
    state.x[3] = temp1;
 
    //Copy the last plaintext block Pn~
-   osMemcpy(p, buffer, length);
+   if(i < length)
+   {
+      osMemcpy(p + i, buffer, length - i);
+   }
 
    //During finalization, the key is first loaded to the state S
    state.x[4] ^= LOAD32LE(k);
@@ -392,6 +408,18 @@ error_t asconAead128Decrypt(const uint8_t *k, size_t kLen, const uint8_t *n,
    for(mask = 0, i = 0; i < 16; i++)
    {
       mask |= buffer[i] ^ t[i];
+   }
+
+   //Erase working state
+   cryptoZeroizeMem(&state, sizeof(AsconState));
+   cryptoZeroizeMem(buffer, sizeof(buffer));
+
+   //If tag verification fails, the decrypted message must not be given as
+   //output. The output buffer is overwritten with zeros before the function
+   //returns
+   if(mask != 0)
+   {
+      cryptoZeroizeMem(p, length);
    }
 
    //Return status code

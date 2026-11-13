@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/chacha.h"
 
 //Check crypto library configuration
@@ -319,8 +320,8 @@ void chachaProcessBlock(ChachaContext *context)
 
 void chachaDeinit(ChachaContext *context)
 {
-   //Clear ChaCha context
-   osMemset(context, 0, sizeof(ChachaContext));
+   //Erase ChaCha context
+   cryptoZeroizeMem(context, sizeof(ChachaContext));
 }
 
 #endif

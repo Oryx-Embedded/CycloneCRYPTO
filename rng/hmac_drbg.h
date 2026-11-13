@@ -35,6 +35,8 @@
 #include "core/crypto.h"
 #include "mac/hmac.h"
 
+//Maximum number of bytes per request
+#define HMAC_DRBG_MAX_BYTES_PER_REQUEST 65536
 //Maximum number of requests between reseeds
 #define HMAC_DRBG_MAX_RESEED_INTERVAL 281474976710656ULL
 
@@ -92,8 +94,8 @@ error_t hmacDrbgGenerateEx(HmacDrbgContext *context,
 
 void hmacDrbgDeinit(HmacDrbgContext *context);
 
-void hmacDrbgUpdate(HmacDrbgContext *context, const DataFrag *providedDataFrags,
-   uint_t providedDataNumFrags);
+error_t hmacDrbgUpdate(HmacDrbgContext *context,
+   const DataFrag *providedDataFrags, uint_t providedDataNumFrags);
 
 //C++ guard
 #ifdef __cplusplus

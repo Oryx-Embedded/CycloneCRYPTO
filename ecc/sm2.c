@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "hash/hash_algorithms.h"
 #include "ecc/sm2.h"
 #include "ecc/ec_misc.h"
@@ -89,6 +90,12 @@ error_t sm2GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    //Invalid hash algorithm?
    if(hashAlgo->digestSize != 32)
       return ERROR_INVALID_PARAMETER;
+
+   //The private key dA must be in the range [1, q - 2]
+   error = ecCheckPrivateKey(privateKey);
+   //Any error to report?
+   if(error)
+      return error;
 
    //Debug message
    TRACE_DEBUG("SM2 signature generation...\r\n");
@@ -247,7 +254,7 @@ error_t sm2GenerateSignature(const PrngAlgo *prngAlgo, void *prngContext,
    }
 
    //Erase working state
-   osMemset(state, 0, sizeof(Sm2GenerateSignatureState));
+   cryptoZeroizeMem(state, sizeof(Sm2GenerateSignatureState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
@@ -425,7 +432,7 @@ error_t sm2VerifySignature(const EcPublicKey *publicKey,
    }
 
    //Erase working state
-   osMemset(state, 0, sizeof(Sm2VerifySignatureState));
+   cryptoZeroizeMem(state, sizeof(Sm2VerifySignatureState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state

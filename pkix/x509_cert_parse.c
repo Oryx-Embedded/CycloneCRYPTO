@@ -1104,6 +1104,7 @@ error_t x509ParseTimeString(const uint8_t *data, size_t length, uint_t type,
 {
    error_t error;
    uint_t value;
+   uint_t days;
 
    //The date may be encoded as UTCTime or GeneralizedTime
    if(type == ASN1_TYPE_UTC_TIME)
@@ -1207,6 +1208,42 @@ error_t x509ParseTimeString(const uint8_t *data, size_t length, uint_t type,
 
    //Milliseconds
    dateTime->milliseconds = 0;
+
+   //Check the month
+   if(dateTime->month < 1 || dateTime->month > 12)
+      return ERROR_INVALID_SYNTAX;
+
+   //Determine the number of days in the month
+   if(dateTime->month == 2)
+   {
+      //Leap year?
+      if((dateTime->year % 4) == 0 && ((dateTime->year % 100) != 0 ||
+         (dateTime->year % 400) == 0))
+      {
+         days = 29;
+      }
+      else
+      {
+         days = 28;
+      }
+   }
+   else if(dateTime->month == 4 || dateTime->month == 6 ||
+      dateTime->month == 9 || dateTime->month == 11)
+   {
+      days = 30;
+   }
+   else
+   {
+      days = 31;
+   }
+
+   //Check the day
+   if(dateTime->day < 1 || dateTime->day > days)
+      return ERROR_INVALID_SYNTAX;
+
+   //Check hours, minutes and seconds
+   if(dateTime->hours > 23 || dateTime->minutes > 59 || dateTime->seconds > 59)
+      return ERROR_INVALID_SYNTAX;
 
    //Successful processing
    return NO_ERROR;

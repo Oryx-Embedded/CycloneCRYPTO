@@ -38,6 +38,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/blowfish.h"
 #include "debug.h"
 
@@ -547,8 +548,8 @@ void blowfishXorBlock(uint8_t *data, const uint8_t *salt, size_t saltLen,
 
 void blowfishDeinit(BlowfishContext *context)
 {
-   //Clear Blowfish context
-   osMemset(context, 0, sizeof(BlowfishContext));
+   //Erase Blowfish context
+   cryptoZeroizeMem(context, sizeof(BlowfishContext));
 }
 
 #endif

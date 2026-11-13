@@ -46,8 +46,11 @@
 /**
  * @brief Export an RSA public key to PEM format
  * @param[in] publicKey RSA public key
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @param[in] format Desired output format (PKCS #1 or RFC 7468 format)
  * @return Error code
  **/
@@ -120,8 +123,11 @@ error_t pemExportRsaPublicKey(const RsaPublicKey *publicKey,
 /**
  * @brief Export an RSA private key to PEM format
  * @param[in] privateKey RSA private key
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @param[in] format Desired output format (PKCS #1 or PKCS #8 format)
  * @return Error code
  **/
@@ -242,8 +248,11 @@ error_t pemExportRsaPrivateKey(const RsaPrivateKey *privateKey,
 /**
  * @brief Export an RSA-PSS public key to PEM format
  * @param[in] publicKey RSA-PSS public key
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @param[in] format Desired output format (RFC 7468 format only)
  * @return Error code
  **/
@@ -303,8 +312,11 @@ error_t pemExportRsaPssPublicKey(const RsaPublicKey *publicKey,
 /**
  * @brief Export an RSA-PSS private key to PEM format
  * @param[in] privateKey RSA-PSS private key
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @param[in] format Desired output format (PKCS #8 format only)
  * @return Error code
  **/
@@ -412,8 +424,11 @@ error_t pemExportRsaPssPrivateKey(const RsaPrivateKey *privateKey,
 /**
  * @brief Export a DSA public key to PEM format
  * @param[in] publicKey DSA public key
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @param[in] format Desired output format (RFC 7468 format only)
  * @return Error code
  **/
@@ -473,8 +488,11 @@ error_t pemExportDsaPublicKey(const DsaPublicKey *publicKey,
 /**
  * @brief Export a DSA private key to PEM format
  * @param[in] privateKey DSA private key
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @param[in] format Desired output format (PKCS #8 format only)
  * @return Error code
  **/
@@ -583,8 +601,11 @@ error_t pemExportDsaPrivateKey(const DsaPrivateKey *privateKey,
 /**
  * @brief Export an EC public key to PEM format
  * @param[in] publicKey EC public key
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @param[in] format Desired output format (RFC 7468 format only)
  * @return Error code
  **/
@@ -650,8 +671,11 @@ error_t pemExportEcPublicKey(const EcPublicKey *publicKey,
 /**
  * @brief Export an EC private key to PEM format
  * @param[in] privateKey EC private key
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @param[in] format Desired output format (RFC 5915 or PKCS #8 format)
  * @return Error code
  **/
@@ -781,8 +805,11 @@ error_t pemExportEcPrivateKey(const EcPrivateKey *privateKey,
 /**
  * @brief Export an EdDSA public key to PEM format
  * @param[in] publicKey EdDSA public key
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @param[in] format Desired output format (RFC 7468 format only)
  * @return Error code
  **/
@@ -846,8 +873,11 @@ error_t pemExportEddsaPublicKey(const EddsaPublicKey *publicKey,
 /**
  * @brief Export an EdDSA private key to PEM format
  * @param[in] privateKey EdDSA private key
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @param[in] format Desired output format (PKCS #8 v1 or v2 format)
  * @return Error code
  **/
@@ -994,8 +1024,11 @@ error_t pemExportEddsaPrivateKey(const EddsaPrivateKey *privateKey,
 /**
  * @brief Export an ML-DSA public key to PEM format
  * @param[in] publicKey ML-DSA public key
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @param[in] format Desired output format (RFC 7468 format only)
  * @return Error code
  **/
@@ -1077,8 +1110,11 @@ error_t pemExportMldsaPublicKey(const MldsaPublicKey *publicKey,
 /**
  * @brief Export an ML-DSA private key to PEM format
  * @param[in] privateKey ML-DSA private key
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @param[in] format Desired output format (PKCS #8 v1 or v2 format)
  * @return Error code
  **/

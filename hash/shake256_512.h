@@ -65,6 +65,7 @@ error_t shake256_512Compute(const void *data, size_t length, uint8_t *digest);
 void shake256_512Init(Shake256_512Context *context);
 void shake256_512Update(Shake256_512Context *context, const void *data, size_t length);
 void shake256_512Final(Shake256_512Context *context, uint8_t *digest);
+void shake256_512Deinit(Shake256_512Context *context);
 
 //C++ guard
 #ifdef __cplusplus

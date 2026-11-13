@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "hash/ripemd128.h"
 
 //Check crypto library configuration
@@ -81,7 +82,8 @@ const HashAlgo ripemd128HashAlgo =
    (HashAlgoInit) ripemd128Init,
    (HashAlgoUpdate) ripemd128Update,
    (HashAlgoFinal) ripemd128Final,
-   NULL
+   NULL,
+   (HashAlgoDeinit) ripemd128Deinit
 };
 
 
@@ -236,6 +238,18 @@ void ripemd128Final(Ripemd128Context *context, uint8_t *digest)
    {
       STORE32LE(context->h[i], digest + i * 4);
    }
+}
+
+
+/**
+ * @brief Release RIPEMD-128 context
+ * @param[in] context Pointer to the RIPEMD-128 context
+ **/
+
+void ripemd128Deinit(Ripemd128Context *context)
+{
+   //Erase RIPEMD-128 context
+   cryptoZeroizeMem(context, sizeof(Ripemd128Context));
 }
 
 

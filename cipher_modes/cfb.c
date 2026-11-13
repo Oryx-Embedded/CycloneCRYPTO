@@ -68,6 +68,13 @@ __weak_func error_t cfbEncrypt(const CipherAlgo *cipher, void *context, uint_t s
    size_t n;
    uint8_t o[16];
 
+   //Check parameters
+   if(cipher == NULL || context == NULL || iv == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if((p == NULL || c == NULL) && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
    //The parameter must be a multiple of 8
    if((s % 8) != 0)
       return ERROR_INVALID_PARAMETER;
@@ -131,6 +138,13 @@ __weak_func error_t cfbDecrypt(const CipherAlgo *cipher, void *context, uint_t s
    size_t i;
    size_t n;
    uint8_t o[16];
+
+   //Check parameters
+   if(cipher == NULL || context == NULL || iv == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if((c == NULL || p == NULL) && length != 0)
+      return ERROR_INVALID_PARAMETER;
 
    //The parameter must be a multiple of 8
    if((s % 8) != 0)

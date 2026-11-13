@@ -220,4 +220,16 @@ void kmacXofSqueeze(KmacXofContext *context, uint8_t *output, size_t length)
    cshakeSqueeze(&context->cshakeContext, output, length);
 }
 
+
+/**
+ * @brief Release KMACXOF context
+ * @param[in] context Pointer to the KMACXOF context
+ **/
+
+void kmacXofDeinit(KmacXofContext *context)
+{
+   //Release cSHAKE context
+   cshakeDeinit(&context->cshakeContext);
+}
+
 #endif

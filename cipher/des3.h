@@ -35,6 +35,13 @@
 #include "core/crypto.h"
 #include "cipher/des.h"
 
+//Degenerate key check support
+#ifndef DES3_KEY_CHECK_SUPPORT
+   #define DES3_KEY_CHECK_SUPPORT ENABLED
+#elif (DES3_KEY_CHECK_SUPPORT != ENABLED && DES3_KEY_CHECK_SUPPORT != DISABLED)
+   #error DES3_KEY_CHECK_SUPPORT parameter is not valid
+#endif
+
 //Application specific context
 #ifndef DES3_CONTEXT_PRIVATE
    #define DES3_CONTEXT_PRIVATE

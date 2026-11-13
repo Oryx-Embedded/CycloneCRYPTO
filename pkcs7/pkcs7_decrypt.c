@@ -223,6 +223,10 @@ error_t pkcs7VerifyPadding(const uint8_t *data, size_t dataLen,
    uint32_t c;
    uint32_t bad;
 
+   //The plaintext data must contain at least one block
+   if(dataLen < blockSize)
+      return ERROR_DECRYPTION_FAILED;
+
    //Retrieve the length of the padding string
    n = data[dataLen - 1];
 

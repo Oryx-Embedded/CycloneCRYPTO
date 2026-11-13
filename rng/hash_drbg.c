@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "rng/hash_drbg.h"
 #include "debug.h"
 
@@ -376,6 +377,10 @@ error_t hashDrbgGenerateEx(HashDrbgContext *context,
    if(context->reseedCounter > HASH_DRBG_MAX_RESEED_INTERVAL)
       return ERROR_RESEED_REQUIRED;
 
+   //The maximum number of bits per request is 2^19
+   if(outputLen > HASH_DRBG_MAX_BYTES_PER_REQUEST)
+      return ERROR_INVALID_LENGTH;
+
    //Acquire exclusive access to the PRNG state
    osAcquireMutex(&context->mutex);
 
@@ -446,7 +451,7 @@ void hashDrbgDeinit(HashDrbgContext *context)
       osDeleteMutex(&context->mutex);
 
       //Erase the contents of the internal state
-      osMemset(context, 0, sizeof(HashDrbgContext));
+      cryptoZeroizeMem(context, sizeof(HashDrbgContext));
    }
 }
 

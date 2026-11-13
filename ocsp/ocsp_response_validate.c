@@ -428,7 +428,7 @@ error_t ocspCheckValidity(const OcspSingleResponse *singleResponse)
 {
    error_t error;
    time_t currentTime;
-   DateTime currentDate;
+   DateTime date;
 
    //Initialize status
    error = NO_ERROR;
@@ -439,12 +439,12 @@ error_t ocspCheckValidity(const OcspSingleResponse *singleResponse)
    //Any real-time clock implemented?
    if(currentTime != 0)
    {
-      //Convert Unix timestamp to date
-      convertUnixTimeToDate(currentTime, &currentDate);
+      //Tolerate a small clock skew between the client and the responder
+      convertUnixTimeToDate(currentTime + OCSP_MAX_CLOCK_SKEW, &date);
 
-      //The time at which the status being indicated is known to be correct
-      //must be sufficiently recent
-      if(compareDateTime(&currentDate, &singleResponse->thisUpdate) < 0)
+      //Responses whose thisUpdate time is later than the local system time
+      //should be considered unreliable (refer to RFC 6960, section 4.2.2.1)
+      if(compareDateTime(&date, &singleResponse->thisUpdate) < 0)
       {
          error = ERROR_RESPONSE_EXPIRED;
       }
@@ -452,18 +452,30 @@ error_t ocspCheckValidity(const OcspSingleResponse *singleResponse)
       //The NextUpdate field is optional
       if(singleResponse->nextUpdate.year != 0)
       {
-         //When available, the time at or before which newer information will
-         //be available about the status of the certificate must be greater
-         //than the current time
-         if(compareDateTime(&currentDate, &singleResponse->nextUpdate) > 0)
+         //Tolerate a small clock skew between the client and the responder
+         convertUnixTimeToDate(currentTime - OCSP_MAX_CLOCK_SKEW, &date);
+
+         //Responses whose nextUpdate value is earlier than the local system
+         //time value should be considered unreliable
+         if(compareDateTime(&date, &singleResponse->nextUpdate) > 0)
          {
             error = ERROR_RESPONSE_EXPIRED;
          }
       }
       else
       {
-         //If NextUpdate is not set, the responder is indicating that newer
+         //If nextUpdate is not set, the responder is indicating that newer
          //revocation information is available all the time
+         convertUnixTimeToDate(currentTime - OCSP_MAX_CLOCK_SKEW -
+            OCSP_MAX_RESPONSE_AGE, &date);
+   
+         //The time at which the status being indicated is known to be correct
+         //(thisUpdate) must be sufficiently recent (refer to RFC 6960,
+         //section 3.2)
+         if(compareDateTime(&date, &singleResponse->thisUpdate) > 0)
+         {
+            error = ERROR_RESPONSE_EXPIRED;
+         }
       }
    }
 

@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "hash/tiger.h"
 
 //Check crypto library configuration
@@ -371,7 +372,8 @@ const HashAlgo tigerHashAlgo =
    (HashAlgoInit) tigerInit,
    (HashAlgoUpdate) tigerUpdate,
    (HashAlgoFinal) tigerFinal,
-   NULL
+   NULL,
+   (HashAlgoDeinit) tigerDeinit
 };
 
 
@@ -525,6 +527,18 @@ void tigerFinal(TigerContext *context, uint8_t *digest)
    {
       STORE64LE(context->h[i], digest + i * 8);
    }
+}
+
+
+/**
+ * @brief Release Tiger context
+ * @param[in] context Pointer to the Tiger context
+ **/
+
+void tigerDeinit(TigerContext *context)
+{
+   //Erase Tiger context
+   cryptoZeroizeMem(context, sizeof(TigerContext));
 }
 
 

@@ -75,6 +75,8 @@ void asconCxof128Final(AsconCxof128Context *context);
 void asconCxof128Squeeze(AsconCxof128Context *context, uint8_t *output,
    size_t length);
 
+void asconCxof128Deinit(AsconCxof128Context *context);
+
 //C++ guard
 #ifdef __cplusplus
 }

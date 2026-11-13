@@ -66,8 +66,15 @@ __weak_func error_t ctrEncrypt(const CipherAlgo *cipher, void *context, uint_t m
    size_t n;
    uint8_t o[16];
 
-   //The parameter must be a multiple of 8
-   if((m % 8) != 0)
+   //Check parameters
+   if(cipher == NULL || context == NULL || t == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if((p == NULL || c == NULL) && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   //The parameter must be a non-zero multiple of 8
+   if(m == 0 || (m % 8) != 0)
       return ERROR_INVALID_PARAMETER;
 
    //Determine the size, in bytes, of the specific part of the block

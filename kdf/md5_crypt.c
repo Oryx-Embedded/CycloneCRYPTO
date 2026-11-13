@@ -83,10 +83,13 @@ error_t md5Crypt(const char_t *password, const char_t *salt, char_t *output,
       salt += 3;
    }
 
-   //Retrieve the length of the salt string
-   saltLen = osStrlen(salt);
-   //The salt string can be up to 16 characters
-   saltLen = MIN(saltLen, MD5_CRYPT_MAX_SALT_LEN);
+   //The salt string ends at the first '$' character, if any, and can be up
+   //to 8 characters
+   for(saltLen = 0; saltLen < MD5_CRYPT_MAX_SALT_LEN; saltLen++)
+   {
+      if(salt[saltLen] == '\0' || salt[saltLen] == '$')
+         break;
+   }
 
    //Retrieve the length of the password string
    passwordLen = osStrlen(password);

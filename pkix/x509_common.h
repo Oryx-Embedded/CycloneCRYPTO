@@ -474,6 +474,13 @@
    #error X509_MAX_DOMAIN_COMPONENTS parameter is not valid
 #endif
 
+//Maximum number of extensions
+#ifndef X509_MAX_EXTENSIONS
+   #define X509_MAX_EXTENSIONS 64
+#elif (X509_MAX_EXTENSIONS < 1)
+   #error X509_MAX_EXTENSIONS parameter is not valid
+#endif
+
 //Maximum number of subject alternative names
 #ifndef X509_MAX_SUBJECT_ALT_NAMES
    #define X509_MAX_SUBJECT_ALT_NAMES 4
@@ -556,6 +563,16 @@ typedef enum
 
 
 /**
+ * @brief EC private key versions
+ **/
+
+typedef enum
+{
+   EC_PRIVATE_KEY_VERSION_1 = 1
+} EcPrivateKeyVersion;
+
+
+/**
  * @brief X.509 versions
  **/
 
@@ -591,22 +608,23 @@ typedef enum
 
 typedef enum
 {
-   X509_EXT_KEY_USAGE_SERVER_AUTH      = 0x00000001,
-   X509_EXT_KEY_USAGE_CLIENT_AUTH      = 0x00000002,
-   X509_EXT_KEY_USAGE_CODE_SIGNING     = 0x00000004,
-   X509_EXT_KEY_USAGE_EMAIL_PROTECTION = 0x00000008,
-   X509_EXT_KEY_USAGE_IPSEC_END_SYSTEM = 0x00000010,
-   X509_EXT_KEY_USAGE_IPSEC_TUNNEL     = 0x00000020,
-   X509_EXT_KEY_USAGE_IPSEC_USER       = 0x00000040,
-   X509_EXT_KEY_USAGE_TIME_STAMPING    = 0x00000080,
-   X509_EXT_KEY_USAGE_OCSP_SIGNING     = 0x00000100,
-   X509_EXT_KEY_USAGE_IPSEC_IKE        = 0x00000200,
-   X509_EXT_KEY_USAGE_SSH_CLIENT       = 0x00000400,
-   X509_EXT_KEY_USAGE_SSH_SERVER       = 0x00000800,
-   X509_EXT_KEY_USAGE_CMC_CA           = 0x00001000,
-   X509_EXT_KEY_USAGE_CMC_RA           = 0x00002000,
-   X509_EXT_KEY_USAGE_DOC_SIGNING      = 0x00004000,
-   X509_EXT_KEY_USAGE_ANY              = 0x00007FFF
+   X509_EXT_KEY_USAGE_ANY              = 0x00000001,
+   X509_EXT_KEY_USAGE_SERVER_AUTH      = 0x00000002,
+   X509_EXT_KEY_USAGE_CLIENT_AUTH      = 0x00000004,
+   X509_EXT_KEY_USAGE_CODE_SIGNING     = 0x00000008,
+   X509_EXT_KEY_USAGE_EMAIL_PROTECTION = 0x00000010,
+   X509_EXT_KEY_USAGE_IPSEC_END_SYSTEM = 0x00000020,
+   X509_EXT_KEY_USAGE_IPSEC_TUNNEL     = 0x00000040,
+   X509_EXT_KEY_USAGE_IPSEC_USER       = 0x00000080,
+   X509_EXT_KEY_USAGE_TIME_STAMPING    = 0x00000100,
+   X509_EXT_KEY_USAGE_OCSP_SIGNING     = 0x00000200,
+   X509_EXT_KEY_USAGE_IPSEC_IKE        = 0x00000400,
+   X509_EXT_KEY_USAGE_SSH_CLIENT       = 0x00000800,
+   X509_EXT_KEY_USAGE_SSH_SERVER       = 0x00001000,
+   X509_EXT_KEY_USAGE_CMC_CA           = 0x00002000,
+   X509_EXT_KEY_USAGE_CMC_RA           = 0x00004000,
+   X509_EXT_KEY_USAGE_DOC_SIGNING      = 0x00008000,
+   X509_EXT_KEY_USAGE_UNKNOWN          = 0x00010000
 } X509ExtKeyUsageBitmap;
 
 
@@ -970,7 +988,7 @@ typedef struct
 typedef struct
 {
    bool_t critical;
-   uint16_t bitmap;
+   uint32_t bitmap;
 } X509ExtendedKeyUsage;
 
 
@@ -1471,8 +1489,8 @@ extern const uint8_t X509_KP_CMC_CA_OID[8];
 extern const uint8_t X509_KP_CMC_RA_OID[8];
 extern const uint8_t X509_KP_DOC_SIGNING_OID[8];
 
-extern const uint8_t X509_AD_CA_ISSUERS[8];
 extern const uint8_t X509_AD_OCSP[8];
+extern const uint8_t X509_AD_CA_ISSUERS[8];
 
 extern const uint8_t PKCS9_EMAIL_ADDR_OID[9];
 extern const uint8_t PKCS9_CHALLENGE_PASSWORD_OID[9];

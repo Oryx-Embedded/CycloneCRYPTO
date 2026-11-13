@@ -39,6 +39,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/aria.h"
 #include "debug.h"
 
@@ -642,8 +643,8 @@ void ariaDecryptBlock(AriaContext *context, const uint8_t *input,
 
 void ariaDeinit(AriaContext *context)
 {
-   //Clear ARIA context
-   osMemset(context, 0, sizeof(AriaContext));
+   //Erase ARIA context
+   cryptoZeroizeMem(context, sizeof(AriaContext));
 }
 
 #endif

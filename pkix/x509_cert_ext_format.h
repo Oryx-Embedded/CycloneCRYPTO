@@ -57,7 +57,7 @@ error_t x509FormatKeyUsage(const X509KeyUsage *keyUsage, uint8_t *output,
 error_t x509FormatExtendedKeyUsage(const X509ExtendedKeyUsage *extKeyUsage,
    uint8_t *output, size_t *written);
 
-error_t x509FormatKeyPurposes(uint16_t bitmap, uint8_t *output,
+error_t x509FormatKeyPurposes(uint32_t bitmap, uint8_t *output,
    size_t *written);
 
 error_t x509FormatSubjectAltName(const X509SubjectAltName *subjectAltName,

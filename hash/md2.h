@@ -71,6 +71,8 @@ error_t md2Compute(const void *data, size_t length, uint8_t *digest);
 void md2Init(Md2Context *context);
 void md2Update(Md2Context *context, const void *data, size_t length);
 void md2Final(Md2Context *context, uint8_t *digest);
+void md2Deinit(Md2Context *context);
+
 void md2ProcessBlock(const uint8_t *m, uint8_t *x, uint8_t *c);
 
 //C++ guard

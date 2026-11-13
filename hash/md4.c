@@ -38,6 +38,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "hash/md4.h"
 
 //Check crypto library configuration
@@ -79,7 +80,8 @@ const HashAlgo md4HashAlgo =
    (HashAlgoInit) md4Init,
    (HashAlgoUpdate) md4Update,
    (HashAlgoFinal) md4Final,
-   NULL
+   NULL,
+   (HashAlgoDeinit) md4Deinit
 };
 
 
@@ -234,6 +236,18 @@ void md4Final(Md4Context *context, uint8_t *digest)
    {
       STORE32LE(context->h[i], digest + i * 4);
    }
+}
+
+
+/**
+ * @brief Release MD4 context
+ * @param[in] context Pointer to the MD4 context
+ **/
+
+void md4Deinit(Md4Context *context)
+{
+   //Erase MD4 context
+   cryptoZeroizeMem(context, sizeof(Md4Context));
 }
 
 

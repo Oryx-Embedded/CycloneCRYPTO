@@ -75,6 +75,7 @@ void parallelHashUpdate(ParallelHashContext *context, const void *data,
    size_t length);
 
 void parallelHashFinal(ParallelHashContext *context, uint8_t *digest, size_t length);
+void parallelHashDeinit(ParallelHashContext *context);
 
 //C++ guard
 #ifdef __cplusplus

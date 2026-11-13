@@ -38,6 +38,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "hash/whirlpool.h"
 
 //Check crypto library configuration
@@ -168,7 +169,8 @@ const HashAlgo whirlpoolHashAlgo =
    (HashAlgoInit) whirlpoolInit,
    (HashAlgoUpdate) whirlpoolUpdate,
    (HashAlgoFinal) whirlpoolFinal,
-   NULL
+   NULL,
+   (HashAlgoDeinit) whirlpoolDeinit
 };
 
 
@@ -325,6 +327,18 @@ void whirlpoolFinal(WhirlpoolContext *context, uint8_t *digest)
    {
       STORE64BE(context->h[i], digest + i * 8);
    }
+}
+
+
+/**
+ * @brief Release Whirlpool context
+ * @param[in] context Pointer to the Whirlpool context
+ **/
+
+void whirlpoolDeinit(WhirlpoolContext *context)
+{
+   //Erase Whirlpool context
+   cryptoZeroizeMem(context, sizeof(WhirlpoolContext));
 }
 
 

@@ -38,6 +38,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "hash/sha512.h"
 
 //Check crypto library configuration
@@ -113,7 +114,8 @@ const HashAlgo sha512HashAlgo =
    (HashAlgoInit) sha512Init,
    (HashAlgoUpdate) sha512Update,
    (HashAlgoFinal) sha512Final,
-   NULL
+   NULL,
+   (HashAlgoDeinit) sha512Deinit
 };
 
 #endif
@@ -274,6 +276,18 @@ __weak_func void sha512Final(Sha512Context *context, uint8_t *digest)
    {
       STORE64BE(context->h[i], digest + i * 8);
    }
+}
+
+
+/**
+ * @brief Release SHA-512 context
+ * @param[in] context Pointer to the SHA-512 context
+ **/
+
+void sha512Deinit(Sha512Context *context)
+{
+   //Erase SHA-512 context
+   cryptoZeroizeMem(context, sizeof(Sha512Context));
 }
 
 

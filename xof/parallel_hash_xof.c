@@ -217,7 +217,24 @@ void parallelHashXofAbsorb(ParallelHashXofContext *context, const void *input,
 void parallelHashXofFinal(ParallelHashXofContext *context)
 {
    size_t n;
+   uint8_t h[64];
    uint8_t buffer[sizeof(size_t) + 1];
+
+   //The last block may be shorter than B bytes
+   if(context->blockPos > 0)
+   {
+      //Compute the hash value of the final partial block
+      cshakeFinal(&context->cshakeContext1);
+      cshakeSqueeze(&context->cshakeContext1, h, context->hLen);
+
+      //The resulting hash value is passed to cSHAKE
+      cshakeAbsorb(&context->cshakeContext2, h, context->hLen);
+
+      //The block is empty
+      context->blockPos = 0;
+      //Increment the number of blocks
+      context->blockCount++;
+   }
 
    //Absorb the string representation of n
    cshakeRightEncode(context->blockCount, buffer, &n);
@@ -245,6 +262,19 @@ void parallelHashXofSqueeze(ParallelHashXofContext *context, uint8_t *output,
 {
    //Extract data from the squeezing phase
    cshakeSqueeze(&context->cshakeContext2, output, length);
+}
+
+
+/**
+ * @brief Release ParallelHashXOF context
+ * @param[in] context Pointer to the ParallelHashXOF context
+ **/
+
+void parallelHashXofDeinit(ParallelHashXofContext *context)
+{
+   //Release cSHAKE contexts
+   cshakeDeinit(&context->cshakeContext1);
+   cshakeDeinit(&context->cshakeContext2);
 }
 
 #endif

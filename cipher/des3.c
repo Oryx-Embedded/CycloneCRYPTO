@@ -38,6 +38,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/des3.h"
 #include "cipher/des.h"
 
@@ -89,6 +90,12 @@ __weak_func error_t des3Init(Des3Context *context, const uint8_t *key,
    }
    else if(keyLen == 16)
    {
+#if (DES3_KEY_CHECK_SUPPORT == ENABLED)
+      //K1 and K2 must be different, otherwise 3DES degrades to single DES
+      if(desCompareKeys(key, key + 8))
+         return ERROR_INVALID_KEY;
+#endif
+
       //If the key length is 128 bits including parity, the first 8 bytes of the
       //encoding represent the key used for the two outer DES operations, and
       //the second 8 bytes represent the key used for the inner DES operation
@@ -98,6 +105,13 @@ __weak_func error_t des3Init(Des3Context *context, const uint8_t *key,
    }
    else if(keyLen == 24)
    {
+#if (DES3_KEY_CHECK_SUPPORT == ENABLED)
+      //K1 and K2, as well as K2 and K3, must be different, otherwise 3DES
+      //degrades to single DES
+      if(desCompareKeys(key, key + 8) || desCompareKeys(key + 8, key + 16))
+         return ERROR_INVALID_KEY;
+#endif
+
       //If the key length is 192 bits including parity, then 3 independent DES
       //keys are represented, in the order in which they are used for encryption
       desInit(&context->k1, key, 8);
@@ -160,8 +174,8 @@ __weak_func void des3DecryptBlock(Des3Context *context, const uint8_t *input,
 
 __weak_func void des3Deinit(Des3Context *context)
 {
-   //Clear Triple DES context
-   osMemset(context, 0, sizeof(Des3Context));
+   //Erase Triple DES context
+   cryptoZeroizeMem(context, sizeof(Des3Context));
 }
 
 #endif

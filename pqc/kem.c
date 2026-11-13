@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "pqc/kem.h"
 
 //Check crypto library configuration
@@ -68,7 +69,7 @@ void kemFree(KemContext *context)
       if(context->sk != NULL)
       {
          //Clear secret key
-         osMemset(context->sk, 0, context->kemAlgo->secretKeySize);
+         cryptoZeroizeMem(context->sk, context->kemAlgo->secretKeySize);
 
          //Release secret key
          cryptoFreeMem(context->sk);
@@ -79,7 +80,7 @@ void kemFree(KemContext *context)
       if(context->pk != NULL)
       {
          //Clear public key
-         osMemset(context->pk, 0, context->kemAlgo->publicKeySize);
+         cryptoZeroizeMem(context->pk, context->kemAlgo->publicKeySize);
 
          //Release public key
          cryptoFreeMem(context->pk);

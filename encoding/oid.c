@@ -51,6 +51,7 @@ error_t oidCheck(const uint8_t *oid, size_t oidLen)
 {
    size_t i;
    size_t n;
+   bool_t first;
 
    //Check parameters
    if(oid == NULL)
@@ -82,6 +83,22 @@ error_t oidCheck(const uint8_t *oid, size_t oidLen)
       if(oid[oidLen - 1] & OID_MORE_FLAG)
          return ERROR_INVALID_SYNTAX;
    }
+
+   //Each sub-identifier shall be encoded in the fewest possible octets, that
+   //is, the leading octet of a sub-identifier shall not have the value 0x80
+   for(first = TRUE, i = 0; i < oidLen; i++)
+   {
+      //Leading octet of a sub-identifier?
+      if(first && oid[i] == OID_MORE_FLAG)
+         return ERROR_INVALID_SYNTAX;
+
+      //Bit 8 of the last octet of a sub-identifier is zero
+      first = ((oid[i] & OID_MORE_FLAG) == 0) ? TRUE : FALSE;
+   }
+
+   //The last octet of the OID shall end a sub-identifier
+   if((oid[oidLen - 1] & OID_MORE_FLAG) != 0)
+      return ERROR_INVALID_SYNTAX;
 
    //The specified OID is valid
    return NO_ERROR;
@@ -136,10 +153,6 @@ int_t oidComp(const uint8_t *oid1, size_t oidLen1, const uint8_t *oid2,
             n1++;
             more1 = FALSE;
          }
-         else if(n1 == 0 && oid1[pos1] == OID_MORE_FLAG)
-         {
-            pos1++;
-         }
          else if((oid1[pos1] & OID_MORE_FLAG) != 0)
          {
             pos1++;
@@ -165,10 +178,6 @@ int_t oidComp(const uint8_t *oid1, size_t oidLen1, const uint8_t *oid2,
             pos2++;
             n2++;
             more2 = FALSE;
-         }
-         else if(n2 == 0 && oid2[pos2] == OID_MORE_FLAG)
-         {
-            pos2++;
          }
          else if((oid2[pos2] & OID_MORE_FLAG) != 0)
          {
@@ -326,7 +335,7 @@ bool_t oidMatch(const uint8_t *oid, size_t oidLen, const uint8_t *subtree,
                   return FALSE;
 
                //Check the length of the subtree
-               if(subtreePos > subtreeLen)
+               if(subtreePos >= subtreeLen)
                   return FALSE;
             }
          }

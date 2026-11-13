@@ -78,6 +78,7 @@ error_t shake256Init(ShakeContext *context);
 void shakeAbsorb(ShakeContext *context, const void *input, size_t length);
 void shakeFinal(ShakeContext *context);
 void shakeSqueeze(ShakeContext *context, uint8_t *output, size_t length);
+void shakeDeinit(ShakeContext *context);
 
 //C++ guard
 #ifdef __cplusplus

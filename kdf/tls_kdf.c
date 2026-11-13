@@ -63,6 +63,7 @@ error_t tlsPrf(const uint8_t *secret, size_t secretLen, const char_t *label,
    const uint8_t *seed, size_t seedLen, uint8_t *output, size_t outputLen)
 {
 #if (MD5_SUPPORT == ENABLED && SHA1_SUPPORT == ENABLED)
+   error_t error;
    uint_t i;
    uint_t j;
    size_t labelLen;
@@ -99,60 +100,100 @@ error_t tlsPrf(const uint8_t *secret, size_t secretLen, const char_t *label,
    //S2 is taken from the second half
    s2 = secret + secretLen - sLen;
 
-   //First compute A(1) = HMAC_MD5(S1, label + seed)
-   hmacInit(hmacContext, MD5_HASH_ALGO, s1, sLen);
-   hmacUpdate(hmacContext, label, labelLen);
-   hmacUpdate(hmacContext, seed, seedLen);
-   hmacFinal(hmacContext, a);
+   //Initialize HMAC calculation
+   error = hmacInit(hmacContext, MD5_HASH_ALGO, s1, sLen);
 
-   //Apply the data expansion function P_MD5
-   for(i = 0; i < outputLen; )
+   //Check status code
+   if(!error)
    {
-      //Compute HMAC_MD5(S1, A(i) + label + seed)
-      hmacInit(hmacContext, MD5_HASH_ALGO, s1, sLen);
-      hmacUpdate(hmacContext, a, MD5_DIGEST_SIZE);
+      //First compute A(1) = HMAC_MD5(S1, label + seed)
       hmacUpdate(hmacContext, label, labelLen);
       hmacUpdate(hmacContext, seed, seedLen);
-      hmacFinal(hmacContext, NULL);
-
-      //Copy the resulting digest
-      for(j = 0; i < outputLen && j < MD5_DIGEST_SIZE; i++, j++)
-      {
-         output[i] = hmacContext->digest[j];
-      }
-
-      //Compute A(i + 1) = HMAC_MD5(S1, A(i))
-      hmacInit(hmacContext, MD5_HASH_ALGO, s1, sLen);
-      hmacUpdate(hmacContext, a, MD5_DIGEST_SIZE);
       hmacFinal(hmacContext, a);
    }
 
-   //First compute A(1) = HMAC_SHA1(S2, label + seed)
-   hmacInit(hmacContext, SHA1_HASH_ALGO, s2, sLen);
-   hmacUpdate(hmacContext, label, labelLen);
-   hmacUpdate(hmacContext, seed, seedLen);
-   hmacFinal(hmacContext, a);
-
-   //Apply the data expansion function P_SHA1
-   for(i = 0; i < outputLen; )
+   //Apply the data expansion function P_MD5
+   for(i = 0; i < outputLen && !error; )
    {
-      //Compute HMAC_SHA1(S2, A(i) + label + seed)
-      hmacInit(hmacContext, SHA1_HASH_ALGO, s2, sLen);
-      hmacUpdate(hmacContext, a, SHA1_DIGEST_SIZE);
-      hmacUpdate(hmacContext, label, labelLen);
-      hmacUpdate(hmacContext, seed, seedLen);
-      hmacFinal(hmacContext, NULL);
+      //Initialize HMAC calculation
+      error = hmacInit(hmacContext, MD5_HASH_ALGO, s1, sLen);
 
-      //Copy the resulting digest
-      for(j = 0; i < outputLen && j < SHA1_DIGEST_SIZE; i++, j++)
+      //Check status code
+      if(!error)
       {
-         output[i] ^= hmacContext->digest[j];
+         //Compute HMAC_MD5(S1, A(i) + label + seed)
+         hmacUpdate(hmacContext, a, MD5_DIGEST_SIZE);
+         hmacUpdate(hmacContext, label, labelLen);
+         hmacUpdate(hmacContext, seed, seedLen);
+         hmacFinal(hmacContext, NULL);
+
+         //Copy the resulting digest
+         for(j = 0; i < outputLen && j < MD5_DIGEST_SIZE; i++, j++)
+         {
+            output[i] = hmacContext->digest[j];
+         }
+
+         //Initialize HMAC calculation
+         error = hmacInit(hmacContext, MD5_HASH_ALGO, s1, sLen);
       }
 
-      //Compute A(i + 1) = HMAC_SHA1(S2, A(i))
-      hmacInit(hmacContext, SHA1_HASH_ALGO, s2, sLen);
-      hmacUpdate(hmacContext, a, SHA1_DIGEST_SIZE);
+      //Check status code
+      if(!error)
+      {
+         //Compute A(i + 1) = HMAC_MD5(S1, A(i))
+         hmacUpdate(hmacContext, a, MD5_DIGEST_SIZE);
+         hmacFinal(hmacContext, a);
+      }
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Initialize HMAC calculation
+      error = hmacInit(hmacContext, SHA1_HASH_ALGO, s2, sLen);
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //First compute A(1) = HMAC_SHA1(S2, label + seed)
+      hmacUpdate(hmacContext, label, labelLen);
+      hmacUpdate(hmacContext, seed, seedLen);
       hmacFinal(hmacContext, a);
+   }
+
+   //Apply the data expansion function P_SHA1
+   for(i = 0; i < outputLen && !error; )
+   {
+      //Initialize HMAC calculation
+      error = hmacInit(hmacContext, SHA1_HASH_ALGO, s2, sLen);
+
+      //Check status code
+      if(!error)
+      {
+         //Compute HMAC_SHA1(S2, A(i) + label + seed)
+         hmacUpdate(hmacContext, a, SHA1_DIGEST_SIZE);
+         hmacUpdate(hmacContext, label, labelLen);
+         hmacUpdate(hmacContext, seed, seedLen);
+         hmacFinal(hmacContext, NULL);
+
+         //Copy the resulting digest
+         for(j = 0; i < outputLen && j < SHA1_DIGEST_SIZE; i++, j++)
+         {
+            output[i] ^= hmacContext->digest[j];
+         }
+
+         //Initialize HMAC calculation
+         error = hmacInit(hmacContext, SHA1_HASH_ALGO, s2, sLen);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Compute A(i + 1) = HMAC_SHA1(S2, A(i))
+         hmacUpdate(hmacContext, a, SHA1_DIGEST_SIZE);
+         hmacFinal(hmacContext, a);
+      }
    }
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
@@ -160,8 +201,8 @@ error_t tlsPrf(const uint8_t *secret, size_t secretLen, const char_t *label,
    cryptoFreeMem(hmacContext);
 #endif
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 #else
    //Not implemented
    return ERROR_NOT_IMPLEMENTED;
@@ -192,6 +233,7 @@ error_t tls12Prf(const HashAlgo *hashAlgo, const uint8_t *secret,
    size_t secretLen, const char_t *label, const uint8_t *seed, size_t seedLen,
    uint8_t *output, size_t outputLen)
 {
+   error_t error;
    size_t n;
    size_t labelLen;
    uint8_t a[MAX_HASH_DIGEST_SIZE];
@@ -219,36 +261,54 @@ error_t tls12Prf(const HashAlgo *hashAlgo, const uint8_t *secret,
    //Retrieve the length of the label
    labelLen = osStrlen(label);
 
-   //First compute A(1) = HMAC_hash(secret, label + seed)
-   hmacInit(hmacContext, hashAlgo, secret, secretLen);
-   hmacUpdate(hmacContext, label, labelLen);
-   hmacUpdate(hmacContext, seed, seedLen);
-   hmacFinal(hmacContext, a);
+   //Initialize HMAC calculation
+   error = hmacInit(hmacContext, hashAlgo, secret, secretLen);
 
-   //Apply the data expansion function P_hash
-   while(outputLen > 0)
+   //Check status code
+   if(!error)
    {
-      //Compute HMAC_hash(secret, A(i) + label + seed)
-      hmacInit(hmacContext, hashAlgo, secret, secretLen);
-      hmacUpdate(hmacContext, a, hashAlgo->digestSize);
+      //First compute A(1) = HMAC_hash(secret, label + seed)
       hmacUpdate(hmacContext, label, labelLen);
       hmacUpdate(hmacContext, seed, seedLen);
-      hmacFinal(hmacContext, NULL);
-
-      //Calculate the number of bytes to copy
-      n = MIN(outputLen, hashAlgo->digestSize);
-      //Copy the resulting digest
-      osMemcpy(output, hmacContext->digest, n);
-
-      //Compute A(i + 1) = HMAC_hash(secret, A(i))
-      hmacInit(hmacContext, hashAlgo, secret, secretLen);
-      hmacUpdate(hmacContext, a, hashAlgo->digestSize);
       hmacFinal(hmacContext, a);
+   }
 
-      //Advance data pointer
-      output += n;
-      //Decrement byte counter
-      outputLen -= n;
+   //Apply the data expansion function P_hash
+   while(outputLen > 0 && !error)
+   {
+      //Initialize HMAC calculation
+      error = hmacInit(hmacContext, hashAlgo, secret, secretLen);
+
+      //Check status code
+      if(!error)
+      {
+         //Compute HMAC_hash(secret, A(i) + label + seed)
+         hmacUpdate(hmacContext, a, hashAlgo->digestSize);
+         hmacUpdate(hmacContext, label, labelLen);
+         hmacUpdate(hmacContext, seed, seedLen);
+         hmacFinal(hmacContext, NULL);
+
+         //Calculate the number of bytes to copy
+         n = MIN(outputLen, hashAlgo->digestSize);
+         //Copy the resulting digest
+         osMemcpy(output, hmacContext->digest, n);
+
+         //Advance data pointer
+         output += n;
+         //Decrement byte counter
+         outputLen -= n;
+
+         //Initialize HMAC calculation
+         error = hmacInit(hmacContext, hashAlgo, secret, secretLen);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Compute A(i + 1) = HMAC_hash(secret, A(i))
+         hmacUpdate(hmacContext, a, hashAlgo->digestSize);
+         hmacFinal(hmacContext, a);
+      }
    }
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
@@ -256,8 +316,8 @@ error_t tls12Prf(const HashAlgo *hashAlgo, const uint8_t *secret,
    cryptoFreeMem(hmacContext);
 #endif
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 }
 
 

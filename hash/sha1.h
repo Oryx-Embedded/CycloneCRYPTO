@@ -82,6 +82,8 @@ void sha1Init(Sha1Context *context);
 void sha1Update(Sha1Context *context, const void *data, size_t length);
 void sha1Final(Sha1Context *context, uint8_t *digest);
 void sha1FinalRaw(Sha1Context *context, uint8_t *digest);
+void sha1Deinit(Sha1Context *context);
+
 void sha1ProcessBlock(Sha1Context *context);
 
 //C++ guard

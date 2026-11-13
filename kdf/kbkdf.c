@@ -64,6 +64,7 @@ error_t kbkdfCounterHmac(const HashAlgo *hashAlgo, uint_t r, const uint8_t *ki,
 
 {
 #if (HMAC_SUPPORT == ENABLED)
+   error_t error;
    size_t n;
    uint32_t i;
    uint8_t counter[4];
@@ -104,23 +105,32 @@ error_t kbkdfCounterHmac(const HashAlgo *hashAlgo, uint_t r, const uint8_t *ki,
       return ERROR_OUT_OF_MEMORY;
 #endif
 
+   //Initialize status code
+   error = NO_ERROR;
+
    //Derive the keying material
-   for(i = 1; koLen > 0; i++)
+   for(i = 1; koLen > 0 && !error; i++)
    {
       //Number of octets in the current block
       n = MIN(koLen, hashAlgo->digestSize);
 
-      //Encode the counter as a 32-bit big-endian string
-      STORE32BE(i, counter);
+      //Initialize HMAC calculation
+      error = hmacInit(hmacContext, hashAlgo, ki, kiLen);
 
-      //Compute K(i) = PRF(KI, [i] || FixedInput)
-      hmacInit(hmacContext, hashAlgo, ki, kiLen);
-      hmacUpdate(hmacContext, counter + 4 - r, r);
-      hmacUpdate(hmacContext, fixedData, fixedDataLen);
-      hmacFinal(hmacContext, digest);
+      //Check status code
+      if(!error)
+      {
+         //Encode the counter as a 32-bit big-endian string
+         STORE32BE(i, counter);
 
-      //Save the resulting block
-      osMemcpy(ko, digest, n);
+         //Compute K(i) = PRF(KI, [i] || FixedInput)
+         hmacUpdate(hmacContext, counter + 4 - r, r);
+         hmacUpdate(hmacContext, fixedData, fixedDataLen);
+         hmacFinal(hmacContext, digest);
+
+         //Save the resulting block
+         osMemcpy(ko, digest, n);
+      }
 
       //Point to the next block
       ko += n;
@@ -132,8 +142,8 @@ error_t kbkdfCounterHmac(const HashAlgo *hashAlgo, uint_t r, const uint8_t *ki,
    cryptoFreeMem(hmacContext);
 #endif
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 #else
    //HMAC PRF is not implemented
    return ERROR_NOT_IMPLEMENTED;
@@ -264,6 +274,7 @@ error_t kbkdfFeedbackHmac(const HashAlgo *hashAlgo, uint_t r, const uint8_t *ki,
    size_t fixedDataLen, uint8_t *ko, size_t koLen)
 {
 #if (HMAC_SUPPORT == ENABLED)
+   error_t error;
    size_t n;
    uint32_t i;
    size_t prevLen;
@@ -303,28 +314,37 @@ error_t kbkdfFeedbackHmac(const HashAlgo *hashAlgo, uint_t r, const uint8_t *ki,
       return ERROR_OUT_OF_MEMORY;
 #endif
 
+   //Initialize status code
+   error = NO_ERROR;
+
    //K(0) is the initialization vector
    prev = iv;
    prevLen = ivLen;
 
    //Derive the keying material
-   for(i = 1; koLen > 0; i++)
+   for(i = 1; koLen > 0 && !error; i++)
    {
       //Number of octets in the current block
       n = MIN(koLen, hashAlgo->digestSize);
 
-      //Encode the counter as a 32-bit big-endian string
-      STORE32BE(i, counter);
+      //Initialize HMAC calculation
+      error = hmacInit(hmacContext, hashAlgo, ki, kiLen);
 
-      //Compute K(i) = PRF(KI, K(i-1) || [i] || FixedInput)
-      hmacInit(hmacContext, hashAlgo, ki, kiLen);
-      hmacUpdate(hmacContext, prev, prevLen);
-      hmacUpdate(hmacContext, counter + 4 - r, r);
-      hmacUpdate(hmacContext, fixedData, fixedDataLen);
-      hmacFinal(hmacContext, digest);
+      //Check status code
+      if(!error)
+      {
+         //Encode the counter as a 32-bit big-endian string
+         STORE32BE(i, counter);
 
-      //Save the resulting block
-      osMemcpy(ko, digest, n);
+         //Compute K(i) = PRF(KI, K(i-1) || [i] || FixedInput)
+         hmacUpdate(hmacContext, prev, prevLen);
+         hmacUpdate(hmacContext, counter + 4 - r, r);
+         hmacUpdate(hmacContext, fixedData, fixedDataLen);
+         hmacFinal(hmacContext, digest);
+
+         //Save the resulting block
+         osMemcpy(ko, digest, n);
+      }
 
       //K(i) becomes the feedback value for the next iteration
       prev = digest;
@@ -340,8 +360,8 @@ error_t kbkdfFeedbackHmac(const HashAlgo *hashAlgo, uint_t r, const uint8_t *ki,
    cryptoFreeMem(hmacContext);
 #endif
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 #else
    //HMAC PRF is not implemented
    return ERROR_NOT_IMPLEMENTED;
@@ -481,6 +501,7 @@ error_t kbkdfDoublePipelineHmac(const HashAlgo *hashAlgo, uint_t r,
 
 {
 #if (HMAC_SUPPORT == ENABLED)
+   error_t error;
    size_t n;
    uint32_t i;
    size_t prevLen;
@@ -517,33 +538,48 @@ error_t kbkdfDoublePipelineHmac(const HashAlgo *hashAlgo, uint_t r,
       return ERROR_OUT_OF_MEMORY;
 #endif
 
+   //Initialize status code
+   error = NO_ERROR;
+
    //A(0) is the fixed input data
    prev = fixedData;
    prevLen = fixedDataLen;
 
    //Derive the keying material
-   for(i = 1; koLen > 0; i++)
+   for(i = 1; koLen > 0 && !error; i++)
    {
       //Number of octets in the current block
       n = MIN(koLen, hashAlgo->digestSize);
 
-      //Encode the counter as a 32-bit big-endian string
-      STORE32BE(i, counter);
+      //Initialize HMAC calculation (first iteration pipeline)
+      error = hmacInit(hmacContext, hashAlgo, ki, kiLen);
 
-      //Compute A(i) = PRF(KI, A(i-1))
-      hmacInit(hmacContext, hashAlgo, ki, kiLen);
-      hmacUpdate(hmacContext, prev, prevLen);
-      hmacFinal(hmacContext, a);
+      //Check status code
+      if(!error)
+      {
+         //Compute A(i) = PRF(KI, A(i-1))
+         hmacUpdate(hmacContext, prev, prevLen);
+         hmacFinal(hmacContext, a);
 
-      //Compute K(i) = PRF(KI, A(i) || [i] || FixedInput)
-      hmacInit(hmacContext, hashAlgo, ki, kiLen);
-      hmacUpdate(hmacContext, a, hashAlgo->digestSize);
-      hmacUpdate(hmacContext, counter + 4 - r, r);
-      hmacUpdate(hmacContext, fixedData, fixedDataLen);
-      hmacFinal(hmacContext, digest);
+         //Initialize HMAC calculation (second iteration pipeline)
+         error = hmacInit(hmacContext, hashAlgo, ki, kiLen);
+      }
 
-      //Save the resulting block
-      osMemcpy(ko, digest, n);
+      //Check status code
+      if(!error)
+      {
+         //Encode the counter as a 32-bit big-endian string
+         STORE32BE(i, counter);
+
+         //Compute K(i) = PRF(KI, A(i) || [i] || FixedInput)
+         hmacUpdate(hmacContext, a, hashAlgo->digestSize);
+         hmacUpdate(hmacContext, counter + 4 - r, r);
+         hmacUpdate(hmacContext, fixedData, fixedDataLen);
+         hmacFinal(hmacContext, digest);
+
+         //Save the resulting block
+         osMemcpy(ko, digest, n);
+      }
 
       //A(i) is used in the next iteration
       prev = a;
@@ -559,8 +595,8 @@ error_t kbkdfDoublePipelineHmac(const HashAlgo *hashAlgo, uint_t r,
    cryptoFreeMem(hmacContext);
 #endif
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 #else
    //HMAC PRF is not implemented
    return ERROR_NOT_IMPLEMENTED;

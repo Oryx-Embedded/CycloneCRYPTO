@@ -63,8 +63,9 @@ error_t shaCrypt(const HashAlgo *hashAlgo, const char_t *password,
    const char_t *salt, char_t *output, size_t *outputLen)
 {
    bool_t flag;
-   uint_t rounds;
-   uint_t i;
+   uint64_t value;
+   uint32_t rounds;
+   uint32_t i;
    size_t j;
    size_t n;
    char_t *p;
@@ -113,8 +114,12 @@ error_t shaCrypt(const HashAlgo *hashAlgo, const char_t *password,
       //The rounds=<N> specification is present in the input salt
       flag = TRUE;
 
-      //N is an unsigned decimal number
-      rounds = osStrtoul(salt + 7, &p, 10);
+      //N must be an unsigned decimal number
+      if(!osIsdigit(salt[7]))
+         return ERROR_INVALID_SYNTAX;
+
+      //Convert the decimal number
+      value = osStrtoul(salt + 7, &p, 10);
 
       //A trailing '$' is used to separate the rounds specification from the
       //following text
@@ -124,13 +129,10 @@ error_t shaCrypt(const HashAlgo *hashAlgo, const char_t *password,
       //Skip the trailing '$' character
       salt = p + 1;
 
-      //Any selection of N below the minimum will cause the use of 1,000
-      //rounds
-      rounds = MAX(rounds, SHA_CRYPT_MIN_ROUNDS);
-
-      //A value of 1 billion and higher will cause 999,999,999 rounds to
-      //be used
-      rounds = MIN(rounds, SHA_CRYPT_MAX_ROUNDS);
+      //The value is clamped before being converted to the number of rounds
+      value = MAX(value, SHA_CRYPT_MIN_ROUNDS);
+      value = MIN(value, SHA_CRYPT_MAX_ROUNDS);
+      rounds = (uint32_t) value;
    }
    else
    {
@@ -140,10 +142,13 @@ error_t shaCrypt(const HashAlgo *hashAlgo, const char_t *password,
       rounds = SHA_CRYPT_DEFAULT_ROUNDS;
    }
 
-   //Retrieve the length of the salt string
-   saltLen = osStrlen(salt);
-   //The salt string can be up to 16 characters
-   saltLen = MIN(saltLen, SHA_CRYPT_MAX_SALT_LEN);
+   //The salt string ends at the first '$' character, if any, and can be up
+   //to 16 characters
+   for(saltLen = 0; saltLen < SHA_CRYPT_MAX_SALT_LEN; saltLen++)
+   {
+      if(salt[saltLen] == '\0' || salt[saltLen] == '$')
+         break;
+   }
 
    //Retrieve the length of the password string
    passwordLen = osStrlen(password);
@@ -317,7 +322,7 @@ error_t shaCrypt(const HashAlgo *hashAlgo, const char_t *password,
    {
       //A trailing '$' is added in this case to separate the rounds
       //specification from the following text
-      n += osSprintf(output + n, "rounds=%u$", rounds);
+      n += osSprintf(output + n, "rounds=%" PRIu32 "$", rounds);
    }
 
    //The salt string truncated to 16 characters

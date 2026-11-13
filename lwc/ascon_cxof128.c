@@ -39,6 +39,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "lwc/ascon_cxof128.h"
 
 //Check crypto library configuration
@@ -60,7 +61,8 @@ const XofAlgo asconCxof128XofAlgo =
    (XofAlgoInitEx) asconCxof128Init,
    (XofAlgoAbsorb) asconCxof128Absorb,
    (XofAlgoFinal) asconCxof128Final,
-   (XofAlgoSqueeze) asconCxof128Squeeze
+   (XofAlgoSqueeze) asconCxof128Squeeze,
+   (XofAlgoDeinit) asconCxof128Deinit
 };
 
 
@@ -333,6 +335,18 @@ void asconCxof128Squeeze(AsconCxof128Context *context, uint8_t *output,
       //Number of bytes that remains to be written
       length -= n;
    }
+}
+
+
+/**
+ * @brief Release Ascon-CXOF128 context
+ * @param[in] context Pointer to the Ascon-CXOF128 context
+ **/
+
+void asconCxof128Deinit(AsconCxof128Context *context)
+{
+   //Erase Ascon-CXOF128 context
+   cryptoZeroizeMem(context, sizeof(AsconCxof128Context));
 }
 
 #endif

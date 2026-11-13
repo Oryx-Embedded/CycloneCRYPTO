@@ -105,9 +105,13 @@ error_t bcryptVerifyPassword(const char_t *password, const char_t *hash)
    if(osStrlen(hash) != BCRYPT_HASH_STRING_LEN)
       return ERROR_INVALID_PASSWORD;
 
-   //bcrypt uses the $2a$ prefix in the hash string
-   if(osMemcmp(hash, "$2a$", 4))
+   //The $2a$, $2b$ and $2y$ prefixes designate the same algorithm
+   if(osMemcmp(hash, "$2a$", 4) != 0 &&
+      osMemcmp(hash, "$2b$", 4) != 0 &&
+      osMemcmp(hash, "$2y$", 4) != 0)
+   {
       return ERROR_INVALID_PASSWORD;
+   }
 
    //Parse cost parameter
    cost = osStrtoul(hash + 4, &p, 10);
@@ -132,9 +136,9 @@ error_t bcryptVerifyPassword(const char_t *password, const char_t *hash)
    if(error)
       return error;
 
-   //The calculated string is bitwise compared to the hash string. The
-   //password is correct if and only if the strings match
-   for(mask = 0, i = 0; i < BCRYPT_HASH_STRING_LEN; i++)
+   //The calculated string is bitwise compared to the hash string. The password
+   //is correct if and only if the strings match
+   for(mask = 0, i = 4; i < BCRYPT_HASH_STRING_LEN; i++)
    {
       mask |= temp[i] ^ hash[i];
    }
@@ -206,8 +210,8 @@ error_t bcrypt(uint_t cost, const uint8_t *salt, const char_t *password,
    //Check status code
    if(!error)
    {
-      //bcrypt uses the $2a$ prefix in the hash string
-      length = osSprintf(hash, "$2a$%02u$", cost);
+      //The $2b$ prefix is used in the hash string
+      length = osSprintf(hash, "$2b$%02u$", cost);
 
       //Concatenate the salt and the ciphertext
       radix64Encode(salt, 16, hash + length, &n);

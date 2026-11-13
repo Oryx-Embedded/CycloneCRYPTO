@@ -227,14 +227,8 @@ error_t pkcs7EncryptData(const Pkcs7EncryptedContentInfo *encryptedContentInfo,
    if(error)
       return error;
 
-   //Get the actual amount of bytes in the last block
-   paddingLen = plaintextLen % cipherAlgo->blockSize;
-
    //Determine the length of the padding string
-   if(paddingLen > 0)
-   {
-      paddingLen = cipherAlgo->blockSize - paddingLen;
-   }
+   paddingLen = cipherAlgo->blockSize - (plaintextLen % cipherAlgo->blockSize);
 
    //If the output parameter is NULL, then the function calculates the length
    //of the resulting ciphertext without performing encryption
@@ -244,7 +238,7 @@ error_t pkcs7EncryptData(const Pkcs7EncryptedContentInfo *encryptedContentInfo,
       osMemmove(ciphertext, plaintext, plaintextLen);
 
       //The content must be padded to a multiple of the block size
-      for(i = 0; i <= paddingLen; i++)
+      for(i = 0; i < paddingLen; i++)
       {
          ciphertext[plaintextLen + i] = (uint8_t) paddingLen;
       }

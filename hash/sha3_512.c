@@ -61,7 +61,8 @@ const HashAlgo sha3_512HashAlgo =
    (HashAlgoInit) sha3_512Init,
    (HashAlgoUpdate) sha3_512Update,
    (HashAlgoFinal) sha3_512Final,
-   NULL
+   NULL,
+   (HashAlgoDeinit) sha3_512Deinit
 };
 
 
@@ -151,6 +152,18 @@ void sha3_512Final(Sha3_512Context *context, uint8_t *digest)
    keccakFinal(context, KECCAK_SHA3_PAD);
    //Extract data from the squeezing phase
    keccakSqueeze(context, digest, SHA3_512_DIGEST_SIZE);
+}
+
+
+/**
+ * @brief Release SHA3-512 context
+ * @param[in] context Pointer to the SHA3-512 context
+ **/
+
+void sha3_512Deinit(Sha3_512Context *context)
+{
+   //Release Keccak context
+   keccakDeinit(context);
 }
 
 #endif

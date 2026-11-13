@@ -40,6 +40,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "mac/hmac.h"
 
 //Check crypto library configuration
@@ -150,6 +151,11 @@ __weak_func error_t hmacInit(HmacContext *context, const HashAlgo *hash,
    if(key == NULL && keyLen != 0)
       return ERROR_INVALID_PARAMETER;
 
+   //HMAC requires the block size of the hash function to be at least as large
+   //as its output size (refer to RFC 2104, section 2)
+   if(hash->blockSize < hash->digestSize)
+      return ERROR_INVALID_PARAMETER;
+
    //Hash algorithm used to compute HMAC
    context->hash = hash;
 
@@ -258,8 +264,14 @@ void hmacDeinit(HmacContext *context)
    //Make sure the HMAC context is valid
    if(context != NULL)
    {
-      //Clear HMAC context
-      osMemset(context, 0, sizeof(HmacContext));
+      //Release hash context
+      if(context->hash != NULL)
+      {
+         context->hash->deinit(&context->hashContext);
+      }
+
+      //Erase HMAC context
+      cryptoZeroizeMem(context, sizeof(HmacContext));
    }
 }
 

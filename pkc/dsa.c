@@ -551,7 +551,7 @@ end:
    {
       //Release (R, S) integer pair
       mpiFree(&signature->r);
-      mpiFree(&signature->r);
+      mpiFree(&signature->s);
    }
 
    //Return status code

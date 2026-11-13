@@ -37,6 +37,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "mac/cmac.h"
 
 //Check crypto library configuration
@@ -301,8 +302,8 @@ void cmacDeinit(CmacContext *context)
       //Release cipher context
       context->cipher->deinit(&context->cipherContext);
 
-      //Clear CMAC context
-      osMemset(context, 0, sizeof(CmacContext));
+      //Erase CMAC context
+      cryptoZeroizeMem(context, sizeof(CmacContext));
    }
 }
 

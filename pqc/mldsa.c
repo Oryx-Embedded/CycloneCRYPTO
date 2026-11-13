@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "pqc/mldsa.h"
 #include "debug.h"
 
@@ -77,12 +78,12 @@ void mldsaFreePublicKey(MldsaPublicKey *key)
    //Release public key
    if(key->pk != NULL)
    {
-      osMemset(key->pk, 0, key->pkLen);
+      cryptoZeroizeMem(key->pk, key->pkLen);
       cryptoFreeMem(key->pk);
    }
 
    //Clear public key structure
-   osMemset(key, 0, sizeof(MldsaPublicKey));
+   cryptoZeroizeMem(key, sizeof(MldsaPublicKey));
 }
 
 
@@ -116,19 +117,19 @@ void mldsaFreePrivateKey(MldsaPrivateKey *key)
    //Release seed
    if(key->seed != NULL)
    {
-      osMemset(key->seed, 0, key->seedLen);
+      cryptoZeroizeMem(key->seed, key->seedLen);
       cryptoFreeMem(key->seed);
    }
 
    //Release secret key
    if(key->sk != NULL)
    {
-      osMemset(key->sk, 0, key->skLen);
+      cryptoZeroizeMem(key->sk, key->skLen);
       cryptoFreeMem(key->sk);
    }
 
    //Clear private key structure
-   osMemset(key, 0, sizeof(MldsaPrivateKey));
+   cryptoZeroizeMem(key, sizeof(MldsaPrivateKey));
 }
 
 
@@ -175,9 +176,9 @@ error_t mldsaImportPublicKey(MldsaPublicKey *key, uint_t level,
       //The public key is a 2592-byte octet string
       pkLen = MLDSA87_PUBLIC_KEY_LEN;
    }
+   else
 #endif
    //Invalid parameter set?
-   else
    {
       //Report an error
       return ERROR_INVALID_PARAMETER;
@@ -190,7 +191,7 @@ error_t mldsaImportPublicKey(MldsaPublicKey *key, uint_t level,
    //Release the public key, if any
    if(key->pk != NULL)
    {
-      osMemset(key->pk, 0, key->pkLen);
+      cryptoZeroizeMem(key->pk, key->pkLen);
       cryptoFreeMem(key->pk);
       key->pk = NULL;
       key->pkLen = 0;
@@ -307,9 +308,9 @@ error_t mldsaImportPrivateKey(MldsaPrivateKey *key, uint_t level,
       //The private key is a 4896-byte octet string
       skLen = MLDSA87_PRIVATE_KEY_LEN;
    }
+   else
 #endif
    //Invalid parameter set?
-   else
    {
       //Report an error
       return ERROR_INVALID_PARAMETER;
@@ -322,7 +323,7 @@ error_t mldsaImportPrivateKey(MldsaPrivateKey *key, uint_t level,
    //Release the private key, if any
    if(key->sk != NULL)
    {
-      osMemset(key->sk, 0, key->skLen);
+      cryptoZeroizeMem(key->sk, key->skLen);
       cryptoFreeMem(key->sk);
       key->sk = NULL;
       key->skLen = 0;
@@ -439,9 +440,9 @@ error_t mldsaImportSeed(MldsaPrivateKey *key, uint_t level,
       //The seed is a fixed 32-byte octet string
       seedLen = MLDSA87_SEED_LEN;
    }
+   else
 #endif
    //Invalid parameter set?
-   else
    {
       //Report an error
       return ERROR_INVALID_PARAMETER;
@@ -454,7 +455,7 @@ error_t mldsaImportSeed(MldsaPrivateKey *key, uint_t level,
    //Release the seed, if any
    if(key->seed != NULL)
    {
-      osMemset(key->seed, 0, key->seedLen);
+      cryptoZeroizeMem(key->seed, key->seedLen);
       cryptoFreeMem(key->seed);
       key->seed = NULL;
       key->seedLen = 0;

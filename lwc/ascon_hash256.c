@@ -38,6 +38,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "lwc/ascon_hash256.h"
 
 //Check crypto library configuration
@@ -61,7 +62,8 @@ const HashAlgo asconHash256HashAlgo =
    (HashAlgoInit) asconHash256Init,
    (HashAlgoUpdate) asconHash256Update,
    (HashAlgoFinal) asconHash256Final,
-   NULL
+   NULL,
+   (HashAlgoDeinit) asconHash256Deinit
 };
 
 
@@ -222,6 +224,18 @@ void asconHash256Final(AsconHash256Context *context, uint8_t *digest)
       STORE32LE(context->state.x[0], digest + i * 8);
       STORE32LE(context->state.x[1], digest + i * 8 + 4);
    }
+}
+
+
+/**
+ * @brief Release Ascon-Hash256 context
+ * @param[in] context Pointer to the Ascon-Hash256 context
+ **/
+
+void asconHash256Deinit(AsconHash256Context *context)
+{
+   //Erase Ascon-Hash256 context
+   cryptoZeroizeMem(context, sizeof(AsconHash256Context));
 }
 
 #endif

@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "ecc/ec.h"
 #include "ecc/ec_misc.h"
 #include "debug.h"
@@ -68,7 +69,7 @@ void ecInitPublicKey(EcPublicKey *key)
 void ecFreePublicKey(EcPublicKey *key)
 {
    //Clear public key
-   osMemset(key, 0, sizeof(EcPublicKey));
+   cryptoZeroizeMem(key, sizeof(EcPublicKey));
 }
 
 
@@ -100,7 +101,7 @@ void ecInitPrivateKey(EcPrivateKey *key)
 void ecFreePrivateKey(EcPrivateKey *key)
 {
    //Clear private key
-   osMemset(key, 0, sizeof(EcPrivateKey));
+   cryptoZeroizeMem(key, sizeof(EcPrivateKey));
 }
 
 
@@ -211,6 +212,13 @@ error_t ecGeneratePublicKey(const EcPrivateKey *privateKey,
    //Invalid elliptic curve?
    if(privateKey->curve == NULL)
       return ERROR_INVALID_ELLIPTIC_CURVE;
+
+   //The private key d must be in the range [1, q - 2]. The value q - 1 is
+   //excluded since the scalar multiplication does not handle it
+   error = ecCheckPrivateKey(privateKey);
+   //Any error to report?
+   if(error)
+      return error;
 
    //Get the length of the modulus, in words
    pLen = (privateKey->curve->fieldSize + 31) / 32;
@@ -648,6 +656,44 @@ error_t ecExportPrivateKey(const EcPrivateKey *key, uint8_t *output,
 
    //Return status code
    return error;
+}
+
+
+/**
+ * @brief Check the range of an EC private key
+ * @param[in] privateKey EC private key
+ * @return Error code
+ **/
+
+error_t ecCheckPrivateKey(const EcPrivateKey *privateKey)
+{
+   uint_t qLen;
+   uint32_t c;
+   uint32_t t[EC_MAX_ORDER_SIZE];
+
+   //Check parameters
+   if(privateKey == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Invalid elliptic curve?
+   if(privateKey->curve == NULL)
+      return ERROR_INVALID_ELLIPTIC_CURVE;
+
+   //Get the length of the order, in words
+   qLen = (privateKey->curve->orderSize + 31) / 32;
+
+   //Compute q - 1
+   ecScalarSubInt(t, privateKey->curve->q, 1, qLen);
+
+   //Check whether d < q - 1 and d != 0
+   c = ecScalarSub(t, privateKey->d, t, qLen);
+   c &= ecScalarTestNotEqualInt(privateKey->d, 0, qLen);
+
+   //Erase working state
+   cryptoZeroizeMem(t, sizeof(t));
+
+   //Return status code
+   return (c != 0) ? NO_ERROR : ERROR_INVALID_KEY;
 }
 
 
@@ -1330,7 +1376,7 @@ __weak_func error_t ecMulFast(const EcCurve *curve, EcPoint3 *r,
    }
 
    //Erase working state
-   osMemset(state, 0, sizeof(EcMulFastState));
+   cryptoZeroizeMem(state, sizeof(EcMulFastState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
@@ -1346,7 +1392,7 @@ __weak_func error_t ecMulFast(const EcCurve *curve, EcPoint3 *r,
  * @brief Scalar multiplication (regular calculation)
  * @param[in] curve Elliptic curve parameters
  * @param[out] r Resulting point R = d.S
- * @param[in] d An integer d such as 0 <= d < q
+ * @param[in] d An integer d such as 0 <= d < q - 1
  * @param[in] s EC point
  * @return Error code
  **/
@@ -1434,7 +1480,7 @@ __weak_func error_t ecMulRegular(const EcCurve *curve, EcPoint3 *r,
    ecScalarCopy(r->z, state->q.z, pLen);
 
    //Erase working state
-   osMemset(state, 0, sizeof(EcMulRegularState));
+   cryptoZeroizeMem(state, sizeof(EcMulRegularState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
@@ -1628,7 +1674,7 @@ __weak_func error_t ecTwinMul(const EcCurve *curve, EcPoint3 *r,
    }
 
    //Erase working state
-   osMemset(state, 0, sizeof(EcTwinMulState));
+   cryptoZeroizeMem(state, sizeof(EcTwinMulState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state

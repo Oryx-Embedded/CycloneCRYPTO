@@ -65,6 +65,7 @@ error_t shake128_256Compute(const void *data, size_t length, uint8_t *digest);
 void shake128_256Init(Shake128_256Context *context);
 void shake128_256Update(Shake128_256Context *context, const void *data, size_t length);
 void shake128_256Final(Shake128_256Context *context, uint8_t *digest);
+void shake128_256Deinit(Shake128_256Context *context);
 
 //C++ guard
 #ifdef __cplusplus

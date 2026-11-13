@@ -153,6 +153,13 @@
    #error PKCS5_SM3_SUPPORT parameter is not valid
 #endif
 
+//Maximum acceptable value for the iteration count
+#ifndef PKCS5_MAX_ITERATION_COUNT
+   #define PKCS5_MAX_ITERATION_COUNT 1000000
+#elif (PKCS5_MAX_ITERATION_COUNT < 1)
+   #error PKCS5_MAX_ITERATION_COUNT parameter is not valid
+#endif
+
 //C++ guard
 #ifdef __cplusplus
 extern "C" {

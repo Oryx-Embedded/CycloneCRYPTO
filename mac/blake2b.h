@@ -70,6 +70,8 @@ error_t blake2bInit(Blake2bContext *context, const void *key,
 
 void blake2bUpdate(Blake2bContext *context, const void *data, size_t length);
 void blake2bFinal(Blake2bContext *context, uint8_t *digest);
+void blake2bDeinit(Blake2bContext *context);
+
 void blake2bProcessBlock(Blake2bContext *context, bool_t last);
 
 //C++ guard

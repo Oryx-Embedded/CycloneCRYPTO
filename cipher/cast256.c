@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/cast256.h"
 
 //Check crypto library configuration
@@ -458,8 +459,8 @@ void cast256DecryptBlock(Cast256Context *context, const uint8_t *input,
 
 void cast256Deinit(Cast256Context *context)
 {
-   //Clear CAST-256 context
-   osMemset(context, 0, sizeof(Cast256Context));
+   //Erase CAST-256 context
+   cryptoZeroizeMem(context, sizeof(Cast256Context));
 }
 
 #endif

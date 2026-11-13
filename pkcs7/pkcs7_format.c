@@ -498,7 +498,7 @@ error_t pkcs7FormatDigestAlgos(const Pkcs7DigestAlgos *digestAlgos,
    tag.constructed = TRUE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_SET;
-   tag.length = n;
+   tag.length = length;
 
    //Write the corresponding ASN.1 tag
    error = asn1InsertHeader(&tag, output, &n);
@@ -731,7 +731,7 @@ error_t pkcs7FormatSignerInfos(const PrngAlgo *prngAlgo, void *prngContext,
    tag.constructed = TRUE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_SET;
-   tag.length = n;
+   tag.length = length;
 
    //Write the corresponding ASN.1 tag
    error = asn1InsertHeader(&tag, output, &n);
@@ -1520,7 +1520,7 @@ error_t pkcs7FormatRecipientInfos(const PrngAlgo *prngAlgo, void *prngContext,
    tag.constructed = TRUE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_SET;
-   tag.length = n;
+   tag.length = length;
 
    //Write the corresponding ASN.1 tag
    error = asn1InsertHeader(&tag, output, &n);

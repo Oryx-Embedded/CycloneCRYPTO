@@ -514,10 +514,10 @@ __weak_func error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
    size_t n;
    uint8_t b;
    uint32_t a;
-   uint32_t badPadding;
-   uint32_t badLength;
+   uint32_t bad;
    Mpi c;
    Mpi m;
+   Mpi t;
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    uint8_t *em;
 #else
@@ -555,6 +555,7 @@ __weak_func error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
    //Initialize multiple-precision integers
    mpiInit(&c);
    mpiInit(&m);
+   mpiInit(&t);
 
    //Get the length in octets of the modulus n
    k = mpiGetByteLength(&key->n);
@@ -590,6 +591,33 @@ __weak_func error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
       if(error)
          break;
 
+      //When unprotected, RSA-CRT is vulnerable to the Bellcore attack
+      if(mpiGetLength(&key->n) > 0 && mpiGetLength(&key->e) > 0 &&
+         mpiGetLength(&key->p) > 0 && mpiGetLength(&key->q) > 0 &&
+         mpiGetLength(&key->dp) > 0 && mpiGetLength(&key->dq) > 0 &&
+         mpiGetLength(&key->qinv) > 0)
+      {
+         RsaPublicKey publicKey;
+
+         //The pair of numbers (n, e) form the RSA public key
+         publicKey.n = key->n;
+         publicKey.e = key->e;
+
+         //Apply the RSAEP encryption primitive
+         error = rsaep(&publicKey, &m, &t);
+         //Any error to report?
+         if(error)
+            break;
+
+         //Verify the result in order to protect against RSA-CRT key leak
+         if(mpiComp(&t, &c) != 0)
+         {
+            //A decryption fault has been detected
+            error = ERROR_FAILURE;
+            break;
+         }
+      }
+
       //Convert the message representative m to an encoded message EM of
       //length k octets
       error = mpiExport(&m, em, k, MPI_FORMAT_BIG_ENDIAN);
@@ -602,11 +630,14 @@ __weak_func error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
       TRACE_DEBUG_ARRAY("    ", em, k);
 
       //EME-PKCS1-v1_5 decoding
-      badPadding = emePkcs1v15Decode(em, k, &n);
+      bad = emePkcs1v15Decode(em, k, &n);
 
       //Check whether the output buffer is large enough to hold the decrypted
       //message
-      badLength = CRYPTO_TEST_LT_32(messageSize, n);
+      bad |= CRYPTO_TEST_LT_32(messageSize, n);
+
+      //Do not release any part of the message when the decryption fails
+      n = CRYPTO_SELECT_32(n, 0, bad);
 
       //Copy the decrypted message, byte per byte
       for(i = 0; i < messageSize; i++)
@@ -624,11 +655,10 @@ __weak_func error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
       }
 
       //Return the length of the decrypted message
-      *messageLen = CRYPTO_SELECT_32(n, messageSize, badLength);
+      *messageLen = n;
 
       //Check whether the decryption operation is successful
-      error = (error_t) CRYPTO_SELECT_32(error, ERROR_BUFFER_OVERFLOW, badLength);
-      error = (error_t) CRYPTO_SELECT_32(error, ERROR_DECRYPTION_FAILED, badPadding);
+      error = (bad == 0) ? NO_ERROR : ERROR_DECRYPTION_FAILED;
 
       //Debug message
       TRACE_DEBUG("  Message:\r\n");
@@ -645,6 +675,7 @@ __weak_func error_t rsaesPkcs1v15Decrypt(const RsaPrivateKey *key,
    //Release multiple precision integers
    mpiFree(&c);
    mpiFree(&m);
+   mpiFree(&t);
 
    //Return status code
    return error;
@@ -788,10 +819,10 @@ __weak_func error_t rsaesOaepDecrypt(const RsaPrivateKey *key,
    size_t n;
    uint8_t b;
    uint32_t a;
-   uint32_t badPadding;
-   uint32_t badLength;
+   uint32_t bad;
    Mpi c;
    Mpi m;
+   Mpi t;
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    uint8_t *em;
 #else
@@ -829,6 +860,7 @@ __weak_func error_t rsaesOaepDecrypt(const RsaPrivateKey *key,
    //Initialize multiple-precision integers
    mpiInit(&c);
    mpiInit(&m);
+   mpiInit(&t);
 
    //Get the length in octets of the modulus n
    k = mpiGetByteLength(&key->n);
@@ -868,6 +900,33 @@ __weak_func error_t rsaesOaepDecrypt(const RsaPrivateKey *key,
       if(error)
          break;
 
+      //When unprotected, RSA-CRT is vulnerable to the Bellcore attack
+      if(mpiGetLength(&key->n) > 0 && mpiGetLength(&key->e) > 0 &&
+         mpiGetLength(&key->p) > 0 && mpiGetLength(&key->q) > 0 &&
+         mpiGetLength(&key->dp) > 0 && mpiGetLength(&key->dq) > 0 &&
+         mpiGetLength(&key->qinv) > 0)
+      {
+         RsaPublicKey publicKey;
+
+         //The pair of numbers (n, e) form the RSA public key
+         publicKey.n = key->n;
+         publicKey.e = key->e;
+
+         //Apply the RSAEP encryption primitive
+         error = rsaep(&publicKey, &m, &t);
+         //Any error to report?
+         if(error)
+            break;
+
+         //Verify the result in order to protect against RSA-CRT key leak
+         if(mpiComp(&t, &c) != 0)
+         {
+            //A decryption fault has been detected
+            error = ERROR_FAILURE;
+            break;
+         }
+      }
+
       //Convert the message representative m to an encoded message EM of
       //length k octets
       error = mpiExport(&m, em, k, MPI_FORMAT_BIG_ENDIAN);
@@ -880,11 +939,14 @@ __weak_func error_t rsaesOaepDecrypt(const RsaPrivateKey *key,
       TRACE_DEBUG_ARRAY("    ", em, k);
 
       //EME-OAEP decoding
-      badPadding = emeOaepDecode(hash, mgfHash, label, labelLen, em, k, &n);
+      bad = emeOaepDecode(hash, mgfHash, label, labelLen, em, k, &n);
 
       //Check whether the output buffer is large enough to hold the decrypted
       //message
-      badLength = CRYPTO_TEST_LT_32(messageSize, n);
+      bad |= CRYPTO_TEST_LT_32(messageSize, n);
+
+      //Do not release any part of the message when the decryption fails
+      n = CRYPTO_SELECT_32(n, 0, bad);
 
       //Copy the decrypted message, byte per byte
       for(i = 0; i < messageSize; i++)
@@ -902,11 +964,10 @@ __weak_func error_t rsaesOaepDecrypt(const RsaPrivateKey *key,
       }
 
       //Return the length of the decrypted message
-      *messageLen = CRYPTO_SELECT_32(n, messageSize, badLength);
+      *messageLen = n;
 
       //Check whether the decryption operation is successful
-      error = (error_t) CRYPTO_SELECT_32(error, ERROR_BUFFER_OVERFLOW, badLength);
-      error = (error_t) CRYPTO_SELECT_32(error, ERROR_DECRYPTION_FAILED, badPadding);
+      error = (bad == 0) ? NO_ERROR : ERROR_DECRYPTION_FAILED;
 
       //Debug message
       TRACE_DEBUG("  Message:\r\n");
@@ -923,6 +984,7 @@ __weak_func error_t rsaesOaepDecrypt(const RsaPrivateKey *key,
    //Release multiple precision integers
    mpiFree(&c);
    mpiFree(&m);
+   mpiFree(&t);
 
    //Return status code
    return error;
@@ -1031,7 +1093,7 @@ __weak_func error_t rsassaPkcs1v15Sign(const RsaPrivateKey *key,
          if(error)
             break;
 
-         //Verify the RSA signature in order to protect against RSA-CRT key leak
+         //Verify the result in order to protect against RSA-CRT key leak
          if(mpiComp(&t, &m) != 0)
          {
             //A signature fault has been detected
@@ -1210,6 +1272,7 @@ __weak_func error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
    uint8_t *em;
    Mpi m;
    Mpi s;
+   Mpi t;
 
    //Check parameters
    if(prngAlgo == NULL || prngContext == NULL || key == NULL || hash == NULL ||
@@ -1243,6 +1306,7 @@ __weak_func error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
    //Initialize multiple-precision integers
    mpiInit(&m);
    mpiInit(&s);
+   mpiInit(&t);
 
    //modBits is the length in bits of the modulus n
    modBits = mpiGetBitLength(&key->n);
@@ -1284,6 +1348,33 @@ __weak_func error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
       if(error)
          break;
 
+      //When unprotected, RSA-CRT is vulnerable to the Bellcore attack
+      if(mpiGetLength(&key->n) > 0 && mpiGetLength(&key->e) > 0 &&
+         mpiGetLength(&key->p) > 0 && mpiGetLength(&key->q) > 0 &&
+         mpiGetLength(&key->dp) > 0 && mpiGetLength(&key->dq) > 0 &&
+         mpiGetLength(&key->qinv) > 0)
+      {
+         RsaPublicKey publicKey;
+
+         //The pair of numbers (n, e) form the RSA public key
+         publicKey.n = key->n;
+         publicKey.e = key->e;
+
+         //Apply the RSAVP1 verification primitive
+         error = rsavp1(&publicKey, &s, &t);
+         //Any error to report?
+         if(error)
+            break;
+
+         //Verify the result in order to protect against RSA-CRT key leak
+         if(mpiComp(&t, &m) != 0)
+         {
+            //A signature fault has been detected
+            error = ERROR_FAILURE;
+            break;
+         }
+      }
+
       //Convert the signature representative s to a signature of length k octets
       error = mpiExport(&s, signature, k, MPI_FORMAT_BIG_ENDIAN);
       //Conversion failed?
@@ -1303,6 +1394,7 @@ __weak_func error_t rsassaPssSign(const PrngAlgo *prngAlgo, void *prngContext,
    //Free previously allocated memory
    mpiFree(&m);
    mpiFree(&s);
+   mpiFree(&t);
 
    //Return status code
    return error;

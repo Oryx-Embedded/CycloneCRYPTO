@@ -41,6 +41,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/zuc.h"
 
 //Check crypto library configuration
@@ -437,8 +438,8 @@ void zucCipher(ZucContext *context, const uint8_t *input, uint8_t *output,
 
 void zucDeinit(ZucContext *context)
 {
-   //Clear ZUC context
-   osMemset(context, 0, sizeof(ZucContext));
+   //Erase ZUC context
+   cryptoZeroizeMem(context, sizeof(ZucContext));
 }
 
 #endif

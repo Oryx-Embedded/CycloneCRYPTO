@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/mars.h"
 
 //Check crypto library configuration
@@ -505,8 +506,8 @@ void marsDecryptBlock(MarsContext *context, const uint8_t *input,
 
 void marsDeinit(MarsContext *context)
 {
-   //Clear MARS context
-   osMemset(context, 0, sizeof(MarsContext));
+   //Erase MARS context
+   cryptoZeroizeMem(context, sizeof(MarsContext));
 }
 
 #endif

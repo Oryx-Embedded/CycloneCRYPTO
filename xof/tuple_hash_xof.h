@@ -67,6 +67,8 @@ void tupleHashXofFinal(TupleHashXofContext *context);
 void tupleHashXofSqueeze(TupleHashXofContext *context, uint8_t *output,
    size_t length);
 
+void tupleHashXofDeinit(TupleHashXofContext *context);
+
 //C++ guard
 #ifdef __cplusplus
 }

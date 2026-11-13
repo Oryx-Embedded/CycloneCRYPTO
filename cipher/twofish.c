@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/twofish.h"
 
 //Check crypto library configuration
@@ -496,8 +497,8 @@ void twofishDecryptBlock(TwofishContext *context, const uint8_t *input,
 
 void twofishDeinit(TwofishContext *context)
 {
-   //Clear Twofish context
-   osMemset(context, 0, sizeof(TwofishContext));
+   //Erase Twofish context
+   cryptoZeroizeMem(context, sizeof(TwofishContext));
 }
 
 #endif

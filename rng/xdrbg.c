@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "rng/xdrbg.h"
 #include "debug.h"
 
@@ -189,6 +190,7 @@ error_t xdrbgSeedEx(XdrbgContext *context, const uint8_t *seed, size_t seedLen,
    xofAlgo->absorb(xofContext, &encode, sizeof(encode));
    xofAlgo->final(xofContext);
    xofAlgo->squeeze(xofContext, context->v, context->securityStrength * 2);
+   xofAlgo->deinit(xofContext);
 
    //Reset reseed_counter
    context->reseedCounter = 1;
@@ -276,6 +278,7 @@ error_t xdrbgReseedEx(XdrbgContext *context, const uint8_t *seed,
    xofAlgo->absorb(xofContext, &encode, sizeof(encode));
    xofAlgo->final(xofContext);
    xofAlgo->squeeze(xofContext, context->v, context->securityStrength * 2);
+   xofAlgo->deinit(xofContext);
 
    //Reset reseed_counter
    context->reseedCounter = 1;
@@ -358,8 +361,10 @@ error_t xdrbgGenerateEx(XdrbgContext *context, const uint8_t *alpha,
       //Number of bytes to generate at a time
       n = MIN(outputLen, context->maxOutputLen);
 
-      //Update internal state
+      //Initialize XOF context
       xofAlgo->init(xofContext);
+
+      //Update internal state
       xofAlgo->absorb(xofContext, context->v, context->securityStrength * 2);
       xofAlgo->absorb(xofContext, alpha, alphaLen);
       xofAlgo->absorb(xofContext, &encode, sizeof(encode));
@@ -368,6 +373,9 @@ error_t xdrbgGenerateEx(XdrbgContext *context, const uint8_t *alpha,
 
       //Generate output string
       xofAlgo->squeeze(xofContext, output, n);
+
+      //Release XOF context
+      xofAlgo->deinit(xofContext);
 
       //Advance data pointer
       output += n;
@@ -399,7 +407,7 @@ void xdrbgDeinit(XdrbgContext *context)
       osDeleteMutex(&context->mutex);
 
       //Erase the contents of the internal state
-      osMemset(context, 0, sizeof(XdrbgContext));
+      cryptoZeroizeMem(context, sizeof(XdrbgContext));
    }
 }
 

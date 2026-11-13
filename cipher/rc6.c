@@ -37,6 +37,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/rc6.h"
 
 //Check crypto library configuration
@@ -271,8 +272,8 @@ void rc6DecryptBlock(Rc6Context *context, const uint8_t *input,
 
 void rc6Deinit(Rc6Context *context)
 {
-   //Clear RC6 context
-   osMemset(context, 0, sizeof(Rc6Context));
+   //Erase RC6 context
+   cryptoZeroizeMem(context, sizeof(Rc6Context));
 }
 
 #endif

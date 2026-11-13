@@ -53,7 +53,8 @@ const HashAlgo shake256_512HashAlgo =
    (HashAlgoInit) shake256_512Init,
    (HashAlgoUpdate) shake256_512Update,
    (HashAlgoFinal) shake256_512Final,
-   NULL
+   NULL,
+   (HashAlgoDeinit) shake256_512Deinit
 };
 
 
@@ -143,6 +144,18 @@ __weak_func void shake256_512Final(Shake256_512Context *context, uint8_t *digest
    shakeFinal(context);
    //Extract data from the squeezing phase
    shakeSqueeze(context, digest, SHAKE256_512_DIGEST_SIZE);
+}
+
+
+/**
+ * @brief Release SHAKE256/512 context
+ * @param[in] context Pointer to the SHAKE256/512 context
+ **/
+
+void shake256_512Deinit(Shake256_512Context *context)
+{
+   //Release SHAKE context
+   shakeDeinit(context);
 }
 
 #endif

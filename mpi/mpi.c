@@ -1118,12 +1118,12 @@ error_t mpiAddAbs(Mpi *r, const Mpi *a, const Mpi *b)
    }
 
    //Check the final carry bit
-   if(c && n >= r->size)
+   if(c)
    {
       //Extend the size of the destination register
-      MPI_CHECK(mpiGrow(r, n + 1));
+      MPI_CHECK(mpiGrow(r, i + 1));
       //Add carry bit
-      r->data[n] = 1;
+      r->data[i] = 1;
    }
 
 end:
@@ -1627,9 +1627,18 @@ error_t mpiMod(Mpi *r, const Mpi *a, const Mpi *p)
       }
    }
 
+   //Negative operand?
    if(sign < 0)
    {
-      MPI_CHECK(mpiSubAbs(r, p, r));
+      //When A is a multiple of P, the result is zero
+      if(mpiCompInt(r, 0) != 0)
+      {
+         MPI_CHECK(mpiSubAbs(r, p, r));
+      }
+      else
+      {
+         r->sign = 1;
+      }
    }
 
 end:

@@ -67,6 +67,7 @@ void sha384Init(Sha384Context *context);
 void sha384Update(Sha384Context *context, const void *data, size_t length);
 void sha384Final(Sha384Context *context, uint8_t *digest);
 void sha384FinalRaw(Sha384Context *context, uint8_t *digest);
+void sha384Deinit(Sha384Context *context);
 
 //C++ guard
 #ifdef __cplusplus

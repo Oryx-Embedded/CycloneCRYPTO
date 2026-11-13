@@ -73,6 +73,8 @@ void parallelHashXofFinal(ParallelHashXofContext *context);
 void parallelHashXofSqueeze(ParallelHashXofContext *context, uint8_t *output,
    size_t length);
 
+void parallelHashXofDeinit(ParallelHashXofContext *context);
+
 //C++ guard
 #ifdef __cplusplus
 }

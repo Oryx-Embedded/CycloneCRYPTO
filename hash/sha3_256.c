@@ -61,7 +61,8 @@ const HashAlgo sha3_256HashAlgo =
    (HashAlgoInit) sha3_256Init,
    (HashAlgoUpdate) sha3_256Update,
    (HashAlgoFinal) sha3_256Final,
-   NULL
+   NULL,
+   (HashAlgoDeinit) sha3_256Deinit
 };
 
 
@@ -151,6 +152,18 @@ void sha3_256Final(Sha3_256Context *context, uint8_t *digest)
    keccakFinal(context, KECCAK_SHA3_PAD);
    //Extract data from the squeezing phase
    keccakSqueeze(context, digest, SHA3_256_DIGEST_SIZE);
+}
+
+
+/**
+ * @brief Release SHA3-256 context
+ * @param[in] context Pointer to the SHA3-256 context
+ **/
+
+void sha3_256Deinit(Sha3_256Context *context)
+{
+   //Release Keccak context
+   keccakDeinit(context);
 }
 
 #endif

@@ -34,6 +34,9 @@
 //Dependencies
 #include "core/crypto.h"
 
+//Maximum length of the data, in bytes
+#define CHACHA20_POLY1305_MAX_DATA_SIZE 274877906880ULL
+
 //C++ guard
 #ifdef __cplusplus
 extern "C" {

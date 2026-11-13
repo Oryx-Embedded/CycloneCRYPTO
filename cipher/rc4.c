@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/rc4.h"
 
 //Check crypto library configuration
@@ -71,6 +72,10 @@ error_t rc4Init(Rc4Context *context, const uint8_t *key, size_t length)
    //Check parameters
    if(context == NULL || key == NULL)
       return ERROR_INVALID_PARAMETER;
+
+   //The key must be between 1 and 256 bytes long
+   if(length < 1 || length > 256)
+      return ERROR_INVALID_KEY_LENGTH;
 
    //Clear context
    context->i = 0;
@@ -157,8 +162,8 @@ void rc4Cipher(Rc4Context *context, const uint8_t *input, uint8_t *output,
 
 void rc4Deinit(Rc4Context *context)
 {
-   //Clear RC4 context
-   osMemset(context, 0, sizeof(Rc4Context));
+   //Erase RC4 context
+   cryptoZeroizeMem(context, sizeof(Rc4Context));
 }
 
 #endif

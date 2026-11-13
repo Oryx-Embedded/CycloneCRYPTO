@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/salsa20.h"
 
 //Check crypto library configuration
@@ -255,7 +256,7 @@ void salsa20Cipher(Salsa20Context *context, const uint8_t *input,
    }
 
    //Erase the serialized state (it contains the key)
-   osMemset(block, 0, sizeof(block));
+   cryptoZeroizeMem(block, sizeof(block));
 }
 
 
@@ -311,8 +312,8 @@ void salsa20ProcessBlock(const uint8_t *input, uint8_t *output, uint_t nr)
 
 void salsa20Deinit(Salsa20Context *context)
 {
-   //Clear Salsa20 context
-   osMemset(context, 0, sizeof(Salsa20Context));
+   //Erase Salsa20 context
+   cryptoZeroizeMem(context, sizeof(Salsa20Context));
 }
 
 #endif

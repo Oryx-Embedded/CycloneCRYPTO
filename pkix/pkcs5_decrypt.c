@@ -404,9 +404,10 @@ error_t pkcs5ParsePbes1Params(const uint8_t *data, size_t length,
    if(error)
       return error;
 
-   //The iteration count must be a positive integer
-   if(value < 0)
-      return ERROR_INVALID_SYNTAX;
+   //The iteration count must be a positive integer. An upper bound is also
+   //enforced to limit the computation time
+   if(value < 0 || value > PKCS5_MAX_ITERATION_COUNT)
+      return ERROR_INVALID_PARAMETER;
 
    //Save iteration count
    pbes1Params->iterationCount = value;
@@ -575,9 +576,10 @@ error_t pkcs5ParsePbkdf2Params(const uint8_t *data, size_t length,
    if(error)
       return error;
 
-   //The iteration count must be a positive integer
-   if(value < 0)
-      return ERROR_INVALID_SYNTAX;
+   //The iteration count must be a positive integer. An upper bound is also
+   //enforced to limit the computation time
+   if(value < 0 || value > PKCS5_MAX_ITERATION_COUNT)
+      return ERROR_INVALID_PARAMETER;
 
    //Save iteration count
    keyDerivationFunc->iterationCount = value;
@@ -635,7 +637,7 @@ error_t pkcs5ParsePbkdf2Params(const uint8_t *data, size_t length,
    else
    {
       //The default pseudorandom function is HMAC-SHA-1 (refer to RFC 8018,
-      //section A.2)
+      //appendix A.2)
       keyDerivationFunc->prfAlgoId.value = HMAC_WITH_SHA1_OID;
       keyDerivationFunc->prfAlgoId.length = sizeof(HMAC_WITH_SHA1_OID);
    }
@@ -723,6 +725,10 @@ error_t pkcs5VerifyPadding(const uint8_t *data, size_t dataLen,
    uint32_t c;
    uint32_t bad;
 
+   //The plaintext data must contain at least one block
+   if(dataLen < blockSize)
+      return ERROR_DECRYPTION_FAILED;
+
    //Retrieve the length of the padding string
    n = data[dataLen - 1];
 
@@ -747,7 +753,7 @@ error_t pkcs5VerifyPadding(const uint8_t *data, size_t dataLen,
    *paddingLen = CRYPTO_SELECT_32(n, 0, bad);
 
    //Return status code
-   return bad ? ERROR_DECRYPTION_FAILED : NO_ERROR;
+   return (bad != 0) ? ERROR_DECRYPTION_FAILED : NO_ERROR;
 }
 
 #endif

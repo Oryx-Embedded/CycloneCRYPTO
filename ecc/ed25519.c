@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "ecc/ec.h"
 #include "ecc/curve25519.h"
 #include "ecc/ed25519.h"
@@ -206,7 +207,7 @@ error_t ed25519GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey)
    ed25519Encode(&state->a, publicKey);
 
    //Erase working state
-   osMemset(state, 0, sizeof(Ed25519GeneratePublicKeyState));
+   cryptoZeroizeMem(state, sizeof(Ed25519GeneratePublicKeyState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
@@ -421,7 +422,7 @@ error_t ed25519GenerateSignatureEx(const uint8_t *privateKey,
    ed25519SelectInt(signature + 32, state->p, state->s, c, 32);
 
    //Erase working state
-   osMemset(state, 0, sizeof(Ed25519GenerateSignatureState));
+   cryptoZeroizeMem(state, sizeof(Ed25519GenerateSignatureState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
@@ -572,7 +573,7 @@ error_t ed25519VerifySignatureEx(const uint8_t *publicKey,
    ret |= ed25519CompInt(state->p, signature, ED25519_SIGNATURE_LEN / 2);
 
    //Erase working state
-   osMemset(state, 0, sizeof(Ed25519VerifySignatureState));
+   cryptoZeroizeMem(state, sizeof(Ed25519VerifySignatureState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state

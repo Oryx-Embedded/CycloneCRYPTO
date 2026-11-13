@@ -126,6 +126,7 @@ error_t keccakInit(KeccakContext *context, uint_t capacity);
 void keccakAbsorb(KeccakContext *context, const void *input, size_t length);
 void keccakFinal(KeccakContext *context, uint8_t pad);
 void keccakSqueeze(KeccakContext *context, uint8_t *output, size_t length);
+void keccakDeinit(KeccakContext *context);
 void keccakPermutBlock(KeccakContext *context);
 
 //C++ guard

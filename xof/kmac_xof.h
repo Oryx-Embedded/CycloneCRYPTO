@@ -66,6 +66,7 @@ error_t kmacXofInit(KmacXofContext *context, uint_t strength, const void *key,
 void kmacXofAbsorb(KmacXofContext *context, const void *input, size_t length);
 void kmacXofFinal(KmacXofContext *context);
 void kmacXofSqueeze(KmacXofContext *context, uint8_t *output, size_t length);
+void kmacXofDeinit(KmacXofContext *context);
 
 //C++ guard
 #ifdef __cplusplus

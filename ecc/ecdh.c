@@ -285,8 +285,7 @@ error_t ecdhImportPeerPublicKey(EcdhContext *context, const uint8_t *input,
    {
       //Check the format of the public key
       if(format == EC_PUBLIC_KEY_FORMAT_X963 ||
-         format == EC_PUBLIC_KEY_FORMAT_RAW ||
-         format == EC_PUBLIC_KEY_FORMAT_RAW_Y)
+         format == EC_PUBLIC_KEY_FORMAT_RAW)
       {
          //Ensure the public key is acceptable
          error = ecdhCheckPublicKey(context, &context->qb);
@@ -357,6 +356,7 @@ error_t ecdhCheckPublicKey(EcdhContext *context, const EcPublicKey *publicKey)
          {
             error_t error;
             uint_t pLen;
+            EcPoint3 q;
             EcPoint3 r;
 
             //Initialize flag
@@ -366,10 +366,10 @@ error_t ecdhCheckPublicKey(EcdhContext *context, const EcPublicKey *publicKey)
             pLen = (context->curve->fieldSize + 31) / 32;
 
             //Convert the public key to projective representation
-            ecProjectify(context->curve, &r, &publicKey->q);
+            ecProjectify(context->curve, &q, &publicKey->q);
 
             //Compute R = n.Q
-            error = ecMulFast(context->curve, &r, context->curve->q, &r);
+            error = ecMulFast(context->curve, &r, context->curve->q, &q);
 
             //Check status code
             if(!error)
@@ -445,11 +445,18 @@ error_t ecdhComputeSharedSecret(EcdhContext *context, uint8_t *output,
          //Length of the resulting shared secret
          *outputLen = k;
 
-         //Convert the peer's public key to projective representation
-         ecProjectify(context->curve, &q, &context->qb.q);
+         //Ensure the peer's public key is acceptable before using it
+         error = ecdhCheckPublicKey(context, &context->qb);
 
-         //Compute Z = da.Qb
-         error = ecMulRegular(context->curve, &z, context->da.d, &q);
+         //Check status code
+         if(!error)
+         {
+            //Convert the peer's public key to projective representation
+            ecProjectify(context->curve, &q, &context->qb.q);
+
+            //Compute Z = da.Qb
+            error = ecMulRegular(context->curve, &z, context->da.d, &q);
+         }
 
          //Check status code
          if(!error)

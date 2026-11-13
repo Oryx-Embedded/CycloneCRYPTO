@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "ecc/ecdsa.h"
 #include "ecc/ec_misc.h"
 #include "encoding/asn1.h"
@@ -90,7 +91,7 @@ void ecdsaInitSignature(EcdsaSignature *signature)
 void ecdsaFreeSignature(EcdsaSignature *signature)
 {
    //Clear ECDSA signature
-   osMemset(signature, 0, sizeof(EcdsaSignature));
+   cryptoZeroizeMem(signature, sizeof(EcdsaSignature));
 }
 
 
@@ -514,6 +515,13 @@ __weak_func error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo,
    if(privateKey->curve == NULL)
       return ERROR_INVALID_ELLIPTIC_CURVE;
 
+   //The private key d must be in the range [1, q - 2]. The value q - 1 is
+   //excluded since the scalar multiplication does not handle it
+   error = ecCheckPrivateKey(privateKey);
+   //Any error to report?
+   if(error)
+      return error;
+
    //Get the length of the modulus, in words
    pLen = (privateKey->curve->fieldSize + 31) / 32;
    //Get the length of the order, in words
@@ -642,7 +650,7 @@ __weak_func error_t ecdsaGenerateSignature(const PrngAlgo *prngAlgo,
    }
 
    //Erase working state
-   osMemset(state, 0, sizeof(EcdsaGenerateSignatureState));
+   cryptoZeroizeMem(state, sizeof(EcdsaGenerateSignatureState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
@@ -807,7 +815,7 @@ error_t ecdsaGenerateDeterministicSignature(const EcPrivateKey *privateKey,
    }
 
    //Erase working state
-   osMemset(state, 0, sizeof(EcdsaGenerateSignatureState));
+   cryptoZeroizeMem(state, sizeof(EcdsaGenerateSignatureState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
@@ -866,69 +874,77 @@ error_t ecdsaGenerateK(const EcCurve *curve, const HashAlgo *hashAlgo,
       //The private key is used as entropy string
       error = ecScalarExport(x, (n + 3) / 4, seed, n,
          EC_SCALAR_FORMAT_BIG_ENDIAN);
-   }
-
-   //Check status code
-   if(!error)
-   {
-      //The hashed message (truncated and expanded by bits2octets) is used as
-      //nonce. The entropy string and nonce are simply concatenated into the
-      //initial seed
-      error = ecScalarExport(h, (n + 3) / 4, seed + n, n,
-         EC_SCALAR_FORMAT_BIG_ENDIAN);
-   }
-
-   //Check status code
-   if(!error)
-   {
-      //For deterministic ECDSA, we want HMAC_DRBG to run with the entropy
-      //string and nonce that we specify, without accessing an actual entropy
-      //source
-      error = hmacDrbgSeed(hmacDrbgContext, seed, n * 2);
-   }
-
-   //Repeat this step until an acceptable value is obtained
-   while(!error)
-   {
-      //Generate a candidate value for k by requesting qlen bits from HMAC_DRBG
-      error = hmacDrbgGenerate(hmacDrbgContext, t, n);
 
       //Check status code
       if(!error)
       {
-         //The resulting value is then converted to an integer value using the
-         //big-endian convention
-         error = ecScalarImport(k, (n + 3) / 4, t, n,
+         //The hashed message (truncated and expanded by bits2octets) is used as
+         //nonce. The entropy string and nonce are simply concatenated into the
+         //initial seed
+         error = ecScalarExport(h, (n + 3) / 4, seed + n, n,
             EC_SCALAR_FORMAT_BIG_ENDIAN);
       }
 
       //Check status code
       if(!error)
       {
-         //The qlen leftmost bits are kept, and subsequent bits are discarded
-         if(curve->orderSize < (n * 8))
+         //For deterministic ECDSA, we want HMAC_DRBG to run with the entropy
+         //string and nonce that we specify, without accessing an actual entropy
+         //source
+         error = hmacDrbgSeed(hmacDrbgContext, seed, n * 2);
+      }
+
+      //Repeat this step until an acceptable value is obtained
+      while(!error)
+      {
+         //Generate a candidate value for k by requesting qlen bits from
+         //HMAC_DRBG
+         error = hmacDrbgGenerate(hmacDrbgContext, t, n);
+
+         //Check status code
+         if(!error)
          {
-            ecScalarShiftRight(k, k, (n * 8) - curve->orderSize, (n + 3) / 4);
+            //The resulting value is then converted to an integer value using
+            //the big-endian convention
+            error = ecScalarImport(k, (n + 3) / 4, t, n,
+               EC_SCALAR_FORMAT_BIG_ENDIAN);
          }
 
-         //Precompte q-1
-         ecScalarSubInt(q, curve->q, 1, (n + 3) / 4);
-
-         //If that value of k is within the [1,q-1] range, and is suitable for
-         //ECDSA, then the generation of k is finished
-         if(ecScalarCompInt(k, 0, (n + 3) / 4) > 0 &&
-            ecScalarComp(k, q, (n + 3) / 4) < 0)
+         //Check status code
+         if(!error)
          {
-            //The obtained value of k can be used in ECDSA
-            break;
+            //The qlen leftmost bits are kept, and subsequent bits are discarded
+            if(curve->orderSize < (n * 8))
+            {
+               ecScalarShiftRight(k, k, (n * 8) - curve->orderSize, (n + 3) / 4);
+            }
+
+            //Precompte q-1
+            ecScalarSubInt(q, curve->q, 1, (n + 3) / 4);
+
+            //If that value of k is within the [1,q-1] range, and is suitable
+            //for ECDSA, then the generation of k is finished
+            if(ecScalarCompInt(k, 0, (n + 3) / 4) > 0 &&
+               ecScalarComp(k, q, (n + 3) / 4) < 0)
+            {
+               //The obtained value of k can be used in ECDSA
+               break;
+            }
          }
       }
+
+      //Release HMAC_DRBG context
+      hmacDrbgDeinit(hmacDrbgContext);
    }
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
-   //Release working state
+   //Release previously allocated memory
    cryptoFreeMem(hmacDrbgContext);
 #endif
+
+   //Erase working state
+   cryptoZeroizeMem(seed, sizeof(seed));
+   cryptoZeroizeMem(t, sizeof(t));
 
    //Return status code
    return error;
@@ -1091,7 +1107,7 @@ __weak_func error_t ecdsaVerifySignature(const EcPublicKey *publicKey,
    }
 
    //Erase working state
-   osMemset(state, 0, sizeof(EcdsaVerifySignatureState));
+   cryptoZeroizeMem(state, sizeof(EcdsaVerifySignatureState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state

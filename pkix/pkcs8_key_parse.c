@@ -223,7 +223,7 @@ error_t pkcs8ParsePrivateKeyInfo(const uint8_t *data, size_t length,
          if(error)
             return error;
 
-         //Explicit tagging shall be used to encode each optional attribute
+         //Implicit tagging shall be used to encode each optional attribute
          if(tag.objClass != ASN1_CLASS_CONTEXT_SPECIFIC)
             return ERROR_INVALID_CLASS;
 
@@ -446,6 +446,11 @@ error_t pkcs8ParseRsaPrivateKey(const uint8_t *data, size_t length,
    //Failed to decode ASN.1 tag?
    if(error)
       return error;
+
+   //The version shall be 0 for two-prime RSA keys (refer to RFC 8017,
+   //appendix A.1.2)
+   if(rsaPrivateKey->version != PKCS1_VERSION_1)
+      return ERROR_INVALID_VERSION;
 
    //Point to the next field
    data += tag.totalLength;
@@ -791,6 +796,11 @@ error_t pkcs8ParseEcPrivateKey(const uint8_t *data, size_t length,
    //Failed to decode ASN.1 tag?
    if(error)
       return error;
+
+   //The Version field specifies the syntax version number of the elliptic curve
+   //private key structure (refer to RFC 5915, section 3)
+   if(ecPrivateKey->version != EC_PRIVATE_KEY_VERSION_1)
+      return ERROR_INVALID_VERSION;
 
    //Point to the next field
    data += tag.totalLength;

@@ -81,7 +81,7 @@ error_t x509ValidateCertificate(const X509CertInfo *certInfo,
 
       //Check the validity period
       if(compareDateTime(&currentDate, &validity->notBefore) < 0 ||
-         compareDateTime(&currentDate, &validity->notAfter) > 0)
+         compareDateTime(&currentDate, &validity->notAfter) >= 0)
       {
          //The certificate has expired or is not yet valid
          return ERROR_CERTIFICATE_EXPIRED;
@@ -698,23 +698,48 @@ error_t x509ParseIpv4Addr(const char_t *str, uint8_t *ipAddr)
 error_t x509ParseIpv6Addr(const char_t *str, uint8_t *ipAddr)
 {
    error_t error;
-   int_t i = 0;
-   int_t j = -1;
-   int_t k = 0;
-   int32_t value = -1;
+   uint_t i;
+   uint_t j;
+   uint_t n;
+   uint_t digits;
+   uint_t value;
+   bool_t compressed;
+   uint16_t words[8];
+
+   //Initialize status code
+   error = NO_ERROR;
+
+   //This flag indicates whether the "::" symbol has been found
+   compressed = FALSE;
+   //Position of the "::" symbol, if any
+   j = 0;
+   //Number of 16-bit words parsed so far
+   n = 0;
+
+   //The address may start with the "::" symbol
+   if(osStrncmp(str, "::", 2) == 0)
+   {
+      //The address starts with the "::" symbol
+      compressed = TRUE;
+      str += 2;
+   }
 
    //Parse input string
-   while(1)
+   while(*str != '\0')
    {
-      //Hexadecimal digit found?
-      if(isxdigit((uint8_t) *str))
+      //An IPv6 address consists of eight 16-bit words
+      if(n >= 8)
       {
-         //First digit to be decoded?
-         if(value < 0)
-         {
-            value = 0;
-         }
+         error = ERROR_INVALID_SYNTAX;
+         break;
+      }
 
+      //Initialize the value of the 16-bit word
+      value = 0;
+
+      //Each 16-bit word is represented by one to four hexadecimal digits
+      for(digits = 0; digits < 4 && isxdigit((uint8_t) *str); digits++)
+      {
          //Update the value of the current 16-bit word
          if(osIsdigit(*str))
          {
@@ -729,115 +754,110 @@ error_t x509ParseIpv6Addr(const char_t *str, uint8_t *ipAddr)
             value = (value * 16) + (*str - 'a' + 10);
          }
 
-         //Check resulting value
-         if(value > 0xFFFF)
-         {
-            //The conversion failed
-            error = ERROR_INVALID_SYNTAX;
-            break;
-         }
-      }
-      //"::" symbol found?
-      else if(osStrncmp(str, "::", 2) == 0)
-      {
-         //The "::" can only appear once in an IPv6 address
-         if(j >= 0)
-         {
-            //The conversion failed
-            error = ERROR_INVALID_SYNTAX;
-            break;
-         }
-
-         //The "::" symbol is preceded by a number?
-         if(value >= 0)
-         {
-            //Save the current 16-bit word
-            STORE16BE(value, ipAddr + 2 * i);
-            i++;
-
-            //Prepare to decode the next 16-bit word
-            value = -1;
-         }
-
-         //Save the position of the "::" symbol
-         j = i;
-         //Point to the next character
+         //Next digit
          str++;
       }
-      //":" symbol found?
-      else if(*str == ':' && i < 8)
+
+      //Each word must contain at least one digit
+      if(digits == 0)
       {
-         //Each ":" must be preceded by a valid number
-         if(value < 0)
-         {
-            //The conversion failed
-            error = ERROR_INVALID_SYNTAX;
-            break;
-         }
-
-         //Save the current 16-bit word
-         STORE16BE(value, ipAddr + 2 * i);
-         i++;
-
-         //Prepare to decode the next 16-bit word
-         value = -1;
-      }
-      //End of string detected?
-      else if(*str == '\0' && i == 7 && j < 0)
-      {
-         //The NULL character must be preceded by a valid number
-         if(value < 0)
-         {
-            //The conversion failed
-            error = ERROR_INVALID_SYNTAX;
-         }
-         else
-         {
-            //Save the last 16-bit word of the IPv6 address
-            STORE16BE(value, ipAddr + 2 * i);
-            //The conversion succeeded
-            error = NO_ERROR;
-         }
-
-         //We are done
-         break;
-      }
-      else if(*str == '\0' && i < 7 && j >= 0)
-      {
-         //Save the last 16-bit word of the IPv6 address
-         if(value >= 0)
-         {
-            STORE16BE(value, ipAddr + 2 * i);
-            i++;
-         }
-
-         //Move the part of the address that follows the "::" symbol
-         for(k = 0; k < (i - j); k++)
-         {
-            value = LOAD16BE(ipAddr + 2 * (i - 1 - k));
-            STORE16BE(value, ipAddr + 2 * (7 - k));
-         }
-
-         //A sequence of zeroes can now be written in place of "::"
-         for(k = 0; k < (8 - i); k++)
-         {
-            STORE16BE(0, ipAddr + 2 * (j + k));
-         }
-
-         //The conversion succeeded
-         error = NO_ERROR;
-         break;
-      }
-      //Invalid character...
-      else
-      {
-         //The conversion failed
          error = ERROR_INVALID_SYNTAX;
          break;
       }
 
-      //Point to the next character
-      str++;
+      //Save the current 16-bit word
+      words[n++] = (uint16_t) value;
+
+      //The words are separated by a ":" symbol
+      if(*str == ':')
+      {
+         //Skip the separator
+         str++;
+
+         //"::" symbol found?
+         if(*str == ':')
+         {
+            //The "::" symbol can only appear once in an IPv6 address
+            if(compressed)
+            {
+               error = ERROR_INVALID_SYNTAX;
+               break;
+            }
+            else
+            {
+               //Save the position of the "::" symbol
+               compressed = TRUE;
+               j = n;
+               str++;
+            }
+         }
+         else if(*str == '\0')
+         {
+            //The address must not end with a single ":" symbol
+            error = ERROR_INVALID_SYNTAX;
+            break;
+         }
+         else
+         {
+            //The next 16-bit word follows
+         }
+      }
+      else if(*str == '\0')
+      {
+         //End of string
+      }
+      else
+      {
+         //Invalid character (including a fifth hexadecimal digit)
+         error = ERROR_INVALID_SYNTAX;
+         break;
+      }
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Check the number of 16-bit words
+      if(compressed)
+      {
+         //The "::" symbol represents one or more 16-bit words of zeros
+         if(n >= 8)
+         {
+            error = ERROR_INVALID_SYNTAX;
+         }
+      }
+      else
+      {
+         //Without "::", all the eight 16-bit words must be present
+         if(n != 8)
+         {
+            error = ERROR_INVALID_SYNTAX;
+         }
+
+         //No word follows the "::" symbol
+         j = n;
+      }
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //The words that follow the "::" symbol are placed at the end of the
+      //address, and the gap is filled with zeros
+      osMemset(ipAddr, 0, 16);
+
+      //Copy the 16-bit words
+      for(i = 0; i < n; i++)
+      {
+         if(i < j)
+         {
+            STORE16BE(words[i], ipAddr + 2 * i);
+         }
+         else
+         {
+            STORE16BE(words[i], ipAddr + 2 * (i + 8 - n));
+         }
+      }
    }
 
    //Return status code

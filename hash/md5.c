@@ -38,6 +38,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "hash/md5.h"
 
 //Check crypto library configuration
@@ -94,7 +95,8 @@ const HashAlgo md5HashAlgo =
    (HashAlgoInit) md5Init,
    (HashAlgoUpdate) md5Update,
    (HashAlgoFinal) md5Final,
-   (HashAlgoFinalRaw) md5FinalRaw
+   (HashAlgoFinalRaw) md5FinalRaw,
+   (HashAlgoDeinit) md5Deinit
 };
 
 
@@ -249,6 +251,18 @@ __weak_func void md5Final(Md5Context *context, uint8_t *digest)
    {
       STORE32LE(context->h[i], digest + i * 4);
    }
+}
+
+
+/**
+ * @brief Release MD5 context
+ * @param[in] context Pointer to the MD5 context
+ **/
+
+void md5Deinit(Md5Context *context)
+{
+   //Erase MD5 context
+   cryptoZeroizeMem(context, sizeof(Md5Context));
 }
 
 

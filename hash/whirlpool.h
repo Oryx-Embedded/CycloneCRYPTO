@@ -80,6 +80,8 @@ error_t whirlpoolCompute(const void *data, size_t length, uint8_t *digest);
 void whirlpoolInit(WhirlpoolContext *context);
 void whirlpoolUpdate(WhirlpoolContext *context, const void *data, size_t length);
 void whirlpoolFinal(WhirlpoolContext *context, uint8_t *digest);
+void whirlpoolDeinit(WhirlpoolContext *context);
+
 void whirlpoolProcessBlock(WhirlpoolContext *context);
 
 //C++ guard

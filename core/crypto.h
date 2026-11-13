@@ -1,6 +1,6 @@
 /**
  * @file crypto.h
- * @brief General definitions for cryptographic algorithms
+ * @brief General definitions for cryptographic library
  *
  * @section License
  *
@@ -989,36 +989,36 @@
 
 //Rotate left operations
 #ifndef ROL8
-   #define ROL8(a, n) (((a) << (n)) | ((a) >> (8 - (n))))
+   #define ROL8(a, n) (((a) << ((n) & 7)) | ((a) >> ((8 - (n)) & 7)))
 #endif
 
 #ifndef ROL16
-   #define ROL16(a, n) (((a) << (n)) | ((a) >> (16 - (n))))
+   #define ROL16(a, n) (((a) << ((n) & 15)) | ((a) >> ((16 - (n)) & 15)))
 #endif
 
 #ifndef ROL32
-   #define ROL32(a, n) (((a) << (n)) | ((a) >> (32 - (n))))
+   #define ROL32(a, n) (((a) << ((n) & 31)) | ((a) >> ((32 - (n)) & 31)))
 #endif
 
 #ifndef ROL64
-   #define ROL64(a, n) (((a) << (n)) | ((a) >> (64 - (n))))
+   #define ROL64(a, n) (((a) << ((n) & 63)) | ((a) >> ((64 - (n)) & 63)))
 #endif
 
 //Rotate right operations
 #ifndef ROR8
-   #define ROR8(a, n) (((a) >> (n)) | ((a) << (8 - (n))))
+   #define ROR8(a, n) (((a) >> ((n) & 7)) | ((a) << ((8 - (n)) & 7)))
 #endif
 
 #ifndef ROR16
-   #define ROR16(a, n) (((a) >> (n)) | ((a) << (16 - (n))))
+   #define ROR16(a, n) (((a) >> ((n) & 15)) | ((a) << ((16 - (n)) & 15)))
 #endif
 
 #ifndef ROR32
-   #define ROR32(a, n) (((a) >> (n)) | ((a) << (32 - (n))))
+   #define ROR32(a, n) (((a) >> ((n) & 31)) | ((a) << ((32 - (n)) & 31)))
 #endif
 
 #ifndef ROR64
-   #define ROR64(a, n) (((a) >> (n)) | ((a) << (64 - (n))))
+   #define ROR64(a, n) (((a) >> ((n) & 63)) | ((a) << ((64 - (n)) & 63)))
 #endif
 
 //Arithmetic shift right operations
@@ -1196,6 +1196,7 @@ typedef void (*HashAlgoInit)(void *context);
 typedef void (*HashAlgoUpdate)(void *context, const void *data, size_t length);
 typedef void (*HashAlgoFinal)(void *context, uint8_t *digest);
 typedef void (*HashAlgoFinalRaw)(void *context, uint8_t *digest);
+typedef void (*HashAlgoDeinit)(void *context);
 
 //Common API for XOF algorithms
 typedef error_t (*XofAlgoCompute)(const void *input, size_t inputLen,
@@ -1212,6 +1213,7 @@ typedef error_t (*XofAlgoInitEx)(void *context, const char_t *custom,
 typedef void (*XofAlgoAbsorb)(void *context, const void *input, size_t length);
 typedef void (*XofAlgoFinal)(void *context);
 typedef void (*XofAlgoSqueeze)(void *context, uint8_t *output, size_t length);
+typedef void (*XofAlgoDeinit)(void *context);
 
 //Common API for encryption algorithms
 typedef error_t (*CipherAlgoInit)(void *context, const uint8_t *key,
@@ -1275,6 +1277,7 @@ typedef struct
    HashAlgoUpdate update;
    HashAlgoFinal final;
    HashAlgoFinalRaw finalRaw;
+   HashAlgoDeinit deinit;
 } HashAlgo;
 
 
@@ -1295,6 +1298,7 @@ typedef struct
    XofAlgoAbsorb absorb;
    XofAlgoFinal final;
    XofAlgoSqueeze squeeze;
+   XofAlgoDeinit deinit;
 } XofAlgo;
 
 

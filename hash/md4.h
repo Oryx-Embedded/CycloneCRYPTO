@@ -75,6 +75,8 @@ error_t md4Compute(const void *data, size_t length, uint8_t *digest);
 void md4Init(Md4Context *context);
 void md4Update(Md4Context *context, const void *data, size_t length);
 void md4Final(Md4Context *context, uint8_t *digest);
+void md4Deinit(Md4Context *context);
+
 void md4ProcessBlock(Md4Context *context);
 
 //C++ guard

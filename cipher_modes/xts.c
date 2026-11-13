@@ -38,6 +38,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher_modes/xts.h"
 #include "debug.h"
 
@@ -61,12 +62,16 @@ error_t xtsInit(XtsContext *context, const CipherAlgo *cipherAlgo,
    const uint8_t *k1;
    const uint8_t *k2;
 
+   //Check parameters
+   if(context == NULL || cipherAlgo == NULL || key == NULL)
+      return ERROR_INVALID_PARAMETER;
+
    //XTS supports only symmetric block ciphers whose block size is 128 bits
    if(cipherAlgo->type != CIPHER_ALGO_TYPE_BLOCK || cipherAlgo->blockSize != 16)
       return ERROR_INVALID_PARAMETER;
 
    //Invalid key length?
-   if(keyLen != 32 && keyLen != 64)
+   if(keyLen != 32 && keyLen != 48 && keyLen != 64)
       return ERROR_INVALID_PARAMETER;
 
    //Cipher algorithm used to perform XTS encryption/decryption
@@ -75,6 +80,12 @@ error_t xtsInit(XtsContext *context, const CipherAlgo *cipherAlgo,
    //The key is parsed as a concatenation of 2 fields of equal size called K1 and K2
    k1 = (uint8_t *) key;
    k2 = (uint8_t *) key + (keyLen / 2);
+
+#if (XTS_KEY_CHECK_SUPPORT == ENABLED)
+   //K1 and K2 must be different (refer to SP 800-38E, section 5.1)
+   if(cryptoCompMem(k1, k2, keyLen / 2) == 0)
+      return ERROR_INVALID_KEY;
+#endif
 
    //Initialize first cipher context using K1
    error = cipherAlgo->init(&context->cipherContext1, k1, keyLen / 2);
@@ -109,9 +120,21 @@ error_t xtsEncrypt(XtsContext *context, const uint8_t *i, const uint8_t *p,
    uint8_t t[16];
    uint8_t x[16];
 
+   //Check parameters
+   if(context == NULL || i == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if((p == NULL || c == NULL) && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
    //The data unit size shall be at least 128 bits
    if(length < 16)
       return ERROR_INVALID_PARAMETER;
+
+   //The number of 128-bit blocks in the data unit shall not exceed 2^20 (refer
+   //to IEEE Std 1619-2018, section 5.1)
+   if(length > XTS_MAX_DATA_UNIT_SIZE)
+      return ERROR_INVALID_LENGTH;
 
    //Encrypt the tweak using K2
    context->cipherAlgo->encryptBlock(&context->cipherContext2, i, t);
@@ -174,9 +197,21 @@ error_t xtsDecrypt(XtsContext *context, const uint8_t *i, const uint8_t *c,
    uint8_t t[16];
    uint8_t x[16];
 
+   //Check parameters
+   if(context == NULL || i == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if((c == NULL || p == NULL) && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
    //The data unit size shall be at least 128 bits
    if(length < 16)
       return ERROR_INVALID_PARAMETER;
+
+   //The number of 128-bit blocks in the data unit shall not exceed 2^20 (refer
+   //to IEEE Std 1619-2018, section 5.1)
+   if(length > XTS_MAX_DATA_UNIT_SIZE)
+      return ERROR_INVALID_LENGTH;
 
    //Encrypt the tweak using K2
    context->cipherAlgo->encryptBlock(&context->cipherContext2, i, t);

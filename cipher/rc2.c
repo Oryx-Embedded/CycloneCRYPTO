@@ -40,6 +40,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/rc2.h"
 #include "debug.h"
 
@@ -282,8 +283,8 @@ void rc2DecryptBlock(Rc2Context *context, const uint8_t *input,
 
 void rc2Deinit(Rc2Context *context)
 {
-   //Clear RC2 context
-   osMemset(context, 0, sizeof(Rc2Context));
+   //Erase RC2 context
+   cryptoZeroizeMem(context, sizeof(Rc2Context));
 }
 
 #endif

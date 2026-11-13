@@ -38,6 +38,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "hash/md2.h"
 
 //Check crypto library configuration
@@ -82,7 +83,8 @@ const HashAlgo md2HashAlgo =
    (HashAlgoInit) md2Init,
    (HashAlgoUpdate) md2Update,
    (HashAlgoFinal) md2Final,
-   NULL
+   NULL,
+   (HashAlgoDeinit) md2Deinit
 };
 
 
@@ -214,6 +216,18 @@ void md2Final(Md2Context *context, uint8_t *digest)
 
    //Copy the resulting digest
    osMemcpy(digest, context->x, MD2_DIGEST_SIZE);
+}
+
+
+/**
+ * @brief Release MD2 context
+ * @param[in] context Pointer to the MD2 context
+ **/
+
+void md2Deinit(Md2Context *context)
+{
+   //Erase MD2 context
+   cryptoZeroizeMem(context, sizeof(Md2Context));
 }
 
 

@@ -264,8 +264,8 @@ error_t pkcs8FormatEddsaPublicKey(const EddsaPublicKey *publicKey,
    //Check status code
    if(!error)
    {
-      //Implicit tagging shall be used to encode the public key
-      tag.constructed = TRUE;
+      //Implicit tagging shall be used to encode the public key 
+      tag.constructed = FALSE;
       tag.objClass = ASN1_CLASS_CONTEXT_SPECIFIC;
       tag.objType = 1;
       tag.length = n + 1;

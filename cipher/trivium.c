@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/trivium.h"
 
 //Check crypto library configuration
@@ -65,8 +66,12 @@ error_t triviumInit(TriviumContext *context, const uint8_t *key,
    if(context == NULL || key == NULL || iv == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //Check the length of the key and IV
-   if(keyLen != 10 && ivLen != 10)
+   //Check the length of the key
+   if(keyLen != 10)
+      return ERROR_INVALID_PARAMETER;
+
+   //Check the length of the IV
+   if(ivLen != 10)
       return ERROR_INVALID_PARAMETER;
 
    //Clear the 288-bit internal state
@@ -238,8 +243,8 @@ uint8_t triviumGenerateByte(TriviumContext *context)
 
 void triviumDeinit(TriviumContext *context)
 {
-   //Clear Trivium context
-   osMemset(context, 0, sizeof(TriviumContext));
+   //Erase Trivium context
+   cryptoZeroizeMem(context, sizeof(TriviumContext));
 }
 
 #endif

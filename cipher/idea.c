@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/idea.h"
 #include "debug.h"
 
@@ -67,7 +68,7 @@ static uint16_t ideaMul(uint16_t a, uint16_t b)
    uint32_t c;
 
    //Perform multiplication modulo 2^16 - 1
-   c = a * b;
+   c = (uint32_t) a * b;
 
    if(c != 0)
    {
@@ -349,8 +350,8 @@ void ideaDecryptBlock(IdeaContext *context, const uint8_t *input,
 
 void ideaDeinit(IdeaContext *context)
 {
-   //Clear IDEA context
-   osMemset(context, 0, sizeof(IdeaContext));
+   //Erase IDEA context
+   cryptoZeroizeMem(context, sizeof(IdeaContext));
 }
 
 #endif

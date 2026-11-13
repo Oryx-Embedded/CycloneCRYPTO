@@ -69,6 +69,7 @@ void tupleHashUpdate(TupleHashContext *context, const void *data,
    size_t length);
 
 void tupleHashFinal(TupleHashContext *context, uint8_t *digest, size_t length);
+void tupleHashDeinit(TupleHashContext *context);
 
 //C++ guard
 #ifdef __cplusplus

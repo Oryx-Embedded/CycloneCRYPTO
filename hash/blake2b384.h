@@ -66,6 +66,7 @@ error_t blake2b384Compute(const void *data, size_t length, uint8_t *digest);
 void blake2b384Init(Blake2b384Context *context);
 void blake2b384Update(Blake2b384Context *context, const void *data, size_t length);
 void blake2b384Final(Blake2b384Context *context, uint8_t *digest);
+void blake2b384Deinit(Blake2b384Context *context);
 
 //C++ guard
 #ifdef __cplusplus

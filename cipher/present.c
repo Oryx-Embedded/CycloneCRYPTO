@@ -37,6 +37,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/present.h"
 
 //Check crypto library configuration
@@ -405,8 +406,8 @@ void presentDecryptBlock(PresentContext *context, const uint8_t *input,
 
 void presentDeinit(PresentContext *context)
 {
-   //Clear PRESENT context
-   osMemset(context, 0, sizeof(PresentContext));
+   //Erase PRESENT context
+   cryptoZeroizeMem(context, sizeof(PresentContext));
 }
 
 #endif

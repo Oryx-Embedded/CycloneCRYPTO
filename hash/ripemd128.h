@@ -75,6 +75,8 @@ error_t ripemd128Compute(const void *data, size_t length, uint8_t *digest);
 void ripemd128Init(Ripemd128Context *context);
 void ripemd128Update(Ripemd128Context *context, const void *data, size_t length);
 void ripemd128Final(Ripemd128Context *context, uint8_t *digest);
+void ripemd128Deinit(Ripemd128Context *context);
+
 void ripemd128ProcessBlock(Ripemd128Context *context);
 
 //C++ guard

@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "rng/hmac_drbg.h"
 #include "debug.h"
 
@@ -132,6 +133,7 @@ error_t hmacDrbgSeedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
    size_t entropyInputLen, const uint8_t *nonce, size_t nonceLen,
    const uint8_t *personalizationString, size_t personalizationStringLen)
 {
+   error_t error;
    size_t outLen;
    DataFrag seedMaterialFrags[3];
 
@@ -185,16 +187,26 @@ error_t hmacDrbgSeedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
    osMemset(context->v, 0x01, outLen);
 
    //Compute (Key, V) = HMAC_DRBG_Update(seed_material, Key, V)
-   hmacDrbgUpdate(context, seedMaterialFrags, arraysize(seedMaterialFrags));
+   error = hmacDrbgUpdate(context, seedMaterialFrags,
+      arraysize(seedMaterialFrags));
 
-   //Reset reseed_counter
-   context->reseedCounter = 1;
+   //Check status code
+   if(!error)
+   {
+      //Initialize reseed_counter
+      context->reseedCounter = 1;
+   }
+   else
+   {
+      //The DRBG is left uninstantiated
+      context->reseedCounter = 0;
+   }
 
    //Release exclusive access to the PRNG state
    osReleaseMutex(&context->mutex);
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 }
 
 
@@ -229,6 +241,7 @@ error_t hmacDrbgReseedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
    size_t entropyInputLen, const uint8_t *additionalInput,
    size_t additionalInputLen)
 {
+   error_t error;
    DataFrag seedMaterialFrags[2];
 
    //Check parameters
@@ -263,16 +276,26 @@ error_t hmacDrbgReseedEx(HmacDrbgContext *context, const uint8_t *entropyInput,
    seedMaterialFrags[1].length = additionalInputLen;
 
    //Compute (Key, V) = HMAC_DRBG_Update(seed_material, Key, V)
-   hmacDrbgUpdate(context, seedMaterialFrags, arraysize(seedMaterialFrags));
+   error = hmacDrbgUpdate(context, seedMaterialFrags,
+      arraysize(seedMaterialFrags));
 
-   //Reset reseed_counter
-   context->reseedCounter = 1;
+   //Check status code
+   if(!error)
+   {
+      //Initialize reseed_counter
+      context->reseedCounter = 1;
+   }
+   else
+   {
+      //The DRBG is left uninstantiated
+      context->reseedCounter = 0;
+   }
 
    //Release exclusive access to the PRNG state
    osReleaseMutex(&context->mutex);
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 }
 
 
@@ -307,6 +330,7 @@ error_t hmacDrbgGenerateEx(HmacDrbgContext *context,
    const uint8_t *additionalInput, size_t additionalInputLen, uint8_t *output,
    size_t outputLen)
 {
+   error_t error;
    size_t n;
    size_t outLen;
    DataFrag providedDataFrags[1];
@@ -334,6 +358,10 @@ error_t hmacDrbgGenerateEx(HmacDrbgContext *context,
    if(context->reseedCounter > HMAC_DRBG_MAX_RESEED_INTERVAL)
       return ERROR_RESEED_REQUIRED;
 
+   //The maximum number of bits per request is 2^19
+   if(outputLen > HMAC_DRBG_MAX_BYTES_PER_REQUEST)
+      return ERROR_INVALID_LENGTH;
+
    //Acquire exclusive access to the PRNG state
    osAcquireMutex(&context->mutex);
 
@@ -346,50 +374,74 @@ error_t hmacDrbgGenerateEx(HmacDrbgContext *context,
    providedDataFrags[0].buffer = additionalInput;
    providedDataFrags[0].length = additionalInputLen;
 
+   //Initialize status code
+   error = NO_ERROR;
+
    //The length of the additional input string may be zero
    if(additionalInputLen > 0)
    {
       //Compute (Key, V) = HMAC_DRBG_Update(additional_input, Key, V)
-      hmacDrbgUpdate(context, providedDataFrags, arraysize(providedDataFrags));
+      error = hmacDrbgUpdate(context, providedDataFrags,
+         arraysize(providedDataFrags));
    }
 
    //Generate the requested number of bytes
-   while(outputLen > 0)
+   while(outputLen > 0 && !error)
    {
       //Number of bytes to generate at a time
       n = MIN(outputLen, outLen);
 
-      //Compute V = HMAC(Key, V)
-      hmacInit(hmacContext, context->hashAlgo, context->k, outLen);
-      hmacUpdate(hmacContext, context->v, outLen);
-      hmacFinal(hmacContext, context->v);
+      //Initialize HMAC calculation
+      error = hmacInit(hmacContext, context->hashAlgo, context->k, outLen);
 
-      //Copy data to the output buffer
-      osMemcpy(output, context->v, n);
+      //Check status code
+      if(!error)
+      {
+         //Compute V = HMAC(Key, V)
+         hmacUpdate(hmacContext, context->v, outLen);
+         hmacFinal(hmacContext, context->v);
 
-      //Next output block
-      output += n;
-      outputLen -= n;
+         //Copy data to the output buffer
+         osMemcpy(output, context->v, n);
+
+         //Next output block
+         output += n;
+         outputLen -= n;
+      }
    }
 
-   //Compute (Key, V) = HMAC_DRBG_Update(additional_input, Key, V)
-   if(additionalInputLen > 0)
+   //Check status code
+   if(!error)
    {
-      hmacDrbgUpdate(context, providedDataFrags, arraysize(providedDataFrags));
+      //Compute (Key, V) = HMAC_DRBG_Update(additional_input, Key, V)
+      if(additionalInputLen > 0)
+      {
+         error = hmacDrbgUpdate(context, providedDataFrags,
+            arraysize(providedDataFrags));
+      }
+      else
+      {
+         error = hmacDrbgUpdate(context, NULL, 0);
+      }
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Increment reseed_counter
+      context->reseedCounter++;
    }
    else
    {
-      hmacDrbgUpdate(context, NULL, 0);
+      //The DRBG is left uninstantiated
+      context->reseedCounter = 0;
    }
-
-   //Increment reseed_counter
-   context->reseedCounter++;
 
    //Release exclusive access to the PRNG state
    osReleaseMutex(&context->mutex);
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 }
 
 
@@ -407,7 +459,7 @@ void hmacDrbgDeinit(HmacDrbgContext *context)
       osDeleteMutex(&context->mutex);
 
       //Erase the contents of the internal state
-      osMemset(context, 0, sizeof(HmacDrbgContext));
+      cryptoZeroizeMem(context, sizeof(HmacDrbgContext));
    }
 }
 
@@ -417,11 +469,13 @@ void hmacDrbgDeinit(HmacDrbgContext *context)
  * @param[in] context Pointer to the HMAC_DRBG context
  * @param[in] providedDataFrags Array of fragments representing the data
  * @param[in] providedDataNumFrags Number of fragments representing the data
+ * @return Error code
  **/
 
-void hmacDrbgUpdate(HmacDrbgContext *context, const DataFrag *providedDataFrags,
-   uint_t providedDataNumFrags)
+error_t hmacDrbgUpdate(HmacDrbgContext *context,
+   const DataFrag *providedDataFrags, uint_t providedDataNumFrags)
 {
+   error_t error;
    uint8_t c;
    size_t i;
    size_t outLen;
@@ -435,32 +489,13 @@ void hmacDrbgUpdate(HmacDrbgContext *context, const DataFrag *providedDataFrags,
    //Constant byte 0x00
    c = 0;
 
-   //Compute K = HMAC(K, V || 0x00 || provided_data)
-   hmacInit(hmacContext, context->hashAlgo, context->k, outLen);
-   hmacUpdate(hmacContext, context->v, outLen);
-   hmacUpdate(hmacContext, &c, sizeof(c));
+   //Initialize HMAC calculation
+   error = hmacInit(hmacContext, context->hashAlgo, context->k, outLen);
 
-   for(i = 0; i < providedDataNumFrags; i++)
+   //Check status code
+   if(!error)
    {
-      hmacUpdate(hmacContext, providedDataFrags[i].buffer,
-         providedDataFrags[i].length);
-   }
-
-   hmacFinal(hmacContext, context->k);
-
-   //Compute V = HMAC(K, V)
-   hmacInit(hmacContext, context->hashAlgo, context->k, outLen);
-   hmacUpdate(hmacContext, context->v, outLen);
-   hmacFinal(hmacContext, context->v);
-
-   //Any data provided?
-   if(providedDataNumFrags > 0)
-   {
-      //Constant byte 0x01
-      c = 1;
-
-      //Compute K = HMAC(K, V || 0x01 || provided_data)
-      hmacInit(hmacContext, context->hashAlgo, context->k, outLen);
+      //Compute K = HMAC(K, V || 0x00 || provided_data)
       hmacUpdate(hmacContext, context->v, outLen);
       hmacUpdate(hmacContext, &c, sizeof(c));
 
@@ -472,11 +507,57 @@ void hmacDrbgUpdate(HmacDrbgContext *context, const DataFrag *providedDataFrags,
 
       hmacFinal(hmacContext, context->k);
 
+      //Initialize HMAC calculation
+      error = hmacInit(hmacContext, context->hashAlgo, context->k, outLen);
+   }
+
+   //Check status code
+   if(!error)
+   {
       //Compute V = HMAC(K, V)
-      hmacInit(hmacContext, context->hashAlgo, context->k, outLen);
       hmacUpdate(hmacContext, context->v, outLen);
       hmacFinal(hmacContext, context->v);
    }
+
+   //Any data provided?
+   if(providedDataNumFrags > 0 && !error)
+   {
+      //Constant byte 0x01
+      c = 1;
+
+      //Initialize HMAC calculation
+      error = hmacInit(hmacContext, context->hashAlgo, context->k, outLen);
+
+      //Check status code
+      if(!error)
+      {
+         //Compute K = HMAC(K, V || 0x01 || provided_data)
+         hmacUpdate(hmacContext, context->v, outLen);
+         hmacUpdate(hmacContext, &c, sizeof(c));
+
+         for(i = 0; i < providedDataNumFrags; i++)
+         {
+            hmacUpdate(hmacContext, providedDataFrags[i].buffer,
+               providedDataFrags[i].length);
+         }
+
+         hmacFinal(hmacContext, context->k);
+
+         //Initialize HMAC calculation
+         error = hmacInit(hmacContext, context->hashAlgo, context->k, outLen);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Compute V = HMAC(K, V)
+         hmacUpdate(hmacContext, context->v, outLen);
+         hmacFinal(hmacContext, context->v);
+      }
+   }
+
+   //Return status code
+   return error;
 }
 
 #endif

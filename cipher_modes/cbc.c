@@ -63,6 +63,13 @@ __weak_func error_t cbcEncrypt(const CipherAlgo *cipher, void *context,
 {
    size_t i;
 
+   //Check parameters
+   if(cipher == NULL || context == NULL || iv == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if((p == NULL || c == NULL) && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
    //CBC mode operates in a block-by-block fashion
    while(length >= cipher->blockSize)
    {
@@ -110,6 +117,13 @@ __weak_func error_t cbcDecrypt(const CipherAlgo *cipher, void *context,
 {
    size_t i;
    uint8_t t[16];
+
+   //Check parameters
+   if(cipher == NULL || context == NULL || iv == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if((c == NULL || p == NULL) && length != 0)
+      return ERROR_INVALID_PARAMETER;
 
    //CBC mode operates in a block-by-block fashion
    while(length >= cipher->blockSize)

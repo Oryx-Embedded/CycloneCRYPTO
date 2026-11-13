@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "rng/ctr_drbg.h"
 #include "debug.h"
 
@@ -468,6 +469,25 @@ error_t ctrDrbgGenerateEx(CtrDrbgContext *context,
          return ERROR_INVALID_PARAMETER;
    }
 
+   //The maximum number of bits per request is min(B, 2^19), where B is
+   //(2^ctr_len - 4) * blocklen
+   if(context->ctrLen < 3)
+   {
+      //With a short counter field, B may be lower than 2^19 bits
+      n = ((1U << (context->ctrLen * 8)) - 4) * context->cipherAlgo->blockSize;
+      //The limit is the smaller of the two values
+      n = MIN(n, CTR_DRBG_MAX_BYTES_PER_REQUEST);
+   }
+   else
+   {
+      //B is greater than 2^19 bits
+      n = CTR_DRBG_MAX_BYTES_PER_REQUEST;
+   }
+
+   //Check the number of bytes requested
+   if(outputLen > n)
+      return ERROR_INVALID_LENGTH;
+
    //Initialize status code
    error = NO_ERROR;
 
@@ -585,7 +605,7 @@ void ctrDrbgDeinit(CtrDrbgContext *context)
       osDeleteMutex(&context->mutex);
 
       //Erase the contents of the internal state
-      osMemset(context, 0, sizeof(CtrDrbgContext));
+      cryptoZeroizeMem(context, sizeof(CtrDrbgContext));
    }
 }
 

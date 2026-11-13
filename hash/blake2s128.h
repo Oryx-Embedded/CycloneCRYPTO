@@ -66,6 +66,7 @@ error_t blake2s128Compute(const void *data, size_t length, uint8_t *digest);
 void blake2s128Init(Blake2s128Context *context);
 void blake2s128Update(Blake2s128Context *context, const void *data, size_t length);
 void blake2s128Final(Blake2s128Context *context, uint8_t *digest);
+void blake2s128Deinit(Blake2s128Context *context);
 
 //C++ guard
 #ifdef __cplusplus

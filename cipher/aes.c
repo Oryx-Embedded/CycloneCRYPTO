@@ -39,6 +39,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/aes.h"
 
 //Check crypto library configuration
@@ -637,8 +638,8 @@ __weak_func void aesDecryptBlock(AesContext *context, const uint8_t *input,
 
 __weak_func void aesDeinit(AesContext *context)
 {
-   //Clear AES context
-   osMemset(context, 0, sizeof(AesContext));
+   //Erase AES context
+   cryptoZeroizeMem(context, sizeof(AesContext));
 }
 
 #endif

@@ -506,8 +506,9 @@ error_t x509FormatKeyUsage(const X509KeyUsage *keyUsage, uint8_t *output,
    length = 0;
 
    //The key usage extension defines the purpose of the key contained in the
-   //certificate
-   if(keyUsage->bitmap != 0 || keyUsage->critical)
+   //certificate. When the extension appears in a certificate, at least one of
+   //the bits must be set to 1 (refer to RFC 5280, section 4.2.1.3)
+   if(keyUsage->bitmap != 0)
    {
       //Format the extension identifier
       tag.constructed = FALSE;
@@ -749,7 +750,7 @@ error_t x509FormatExtendedKeyUsage(const X509ExtendedKeyUsage *extKeyUsage,
  * @return Error code
  **/
 
-error_t x509FormatKeyPurposes(uint16_t bitmap, uint8_t *output,
+error_t x509FormatKeyPurposes(uint32_t bitmap, uint8_t *output,
    size_t *written)
 {
    error_t error;
@@ -764,139 +765,120 @@ error_t x509FormatKeyPurposes(uint16_t bitmap, uint8_t *output,
    //Length of the ASN.1 structure
    length = 0;
 
-   //If a CA includes extended key usages to satisfy such applications, but
-   //does not wish to restrict usages of the key, the CA can include the
-   //special KeyPurposeId anyExtendedKeyUsage
-   if(bitmap == X509_EXT_KEY_USAGE_ANY)
+   //Format key purposes
+   for(k = 0; k < 16; k++)
    {
       //An object identifier is used to identify a given key purpose
       tag.constructed = FALSE;
       tag.objClass = ASN1_CLASS_UNIVERSAL;
       tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
-      tag.length = sizeof(X509_ANY_EXT_KEY_USAGE_OID);
-      tag.value = X509_ANY_EXT_KEY_USAGE_OID;
 
-      //Write the corresponding ASN.1 tag
-      error = asn1WriteTag(&tag, FALSE, p, &n);
-      //Any error to report?
-      if(error)
-         return error;
-
-      //Advance data pointer
-      ASN1_INC_POINTER(p, n);
-      length += n;
-   }
-   else
-   {
-      //Format key purposes
-      for(k = 0; k < 16; k++)
+      //Check key purpose
+      switch(bitmap & (1U << k))
       {
-         //An object identifier is used to identify a given key purpose
-         tag.constructed = FALSE;
-         tag.objClass = ASN1_CLASS_UNIVERSAL;
-         tag.objType = ASN1_TYPE_OBJECT_IDENTIFIER;
+      //anyExtendedKeyUsage?
+      case X509_EXT_KEY_USAGE_ANY:
+         tag.value = X509_ANY_EXT_KEY_USAGE_OID;
+         tag.length = sizeof(X509_ANY_EXT_KEY_USAGE_OID);
+         break;
 
-         //Check key purpose
-         switch(bitmap & (1U << k))
-         {
-         //id-kp-serverAuth?
-         case X509_EXT_KEY_USAGE_SERVER_AUTH:
-            tag.value = X509_KP_SERVER_AUTH_OID;
-            tag.length = sizeof(X509_KP_SERVER_AUTH_OID);
-            break;
+      //id-kp-serverAuth?
+      case X509_EXT_KEY_USAGE_SERVER_AUTH:
+         tag.value = X509_KP_SERVER_AUTH_OID;
+         tag.length = sizeof(X509_KP_SERVER_AUTH_OID);
+         break;
 
-         //id-kp-clientAuth?
-         case X509_EXT_KEY_USAGE_CLIENT_AUTH:
-            tag.value = X509_KP_CLIENT_AUTH_OID;
-            tag.length = sizeof(X509_KP_CLIENT_AUTH_OID);
-            break;
+      //id-kp-clientAuth?
+      case X509_EXT_KEY_USAGE_CLIENT_AUTH:
+         tag.value = X509_KP_CLIENT_AUTH_OID;
+         tag.length = sizeof(X509_KP_CLIENT_AUTH_OID);
+         break;
 
-         //id-kp-codeSigning?
-         case X509_EXT_KEY_USAGE_CODE_SIGNING:
-            tag.value = X509_KP_CODE_SIGNING_OID;
-            tag.length = sizeof(X509_KP_CODE_SIGNING_OID);
-            break;
+      //id-kp-codeSigning?
+      case X509_EXT_KEY_USAGE_CODE_SIGNING:
+         tag.value = X509_KP_CODE_SIGNING_OID;
+         tag.length = sizeof(X509_KP_CODE_SIGNING_OID);
+         break;
 
-         //id-kp-emailProtection?
-         case X509_EXT_KEY_USAGE_EMAIL_PROTECTION:
-            tag.value = X509_KP_EMAIL_PROTECTION_OID;
-            tag.length = sizeof(X509_KP_EMAIL_PROTECTION_OID);
-            break;
+      //id-kp-emailProtection?
+      case X509_EXT_KEY_USAGE_EMAIL_PROTECTION:
+         tag.value = X509_KP_EMAIL_PROTECTION_OID;
+         tag.length = sizeof(X509_KP_EMAIL_PROTECTION_OID);
+         break;
 
-         //id-kp-ipsecEndSystem?
-         case X509_EXT_KEY_USAGE_IPSEC_END_SYSTEM:
-            tag.value = X509_KP_IPSEC_END_SYSTEM_OID;
-            tag.length = sizeof(X509_KP_IPSEC_END_SYSTEM_OID);
-            break;
+      //id-kp-ipsecEndSystem?
+      case X509_EXT_KEY_USAGE_IPSEC_END_SYSTEM:
+         tag.value = X509_KP_IPSEC_END_SYSTEM_OID;
+         tag.length = sizeof(X509_KP_IPSEC_END_SYSTEM_OID);
+         break;
 
-         //id-kp-ipsecTunnel?
-         case X509_EXT_KEY_USAGE_IPSEC_TUNNEL:
-            tag.value = X509_KP_IPSEC_TUNNEL_OID;
-            tag.length = sizeof(X509_KP_IPSEC_TUNNEL_OID);
-            break;
+      //id-kp-ipsecTunnel?
+      case X509_EXT_KEY_USAGE_IPSEC_TUNNEL:
+         tag.value = X509_KP_IPSEC_TUNNEL_OID;
+         tag.length = sizeof(X509_KP_IPSEC_TUNNEL_OID);
+         break;
 
-         //id-kp-ipsecUser?
-         case X509_EXT_KEY_USAGE_IPSEC_USER:
-            tag.value = X509_KP_IPSEC_USER_OID;
-            tag.length = sizeof(X509_KP_IPSEC_USER_OID);
-            break;
+      //id-kp-ipsecUser?
+      case X509_EXT_KEY_USAGE_IPSEC_USER:
+         tag.value = X509_KP_IPSEC_USER_OID;
+         tag.length = sizeof(X509_KP_IPSEC_USER_OID);
+         break;
 
-         //id-kp-timeStamping?
-         case X509_EXT_KEY_USAGE_TIME_STAMPING:
-            tag.value = X509_KP_TIME_STAMPING_OID;
-            tag.length = sizeof(X509_KP_TIME_STAMPING_OID);
-            break;
+      //id-kp-timeStamping?
+      case X509_EXT_KEY_USAGE_TIME_STAMPING:
+         tag.value = X509_KP_TIME_STAMPING_OID;
+         tag.length = sizeof(X509_KP_TIME_STAMPING_OID);
+         break;
 
-         //id-kp-OCSPSigning?
-         case X509_EXT_KEY_USAGE_OCSP_SIGNING:
-            tag.value = X509_KP_OCSP_SIGNING_OID;
-            tag.length = sizeof(X509_KP_OCSP_SIGNING_OID);
-            break;
+      //id-kp-OCSPSigning?
+      case X509_EXT_KEY_USAGE_OCSP_SIGNING:
+         tag.value = X509_KP_OCSP_SIGNING_OID;
+         tag.length = sizeof(X509_KP_OCSP_SIGNING_OID);
+         break;
 
-         //id-kp-ipsecIKE?
-         case X509_EXT_KEY_USAGE_IPSEC_IKE:
-            tag.value = X509_KP_IPSEC_IKE_OID;
-            tag.length = sizeof(X509_KP_IPSEC_IKE_OID);
-            break;
+      //id-kp-ipsecIKE?
+      case X509_EXT_KEY_USAGE_IPSEC_IKE:
+         tag.value = X509_KP_IPSEC_IKE_OID;
+         tag.length = sizeof(X509_KP_IPSEC_IKE_OID);
+         break;
 
-         //id-kp-secureShellClient?
-         case X509_EXT_KEY_USAGE_SSH_CLIENT:
-            tag.value = X509_KP_SSH_CLIENT_OID;
-            tag.length = sizeof(X509_KP_SSH_CLIENT_OID);
-            break;
+      //id-kp-secureShellClient?
+      case X509_EXT_KEY_USAGE_SSH_CLIENT:
+         tag.value = X509_KP_SSH_CLIENT_OID;
+         tag.length = sizeof(X509_KP_SSH_CLIENT_OID);
+         break;
 
-         //id-kp-secureShellServer?
-         case X509_EXT_KEY_USAGE_SSH_SERVER:
-            tag.value = X509_KP_SSH_SERVER_OID;
-            tag.length = sizeof(X509_KP_SSH_SERVER_OID);
-            break;
+      //id-kp-secureShellServer?
+      case X509_EXT_KEY_USAGE_SSH_SERVER:
+         tag.value = X509_KP_SSH_SERVER_OID;
+         tag.length = sizeof(X509_KP_SSH_SERVER_OID);
+         break;
 
-         //id-kp-documentSigning?
-         case X509_EXT_KEY_USAGE_DOC_SIGNING:
-            tag.value = X509_KP_DOC_SIGNING_OID;
-            tag.length = sizeof(X509_KP_DOC_SIGNING_OID);
-            break;
+      //id-kp-documentSigning?
+      case X509_EXT_KEY_USAGE_DOC_SIGNING:
+         tag.value = X509_KP_DOC_SIGNING_OID;
+         tag.length = sizeof(X509_KP_DOC_SIGNING_OID);
+         break;
 
-         //Unknown key purpose?
-         default:
-            tag.value = NULL;
-            tag.length = 0;
-            break;
-         }
+      //Unknown key purpose?
+      default:
+         tag.value = NULL;
+         tag.length = 0;
+         break;
+      }
 
-         //Valid object identifier?
-         if(tag.value != NULL && tag.length > 0)
-         {
-            //Write the corresponding ASN.1 tag
-            error = asn1WriteTag(&tag, FALSE, p, &n);
-            //Any error to report?
-            if(error)
-               return error;
+      //Valid object identifier?
+      if(tag.value != NULL && tag.length > 0)
+      {
+         //Write the corresponding ASN.1 tag
+         error = asn1WriteTag(&tag, FALSE, p, &n);
+         //Any error to report?
+         if(error)
+            return error;
 
-            //Advance data pointer
-            ASN1_INC_POINTER(p, n);
-            length += n;
-         }
+         //Advance data pointer
+         ASN1_INC_POINTER(p, n);
+         length += n;
       }
    }
 
@@ -937,6 +919,7 @@ error_t x509FormatSubjectAltName(const X509SubjectAltName *subjectAltName,
    size_t length;
    uint8_t *p;
    Asn1Tag tag;
+   X509GeneralNameType type;
 
    //Initialize status code
    error = NO_ERROR;
@@ -972,10 +955,26 @@ error_t x509FormatSubjectAltName(const X509SubjectAltName *subjectAltName,
       //Loop through subject alternative names
       for(i = 0; i < subjectAltName->numGeneralNames; i++)
       {
+         //Get the type of the current name
+         type = subjectAltName->generalNames[i].type;
+
+         //The otherName, x400Address, directoryName and ediPartyName fields
+         //are constructed (refer to RFC 5280, section 4.2.1.6)
+         if(type == X509_GENERAL_NAME_TYPE_OTHER ||
+            type == X509_GENERAL_NAME_TYPE_X400_ADDRESS ||
+            type == X509_GENERAL_NAME_TYPE_DIRECTORY ||
+            type == X509_GENERAL_NAME_TYPE_EDI_PARTY)
+         {
+            tag.constructed = TRUE;
+         }
+         else
+         {
+            tag.constructed = FALSE;
+         }
+
          //Format the current name
-         tag.constructed = FALSE;
          tag.objClass = ASN1_CLASS_CONTEXT_SPECIFIC;
-         tag.objType = subjectAltName->generalNames[i].type;
+         tag.objType = type;
          tag.length = subjectAltName->generalNames[i].length;
          tag.value = (uint8_t *) subjectAltName->generalNames[i].value;
 

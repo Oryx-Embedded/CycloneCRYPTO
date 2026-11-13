@@ -581,6 +581,9 @@ error_t pkcs7ParseSignerInfo(const uint8_t *data, size_t length,
    size_t n;
    Asn1Tag tag;
 
+   //Clear the SignerInfo structure
+   osMemset(signerInfo, 0, sizeof(Pkcs7SignerInfo));
+
    //The SignerInfo structure is encapsulated within a sequence
    error = asn1ReadSequence(data, length, &tag);
    //Failed to decode ASN.1 tag?

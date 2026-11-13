@@ -39,6 +39,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/serpent.h"
 
 //Check crypto library configuration
@@ -590,8 +591,8 @@ void serpentDecryptBlock(SerpentContext *context, const uint8_t *input,
 
 void serpentDeinit(SerpentContext *context)
 {
-   //Clear Serpent context
-   osMemset(context, 0, sizeof(SerpentContext));
+   //Erase Serpent context
+   cryptoZeroizeMem(context, sizeof(SerpentContext));
 }
 
 #endif

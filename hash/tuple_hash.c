@@ -90,7 +90,7 @@ error_t tupleHashCompute(uint_t strength, const DataFrag *dataFrags,
    //Check status code
    if(!error)
    {
-      //Digest the message
+      //Digest the input data
       for(i = 0; i < dataNumFrags; i++)
       {
          tupleHashUpdate(context, dataFrags[i].buffer, dataFrags[i].length);
@@ -172,6 +172,18 @@ void tupleHashFinal(TupleHashContext *context, uint8_t *digest, size_t length)
    cshakeFinal(&context->cshakeContext);
    //Extract data from the squeezing phase
    cshakeSqueeze(&context->cshakeContext, digest, length);
+}
+
+
+/**
+ * @brief Release TupleHash context
+ * @param[in] context Pointer to the TupleHash context
+ **/
+
+void tupleHashDeinit(TupleHashContext *context)
+{
+   //Release cSHAKE context
+   cshakeDeinit(&context->cshakeContext);
 }
 
 #endif

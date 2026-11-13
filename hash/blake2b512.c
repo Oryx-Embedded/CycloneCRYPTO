@@ -56,7 +56,8 @@ const HashAlgo blake2b512HashAlgo =
    (HashAlgoInit) blake2b512Init,
    (HashAlgoUpdate) blake2b512Update,
    (HashAlgoFinal) blake2b512Final,
-   NULL
+   NULL,
+   (HashAlgoDeinit) blake2b512Deinit
 };
 
 
@@ -111,6 +112,18 @@ void blake2b512Final(Blake2b512Context *context, uint8_t *digest)
 {
    //Generate the message digest
    blake2bFinal(context, digest);
+}
+
+
+/**
+ * @brief Release BLAKE2b-512 context
+ * @param[in] context Pointer to the BLAKE2b-512 context
+ **/
+
+void blake2b512Deinit(Blake2b512Context *context)
+{
+   //Release BLAKE2b context
+   blake2bDeinit(context);
 }
 
 #endif

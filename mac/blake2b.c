@@ -39,6 +39,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "mac/blake2b.h"
 
 //Check crypto library configuration
@@ -169,7 +170,7 @@ error_t blake2bInit(Blake2bContext *context, const void *key,
    if(keyLen > 64)
       return ERROR_INVALID_PARAMETER;
 
-   //Check the length of the hash
+   //Check the length of the digest
    if(digestLen < 1 || digestLen > 64)
       return ERROR_INVALID_PARAMETER;
 
@@ -279,6 +280,22 @@ void blake2bFinal(Blake2bContext *context, uint8_t *digest)
       n = MIN(context->digestSize - i * 8, 8);
       STORE64LE(context->h[i], buffer);
       memcpy(digest + i * 8, buffer, n);
+   }
+}
+
+
+/**
+ * @brief Release BLAKE2b context
+ * @param[in] context Pointer to the BLAKE2b context
+ **/
+
+void blake2bDeinit(Blake2bContext *context)
+{
+   //Make sure the BLAKE2b context is valid
+   if(context != NULL)
+   {
+      //Erase BLAKE2b context
+      cryptoZeroizeMem(context, sizeof(Blake2bContext));
    }
 }
 

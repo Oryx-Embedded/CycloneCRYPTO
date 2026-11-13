@@ -44,7 +44,7 @@
 #define XDRBG_PRNG_ALGO (&xdrbgPrngAlgo)
 
 //Encode function
-#define XDRBG_ENCODE(alphaLen, n) ((n * 85) + alphaLen)
+#define XDRBG_ENCODE(alphaLen, n) (((n * 85) + alphaLen) & 0xFF)
 
 //C++ guard
 #ifdef __cplusplus

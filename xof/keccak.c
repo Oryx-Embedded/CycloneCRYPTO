@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "xof/keccak.h"
 
 //Check crypto library configuration
@@ -460,6 +461,18 @@ void keccakSqueeze(KeccakContext *context, uint8_t *output, size_t length)
       //Number of bytes that remains to be written
       length -= n;
    }
+}
+
+
+/**
+ * @brief Release Keccak context
+ * @param[in] context Pointer to the Keccak context
+ **/
+
+void keccakDeinit(KeccakContext *context)
+{
+   //Erase Keccak context
+   cryptoZeroizeMem(context, sizeof(KeccakContext));
 }
 
 

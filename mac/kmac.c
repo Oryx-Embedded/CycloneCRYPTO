@@ -39,6 +39,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "mac/kmac.h"
 
 //Check crypto library configuration
@@ -238,8 +239,11 @@ void kmacDeinit(KmacContext *context)
    //Make sure the KMAC context is valid
    if(context != NULL)
    {
-      //Clear KMAC context
-      osMemset(context, 0, sizeof(KmacContext));
+      //Release cSHAKE context
+      cshakeDeinit(&context->cshakeContext);
+
+      //Erase KMAC context
+      cryptoZeroizeMem(context, sizeof(KmacContext));
    }
 }
 

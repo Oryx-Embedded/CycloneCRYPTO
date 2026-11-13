@@ -37,6 +37,8 @@
 
 //Maximum seed length
 #define HASH_DRBG_MAX_SEED_LEN 111
+//Maximum number of bytes per request
+#define HASH_DRBG_MAX_BYTES_PER_REQUEST 65536
 //Maximum number of requests between reseeds
 #define HASH_DRBG_MAX_RESEED_INTERVAL 281474976710656ULL
 

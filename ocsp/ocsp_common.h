@@ -91,6 +91,20 @@
    #error OCSP_SHA512_SUPPORT parameter is not valid
 #endif
 
+//Tolerance for clock skew, in seconds
+#ifndef OCSP_MAX_CLOCK_SKEW
+   #define OCSP_MAX_CLOCK_SKEW 300
+#elif (OCSP_MAX_CLOCK_SKEW < 0)
+   #error OCSP_MAX_CLOCK_SKEW parameter is not valid
+#endif
+
+//Maximum age of a response that does not include nextUpdate, in seconds
+#ifndef OCSP_MAX_RESPONSE_AGE
+   #define OCSP_MAX_RESPONSE_AGE 604800
+#elif (OCSP_MAX_RESPONSE_AGE < 0)
+   #error OCSP_MAX_RESPONSE_AGE parameter is not valid
+#endif
+
 //C++ guard
 #ifdef __cplusplus
 extern "C" {

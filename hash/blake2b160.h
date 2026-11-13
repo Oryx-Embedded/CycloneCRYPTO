@@ -66,6 +66,7 @@ error_t blake2b160Compute(const void *data, size_t length, uint8_t *digest);
 void blake2b160Init(Blake2b160Context *context);
 void blake2b160Update(Blake2b160Context *context, const void *data, size_t length);
 void blake2b160Final(Blake2b160Context *context, uint8_t *digest);
+void blake2b160Deinit(Blake2b160Context *context);
 
 //C++ guard
 #ifdef __cplusplus

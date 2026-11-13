@@ -349,6 +349,11 @@ error_t emeOaepEncode(const PrngAlgo *prngAlgo, void *prngContext,
    if(label == NULL && labelLen != 0)
       return ERROR_INVALID_PARAMETER;
 
+   //The modulus must be large enough to hold two hash values and the
+   //two separator octets
+   if(k < (2 * hash->digestSize + 2))
+      return ERROR_INVALID_LENGTH;
+
    //Check the length of the message
    if(messageLen > (k - 2 * hash->digestSize - 2))
       return ERROR_INVALID_LENGTH;
@@ -441,7 +446,7 @@ uint32_t emeOaepDecode(const HashAlgo *hash, const HashAlgo *mgfHash,
 
    //The label is optional
    if(label == NULL && labelLen != 0)
-      return ERROR_INVALID_PARAMETER;
+      return TRUE;
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the hash context

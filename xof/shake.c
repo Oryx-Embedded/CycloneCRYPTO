@@ -62,7 +62,8 @@ const XofAlgo shake128XofAlgo =
    (XofAlgoInitEx) NULL,
    (XofAlgoAbsorb) shakeAbsorb,
    (XofAlgoFinal) shakeFinal,
-   (XofAlgoSqueeze) shakeSqueeze
+   (XofAlgoSqueeze) shakeSqueeze,
+   (XofAlgoDeinit) shakeDeinit
 };
 
 //Common interface for XOF algorithms (SHAKE256)
@@ -78,7 +79,8 @@ const XofAlgo shake256XofAlgo =
    (XofAlgoInitEx) NULL,
    (XofAlgoAbsorb) shakeAbsorb,
    (XofAlgoFinal) shakeFinal,
-   (XofAlgoSqueeze) shakeSqueeze
+   (XofAlgoSqueeze) shakeSqueeze,
+   (XofAlgoDeinit) shakeDeinit
 };
 
 
@@ -268,6 +270,18 @@ void shakeSqueeze(ShakeContext *context, uint8_t *output, size_t length)
 {
    //Extract data from the squeezing phase
    keccakSqueeze(&context->keccakContext, output, length);
+}
+
+
+/**
+ * @brief Release SHAKE context
+ * @param[in] context Pointer to the SHAKE context
+ **/
+
+void shakeDeinit(ShakeContext *context)
+{
+   //Release Keccak context
+   keccakDeinit(&context->keccakContext);
 }
 
 #endif

@@ -45,8 +45,11 @@
  * @brief Export an X.509 certificate to PEM format
  * @param[in] cert Pointer to the DER-encoded certificate
  * @param[in] certLen Length of the DER-encoded certificate, in bytes
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @return Error code
  **/
 
@@ -78,8 +81,11 @@ error_t pemExportCertificate(const uint8_t *cert, size_t certLen,
  * @brief Export a certificate revocation list to PEM format
  * @param[in] crl Pointer to the DER-encoded CRL
  * @param[in] crlLen Length of the DER-encoded CRL, in bytes
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @return Error code
  **/
 
@@ -111,8 +117,11 @@ error_t pemExportCrl(const uint8_t *crl, size_t crlLen,
  * @brief Export a certification signing request to PEM format
  * @param[in] csr Pointer to the DER-encoded CSR
  * @param[in] csrLen Length of the DER-encoded CSR, in bytes
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @return Error code
  **/
 
@@ -143,8 +152,11 @@ error_t pemExportCsr(const uint8_t *csr, size_t csrLen,
 /**
  * @brief Export EC domain parameters to PEM format
  * @param[in] curve Elliptic curve parameters
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] written Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] written Length of the resulting string, excluding the terminating
+ *   NULL character
  * @return Error code
  **/
 

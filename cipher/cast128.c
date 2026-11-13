@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/cast128.h"
 
 //Check crypto library configuration
@@ -601,8 +602,8 @@ void cast128DecryptBlock(Cast128Context *context, const uint8_t *input,
 
 void cast128Deinit(Cast128Context *context)
 {
-   //Clear CAST-128 context
-   osMemset(context, 0, sizeof(Cast128Context));
+   //Erase CAST-128 context
+   cryptoZeroizeMem(context, sizeof(Cast128Context));
 }
 
 #endif

@@ -81,6 +81,8 @@ error_t sm3Compute(const void *data, size_t length, uint8_t *digest);
 void sm3Init(Sm3Context *context);
 void sm3Update(Sm3Context *context, const void *data, size_t length);
 void sm3Final(Sm3Context *context, uint8_t *digest);
+void sm3Deinit(Sm3Context *context);
+
 void sm3ProcessBlock(Sm3Context *context);
 
 //C++ guard

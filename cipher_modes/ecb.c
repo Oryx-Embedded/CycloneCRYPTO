@@ -60,6 +60,13 @@
 __weak_func error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
    const uint8_t *p, uint8_t *c, size_t length)
 {
+   //Check parameters
+   if(cipher == NULL || context == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if((p == NULL || c == NULL) && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
    //ECB mode operates in a block-by-block fashion
    while(length >= cipher->blockSize)
    {
@@ -94,6 +101,13 @@ __weak_func error_t ecbEncrypt(const CipherAlgo *cipher, void *context,
 __weak_func error_t ecbDecrypt(const CipherAlgo *cipher, void *context,
    const uint8_t *c, uint8_t *p, size_t length)
 {
+   //Check parameters
+   if(cipher == NULL || context == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if((c == NULL || p == NULL) && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
    //ECB mode operates in a block-by-block fashion
    while(length >= cipher->blockSize)
    {

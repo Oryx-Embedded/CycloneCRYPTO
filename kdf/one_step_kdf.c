@@ -214,6 +214,7 @@ error_t oneStepKdfHmac(const HashAlgo *hashAlgo, const uint8_t *z,
    size_t otherInfoLen, uint8_t *dk, size_t dkLen)
 {
 #if (HMAC_SUPPORT == ENABLED)
+   error_t error;
    size_t n;
    uint32_t i;
    uint8_t counter[4];
@@ -253,32 +254,42 @@ error_t oneStepKdfHmac(const HashAlgo *hashAlgo, const uint8_t *z,
    {
       //The default salt shall be an all-zero byte string whose bit length
       //equals that specified as the bit length of an input block for the hash
-      //function
+      //function. HMAC pads the key with zeros up to the block size, so an
+      //empty key gives exactly the same result
       salt = defaultSalt;
-      saltLen = hashAlgo->blockSize;
+      saltLen = 0;
    }
 
+   //Initialize status code
+   error = NO_ERROR;
+
    //Derive the keying material
-   for(i = 1; dkLen > 0; i++)
+   for(i = 1; dkLen > 0 && !error; i++)
    {
-      //Encode the counter as a 32-bit big-endian string
-      STORE32BE(i, counter);
+      //Initialize HMAC calculation
+      error = hmacInit(hmacContext, hashAlgo, salt, saltLen);
 
-      //Compute H(counter || Z || OtherInfo)
-      hmacInit(hmacContext, hashAlgo, salt, saltLen);
-      hmacUpdate(hmacContext, counter, sizeof(uint32_t));
-      hmacUpdate(hmacContext, z, zLen);
-      hmacUpdate(hmacContext, otherInfo, otherInfoLen);
-      hmacFinal(hmacContext, digest);
+      //Check status code
+      if(!error)
+      {
+         //Encode the counter as a 32-bit big-endian string
+         STORE32BE(i, counter);
 
-      //Number of octets in the current block
-      n = MIN(dkLen, hashAlgo->digestSize);
-      //Save the resulting block
-      osMemcpy(dk, digest, n);
+         //Compute H(counter || Z || OtherInfo)
+         hmacUpdate(hmacContext, counter, sizeof(uint32_t));
+         hmacUpdate(hmacContext, z, zLen);
+         hmacUpdate(hmacContext, otherInfo, otherInfoLen);
+         hmacFinal(hmacContext, digest);
 
-      //Point to the next block
-      dk += n;
-      dkLen -= n;
+         //Number of octets in the current block
+         n = MIN(dkLen, hashAlgo->digestSize);
+         //Save the resulting block
+         osMemcpy(dk, digest, n);
+
+         //Point to the next block
+         dk += n;
+         dkLen -= n;
+      }
    }
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
@@ -286,8 +297,8 @@ error_t oneStepKdfHmac(const HashAlgo *hashAlgo, const uint8_t *z,
    cryptoFreeMem(hmacContext);
 #endif
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 #else
    //HMAC-based auxiliary function is not implemented
    return ERROR_NOT_IMPLEMENTED;

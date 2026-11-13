@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "hash/ripemd160.h"
 
 //Check crypto library configuration
@@ -84,7 +85,8 @@ const HashAlgo ripemd160HashAlgo =
    (HashAlgoInit) ripemd160Init,
    (HashAlgoUpdate) ripemd160Update,
    (HashAlgoFinal) ripemd160Final,
-   NULL
+   NULL,
+   (HashAlgoDeinit) ripemd160Deinit
 };
 
 
@@ -240,6 +242,18 @@ void ripemd160Final(Ripemd160Context *context, uint8_t *digest)
    {
       STORE32LE(context->h[i], digest + i * 4);
    }
+}
+
+
+/**
+ * @brief Release RIPEMD-160 context
+ * @param[in] context Pointer to the RIPEMD-160 context
+ **/
+
+void ripemd160Deinit(Ripemd160Context *context)
+{
+   //Erase RIPEMD-160 context
+   cryptoZeroizeMem(context, sizeof(Ripemd160Context));
 }
 
 

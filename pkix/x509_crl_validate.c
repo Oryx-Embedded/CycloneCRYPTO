@@ -184,7 +184,7 @@ error_t x509CheckRevokedCertificate(const X509CertInfo *certInfo,
       }
 
       //Check whether the issuer of the certificate matches the current entry
-      for(i = 0; i < issuer.numGeneralNames && i < X509_MAX_CRL_ISSUERS; i++)
+      for(i = 0; i < issuer.numGeneralNames && i < X509_MAX_CERT_ISSUERS; i++)
       {
          //Distinguished name?
          if(issuer.generalNames[i].type == X509_GENERAL_NAME_TYPE_DIRECTORY)
@@ -200,7 +200,7 @@ error_t x509CheckRevokedCertificate(const X509CertInfo *certInfo,
       }
 
       //Matching certificate issuer?
-      if(i < issuer.numGeneralNames && i < X509_MAX_CRL_ISSUERS)
+      if(i < issuer.numGeneralNames && i < X509_MAX_CERT_ISSUERS)
       {
          //Check the length of the serial number
          if(certInfo->tbsCert.serialNumber.length == revokedCert.userCert.length)

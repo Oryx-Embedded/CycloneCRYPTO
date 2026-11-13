@@ -97,6 +97,7 @@ error_t hkdf(const HashAlgo *hashAlgo, const uint8_t *ikm, size_t ikmLen,
 error_t hkdfExtract(const HashAlgo *hashAlgo, const uint8_t *ikm, size_t ikmLen,
    const uint8_t *salt, size_t saltLen, uint8_t *prk)
 {
+   error_t error;
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    HmacContext *hmacContext;
 #else
@@ -128,18 +129,24 @@ error_t hkdfExtract(const HashAlgo *hashAlgo, const uint8_t *ikm, size_t ikmLen,
       saltLen = hashAlgo->digestSize;
    }
 
-   //Compute PRK = HMAC-Hash(salt, IKM)
-   hmacInit(hmacContext, hashAlgo, salt, saltLen);
-   hmacUpdate(hmacContext, ikm, ikmLen);
-   hmacFinal(hmacContext, prk);
+   //Initialize HMAC calculation
+   error = hmacInit(hmacContext, hashAlgo, salt, saltLen);
+
+   //Check status code
+   if(!error)
+   {
+      //Compute PRK = HMAC-Hash(salt, IKM)
+      hmacUpdate(hmacContext, ikm, ikmLen);
+      hmacFinal(hmacContext, prk);
+   }
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Free previously allocated memory
    cryptoFreeMem(hmacContext);
 #endif
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 }
 
 
@@ -196,6 +203,7 @@ error_t hkdfExpandEx(const HashAlgo *hashAlgo, const uint8_t *prk,
    size_t prkLen, const DataFrag *infoFrags, size_t infoNumFrags, uint8_t *okm,
    size_t okmLen)
 {
+   error_t error;
    uint8_t i;
    uint_t j;
    size_t tLen;
@@ -226,32 +234,41 @@ error_t hkdfExpandEx(const HashAlgo *hashAlgo, const uint8_t *prk,
       return ERROR_OUT_OF_MEMORY;
 #endif
 
+   //Initialize status code
+   error = NO_ERROR;
+
    //T(0) is an empty string (zero length)
    tLen = 0;
 
    //Iterate as many times as required
-   for(i = 1; okmLen > 0; i++)
+   for(i = 1; okmLen > 0 && !error; i++)
    {
-      //Compute T(i) = HMAC-Hash(PRK, T(i-1) | info | i)
-      hmacInit(hmacContext, hashAlgo, prk, prkLen);
-      hmacUpdate(hmacContext, t, tLen);
+      //Initialize HMAC calculation
+      error = hmacInit(hmacContext, hashAlgo, prk, prkLen);
 
-      for(j = 0; j < infoNumFrags; j++)
+      //Check status code
+      if(!error)
       {
-         hmacUpdate(hmacContext, infoFrags[j].buffer, infoFrags[j].length);
+         //Compute T(i) = HMAC-Hash(PRK, T(i-1) | info | i)
+         hmacUpdate(hmacContext, t, tLen);
+
+         for(j = 0; j < infoNumFrags; j++)
+         {
+            hmacUpdate(hmacContext, infoFrags[j].buffer, infoFrags[j].length);
+         }
+
+         hmacUpdate(hmacContext, &i, sizeof(i));
+         hmacFinal(hmacContext, t);
+
+         //Number of octets in the current block
+         tLen = MIN(okmLen, hashAlgo->digestSize);
+         //Save the resulting block
+         osMemcpy(okm, t, tLen);
+
+         //Point to the next block
+         okm += tLen;
+         okmLen -= tLen;
       }
-
-      hmacUpdate(hmacContext, &i, sizeof(i));
-      hmacFinal(hmacContext, t);
-
-      //Number of octets in the current block
-      tLen = MIN(okmLen, hashAlgo->digestSize);
-      //Save the resulting block
-      osMemcpy(okm, t, tLen);
-
-      //Point to the next block
-      okm += tLen;
-      okmLen -= tLen;
    }
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
@@ -259,8 +276,8 @@ error_t hkdfExpandEx(const HashAlgo *hashAlgo, const uint8_t *prk,
    cryptoFreeMem(hmacContext);
 #endif
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 }
 
 #endif

@@ -253,6 +253,18 @@ void cshakeSqueeze(CshakeContext *context, uint8_t *output, size_t length)
 
 
 /**
+ * @brief Release cSHAKE context
+ * @param[in] context Pointer to the cSHAKE context
+ **/
+
+void cshakeDeinit(CshakeContext *context)
+{
+   //Release Keccak context
+   keccakDeinit(&context->keccakContext);
+}
+
+
+/**
  * @brief Encode integer as byte string
  * @param[in] value Value of the integer to be encoded
  * @param[out] buffer Buffer where to store the byte string representation
@@ -275,12 +287,12 @@ void cshakeLeftEncode(size_t value, uint8_t *buffer, size_t *length)
    }
 
    //Encode O(0)
-   buffer[0] = n;
+   buffer[0] = n & 0xFF;
 
    //Encode O(1) || ... || O(n)
    for(i = 1; i <= n; i++)
    {
-      buffer[i] = value >> ((n - i) * 8);
+      buffer[i] = (value >> ((n - i) * 8)) & 0xFF;
    }
 
    //Return the length of the byte string representation
@@ -313,11 +325,11 @@ void cshakeRightEncode(size_t value, uint8_t *buffer, size_t *length)
    //Encode O(1) || ... || O(n)
    for(i = 0; i < n; i++)
    {
-      buffer[i] = value >> ((n - i - 1) * 8);
+      buffer[i] = (value >> ((n - i - 1) * 8)) & 0xFF;
    }
 
    //Encode O(n+1)
-   buffer[i] = n;
+   buffer[i] = n & 0xFF;
 
    //Return the length of the byte string representation
    *length = n + 1;

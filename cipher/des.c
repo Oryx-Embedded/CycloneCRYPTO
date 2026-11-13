@@ -38,6 +38,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/des.h"
 
 //Check crypto library configuration
@@ -428,8 +429,8 @@ __weak_func void desDecryptBlock(DesContext *context, const uint8_t *input,
 
 __weak_func void desDeinit(DesContext *context)
 {
-   //Clear DES context
-   osMemset(context, 0, sizeof(DesContext));
+   //Erase DES context
+   cryptoZeroizeMem(context, sizeof(DesContext));
 }
 
 
@@ -510,6 +511,30 @@ bool_t desCheckKeyParity(const uint8_t *key)
 
    //Return TRUE if the parity is correct
    return valid ? TRUE : FALSE;
+}
+
+
+/**
+ * @brief Compare two keys (parity bits are ignored)
+ * @param[in] key1 Pointer to the first 64-bit key
+ * @param[in] key2 Pointer to the second 64-bit key
+ * @return TRUE if the keys are equal, else FALSE
+ **/
+
+bool_t desCompareKeys(const uint8_t *key1, const uint8_t *key2)
+{
+   uint_t i;
+   uint8_t mask;
+
+   //The least significant bit of each byte is a parity bit, which is not used
+   //by the DES algorithm
+   for(mask = 0, i = 0; i < 8; i++)
+   {
+      mask |= (key1[i] ^ key2[i]) & 0xFE;
+   }
+
+   //Return TRUE if the keys are equal
+   return (mask == 0) ? TRUE : FALSE;
 }
 
 #endif

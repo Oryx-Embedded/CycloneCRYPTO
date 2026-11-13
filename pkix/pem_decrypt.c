@@ -50,8 +50,11 @@
  * @param[in] input Pointer to the encrypted private key (PEM format)
  * @param[in] inputLen Length of the encrypted private key
  * @param[in] password NULL-terminated string containing the password
- * @param[out] output Pointer to decrypted private key (PEM format)
- * @param[out] outputLen Length of the decrypted private key
+ * @param[out] output Pointer to decrypted private key (PEM format). If this
+ *   parameter is NULL, the function only calculates the length of the
+ *   resulting PEM string
+ * @param[out] outputLen Length of the decrypted private key, excluding the
+ *   terminating NULL character
  * @return Error code
  **/
 
@@ -66,7 +69,7 @@ error_t pemDecryptPrivateKey(const char_t *input, size_t inputLen,
    Pkcs8PrivateKeyInfo privateKeyInfo;
 
    //Check parameters
-   if(input == NULL || password == NULL || output == NULL || outputLen == NULL)
+   if(input == NULL || password == NULL || outputLen == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Clear the PrivateKeyInfo structure
@@ -383,6 +386,10 @@ error_t pemDecryptMessage(const PemHeader *header, const char_t *password,
       return ERROR_INVALID_PARAMETER;
    }
 
+   //Empty ciphertext?
+   if(ciphertextLen == 0)
+      return ERROR_INVALID_PARAMETER;
+
    //Messages processed according to RFC 1421 will carry the subfield value "4"
    if(!pemCompareString(&header->procType.version, "4"))
       return ERROR_INVALID_VERSION;
@@ -483,7 +490,6 @@ error_t pemFormatIv(const PemHeader *header, uint8_t *iv, size_t ivLen)
 {
    error_t error;
    size_t i;
-   char_t *end;
    char_t buffer[3];
 
    //Check the length of the IV
@@ -500,12 +506,16 @@ error_t pemFormatIv(const PemHeader *header, uint8_t *iv, size_t ivLen)
          buffer[1] = header->dekInfo.iv.value[2 * i + 1];
          buffer[2] = '\0';
 
-         //Convert the current byte
-         iv[i] = (uint8_t) osStrtoul(buffer, &end, 16);
-
-         //Syntax error?
-         if(*end != '\0')
+         //The IV is represented as a contiguous string of hexadecimal digits
+         //(refer to RFC 1421, section 4.6.1.3)
+         if(isxdigit((uint8_t) buffer[0]) && isxdigit((uint8_t) buffer[1]))
          {
+            //Convert the current byte
+            iv[i] = (uint8_t) osStrtoul(buffer, NULL, 16);
+         }
+         else
+         {
+            //Report an error
             error = ERROR_INVALID_SYNTAX;
          }
       }
@@ -818,6 +828,10 @@ error_t pemVerifyPadding(const uint8_t *data, size_t dataLen,
    uint32_t c;
    uint32_t bad;
 
+   //The plaintext data must contain at least one block
+   if(dataLen < blockSize)
+      return ERROR_DECRYPTION_FAILED;
+
    //Retrieve the length of the padding string
    n = data[dataLen - 1];
 
@@ -842,7 +856,7 @@ error_t pemVerifyPadding(const uint8_t *data, size_t dataLen,
    *paddingLen = CRYPTO_SELECT_32(n, 0, bad);
 
    //Return status code
-   return bad ? ERROR_DECRYPTION_FAILED : NO_ERROR;
+   return (bad != 0) ? ERROR_DECRYPTION_FAILED : NO_ERROR;
 }
 
 #endif

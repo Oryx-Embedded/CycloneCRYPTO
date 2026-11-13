@@ -119,8 +119,6 @@ error_t tupleHashXofCompute(uint_t strength, const DataFrag *inputFrags,
 error_t tupleHashXofInit(TupleHashXofContext *context, uint_t strength,
    const char_t *custom, size_t customLen)
 {
-   error_t error;
-
    //Make sure the TupleHashXOF context is valid
    if(context == NULL)
       return ERROR_INVALID_PARAMETER;
@@ -183,6 +181,18 @@ void tupleHashXofSqueeze(TupleHashXofContext *context, uint8_t *output,
 {
    //Extract data from the squeezing phase
    cshakeSqueeze(&context->cshakeContext, output, length);
+}
+
+
+/**
+ * @brief Release TupleHashXOF context
+ * @param[in] context Pointer to the TupleHashXOF context
+ **/
+
+void tupleHashXofDeinit(TupleHashXofContext *context)
+{
+   //Release cSHAKE context
+   cshakeDeinit(&context->cshakeContext);
 }
 
 #endif

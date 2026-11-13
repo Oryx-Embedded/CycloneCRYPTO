@@ -80,6 +80,8 @@ error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    size_t ivLen, const uint8_t *a, size_t aLen, const uint8_t *c,
    uint8_t *p, size_t length, const uint8_t *t, size_t tLen);
 
+void gcmDeinit(GcmContext *context);
+
 void gcmMul(GcmContext *context, uint8_t *x);
 void gcmXorBlock(uint8_t *x, const uint8_t *a, const uint8_t *b, size_t n);
 void gcmIncCounter(uint8_t *ctr);

@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/chacha.h"
 #include "mac/poly1305.h"
 #include "aead/chacha20_poly1305.h"
@@ -68,8 +69,25 @@ error_t chacha20Poly1305Encrypt(const uint8_t *k, size_t kLen,
    Poly1305Context poly1305Context;
    uint8_t temp[32];
 
-   //Check the length of the message-authentication code
-   if(tLen != 16)
+   //Check parameters
+   if(k == NULL || n == NULL || t == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if(a == NULL && aLen != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if((p == NULL || c == NULL) && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   //ChaCha20Poly1305 uses a 256-bit key and a 96-bit nonce, and produces a
+   //128-bit tag (refer to RFC 8439, section 2.8)
+   if(kLen != 32 || nLen != 12 || tLen != 16)
+      return ERROR_INVALID_LENGTH;
+
+   //The amount of encrypted data possible in a single invocation is 2^32-1
+   //blocks of 64 bytes each, because of the size of the block counter field
+   //in the ChaCha20 block function (refer to RFC 8439, section 2.8)
+   if((uint64_t) length > CHACHA20_POLY1305_MAX_DATA_SIZE)
       return ERROR_INVALID_LENGTH;
 
    //Initialize ChaCha20 context
@@ -141,6 +159,11 @@ error_t chacha20Poly1305Encrypt(const uint8_t *k, size_t kLen,
    //Compute message-authentication code
    poly1305Final(&poly1305Context, t);
 
+   //Erase working state
+   chachaDeinit(&chachaContext);
+   poly1305Deinit(&poly1305Context);
+   cryptoZeroizeMem(temp, sizeof(temp));
+
    //Successful encryption
    return NO_ERROR;
 }
@@ -174,8 +197,25 @@ error_t chacha20Poly1305Decrypt(const uint8_t *k, size_t kLen,
    Poly1305Context poly1305Context;
    uint8_t temp[32];
 
-   //Check the length of the message-authentication code
-   if(tLen != 16)
+   //Check parameters
+   if(k == NULL || n == NULL || t == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if(a == NULL && aLen != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if((c == NULL || p == NULL) && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   //ChaCha20Poly1305 uses a 256-bit key and a 96-bit nonce, and produces a
+   //128-bit tag (refer to RFC 8439, section 2.8)
+   if(kLen != 32 || nLen != 12 || tLen != 16)
+      return ERROR_INVALID_LENGTH;
+
+   //The amount of encrypted data possible in a single invocation is 2^32-1
+   //blocks of 64 bytes each, because of the size of the block counter field
+   //in the ChaCha20 block function (refer to RFC 8439, section 2.8)
+   if((uint64_t) length > CHACHA20_POLY1305_MAX_DATA_SIZE)
       return ERROR_INVALID_LENGTH;
 
    //Initialize ChaCha20 context
@@ -243,15 +283,29 @@ error_t chacha20Poly1305Decrypt(const uint8_t *k, size_t kLen,
    //Compute message-authentication code
    poly1305Final(&poly1305Context, temp);
 
-   //Finally, we decrypt the ciphertext
-   chachaCipher(&chachaContext, c, p, length);
-
    //The calculated tag is bitwise compared to the received tag. The message
    //is authenticated if and only if the tags match
    for(mask = 0, i = 0; i < tLen; i++)
    {
       mask |= temp[i] ^ t[i];
    }
+
+   //The ciphertext is decrypted only if the tag is valid. Otherwise, the
+   //decrypted message must not be given as output and the output buffer is
+   //overwritten with zeros
+   if(mask == 0)
+   {
+      chachaCipher(&chachaContext, c, p, length);
+   }
+   else
+   {
+      cryptoZeroizeMem(p, length);
+   }
+
+   //Erase working state
+   chachaDeinit(&chachaContext);
+   poly1305Deinit(&poly1305Context);
+   cryptoZeroizeMem(temp, sizeof(temp));
 
    //Return status code
    return (mask == 0) ? NO_ERROR : ERROR_INVALID_TAG;

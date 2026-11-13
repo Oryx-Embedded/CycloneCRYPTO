@@ -225,7 +225,7 @@ error_t ikePrfPlusEx(MacAlgo macAlgo, const HashAlgo *hashAlgo,
       //Check status code
       if(!error)
       {
-         //Compute prf+ (K,S) = prf (K, S | 0x01)
+         //Compute prf+(K,S) = prf(K, S | 0x01)
          for(i = 0; i < dataNumFrags; i++)
          {
             ikePrfUpdate(context, dataFrags[i].buffer, dataFrags[i].length);
@@ -249,7 +249,10 @@ error_t ikePrfPlusEx(MacAlgo macAlgo, const HashAlgo *hashAlgo,
          //The prf+ function is not defined beyond 255 times the size of the
          //prf function output (refer to RFC 7296, section 2.13)
          if(c == 0)
-            return ERROR_INVALID_LENGTH;
+         {
+            error = ERROR_INVALID_LENGTH;
+            break;
+         }
 
          //Initialize PRF calculation
          error = ikePrfInit(context, macAlgo, hashAlgo, cipherAlgo, key,

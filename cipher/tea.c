@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/tea.h"
 
 //TEA magic constant
@@ -166,8 +167,8 @@ void teaDecryptBlock(TeaContext *context, const uint8_t *input,
 
 void teaDeinit(TeaContext *context)
 {
-   //Clear TEA context
-   osMemset(context, 0, sizeof(TeaContext));
+   //Erase TEA context
+   cryptoZeroizeMem(context, sizeof(TeaContext));
 }
 
 #endif

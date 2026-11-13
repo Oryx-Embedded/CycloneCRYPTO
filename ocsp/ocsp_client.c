@@ -666,7 +666,7 @@ error_t ocspClientValidateResponse(OcspClientContext *context,
       //Allocate a memory buffer to store X.509 certificate info
       issuerCertInfo = cryptoAllocMem(sizeof(X509CertInfo));
       //Failed to allocate memory?
-      if(certInfo == NULL)
+      if(issuerCertInfo == NULL)
       {
          error = ERROR_OUT_OF_MEMORY;
          break;
@@ -682,7 +682,7 @@ error_t ocspClientValidateResponse(OcspClientContext *context,
          //Allocate a memory buffer to hold the DER-encoded certificate
          derIssuerCert = cryptoAllocMem(derIssuerCertLen);
          //Failed to allocate memory?
-         if(derCert == NULL)
+         if(derIssuerCert == NULL)
          {
             error = ERROR_OUT_OF_MEMORY;
             break;

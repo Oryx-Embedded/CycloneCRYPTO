@@ -39,6 +39,8 @@
 #define CTR_DRBG_MAX_KEY_LEN 32
 //Maximum length of the seed
 #define CTR_DRBG_MAX_SEED_LEN 48
+//Maximum number of bytes per request
+#define CTR_DRBG_MAX_BYTES_PER_REQUEST 65536
 //Maximum number of requests between reseeds
 #define CTR_DRBG_MAX_RESEED_INTERVAL 281474976710656ULL
 

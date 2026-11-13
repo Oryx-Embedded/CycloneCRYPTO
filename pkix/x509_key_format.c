@@ -1261,8 +1261,9 @@ error_t x509ExportEcPrivateKey(const EcCurve *curve,
    //Length of the ASN.1 structure
    length = 0;
 
-   //Format Version field (refer to RFC 5915, section 3)
-   error = asn1WriteInt32(1, FALSE, p, &n);
+   //The Version field specifies the syntax version number of the elliptic curve
+   //private key structure (refer to RFC 5915, section 3)
+   error = asn1WriteInt32(EC_PRIVATE_KEY_VERSION_1, FALSE, p, &n);
    //Any error to report?
    if(error)
       return error;

@@ -180,6 +180,7 @@ error_t pbkdf2Hmac(const HashAlgo *hashAlgo, const uint8_t *p, size_t pLen,
    const uint8_t *s, size_t sLen, uint_t c, uint8_t *dk, size_t dkLen)
 {
 #if (HMAC_SUPPORT == ENABLED)
+   error_t error;
    uint_t i;
    uint_t j;
    uint_t k;
@@ -208,44 +209,63 @@ error_t pbkdf2Hmac(const HashAlgo *hashAlgo, const uint8_t *p, size_t pLen,
       return ERROR_OUT_OF_MEMORY;
 #endif
 
+   //Initialize status code
+   error = NO_ERROR;
+
    //For each block of the derived key apply the function F
-   for(i = 1; dkLen > 0; i++)
+   for(i = 1; dkLen > 0 && !error; i++)
    {
       //Calculate the 4-octet encoding of the integer i (MSB first)
       STORE32BE(i, a);
 
-      //Compute U1 = PRF(P, S || INT(i))
-      hmacInit(hmacContext, hashAlgo, p, pLen);
-      hmacUpdate(hmacContext, s, sLen);
-      hmacUpdate(hmacContext, a, 4);
-      hmacFinal(hmacContext, u);
+      //Initialize HMAC calculation
+      error = hmacInit(hmacContext, hashAlgo, p, pLen);
 
-      //Save the resulting HMAC value
-      osMemcpy(t, u, hashAlgo->digestSize);
-
-      //Iterate as many times as required
-      for(j = 1; j < c; j++)
+      //Check status code
+      if(!error)
       {
-         //Compute U(j) = PRF(P, U(j-1))
-         hmacInit(hmacContext, hashAlgo, p, pLen);
-         hmacUpdate(hmacContext, u, hashAlgo->digestSize);
+         //Compute U1 = PRF(P, S || INT(i))
+         hmacUpdate(hmacContext, s, sLen);
+         hmacUpdate(hmacContext, a, 4);
          hmacFinal(hmacContext, u);
 
-         //Compute T = U(1) xor U(2) xor ... xor U(c)
-         for(k = 0; k < hashAlgo->digestSize; k++)
+         //Save the resulting HMAC value
+         osMemcpy(t, u, hashAlgo->digestSize);
+      }
+
+      //Iterate as many times as required
+      for(j = 1; j < c && !error; j++)
+      {
+         //Initialize HMAC calculation
+         error = hmacInit(hmacContext, hashAlgo, p, pLen);
+
+         //Check status code
+         if(!error)
          {
-            t[k] ^= u[k];
+            //Compute U(j) = PRF(P, U(j-1))
+            hmacUpdate(hmacContext, u, hashAlgo->digestSize);
+            hmacFinal(hmacContext, u);
+
+            //Compute T = U(1) xor U(2) xor ... xor U(c)
+            for(k = 0; k < hashAlgo->digestSize; k++)
+            {
+               t[k] ^= u[k];
+            }
          }
       }
 
-      //Number of octets in the current block
-      k = MIN(dkLen, hashAlgo->digestSize);
-      //Save the resulting block
-      osMemcpy(dk, t, k);
+      //Check status code
+      if(!error)
+      {
+         //Number of octets in the current block
+         k = MIN(dkLen, hashAlgo->digestSize);
+         //Save the resulting block
+         osMemcpy(dk, t, k);
 
-      //Point to the next block
-      dk += k;
-      dkLen -= k;
+         //Point to the next block
+         dk += k;
+         dkLen -= k;
+      }
    }
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
@@ -253,8 +273,8 @@ error_t pbkdf2Hmac(const HashAlgo *hashAlgo, const uint8_t *p, size_t pLen,
    cryptoFreeMem(hmacContext);
 #endif
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 #else
    //HMAC pseudorandom function is not implemented
    return ERROR_NOT_IMPLEMENTED;
@@ -278,6 +298,7 @@ error_t pbkdf2AesCmacPrf128(const uint8_t *p, size_t pLen, const uint8_t *s,
    size_t sLen, uint_t c, uint8_t *dk, size_t dkLen)
 {
 #if (CMAC_SUPPORT == ENABLED && AES_SUPPORT == ENABLED)
+   error_t error;
    uint_t i;
    uint_t j;
    uint_t n;
@@ -307,6 +328,9 @@ error_t pbkdf2AesCmacPrf128(const uint8_t *p, size_t pLen, const uint8_t *s,
       return ERROR_OUT_OF_MEMORY;
 #endif
 
+   //Initialize status code
+   error = NO_ERROR;
+
    //Derive the 128-bit key K from the variable-length key VK
    if(pLen == 16)
    {
@@ -321,50 +345,86 @@ error_t pbkdf2AesCmacPrf128(const uint8_t *p, size_t pLen, const uint8_t *s,
       //section 3)
       osMemset(k, 0, 16);
 
-      //Compute K = AES-CMAC(0^128, VK, VKlen)
-      cmacInit(cmacContext, AES_CIPHER_ALGO, k, 16);
-      cmacUpdate(cmacContext, p, pLen);
-      cmacFinal(cmacContext, k, 16);
+      //Initialize CMAC calculation
+      error = cmacInit(cmacContext, AES_CIPHER_ALGO, k, 16);
+
+      //Check status code
+      if(!error)
+      {
+         //Compute K = AES-CMAC(0^128, VK, VKlen)
+         cmacUpdate(cmacContext, p, pLen);
+
+         //Finalize CMAC calculation
+         error = cmacFinal(cmacContext, k, 16);
+      }
    }
 
    //For each block of the derived key apply the function F
-   for(i = 1; dkLen > 0; i++)
+   for(i = 1; dkLen > 0 && !error; i++)
    {
       //Calculate the 4-octet encoding of the integer i (MSB first)
       STORE32BE(i, a);
 
-      //Compute U1 = PRF(P, S || INT(i))
-      cmacInit(cmacContext, AES_CIPHER_ALGO, k, 16);
-      cmacUpdate(cmacContext, s, sLen);
-      cmacUpdate(cmacContext, a, 4);
-      cmacFinal(cmacContext, u, 16);
+      //Initialize CMAC calculation
+      error = cmacInit(cmacContext, AES_CIPHER_ALGO, k, 16);
 
-      //Save the resulting CMAC value
-      osMemcpy(t, u, 16);
+      //Check status code
+      if(!error)
+      {
+         //Compute U1 = PRF(P, S || INT(i))
+         cmacUpdate(cmacContext, s, sLen);
+         cmacUpdate(cmacContext, a, 4);
+
+         //Finalize CMAC calculation
+         error = cmacFinal(cmacContext, u, 16);
+      }
+
+      //Check status code
+      if(!error)
+      {
+         //Save the resulting CMAC value
+         osMemcpy(t, u, 16);
+      }
 
       //Iterate as many times as required
-      for(j = 1; j < c; j++)
+      for(j = 1; j < c && !error; j++)
       {
-         //Compute U(j) = PRF(P, U(j-1))
-         cmacInit(cmacContext, AES_CIPHER_ALGO, k, 16);
-         cmacUpdate(cmacContext, u, 16);
-         cmacFinal(cmacContext, u, 16);
+         //Initialize CMAC calculation
+         error = cmacInit(cmacContext, AES_CIPHER_ALGO, k, 16);
 
-         //Compute T = U(1) xor U(2) xor ... xor U(c)
-         for(n = 0; n < 16; n++)
+         //Check status code
+         if(!error)
          {
-            t[n] ^= u[n];
+            //Compute U(j) = PRF(P, U(j-1))
+            cmacUpdate(cmacContext, u, 16);
+
+            //Finalize CMAC calculation
+            error = cmacFinal(cmacContext, u, 16);
+         }
+
+         //Check status code
+         if(!error)
+         {
+            //Compute T = U(1) xor U(2) xor ... xor U(c)
+            for(n = 0; n < 16; n++)
+            {
+               t[n] ^= u[n];
+            }
          }
       }
 
-      //Number of octets in the current block
-      n = MIN(dkLen, 16);
-      //Save the resulting block
-      osMemcpy(dk, t, n);
+      //Check status code
+      if(!error)
+      {
+         //Number of octets in the current block
+         n = MIN(dkLen, 16);
+         //Save the resulting block
+         osMemcpy(dk, t, n);
 
-      //Point to the next block
-      dk += n;
-      dkLen -= n;
+         //Point to the next block
+         dk += n;
+         dkLen -= n;
+      }
    }
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
@@ -372,8 +432,8 @@ error_t pbkdf2AesCmacPrf128(const uint8_t *p, size_t pLen, const uint8_t *s,
    cryptoFreeMem(cmacContext);
 #endif
 
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 #else
    //AES-CMAC-PRF-128 pseudorandom function is not implemented
    return ERROR_NOT_IMPLEMENTED;

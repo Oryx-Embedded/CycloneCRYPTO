@@ -66,6 +66,7 @@ error_t blake2s256Compute(const void *data, size_t length, uint8_t *digest);
 void blake2s256Init(Blake2s256Context *context);
 void blake2s256Update(Blake2s256Context *context, const void *data, size_t length);
 void blake2s256Final(Blake2s256Context *context, uint8_t *digest);
+void blake2s256Deinit(Blake2s256Context *context);
 
 //C++ guard
 #ifdef __cplusplus

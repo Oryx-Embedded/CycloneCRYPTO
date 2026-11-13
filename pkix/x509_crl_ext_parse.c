@@ -58,6 +58,7 @@ error_t x509ParseCrlExtensions(const uint8_t *data, size_t length,
    size_t *totalLength, X509CrlExtensions *crlExtensions)
 {
    error_t error;
+   uint_t i;
    size_t n;
    Asn1Tag tag;
    X509Extension extension;
@@ -109,8 +110,13 @@ error_t x509ParseCrlExtensions(const uint8_t *data, size_t length,
    length = tag.length;
 
    //Loop through the extensions
-   while(length > 0)
+   for(i = 0; length > 0; i++)
    {
+      //Limit the number of extensions (the duplicate check below takes a time
+      //that is quadratic in the number of extensions)
+      if(i >= X509_MAX_EXTENSIONS)
+         return ERROR_INVALID_SYNTAX;
+
       //Each extension includes an OID and a value
       error = x509ParseExtension(data, length, &n, &extension);
       //Any error to report?
@@ -392,6 +398,7 @@ error_t x509ParseCrlEntryExtensions(const uint8_t *data, size_t length,
    size_t *totalLength, X509CrlEntryExtensions *crlEntryExtensions)
 {
    error_t error;
+   uint_t i;
    size_t n;
    Asn1Tag tag;
    X509Extension extension;
@@ -426,8 +433,13 @@ error_t x509ParseCrlEntryExtensions(const uint8_t *data, size_t length,
    length = tag.length;
 
    //Loop through the extensions
-   while(length > 0)
+   for(i = 0; length > 0; i++)
    {
+      //Limit the number of extensions (the duplicate check below takes a time
+      //that is quadratic in the number of extensions)
+      if(i >= X509_MAX_EXTENSIONS)
+         return ERROR_INVALID_SYNTAX;
+
       //Each extension includes an OID and a value
       error = x509ParseExtension(data, length, &n, &extension);
       //Any error to report?
@@ -615,7 +627,7 @@ error_t x509ParseCertificateIssuer(bool_t critical, const uint8_t *data,
          return error;
 
       //Save issuer alternative name
-      if(i < X509_MAX_CRL_ISSUERS)
+      if(i < X509_MAX_CERT_ISSUERS)
       {
          certificateIssuer->generalNames[i] = generalName;
       }
@@ -631,7 +643,7 @@ error_t x509ParseCertificateIssuer(bool_t critical, const uint8_t *data,
       return ERROR_INVALID_SYNTAX;
 
    //Save the number of issuer alternative names
-   certificateIssuer->numGeneralNames = MIN(i, X509_MAX_CRL_ISSUERS);
+   certificateIssuer->numGeneralNames = MIN(i, X509_MAX_CERT_ISSUERS);
 
    //Successful processing
    return NO_ERROR;

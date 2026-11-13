@@ -66,6 +66,7 @@ error_t sha224Compute(const void *data, size_t length, uint8_t *digest);
 void sha224Init(Sha224Context *context);
 void sha224Update(Sha224Context *context, const void *data, size_t length);
 void sha224Final(Sha224Context *context, uint8_t *digest);
+void sha224Deinit(Sha224Context *context);
 
 //C++ guard
 #ifdef __cplusplus

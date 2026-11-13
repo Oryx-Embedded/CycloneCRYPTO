@@ -37,6 +37,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "mac/xcbc_mac.h"
 
 //Check crypto library configuration
@@ -299,8 +300,8 @@ void xcbcMacDeinit(XcbcMacContext *context)
       //Release cipher context
       context->cipher->deinit(&context->cipherContext);
 
-      //Clear XCBC-MAC context
-      osMemset(context, 0, sizeof(XcbcMacContext));
+      //Erase XCBC-MAC context
+      cryptoZeroizeMem(context, sizeof(XcbcMacContext));
    }
 }
 

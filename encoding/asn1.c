@@ -89,7 +89,7 @@ error_t asn1ReadTag(const uint8_t *data, size_t length, Asn1Tag *tag)
          if(tag->objType > (UINT32_MAX >> 7))
             return ERROR_INVALID_TAG;
 
-         //Bits 7 to 1 of the first subsequent octet shall not all be zero (refer to 
+         //Bits 7 to 1 of the first subsequent octet shall not all be zero
          if(i == 1 && (data[i] & 0x7F) == 0)
             return ERROR_INVALID_TAG;
 
@@ -293,6 +293,7 @@ error_t asn1ReadInt32(const uint8_t *data, size_t length, Asn1Tag *tag,
 {
    error_t error;
    size_t i;
+   uint32_t temp;
 
    //Read ASN.1 tag
    error = asn1ReadTag(data, length, tag);
@@ -310,17 +311,26 @@ error_t asn1ReadInt32(const uint8_t *data, size_t length, Asn1Tag *tag,
    if(tag->length < 1 || tag->length > 4)
       return ERROR_INVALID_TAG;
 
-   //The contents octets shall be a two's complement binary
-   //number equal to the integer value
-   *value = (tag->value[0] & 0x80) ? -1 : 0;
+   //The MSB of the first content byte acts as the sign bit
+   temp = (tag->value[0] & 0x80) ? 0xFFFFFFFF : 0;
 
    //Process contents octets
    for(i = 0; i < tag->length; i++)
    {
       //Rotate left operation
-      *value <<= 8;
+      temp <<= 8;
       //Reconstruct integer value
-      *value |= tag->value[i];
+      temp |= tag->value[i];
+   }
+
+   //Convert the two's complement representation to a signed integer
+   if((temp & 0x80000000) != 0)
+   {
+      *value = -(int32_t) (~temp) - 1;
+   }
+   else
+   {
+      *value = (int32_t) temp;
    }
 
    //ASN.1 tag successfully decoded
@@ -887,6 +897,7 @@ error_t asn1WriteMpi(const Mpi *value, bool_t reverse, uint8_t *data,
    size_t *written)
 {
    error_t error;
+   size_t m;
    size_t n;
    Asn1Tag tag;
 
@@ -897,37 +908,57 @@ error_t asn1WriteMpi(const Mpi *value, bool_t reverse, uint8_t *data,
    //octets
    n = (n / 8) + 1;
 
-   //Valid output stream?
-   if(data != NULL)
-   {
-      //Use reverse encoding?
-      if(reverse)
-         data -= n;
-
-      //The value of the multiple precision integer is encoded MSB first
-      error = mpiExport(value, data, n, MPI_FORMAT_BIG_ENDIAN);
-      //Any error to report?
-      if(error)
-         return error;
-   }
-
    //The integer is encapsulated within an ASN.1 structure
    tag.constructed = FALSE;
    tag.objClass = ASN1_CLASS_UNIVERSAL;
    tag.objType = ASN1_TYPE_INTEGER;
    tag.length = n;
-   tag.value = data;
 
-   //Compute the length of the corresponding ASN.1 structure
-   error = asn1WriteTag(&tag, FALSE, data, NULL);
-   //Any error to report?
-   if(error)
-      return error;
+   //Use reverse encoding?
+   if(reverse)
+   {
+      //Valid output stream?
+      if(data != NULL)
+      {
+         //The contents octets are written just before the end pointer
+         data -= n;
+
+         //The value of the multiple precision integer is encoded MSB first
+         error = mpiExport(value, data, n, MPI_FORMAT_BIG_ENDIAN);
+         //Any error to report?
+         if(error)
+            return error;
+      }
+
+      //Write the corresponding ASN.1 tag
+      error = asn1WriteHeader(&tag, TRUE, data, &m);
+      //Any error to report?
+      if(error)
+         return error;
+   }
+   else
+   {
+      //Write the corresponding ASN.1 tag
+      error = asn1WriteHeader(&tag, FALSE, data, &m);
+      //Any error to report?
+      if(error)
+         return error;
+
+      //Valid output stream?
+      if(data != NULL)
+      {
+         //The value of the multiple precision integer is encoded MSB first
+         error = mpiExport(value, data + m, n, MPI_FORMAT_BIG_ENDIAN);
+         //Any error to report?
+         if(error)
+            return error;
+      }
+   }
 
    //Number of bytes written to the output stream
    if(written != NULL)
    {
-      *written = tag.totalLength;
+      *written = m + n;
    }
 
    //Successful processing

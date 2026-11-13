@@ -39,6 +39,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "aead/gcm.h"
 #include "debug.h"
 
@@ -210,7 +211,7 @@ __weak_func error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
    size_t ivLen, const uint8_t *a, size_t aLen, const uint8_t *p,
    uint8_t *c, size_t length, uint8_t *t, size_t tLen)
 {
-   size_t k;
+   size_t i;
    size_t n;
    uint8_t b[16];
    uint8_t j[16];
@@ -220,12 +221,27 @@ __weak_func error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
    if(context == NULL)
       return ERROR_INVALID_PARAMETER;
 
+   //Check parameters
+   if(iv == NULL || t == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if(a == NULL && aLen != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if((p == NULL || c == NULL) && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
    //The length of the IV shall meet SP 800-38D requirements
    if(ivLen < 1)
       return ERROR_INVALID_LENGTH;
 
    //Check the length of the authentication tag
-   if(tLen < 4 || tLen > 16)
+   if(tLen != 4 && tLen != 8 && (tLen < 12 || tLen > 16))
+      return ERROR_INVALID_LENGTH;
+
+   //The length of the data shall not exceed 2^39 - 256 bits, so that the
+   //32-bit counter never wraps around to the pre-counter block J0
+   if((uint64_t) length > 0xFFFFFFFE0)
       return ERROR_INVALID_LENGTH;
 
    //Check whether the length of the IV is 96 bits
@@ -241,22 +257,15 @@ __weak_func error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
       //Initialize GHASH calculation
       osMemset(j, 0, 16);
 
-      //Length of the IV
-      n = ivLen;
-
       //Process the initialization vector
-      while(n > 0)
+      for(i = 0; i < ivLen; i += n)
       {
          //The IV is processed in a block-by-block fashion
-         k = MIN(n, 16);
+         n = MIN(ivLen - i, 16);
 
          //Apply GHASH function
-         gcmXorBlock(j, j, iv, k);
+         gcmXorBlock(j, j, iv + i, n);
          gcmMul(context, j);
-
-         //Next block
-         iv += k;
-         n -= k;
       }
 
       //The string is appended with 64 additional 0 bits, followed by the
@@ -276,48 +285,34 @@ __weak_func error_t gcmEncrypt(GcmContext *context, const uint8_t *iv,
 
    //Initialize GHASH calculation
    osMemset(s, 0, 16);
-   //Length of the AAD
-   n = aLen;
 
    //Process AAD
-   while(n > 0)
+   for(i = 0; i < aLen; i += n)
    {
       //Additional data are processed in a block-by-block fashion
-      k = MIN(n, 16);
+      n = MIN(aLen - i, 16);
 
       //Apply GHASH function
-      gcmXorBlock(s, s, a, k);
+      gcmXorBlock(s, s, a + i, n);
       gcmMul(context, s);
-
-      //Next block
-      a += k;
-      n -= k;
    }
 
-   //Length of the plaintext
-   n = length;
-
    //Process plaintext
-   while(n > 0)
+   for(i = 0; i < length; i += n)
    {
       //The encryption operates in a block-by-block fashion
-      k = MIN(n, 16);
+      n = MIN(length - i, 16);
 
       //Increment counter
       gcmIncCounter(j);
 
       //Encrypt plaintext
       context->cipherAlgo->encryptBlock(context->cipherContext, j, b);
-      gcmXorBlock(c, p, b, k);
+      gcmXorBlock(c + i, p + i, b, n);
 
       //Apply GHASH function
-      gcmXorBlock(s, s, c, k);
+      gcmXorBlock(s, s, c + i, n);
       gcmMul(context, s);
-
-      //Next block
-      p += k;
-      c += k;
-      n -= k;
    }
 
    //Append the 64-bit representation of the length of the AAD and the
@@ -358,7 +353,7 @@ __weak_func error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    uint8_t *p, size_t length, const uint8_t *t, size_t tLen)
 {
    uint8_t mask;
-   size_t k;
+   size_t i;
    size_t n;
    uint8_t b[16];
    uint8_t j[16];
@@ -369,12 +364,27 @@ __weak_func error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
    if(context == NULL)
       return ERROR_INVALID_PARAMETER;
 
+   //Check parameters
+   if(iv == NULL || t == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   if(a == NULL && aLen != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if((c == NULL || p == NULL) && length != 0)
+      return ERROR_INVALID_PARAMETER;
+
    //The length of the IV shall meet SP 800-38D requirements
    if(ivLen < 1)
       return ERROR_INVALID_LENGTH;
 
    //Check the length of the authentication tag
-   if(tLen < 4 || tLen > 16)
+   if(tLen != 4 && tLen != 8 && (tLen < 12 || tLen > 16))
+      return ERROR_INVALID_LENGTH;
+
+   //The length of the data shall not exceed 2^39 - 256 bits, so that the
+   //32-bit counter never wraps around to the pre-counter block J0
+   if((uint64_t) length > 0xFFFFFFFE0)
       return ERROR_INVALID_LENGTH;
 
    //Check whether the length of the IV is 96 bits
@@ -390,22 +400,15 @@ __weak_func error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
       //Initialize GHASH calculation
       osMemset(j, 0, 16);
 
-      //Length of the IV
-      n = ivLen;
-
       //Process the initialization vector
-      while(n > 0)
+      for(i = 0; i < ivLen; i += n)
       {
          //The IV is processed in a block-by-block fashion
-         k = MIN(n, 16);
+         n = MIN(ivLen - i, 16);
 
          //Apply GHASH function
-         gcmXorBlock(j, j, iv, k);
+         gcmXorBlock(j, j, iv + i, n);
          gcmMul(context, j);
-
-         //Next block
-         iv += k;
-         n -= k;
       }
 
       //The string is appended with 64 additional 0 bits, followed by the
@@ -425,35 +428,26 @@ __weak_func error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
 
    //Initialize GHASH calculation
    osMemset(s, 0, 16);
-   //Length of the AAD
-   n = aLen;
 
    //Process AAD
-   while(n > 0)
+   for(i = 0; i < aLen; i += n)
    {
       //Additional data are processed in a block-by-block fashion
-      k = MIN(n, 16);
+      n = MIN(aLen - i, 16);
 
       //Apply GHASH function
-      gcmXorBlock(s, s, a, k);
+      gcmXorBlock(s, s, a + i, n);
       gcmMul(context, s);
-
-      //Next block
-      a += k;
-      n -= k;
    }
 
-   //Length of the ciphertext
-   n = length;
-
    //Process ciphertext
-   while(n > 0)
+   for(i = 0; i < length; i += n)
    {
       //The decryption operates in a block-by-block fashion
-      k = MIN(n, 16);
+      n = MIN(length - i, 16);
 
       //Apply GHASH function
-      gcmXorBlock(s, s, c, k);
+      gcmXorBlock(s, s, c + i, n);
       gcmMul(context, s);
 
       //Increment counter
@@ -461,12 +455,7 @@ __weak_func error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
 
       //Decrypt ciphertext
       context->cipherAlgo->encryptBlock(context->cipherContext, j, b);
-      gcmXorBlock(p, c, b, k);
-
-      //Next block
-      c += k;
-      p += k;
-      n -= k;
+      gcmXorBlock(p + i, c + i, b, n);
    }
 
    //Append the 64-bit representation of the length of the AAD and the
@@ -484,13 +473,33 @@ __weak_func error_t gcmDecrypt(GcmContext *context, const uint8_t *iv,
 
    //The calculated tag is bitwise compared to the received tag. The message
    //is authenticated if and only if the tags match
-   for(mask = 0, n = 0; n < tLen; n++)
+   for(mask = 0, i = 0; i < tLen; i++)
    {
-      mask |= r[n] ^ t[n];
+      mask |= r[i] ^ t[i];
+   }
+
+   //If tag verification fails, the decrypted message must not be given as
+   //output. The output buffer is overwritten with zeros before the function
+   //returns
+   if(mask != 0)
+   {
+      cryptoZeroizeMem(p, length);
    }
 
    //Return status code
    return (mask == 0) ? NO_ERROR : ERROR_INVALID_TAG;
+}
+
+
+/**
+ * @brief Release GCM context
+ * @param[in] context Pointer to the GCM context
+ **/
+
+void gcmDeinit(GcmContext *context)
+{
+   //Erase GCM context
+   cryptoZeroizeMem(context, sizeof(GcmContext));
 }
 
 

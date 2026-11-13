@@ -79,6 +79,7 @@ void desDeinit(DesContext *context);
 void desComputeKeyParity(const uint8_t *input, uint8_t *output);
 void desFixKeyParity(uint8_t *key);
 bool_t desCheckKeyParity(const uint8_t *key);
+bool_t desCompareKeys(const uint8_t *key1, const uint8_t *key2);
 
 //C++ guard
 #ifdef __cplusplus

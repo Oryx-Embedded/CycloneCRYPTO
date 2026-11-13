@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "ecc/ec.h"
 #include "ecc/curve25519.h"
 #include "ecc/x25519.h"
@@ -175,7 +176,7 @@ __weak_func error_t x25519(uint8_t *r, const uint8_t *k, const uint8_t *u)
    curve25519Export(state->u, r);
 
    //Erase working state
-   osMemset(state, 0, sizeof(X25519State));
+   cryptoZeroizeMem(state, sizeof(X25519State));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state

@@ -404,6 +404,7 @@ error_t x509ParseExtensionRequest(const uint8_t *data, size_t length,
    X509Extensions *extensionReq)
 {
    error_t error;
+   uint_t i;
    size_t n;
    Asn1Tag tag;
    X509Extension extension;
@@ -426,8 +427,13 @@ error_t x509ParseExtensionRequest(const uint8_t *data, size_t length,
    length = tag.length;
 
    //Loop through the extensions
-   while(length > 0)
+   for(i = 0; length > 0; i++)
    {
+      //Limit the number of extensions (the duplicate check below takes a time
+      //that is quadratic in the number of extensions)
+      if(i >= X509_MAX_EXTENSIONS)
+         return ERROR_INVALID_SYNTAX;
+
       //Each extension includes an OID and a value
       error = x509ParseExtension(data, length, &n, &extension);
       //Any error to report?

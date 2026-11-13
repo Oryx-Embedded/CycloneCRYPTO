@@ -66,6 +66,7 @@ error_t sha3_384Compute(const void *data, size_t length, uint8_t *digest);
 void sha3_384Init(Sha3_384Context *context);
 void sha3_384Update(Sha3_384Context *context, const void *data, size_t length);
 void sha3_384Final(Sha3_384Context *context, uint8_t *digest);
+void sha3_384Deinit(Sha3_384Context *context);
 
 //C++ guard
 #ifdef __cplusplus

@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "hash/sm3.h"
 
 //Check crypto library configuration
@@ -50,8 +51,8 @@
 #define P1(x) ((x) ^ ROL32(x, 15) ^ ROL32(x, 23))
 
 //Constants T_j
-#define TJ1 0x79CC4519
-#define TJ2 0x7A879D8A
+#define TJ1 0x79CC4519U
+#define TJ2 0x7A879D8AU
 
 //SM3 padding
 static const uint8_t padding[64] =
@@ -80,7 +81,8 @@ const HashAlgo sm3HashAlgo =
    (HashAlgoInit) sm3Init,
    (HashAlgoUpdate) sm3Update,
    (HashAlgoFinal) sm3Final,
-   NULL
+   NULL,
+   (HashAlgoDeinit) sm3Deinit
 };
 
 
@@ -239,6 +241,18 @@ __weak_func void sm3Final(Sm3Context *context, uint8_t *digest)
    {
       STORE32BE(context->h[i], digest + i * 4);
    }
+}
+
+
+/**
+ * @brief Release SM3 context
+ * @param[in] context Pointer to the SM3 context
+ **/
+
+void sm3Deinit(Sm3Context *context)
+{
+   //Erase SM3 context
+   cryptoZeroizeMem(context, sizeof(Sm3Context));
 }
 
 

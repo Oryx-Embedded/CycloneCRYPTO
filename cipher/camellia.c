@@ -38,6 +38,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/camellia.h"
 #include "debug.h"
 
@@ -613,8 +614,8 @@ void camelliaDecryptBlock(CamelliaContext *context, const uint8_t *input,
 
 void camelliaDeinit(CamelliaContext *context)
 {
-   //Clear Camellia context
-   osMemset(context, 0, sizeof(CamelliaContext));
+   //Erase Camellia context
+   cryptoZeroizeMem(context, sizeof(CamelliaContext));
 }
 
 #endif

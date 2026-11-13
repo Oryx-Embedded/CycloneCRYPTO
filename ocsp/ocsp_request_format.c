@@ -171,24 +171,33 @@ error_t ocspFormatVersion(OcspVersion version, uint8_t *output,
    size_t n;
    Asn1Tag tag;
 
-   //Encode the version number
-   error = asn1WriteInt32(version, FALSE, output, &n);
-   //Any error to report?
-   if(error)
-      return error;
+   //In DER, a component whose value equals its default value shall be omitted
+   if(version == OCSP_VERSION_1)
+   {
+      //The Version field is not present
+      n = 0;
+   }
+   else
+   {
+      //Encode the version number
+      error = asn1WriteInt32(version, FALSE, output, &n);
+      //Any error to report?
+      if(error)
+         return error;
 
-   //Explicit tagging shall be used to encode version
-   tag.constructed = TRUE;
-   tag.objClass = ASN1_CLASS_CONTEXT_SPECIFIC;
-   tag.objType = 0;
-   tag.length = n;
-   tag.value = output;
+      //Explicit tagging shall be used to encode version
+      tag.constructed = TRUE;
+      tag.objClass = ASN1_CLASS_CONTEXT_SPECIFIC;
+      tag.objType = 0;
+      tag.length = n;
+      tag.value = output;
 
-   //Write the corresponding ASN.1 tag
-   error = asn1WriteTag(&tag, FALSE, output, &n);
-   //Any error to report?
-   if(error)
-      return error;
+      //Write the corresponding ASN.1 tag
+      error = asn1WriteTag(&tag, FALSE, output, &n);
+      //Any error to report?
+      if(error)
+         return error;
+   }
 
    //Total number of bytes that have been written
    *written = n;

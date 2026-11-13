@@ -37,6 +37,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "cipher/seed.h"
 #include "debug.h"
 
@@ -395,8 +396,8 @@ void seedDecryptBlock(SeedContext *context, const uint8_t *input,
 
 void seedDeinit(SeedContext *context)
 {
-   //Clear SEED context
-   osMemset(context, 0, sizeof(SeedContext));
+   //Erase SEED context
+   cryptoZeroizeMem(context, sizeof(SeedContext));
 }
 
 #endif

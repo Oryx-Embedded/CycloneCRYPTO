@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "ecc/ec.h"
 #include "ecc/curve448.h"
 #include "ecc/ed448.h"
@@ -195,7 +196,7 @@ error_t ed448GeneratePublicKey(const uint8_t *privateKey, uint8_t *publicKey)
    ed448Encode(&state->a, publicKey);
 
    //Erase working state
-   osMemset(state, 0, sizeof(Ed448GeneratePublicKeyState));
+   cryptoZeroizeMem(state, sizeof(Ed448GeneratePublicKeyState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
@@ -398,7 +399,7 @@ error_t ed448GenerateSignatureEx(const uint8_t *privateKey,
    ed448SelectInt(signature + 57, state->p, state->s, c, 57);
 
    //Erase working state
-   osMemset(state, 0, sizeof(Ed448GenerateSignatureState));
+   cryptoZeroizeMem(state, sizeof(Ed448GenerateSignatureState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state
@@ -541,7 +542,7 @@ error_t ed448VerifySignatureEx(const uint8_t *publicKey,
    ret |= ed448CompInt(state->p, signature, ED448_SIGNATURE_LEN / 2);
 
    //Erase working state
-   osMemset(state, 0, sizeof(Ed448VerifySignatureState));
+   cryptoZeroizeMem(state, sizeof(Ed448VerifySignatureState));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release working state

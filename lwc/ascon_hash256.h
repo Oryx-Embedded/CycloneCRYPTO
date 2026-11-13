@@ -76,6 +76,7 @@ error_t asconHash256Compute(const void *data, size_t length, uint8_t *digest);
 void asconHash256Init(AsconHash256Context *context);
 void asconHash256Update(AsconHash256Context *context, const void *data, size_t length);
 void asconHash256Final(AsconHash256Context *context, uint8_t *digest);
+void asconHash256Deinit(AsconHash256Context *context);
 
 //C++ guard
 #ifdef __cplusplus

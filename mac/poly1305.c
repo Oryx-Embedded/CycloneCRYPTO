@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "mac/poly1305.h"
 #include "debug.h"
 
@@ -214,6 +215,22 @@ void poly1305Final(Poly1305Context *context, uint8_t *tag)
    context->s[1] = 0;
    context->s[2] = 0;
    context->s[3] = 0;
+}
+
+
+/**
+ * @brief Release Poly1305 context
+ * @param[in] context Pointer to the Poly1305 context
+ **/
+
+void poly1305Deinit(Poly1305Context *context)
+{
+   //Make sure the Poly1305 context is valid
+   if(context != NULL)
+   {
+      //Erase Poly1305 context
+      cryptoZeroizeMem(context, sizeof(Poly1305Context));
+   }
 }
 
 

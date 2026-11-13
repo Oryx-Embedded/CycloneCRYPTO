@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "ecc/eddsa.h"
 #include "debug.h"
 
@@ -63,7 +64,7 @@ void eddsaInitPublicKey(EddsaPublicKey *key)
 void eddsaFreePublicKey(EddsaPublicKey *key)
 {
    //Clear public key
-   osMemset(key, 0, sizeof(EddsaPublicKey));
+   cryptoZeroizeMem(key, sizeof(EddsaPublicKey));
 }
 
 
@@ -95,7 +96,7 @@ void eddsaInitPrivateKey(EddsaPrivateKey *key)
 void eddsaFreePrivateKey(EddsaPrivateKey *key)
 {
    //Clear public key
-   osMemset(key, 0, sizeof(EddsaPrivateKey));
+   cryptoZeroizeMem(key, sizeof(EddsaPrivateKey));
 }
 
 

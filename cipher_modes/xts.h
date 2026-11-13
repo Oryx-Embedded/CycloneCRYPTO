@@ -31,9 +31,19 @@
 #ifndef _XTS_H
 #define _XTS_H
 
+//Distinct key check support
+#ifndef XTS_KEY_CHECK_SUPPORT
+   #define XTS_KEY_CHECK_SUPPORT ENABLED
+#elif (XTS_KEY_CHECK_SUPPORT != ENABLED && XTS_KEY_CHECK_SUPPORT != DISABLED)
+   #error XTS_KEY_CHECK_SUPPORT parameter is not valid
+#endif
+
 //Dependencies
 #include "core/crypto.h"
 #include "cipher/cipher_algorithms.h"
+
+//Maximum size of a data unit, in bytes
+#define XTS_MAX_DATA_UNIT_SIZE 16777216
 
 //C++ guard
 #ifdef __cplusplus

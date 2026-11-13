@@ -292,9 +292,9 @@ error_t base64Decode(const char_t *input, size_t inputLen, void *output,
       c = (uint_t) input[i];
 
       //Check the value of the current character
-      if(c == '\r' || c == '\n')
+      if(c == ' ' || c == '\t' || c == '\r' || c == '\n')
       {
-         //CR and LF characters should be ignored
+         //White space characters should be ignored
       }
       else if(c == '=')
       {
@@ -344,30 +344,50 @@ error_t base64Decode(const char_t *input, size_t inputLen, void *output,
       }
       else if(padLen == 1 && j == 3)
       {
-         //The "=" sequence indicates that the last block contains only 2 bytes
-         if(p != NULL)
+         //Check pad bits
+         if((value & 0x03) == 0)
          {
-            //Decode the last two bytes
-            p[n] = (value >> 10) & 0xFF;
-            p[n + 1] = (value >> 2) & 0xFF;
-         }
+            //The last block contains only 2 bytes
+            if(p != NULL)
+            {
+               //Decode the last two bytes
+               p[n] = (value >> 10) & 0xFF;
+               p[n + 1] = (value >> 2) & 0xFF;
+            }
 
-         //Adjust the length of the decoded data
-         n += 2;
+            //Adjust the length of the decoded data
+            n += 2;
+         }
+         else
+         {
+            //Decoders may chose to reject an encoding if the pad bits have not
+            //been set to zero (refer to RFC 4648, section 3.5)
+            error = ERROR_INVALID_CHARACTER;
+         }
       }
       else if(padLen == 2 && j == 2)
       {
-         //The "==" sequence indicates that the last block contains only 1 byte
-         if(p != NULL)
+         //Check pad bits
+         if((value & 0x0F) == 0)
          {
-            //Decode the last byte
-            p[n] = (value >> 4) & 0xFF;
-         }
+            //The last block contains only 1 byte
+            if(p != NULL)
+            {
+               //Decode the last byte
+               p[n] = (value >> 4) & 0xFF;
+            }
 
-         //Adjust the length of the decoded data
-         n++;
-         //Skip trailing pad characters
-         i++;
+            //Adjust the length of the decoded data
+            n++;
+            //Skip trailing pad characters
+            i++;
+         }
+         else
+         {
+            //Decoders may chose to reject an encoding if the pad bits have not
+            //been set to zero (refer to RFC 4648, section 3.5)
+            error = ERROR_INVALID_CHARACTER;
+         }
       }
       else
       {

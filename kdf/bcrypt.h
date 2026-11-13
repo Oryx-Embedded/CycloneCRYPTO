@@ -37,8 +37,8 @@
 
 //Minimum acceptable value for cost parameter
 #ifndef BCRYPT_MIN_COST
-   #define BCRYPT_MIN_COST 3
-#elif (BCRYPT_MIN_COST < 3)
+   #define BCRYPT_MIN_COST 4
+#elif (BCRYPT_MIN_COST < 4)
    #error BCRYPT_MIN_COST parameter is not valid
 #endif
 

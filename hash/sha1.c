@@ -38,6 +38,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "hash/sha1.h"
 
 //Check crypto library configuration
@@ -93,8 +94,9 @@ const HashAlgo sha1HashAlgo =
    (defined(MIMXRT1170_CRYPTO_HASH_SUPPORT) && MIMXRT1170_CRYPTO_HASH_SUPPORT == ENABLED))
    NULL,
 #else
-   (HashAlgoFinalRaw) sha1FinalRaw
+   (HashAlgoFinalRaw) sha1FinalRaw,
 #endif
+   (HashAlgoDeinit) sha1Deinit
 };
 
 
@@ -250,6 +252,18 @@ __weak_func void sha1Final(Sha1Context *context, uint8_t *digest)
    {
       STORE32BE(context->h[i], digest + i * 4);
    }
+}
+
+
+/**
+ * @brief Release SHA-1 context
+ * @param[in] context Pointer to the SHA-1 context
+ **/
+
+void sha1Deinit(Sha1Context *context)
+{
+   //Erase SHA-1 context
+   cryptoZeroizeMem(context, sizeof(Sha1Context));
 }
 
 

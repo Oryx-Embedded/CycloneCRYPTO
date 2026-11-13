@@ -64,6 +64,7 @@ error_t cshakeInit(CshakeContext *context, uint_t strength, const char_t *name,
 void cshakeAbsorb(CshakeContext *context, const void *input, size_t length);
 void cshakeFinal(CshakeContext *context);
 void cshakeSqueeze(CshakeContext *context, uint8_t *output, size_t length);
+void cshakeDeinit(CshakeContext *context);
 
 void cshakeLeftEncode(size_t value, uint8_t *buffer, size_t *length);
 void cshakeRightEncode(size_t value, uint8_t *buffer, size_t *length);

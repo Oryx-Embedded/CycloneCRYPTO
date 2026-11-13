@@ -66,6 +66,7 @@ error_t sha512_256Compute(const void *data, size_t length, uint8_t *digest);
 void sha512_256Init(Sha512_256Context *context);
 void sha512_256Update(Sha512_256Context *context, const void *data, size_t length);
 void sha512_256Final(Sha512_256Context *context, uint8_t *digest);
+void sha512_256Deinit(Sha512_256Context *context);
 
 //C++ guard
 #ifdef __cplusplus
