@@ -54,37 +54,76 @@
 error_t x509ValidateCertificate(const X509CertInfo *certInfo,
    const X509CertInfo *issuerCertInfo, uint_t pathLen)
 {
+   //Validate the certificate
+   return x509ValidateCertificateEx(certInfo, issuerCertInfo, pathLen,
+      &X509_DEFAULT_OPTIONS);
+}
+
+
+/**
+ * @brief X.509 certificate validation
+ * @param[in] certInfo X.509 certificate to be verified
+ * @param[in] issuerCertInfo Issuer's certificate
+ * @param[in] pathLen Certificate path length
+ * @param[in] options Certificate validation options
+ * @return Error code
+ **/
+
+error_t x509ValidateCertificateEx(const X509CertInfo *certInfo,
+   const X509CertInfo *issuerCertInfo, uint_t pathLen,
+   const X509Options *options)
+{
    error_t error;
-   time_t currentTime;
    const X509Extensions *extensions;
 
    //Check parameters
-   if(certInfo == NULL || issuerCertInfo == NULL)
+   if(certInfo == NULL || issuerCertInfo == NULL || options == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //Retrieve current time
-   currentTime = getCurrentUnixTime();
-
-   //Any real-time clock implemented?
-   if(currentTime != 0)
+   //Check whether the validity period of the certificate should be verified
+   if(!options->disableValidityCheck)
    {
+      time_t currentTime;
       DateTime currentDate;
       const X509Validity *validity;
-
-      //Convert Unix timestamp to date
-      convertUnixTimeToDate(currentTime, &currentDate);
 
       //The certificate validity period is the time interval during which the
       //CA warrants that it will maintain information about the status of the
       //certificate
       validity = &certInfo->tbsCert.validity;
 
-      //Check the validity period
-      if(compareDateTime(&currentDate, &validity->notBefore) < 0 ||
-         compareDateTime(&currentDate, &validity->notAfter) >= 0)
+      //Retrieve current time
+      currentTime = getCurrentUnixTime();
+
+      //Any real-time clock implemented?
+      if(currentTime != 0)
       {
-         //The certificate has expired or is not yet valid
-         return ERROR_CERTIFICATE_EXPIRED;
+         //Convert Unix timestamp to date
+         convertUnixTimeToDate(currentTime, &currentDate);
+
+         //Check the validity period
+         if(compareDateTime(&currentDate, &validity->notBefore) < 0 ||
+            compareDateTime(&currentDate, &validity->notAfter) >= 0)
+         {
+            //The certificate has expired or is not yet valid
+            return ERROR_CERTIFICATE_EXPIRED;
+         }
+      }
+      else
+      {
+         //Only certificates that have no well-defined expiration date are
+         //accepted (refer to RFC 5280, section 4.1.2.5)
+         if(validity->notAfter.year != 9999 ||
+            validity->notAfter.month != 12 ||
+            validity->notAfter.day != 31 ||
+            validity->notAfter.hours != 23 ||
+            validity->notAfter.minutes != 59 ||
+            validity->notAfter.seconds != 59)
+         {
+            //The validity period of the certificate cannot be verified without
+            //a real-time clock
+            return ERROR_CERTIFICATE_EXPIRED;
+         }
       }
    }
 

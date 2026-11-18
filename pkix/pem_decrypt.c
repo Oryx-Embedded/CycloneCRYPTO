@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "pkix/pem_decrypt.h"
 #include "pkix/pkcs5_decrypt.h"
 #include "pkix/pkcs8_key_parse.h"
@@ -64,6 +65,7 @@ error_t pemDecryptPrivateKey(const char_t *input, size_t inputLen,
 #if (PEM_ENCRYPTED_KEY_SUPPORT == ENABLED)
    error_t error;
    size_t n;
+   size_t bufferLen;
    uint8_t *buffer;
    PemHeader header;
    Pkcs8PrivateKeyInfo privateKeyInfo;
@@ -77,11 +79,11 @@ error_t pemDecryptPrivateKey(const char_t *input, size_t inputLen,
 
 #if (RSA_SUPPORT == ENABLED)
    //RSA private key?
-   if(pemDecodeFile(input, inputLen, "RSA PRIVATE KEY", NULL, &n, NULL,
-      NULL) == NO_ERROR)
+   if(pemDecodeFile(input, inputLen, "RSA PRIVATE KEY", NULL, &bufferLen,
+      NULL, NULL) == NO_ERROR)
    {
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -118,6 +120,8 @@ error_t pemDecryptPrivateKey(const char_t *input, size_t inputLen,
                outputLen);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -131,11 +135,11 @@ error_t pemDecryptPrivateKey(const char_t *input, size_t inputLen,
 #endif
 #if (DSA_SUPPORT == ENABLED)
    //DSA private key?
-   if(pemDecodeFile(input, inputLen, "DSA PRIVATE KEY", NULL, &n, NULL,
-      NULL) == NO_ERROR)
+   if(pemDecodeFile(input, inputLen, "DSA PRIVATE KEY", NULL, &bufferLen,
+      NULL, NULL) == NO_ERROR)
    {
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -172,6 +176,8 @@ error_t pemDecryptPrivateKey(const char_t *input, size_t inputLen,
                outputLen);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -185,11 +191,11 @@ error_t pemDecryptPrivateKey(const char_t *input, size_t inputLen,
 #endif
 #if (EC_SUPPORT == ENABLED)
    //EC private key?
-   if(pemDecodeFile(input, inputLen, "EC PRIVATE KEY", NULL, &n, NULL,
-      NULL) == NO_ERROR)
+   if(pemDecodeFile(input, inputLen, "EC PRIVATE KEY", NULL, &bufferLen,
+      NULL, NULL) == NO_ERROR)
    {
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -226,6 +232,8 @@ error_t pemDecryptPrivateKey(const char_t *input, size_t inputLen,
                outputLen);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -238,11 +246,11 @@ error_t pemDecryptPrivateKey(const char_t *input, size_t inputLen,
    else
 #endif
    //PKCS #8 format private key?
-   if(pemDecodeFile(input, inputLen, "PRIVATE KEY", NULL, &n,
+   if(pemDecodeFile(input, inputLen, "PRIVATE KEY", NULL, &bufferLen,
       NULL, NULL) == NO_ERROR)
    {
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -265,6 +273,8 @@ error_t pemDecryptPrivateKey(const char_t *input, size_t inputLen,
             error = pemEncodeFile(buffer, n, "PRIVATE KEY", output, outputLen);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -275,11 +285,11 @@ error_t pemDecryptPrivateKey(const char_t *input, size_t inputLen,
       }
    }
    //PKCS #8 format encrypted private key?
-   else if(pemDecodeFile(input, inputLen, "ENCRYPTED PRIVATE KEY", NULL, &n,
-      NULL, NULL) == NO_ERROR)
+   else if(pemDecodeFile(input, inputLen, "ENCRYPTED PRIVATE KEY", NULL,
+      &bufferLen, NULL, NULL) == NO_ERROR)
    {
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -326,6 +336,8 @@ error_t pemDecryptPrivateKey(const char_t *input, size_t inputLen,
             error = pemEncodeFile(data, n, "PRIVATE KEY", output, outputLen);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -420,12 +432,6 @@ error_t pemDecryptMessage(const PemHeader *header, const char_t *password,
    //Retrieve the length of the password
    passwordLen = osStrlen(password);
 
-   //Apply the key derivation function to produce a derived key DK
-   error = pemKdf(password, passwordLen, iv, 8, dk, dkLen);
-   //Any error to report?
-   if(error)
-      return error;
-
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the cipher context
    cipherContext = cryptoAllocMem(cipherAlgo->contextSize);
@@ -434,21 +440,31 @@ error_t pemDecryptMessage(const PemHeader *header, const char_t *password,
       return ERROR_OUT_OF_MEMORY;
 #endif
 
-   //Load encryption key DK
-   error = cipherAlgo->init(cipherContext, dk, dkLen);
+   //Apply the key derivation function to produce a derived key DK
+   error = pemKdf(password, passwordLen, iv, 8, dk, dkLen);
 
    //Check status code
    if(!error)
    {
-      //Decrypt the ciphertext C with the underlying block cipher in CBC
-      //mode under the encryption key K with initialization vector IV to
-      //recover an encoded message EM
-      error = cbcDecrypt(cipherAlgo, cipherContext, iv, ciphertext,
-         plaintext, ciphertextLen);
+      //Load encryption key DK
+      error = cipherAlgo->init(cipherContext, dk, dkLen);
+
+      //Check status code
+      if(!error)
+      {
+         //Decrypt the ciphertext C with the underlying block cipher in CBC
+         //mode under the encryption key K with initialization vector IV to
+         //recover an encoded message EM
+         error = cbcDecrypt(cipherAlgo, cipherContext, iv, ciphertext,
+            plaintext, ciphertextLen);
+      }
+
+      //Erase cipher context
+      cipherAlgo->deinit(cipherContext);
    }
 
-   //Erase cipher context
-   cipherAlgo->deinit(cipherContext);
+   //Erase the derived key
+   cryptoZeroizeMem(dk, sizeof(dk));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release previously allocated memory
@@ -598,6 +614,12 @@ error_t pemKdf(const char_t *p, size_t pLen, const uint8_t *s, size_t sLen,
       dk += n;
       dkLen -= n;
    }
+
+   //Erase the intermediate hash value
+   cryptoZeroizeMem(t, sizeof(t));
+
+   //Erase MD5 context
+   md5Deinit(md5Context);
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Free previously allocated memory

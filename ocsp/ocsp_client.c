@@ -86,6 +86,10 @@ error_t ocspClientInit(OcspClientContext *context)
    //Default URI
    osStrcpy(context->uri, "/");
 
+   //The validity period of OCSP responses and certificates is checked by
+   //default
+   context->validityCheck = TRUE;
+
    //Successful initialization
    return NO_ERROR;
 }
@@ -157,6 +161,29 @@ error_t ocspClientSetTimeout(OcspClientContext *context, systime_t timeout)
 
    //Save timeout value
    context->timeout = timeout;
+
+   //Successful processing
+   return NO_ERROR;
+}
+
+
+/**
+ * @brief Enable or disable the validity period check
+ * @param[in] context Pointer to the OCSP client context
+ * @param[in] enable Specifies whether the validity period of OCSP responses
+ *   and certificates is checked
+ * @return Error code
+ **/
+
+error_t ocspClientEnableValidityCheck(OcspClientContext *context,
+   bool_t enable)
+{
+   //Make sure the OCSP client context is valid
+   if(context == NULL)
+      return ERROR_INVALID_PARAMETER;
+
+   //Enable or disable the validity period check
+   context->validityCheck = enable;
 
    //Successful processing
    return NO_ERROR;
@@ -714,7 +741,8 @@ error_t ocspClientValidateResponse(OcspClientContext *context,
 
       //Validate OCSP response
       error = ocspValidateResponse(&context->ocspResponse, certInfo,
-         issuerCertInfo, context->nonce, context->nonceLen);
+         issuerCertInfo, context->nonce, context->nonceLen,
+         context->validityCheck);
       //Any error to report?
       if(error)
          break;

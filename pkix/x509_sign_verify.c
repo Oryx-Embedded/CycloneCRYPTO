@@ -318,11 +318,36 @@ error_t x509VerifyRsaSignature(const X509OctetString *tbsData,
       //Check status code
       if(!error)
       {
+         //The RSA modulus must be an odd integer
+         if(mpiIsEven(&rsaPublicKey.n))
+         {
+            //Report an error
+            error = ERROR_INVALID_KEY;
+         }
+
          //Get the length of the modulus, in bits
          k = mpiGetBitLength(&rsaPublicKey.n);
 
          //Make sure the modulus is acceptable
          if(k < X509_MIN_RSA_MODULUS_SIZE || k > X509_MAX_RSA_MODULUS_SIZE)
+         {
+            //Report an error
+            error = ERROR_INVALID_KEY;
+         }
+
+         //The public exponent must be an odd integer greater than 1
+         if(mpiCompInt(&rsaPublicKey.e, 1) <= 0 || mpiIsEven(&rsaPublicKey.e))
+         {
+            //Report an error
+            error = ERROR_INVALID_KEY;
+         }
+
+         //Get the length of the public exponent, in bits
+         k = mpiGetBitLength(&rsaPublicKey.e);
+
+         //Limit the size of the public exponent to bound the cost of the RSA
+         //public operation
+         if(k > X509_MAX_RSA_PUBLIC_EXPONENT_SIZE)
          {
             //Report an error
             error = ERROR_INVALID_KEY;
@@ -397,11 +422,36 @@ error_t x509VerifyRsaPssSignature(const X509OctetString *tbsData,
       //Check status code
       if(!error)
       {
+         //The RSA modulus must be an odd integer
+         if(mpiIsEven(&rsaPublicKey.n))
+         {
+            //Report an error
+            error = ERROR_INVALID_KEY;
+         }
+
          //Get the length of the modulus, in bits
          k = mpiGetBitLength(&rsaPublicKey.n);
 
          //Make sure the modulus is acceptable
          if(k < X509_MIN_RSA_MODULUS_SIZE || k > X509_MAX_RSA_MODULUS_SIZE)
+         {
+            //Report an error
+            error = ERROR_INVALID_KEY;
+         }
+
+         //The public exponent must be an odd integer greater than 1
+         if(mpiCompInt(&rsaPublicKey.e, 1) <= 0 || mpiIsEven(&rsaPublicKey.e))
+         {
+            //Report an error
+            error = ERROR_INVALID_KEY;
+         }
+
+         //Get the length of the public exponent, in bits
+         k = mpiGetBitLength(&rsaPublicKey.e);
+
+         //Limit the size of the public exponent to bound the cost of the RSA
+         //public operation
+         if(k > X509_MAX_RSA_PUBLIC_EXPONENT_SIZE)
          {
             //Report an error
             error = ERROR_INVALID_KEY;
@@ -651,8 +701,9 @@ error_t x509VerifySm2Signature(const X509OctetString *tbsData,
          if(!error)
          {
             //Read the ASN.1 encoded signature
-            error = ecdsaImportSignature(&sm2Signature, SM2_CURVE, signature->value,
-               signature->length, ECDSA_SIGNATURE_FORMAT_ASN1);
+            error = ecdsaImportSignature(&sm2Signature, SM2_CURVE,
+               signature->value, signature->length,
+               ECDSA_SIGNATURE_FORMAT_ASN1);
          }
 
          //Check status code

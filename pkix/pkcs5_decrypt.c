@@ -157,21 +157,6 @@ error_t pkcs5DecryptPbes1(const X509AlgoId *encryptionAlgoId,
    //Retrieve the length of the password
    passwordLen = osStrlen(password);
 
-   //Apply the PBKDF1 key derivation function to the password P, the salt S,
-   //and the iteration count c to produce a derived key DK of length 16 octets
-   error = pbkdf1(hashAlgo, (uint8_t *) password, passwordLen,
-      pbes1Params.salt.value, pbes1Params.salt.length,
-      pbes1Params.iterationCount, dk, 16);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Separate the derived key DK into an encryption key K consisting of the
-   //first eight octets of DK and an initialization vector IV consisting of
-   //the next eight octets
-   k = dk;
-   iv = dk + 8;
-
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the cipher context
    cipherContext = cryptoAllocMem(cipherAlgo->contextSize);
@@ -180,42 +165,62 @@ error_t pkcs5DecryptPbes1(const X509AlgoId *encryptionAlgoId,
       return ERROR_OUT_OF_MEMORY;
 #endif
 
-   //Load encryption key K
-   error = cipherAlgo->init(cipherContext, k, 8);
+   //Apply the PBKDF1 key derivation function to the password P, the salt S,
+   //and the iteration count c to produce a derived key DK of length 16 octets
+   error = pbkdf1(hashAlgo, (uint8_t *) password, passwordLen,
+      pbes1Params.salt.value, pbes1Params.salt.length,
+      pbes1Params.iterationCount, dk, 16);
 
    //Check status code
    if(!error)
    {
-      //Decrypt the ciphertext C with the underlying block cipher (DES or
-      //RC2) in CBC mode under the encryption key K with initialization
-      //vector IV to recover an encoded message EM
-      error = cbcDecrypt(cipherAlgo, cipherContext, iv, ciphertext,
-         plaintext, ciphertextLen);
+      //Separate the derived key DK into an encryption key K consisting of the
+      //first eight octets of DK and an initialization vector IV consisting of
+      //the next eight octets
+      k = dk;
+      iv = dk + 8;
+
+      //Load encryption key K
+      error = cipherAlgo->init(cipherContext, k, 8);
+
+      //Check status code
+      if(!error)
+      {
+         //Decrypt the ciphertext C with the underlying block cipher (DES or
+         //RC2) in CBC mode under the encryption key K with initialization
+         //vector IV to recover an encoded message EM
+         error = cbcDecrypt(cipherAlgo, cipherContext, iv, ciphertext,
+            plaintext, ciphertextLen);
+      }
+
+      //Erase cipher context
+      cipherAlgo->deinit(cipherContext);
    }
 
-   //Erase cipher context
-   cipherAlgo->deinit(cipherContext);
+   //Check status code
+   if(!error)
+   {
+      //Verify padding string
+      error = pkcs5VerifyPadding(plaintext, ciphertextLen, 8, &psLen);
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Strip padding bytes from the encoded message EM
+      *plaintextLen = ciphertextLen - psLen;
+   }
+
+   //Erase the derived key
+   cryptoZeroizeMem(dk, sizeof(dk));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release previously allocated memory
    cryptoFreeMem(cipherContext);
 #endif
 
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Verify padding string
-   error = pkcs5VerifyPadding(plaintext, ciphertextLen, 8, &psLen);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Strip padding bytes from the encoded message EM
-   *plaintextLen = ciphertextLen - psLen;
-
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 }
 
 
@@ -298,16 +303,6 @@ error_t pkcs5DecryptPbes2(const X509AlgoId *encryptionAlgoId,
    //Retrieve the length of the password
    passwordLen = osStrlen(password);
 
-   //Apply the selected KDF function to the password P, the salt S, and the
-   //iteration count c to produce a derived key DK of length dkLen octets
-   error = pbkdf2(PBKDF2_TYPE_HMAC, hashAlgo, (uint8_t *) password,
-      passwordLen, pbes2Params.keyDerivationFunc.salt.value,
-      pbes2Params.keyDerivationFunc.salt.length,
-      pbes2Params.keyDerivationFunc.iterationCount, dk, dkLen);
-   //Any error to report?
-   if(error)
-      return error;
-
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the cipher context
    cipherContext = cryptoAllocMem(cipherAlgo->contextSize);
@@ -316,42 +311,57 @@ error_t pkcs5DecryptPbes2(const X509AlgoId *encryptionAlgoId,
       return ERROR_OUT_OF_MEMORY;
 #endif
 
-   //Load encryption key DK
-   error = cipherAlgo->init(cipherContext, dk, dkLen);
+   //Apply the selected KDF function to the password P, the salt S, and the
+   //iteration count c to produce a derived key DK of length dkLen octets
+   error = pbkdf2(PBKDF2_TYPE_HMAC, hashAlgo, (uint8_t *) password,
+      passwordLen, pbes2Params.keyDerivationFunc.salt.value,
+      pbes2Params.keyDerivationFunc.salt.length,
+      pbes2Params.keyDerivationFunc.iterationCount, dk, dkLen);
 
    //Check status code
    if(!error)
    {
-      //Decrypt the ciphertext C with the underlying encryption scheme
-      //under the derived key DK to recover a message M
-      error = cbcDecrypt(cipherAlgo, cipherContext, iv, ciphertext,
-         plaintext, ciphertextLen);
+      //Load encryption key DK
+      error = cipherAlgo->init(cipherContext, dk, dkLen);
+
+      //Check status code
+      if(!error)
+      {
+         //Decrypt the ciphertext C with the underlying encryption scheme
+         //under the derived key DK to recover a message M
+         error = cbcDecrypt(cipherAlgo, cipherContext, iv, ciphertext,
+            plaintext, ciphertextLen);
+      }
+
+      //Erase cipher context
+      cipherAlgo->deinit(cipherContext);
    }
 
-   //Erase cipher context
-   cipherAlgo->deinit(cipherContext);
+   //Check status code
+   if(!error)
+   {
+      //Verify padding string
+      error = pkcs5VerifyPadding(plaintext, ciphertextLen,
+         cipherAlgo->blockSize, &psLen);
+   }
+
+   //Check status code
+   if(!error)
+   {
+      //Strip padding bytes from the encoded message EM
+      *plaintextLen = ciphertextLen - psLen;
+   }
+
+   //Erase the derived key
+   cryptoZeroizeMem(dk, sizeof(dk));
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Release previously allocated memory
    cryptoFreeMem(cipherContext);
 #endif
 
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Verify padding string
-   error = pkcs5VerifyPadding(plaintext, ciphertextLen, cipherAlgo->blockSize,
-      &psLen);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Strip padding bytes from the encoded message EM
-   *plaintextLen = ciphertextLen - psLen;
-
-   //Successful processing
-   return NO_ERROR;
+   //Return status code
+   return error;
 }
 
 

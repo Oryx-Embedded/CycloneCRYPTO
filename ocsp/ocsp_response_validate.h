@@ -42,13 +42,14 @@ extern "C" {
 //OCSP related functions
 error_t ocspValidateResponse(const OcspResponse *response,
    const X509CertInfo *certInfo, const X509CertInfo *issuerCertInfo,
-   const uint8_t *nonce, size_t nonceLen);
+   const uint8_t *nonce, size_t nonceLen, bool_t validityCheck);
 
 error_t ocspCheckResponseSignature(const OcspBasicResponse *basicResponse,
-   const X509CertInfo *issuerCertInfo);
+   const X509CertInfo *issuerCertInfo, bool_t validityCheck);
 
 error_t ocspCheckResponderCert(const OcspResponderId *responderId,
-   const X509CertInfo *responderCertInfo, const X509CertInfo *issuerCertInfo);
+   const X509CertInfo *responderCertInfo, const X509CertInfo *issuerCertInfo,
+   bool_t validityCheck);
 
 error_t ocspCheckResponderId(const OcspResponderId *responderId,
    const X509CertInfo *issuerCertInfo);
@@ -56,7 +57,8 @@ error_t ocspCheckResponderId(const OcspResponderId *responderId,
 error_t ocspCheckCertId(const OcspCertId *certId, const X509CertInfo *certInfo,
    const X509CertInfo *issuerCertInfo);
 
-error_t ocspCheckValidity(const OcspSingleResponse *singleResponse);
+error_t ocspCheckValidity(const OcspSingleResponse *singleResponse,
+   bool_t validityCheck);
 
 error_t ocspCheckNonce(const OcspExtensions *extensions, const uint8_t *nonce,
    size_t nonceLen);

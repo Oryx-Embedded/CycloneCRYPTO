@@ -115,8 +115,11 @@ error_t pemDecodeFile(const char_t *input, size_t inputLen, const char_t *label,
  * @param[in] input ASN.1 data to encode
  * @param[in] inputLen Length of the ASN.1 data to encode
  * @param[in] label Label indicating the type of data
- * @param[out] output Buffer where to store the PEM string (optional parameter)
- * @param[out] outputLen Length of the resulting PEM string
+ * @param[out] output Buffer where to store the NULL-terminated string. If this
+ *   parameter is NULL, the function only calculates the length of the resulting
+ *   string
+ * @param[out] outputLen Length of the resulting string, excluding the terminating
+ *   NULL character
  **/
 
 error_t pemEncodeFile(const void *input, size_t inputLen, const char_t *label,

@@ -172,7 +172,8 @@ const uint8_t PKCS9_EXTENSION_REQUEST_OID[9] = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x
 //Default certificate parsing options
 const X509Options X509_DEFAULT_OPTIONS =
 {
-   FALSE //Ignore unknown extensions
+   FALSE, //Ignore unknown extensions
+   FALSE  //Do not check the validity period
 };
 
 

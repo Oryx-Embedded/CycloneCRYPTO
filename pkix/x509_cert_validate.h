@@ -44,6 +44,10 @@ extern "C" {
 error_t x509ValidateCertificate(const X509CertInfo *certInfo,
    const X509CertInfo *issuerCertInfo, uint_t pathLen);
 
+error_t x509ValidateCertificateEx(const X509CertInfo *certInfo,
+   const X509CertInfo *issuerCertInfo, uint_t pathLen,
+   const X509Options *options);
+
 error_t x509CheckSubjectName(const X509CertInfo *certInfo,
    const char_t *fqdn);
 

@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "pkix/pem_key_import.h"
 #include "pkix/pem_decrypt.h"
 #include "pkix/pkcs5_decrypt.h"
@@ -186,6 +187,7 @@ error_t pemImportRsaPrivateKey(RsaPrivateKey *privateKey, const char_t *input,
 #if (RSA_SUPPORT == ENABLED)
    error_t error;
    size_t n;
+   size_t bufferLen;
    uint8_t *buffer;
    PemHeader header;
    Pkcs8PrivateKeyInfo privateKeyInfo;
@@ -199,11 +201,11 @@ error_t pemImportRsaPrivateKey(RsaPrivateKey *privateKey, const char_t *input,
 
    //The type of data encoded is labeled depending on the type label in
    //the "-----BEGIN " line (refer to RFC 7468, section 2)
-   if(pemDecodeFile(input, length, "RSA PRIVATE KEY", NULL, &n, NULL,
+   if(pemDecodeFile(input, length, "RSA PRIVATE KEY", NULL, &bufferLen, NULL,
       NULL) == NO_ERROR)
    {
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -243,6 +245,8 @@ error_t pemImportRsaPrivateKey(RsaPrivateKey *privateKey, const char_t *input,
             error = pkcs8ImportRsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -252,11 +256,11 @@ error_t pemImportRsaPrivateKey(RsaPrivateKey *privateKey, const char_t *input,
          error = ERROR_OUT_OF_MEMORY;
       }
    }
-   else if(pemDecodeFile(input, length, "PRIVATE KEY", NULL, &n, NULL,
+   else if(pemDecodeFile(input, length, "PRIVATE KEY", NULL, &bufferLen, NULL,
       NULL) == NO_ERROR)
    {
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -279,6 +283,8 @@ error_t pemImportRsaPrivateKey(RsaPrivateKey *privateKey, const char_t *input,
             error = pkcs8ImportRsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -288,12 +294,12 @@ error_t pemImportRsaPrivateKey(RsaPrivateKey *privateKey, const char_t *input,
          error = ERROR_OUT_OF_MEMORY;
       }
    }
-   else if(pemDecodeFile(input, length, "ENCRYPTED PRIVATE KEY", NULL, &n, NULL,
-      NULL) == NO_ERROR)
+   else if(pemDecodeFile(input, length, "ENCRYPTED PRIVATE KEY", NULL,
+      &bufferLen, NULL, NULL) == NO_ERROR)
    {
 #if (PEM_ENCRYPTED_KEY_SUPPORT == ENABLED)
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -340,6 +346,8 @@ error_t pemImportRsaPrivateKey(RsaPrivateKey *privateKey, const char_t *input,
             error = pkcs8ImportRsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -469,6 +477,7 @@ error_t pemImportDsaPrivateKey(DsaPrivateKey *privateKey, const char_t *input,
 #if (DSA_SUPPORT == ENABLED)
    error_t error;
    size_t n;
+   size_t bufferLen;
    uint8_t *buffer;
    PemHeader header;
    Pkcs8PrivateKeyInfo privateKeyInfo;
@@ -482,11 +491,11 @@ error_t pemImportDsaPrivateKey(DsaPrivateKey *privateKey, const char_t *input,
 
    //The type of data encoded is labeled depending on the type label in
    //the "-----BEGIN " line (refer to RFC 7468, section 2)
-   if(pemDecodeFile(input, length, "DSA PRIVATE KEY", NULL, &n, NULL,
+   if(pemDecodeFile(input, length, "DSA PRIVATE KEY", NULL, &bufferLen, NULL,
       NULL) == NO_ERROR)
    {
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -526,6 +535,8 @@ error_t pemImportDsaPrivateKey(DsaPrivateKey *privateKey, const char_t *input,
             error = pkcs8ImportDsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -535,11 +546,11 @@ error_t pemImportDsaPrivateKey(DsaPrivateKey *privateKey, const char_t *input,
          error = ERROR_OUT_OF_MEMORY;
       }
    }
-   else if(pemDecodeFile(input, length, "PRIVATE KEY", NULL, &n, NULL,
+   else if(pemDecodeFile(input, length, "PRIVATE KEY", NULL, &bufferLen, NULL,
       NULL) == NO_ERROR)
    {
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -562,6 +573,8 @@ error_t pemImportDsaPrivateKey(DsaPrivateKey *privateKey, const char_t *input,
             error = pkcs8ImportDsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -571,12 +584,12 @@ error_t pemImportDsaPrivateKey(DsaPrivateKey *privateKey, const char_t *input,
          error = ERROR_OUT_OF_MEMORY;
       }
    }
-   else if(pemDecodeFile(input, length, "ENCRYPTED PRIVATE KEY", NULL, &n, NULL,
-      NULL) == NO_ERROR)
+   else if(pemDecodeFile(input, length, "ENCRYPTED PRIVATE KEY", NULL,
+      &bufferLen, NULL, NULL) == NO_ERROR)
    {
 #if (PEM_ENCRYPTED_KEY_SUPPORT == ENABLED)
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -623,6 +636,8 @@ error_t pemImportDsaPrivateKey(DsaPrivateKey *privateKey, const char_t *input,
             error = pkcs8ImportDsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -752,6 +767,7 @@ error_t pemImportEcPrivateKey(EcPrivateKey *privateKey, const char_t *input,
 #if (EC_SUPPORT == ENABLED)
    error_t error;
    size_t n;
+   size_t bufferLen;
    uint8_t *buffer;
    PemHeader header;
    Pkcs8PrivateKeyInfo privateKeyInfo;
@@ -765,11 +781,11 @@ error_t pemImportEcPrivateKey(EcPrivateKey *privateKey, const char_t *input,
 
    //The type of data encoded is labeled depending on the type label in
    //the "-----BEGIN " line (refer to RFC 7468, section 2)
-   if(pemDecodeFile(input, length, "EC PRIVATE KEY", NULL, &n, NULL,
+   if(pemDecodeFile(input, length, "EC PRIVATE KEY", NULL, &bufferLen, NULL,
       NULL) == NO_ERROR)
    {
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -809,6 +825,8 @@ error_t pemImportEcPrivateKey(EcPrivateKey *privateKey, const char_t *input,
             error = pkcs8ImportEcPrivateKey(privateKey, &privateKeyInfo);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -818,11 +836,11 @@ error_t pemImportEcPrivateKey(EcPrivateKey *privateKey, const char_t *input,
          error = ERROR_OUT_OF_MEMORY;
       }
    }
-   else if(pemDecodeFile(input, length, "PRIVATE KEY", NULL, &n, NULL,
+   else if(pemDecodeFile(input, length, "PRIVATE KEY", NULL, &bufferLen, NULL,
       NULL) == NO_ERROR)
    {
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -845,6 +863,8 @@ error_t pemImportEcPrivateKey(EcPrivateKey *privateKey, const char_t *input,
             error = pkcs8ImportEcPrivateKey(privateKey, &privateKeyInfo);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -854,12 +874,12 @@ error_t pemImportEcPrivateKey(EcPrivateKey *privateKey, const char_t *input,
          error = ERROR_OUT_OF_MEMORY;
       }
    }
-   else if(pemDecodeFile(input, length, "ENCRYPTED PRIVATE KEY", NULL, &n, NULL,
-      NULL) == NO_ERROR)
+   else if(pemDecodeFile(input, length, "ENCRYPTED PRIVATE KEY", NULL,
+      &bufferLen, NULL, NULL) == NO_ERROR)
    {
 #if (PEM_ENCRYPTED_KEY_SUPPORT == ENABLED)
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -906,6 +926,8 @@ error_t pemImportEcPrivateKey(EcPrivateKey *privateKey, const char_t *input,
             error = pkcs8ImportEcPrivateKey(privateKey, &privateKeyInfo);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -1035,6 +1057,7 @@ error_t pemImportEddsaPrivateKey(EddsaPrivateKey *privateKey,
 #if (ED25519_SUPPORT == ENABLED || ED448_SUPPORT == ENABLED)
    error_t error;
    size_t n;
+   size_t bufferLen;
    uint8_t *buffer;
    Pkcs8PrivateKeyInfo privateKeyInfo;
 
@@ -1044,11 +1067,11 @@ error_t pemImportEddsaPrivateKey(EddsaPrivateKey *privateKey,
 
    //The type of data encoded is labeled depending on the type label in
    //the "-----BEGIN " line (refer to RFC 7468, section 2)
-   if(pemDecodeFile(input, length, "PRIVATE KEY", NULL, &n, NULL,
+   if(pemDecodeFile(input, length, "PRIVATE KEY", NULL, &bufferLen, NULL,
       NULL) == NO_ERROR)
    {
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -1071,6 +1094,8 @@ error_t pemImportEddsaPrivateKey(EddsaPrivateKey *privateKey,
             error = pkcs8ImportEddsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -1080,12 +1105,12 @@ error_t pemImportEddsaPrivateKey(EddsaPrivateKey *privateKey,
          error = ERROR_OUT_OF_MEMORY;
       }
    }
-   else if(pemDecodeFile(input, length, "ENCRYPTED PRIVATE KEY", NULL, &n, NULL,
-      NULL) == NO_ERROR)
+   else if(pemDecodeFile(input, length, "ENCRYPTED PRIVATE KEY", NULL,
+      &bufferLen, NULL, NULL) == NO_ERROR)
    {
 #if (PEM_ENCRYPTED_KEY_SUPPORT == ENABLED)
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -1132,6 +1157,8 @@ error_t pemImportEddsaPrivateKey(EddsaPrivateKey *privateKey,
             error = pkcs8ImportEddsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -1263,6 +1290,7 @@ error_t pemImportMldsaPrivateKey(MldsaPrivateKey *privateKey,
    MLDSA87_SUPPORT == ENABLED)
    error_t error;
    size_t n;
+   size_t bufferLen;
    uint8_t *buffer;
    Pkcs8PrivateKeyInfo privateKeyInfo;
 
@@ -1272,11 +1300,11 @@ error_t pemImportMldsaPrivateKey(MldsaPrivateKey *privateKey,
 
    //The type of data encoded is labeled depending on the type label in
    //the "-----BEGIN " line (refer to RFC 7468, section 2)
-   if(pemDecodeFile(input, length, "PRIVATE KEY", NULL, &n, NULL,
+   if(pemDecodeFile(input, length, "PRIVATE KEY", NULL, &bufferLen, NULL,
       NULL) == NO_ERROR)
    {
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -1299,6 +1327,8 @@ error_t pemImportMldsaPrivateKey(MldsaPrivateKey *privateKey,
             error = pkcs8ImportMldsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }
@@ -1308,12 +1338,12 @@ error_t pemImportMldsaPrivateKey(MldsaPrivateKey *privateKey,
          error = ERROR_OUT_OF_MEMORY;
       }
    }
-   else if(pemDecodeFile(input, length, "ENCRYPTED PRIVATE KEY", NULL, &n, NULL,
-      NULL) == NO_ERROR)
+   else if(pemDecodeFile(input, length, "ENCRYPTED PRIVATE KEY", NULL,
+      &bufferLen, NULL, NULL) == NO_ERROR)
    {
 #if (PEM_ENCRYPTED_KEY_SUPPORT == ENABLED)
       //Allocate a memory buffer to hold the ASN.1 data
-      buffer = cryptoAllocMem(n);
+      buffer = cryptoAllocMem(bufferLen);
 
       //Successful memory allocation?
       if(buffer != NULL)
@@ -1360,6 +1390,8 @@ error_t pemImportMldsaPrivateKey(MldsaPrivateKey *privateKey,
             error = pkcs8ImportMldsaPrivateKey(privateKey, &privateKeyInfo);
          }
 
+         //Erase the decrypted private key material
+         cryptoZeroizeMem(buffer, bufferLen);
          //Release previously allocated memory
          cryptoFreeMem(buffer);
       }

@@ -54,37 +54,63 @@
 error_t x509ValidateCrl(const X509CrlInfo *crlInfo,
    const X509CertInfo *issuerCertInfo)
 {
+   //Validate the CRL
+   return x509ValidateCrlEx(crlInfo, issuerCertInfo, &X509_DEFAULT_OPTIONS);
+}
+
+
+/**
+ * @brief CRL validation
+ * @param[in] crlInfo Pointer to the CRL to be verified
+ * @param[in] issuerCertInfo Issuer's certificate
+ * @param[in] options CRL validation options
+ * @return Error code
+ **/
+
+error_t x509ValidateCrlEx(const X509CrlInfo *crlInfo,
+   const X509CertInfo *issuerCertInfo, const X509Options *options)
+{
    error_t error;
-   time_t currentTime;
    const X509Extensions *extensions;
 
    //Check parameters
-   if(crlInfo == NULL || issuerCertInfo == NULL)
+   if(crlInfo == NULL || issuerCertInfo == NULL || options == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //Retrieve current time
-   currentTime = getCurrentUnixTime();
-
-   //Any real-time clock implemented?
-   if(currentTime != 0)
+   //Check whether the validity period of the CRL should be verified
+   if(!options->disableValidityCheck)
    {
+      time_t currentTime;
       DateTime currentDate;
 
-      //Convert Unix timestamp to date
-      convertUnixTimeToDate(currentTime, &currentDate);
+      //Retrieve current time
+      currentTime = getCurrentUnixTime();
 
-      //The thisUpdate field indicates the issue date of the CRL
-      if(compareDateTime(&currentDate, &crlInfo->tbsCertList.thisUpdate) < 0)
+      //Any real-time clock implemented?
+      if(currentTime != 0)
       {
-         //The CRL is not yet valid
-         return ERROR_CRL_EXPIRED;
+         //Convert Unix timestamp to date
+         convertUnixTimeToDate(currentTime, &currentDate);
+
+         //The thisUpdate field indicates the issue date of the CRL
+         if(compareDateTime(&currentDate, &crlInfo->tbsCertList.thisUpdate) < 0)
+         {
+            //The CRL is not yet valid
+            return ERROR_CRL_EXPIRED;
+         }
+
+         //The nextUpdate field indicates the date by which the next CRL will
+         //be issued
+         if(compareDateTime(&currentDate, &crlInfo->tbsCertList.nextUpdate) > 0)
+         {
+            //The CRL has expired
+            return ERROR_CRL_EXPIRED;
+         }
       }
-
-      //The nextUpdate field indicates the date by which the next CRL will
-      //be issued
-      if(compareDateTime(&currentDate, &crlInfo->tbsCertList.nextUpdate) > 0)
+      else
       {
-         //The CRL has expired
+         //The validity period of the CRL cannot be verified without a
+         //real-time clock
          return ERROR_CRL_EXPIRED;
       }
    }

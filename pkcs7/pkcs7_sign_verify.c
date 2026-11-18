@@ -196,6 +196,7 @@ error_t pkcs7VerifyRsaSignature(const uint8_t *digest,
 {
 #if (PKCS7_RSA_SUPPORT == ENABLED && RSA_SUPPORT == ENABLED)
    error_t error;
+   uint_t k;
    const HashAlgo *hashAlgo;
    RsaPublicKey rsaPublicKey;
 
@@ -228,6 +229,45 @@ error_t pkcs7VerifyRsaSignature(const uint8_t *digest,
    {
       //Import the RSA public key
       error = x509ImportRsaPublicKey(&rsaPublicKey, publicKeyInfo);
+
+      //Check status code
+      if(!error)
+      {
+         //The RSA modulus must be an odd integer
+         if(mpiIsEven(&rsaPublicKey.n))
+         {
+            //Report an error
+            error = ERROR_INVALID_KEY;
+         }
+
+         //Get the length of the modulus, in bits
+         k = mpiGetBitLength(&rsaPublicKey.n);
+
+         //Make sure the modulus is acceptable
+         if(k < PKCS7_MIN_RSA_MODULUS_SIZE || k > PKCS7_MAX_RSA_MODULUS_SIZE)
+         {
+            //Report an error
+            error = ERROR_INVALID_KEY;
+         }
+
+         //The public exponent must be an odd integer greater than 1
+         if(mpiCompInt(&rsaPublicKey.e, 1) <= 0 || mpiIsEven(&rsaPublicKey.e))
+         {
+            //Report an error
+            error = ERROR_INVALID_KEY;
+         }
+
+         //Get the length of the public exponent, in bits
+         k = mpiGetBitLength(&rsaPublicKey.e);
+
+         //Limit the size of the public exponent to bound the cost of the RSA
+         //public operation
+         if(k > PKCS7_MAX_RSA_PUBLIC_EXPONENT_SIZE)
+         {
+            //Report an error
+            error = ERROR_INVALID_KEY;
+         }
+      }
 
       //Check status code
       if(!error)

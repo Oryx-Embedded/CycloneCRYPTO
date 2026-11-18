@@ -33,6 +33,7 @@
 
 //Dependencies
 #include "core/crypto.h"
+#include "core/crypto_mem.h"
 #include "kdf/ike_kdf.h"
 
 //Check crypto library configuration
@@ -101,6 +102,16 @@ error_t ikePrfEx(MacAlgo macAlgo, const HashAlgo *hashAlgo,
    IkePrfContext context[1];
 #endif
 
+   //Check parameters
+   if(key == NULL && keyLen != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if(dataFrags == NULL && dataNumFrags != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if(output == NULL)
+      return ERROR_INVALID_PARAMETER;
+
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the IKE PRF context
    context = cryptoAllocMem(sizeof(IkePrfContext));
@@ -108,6 +119,9 @@ error_t ikePrfEx(MacAlgo macAlgo, const HashAlgo *hashAlgo,
    if(context == NULL)
       return ERROR_OUT_OF_MEMORY;
 #endif
+
+   //The PRF context is not initialized yet
+   context->macAlgo = MAC_ALGO_NONE;
 
    //Initialize PRF calculation
    error = ikePrfInit(context, macAlgo, hashAlgo, cipherAlgo, key, keyLen);
@@ -124,6 +138,9 @@ error_t ikePrfEx(MacAlgo macAlgo, const HashAlgo *hashAlgo,
       //Finalize PRF calculation
       error = ikePrfFinal(context, output, context->outputLen);
    }
+
+   //Release PRF context
+   ikePrfDeinit(context);
 
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Free previously allocated memory
@@ -204,6 +221,16 @@ error_t ikePrfPlusEx(MacAlgo macAlgo, const HashAlgo *hashAlgo,
    IkePrfContext context[1];
 #endif
 
+   //Check parameters
+   if(key == NULL && keyLen != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if(dataFrags == NULL && dataNumFrags != 0)
+      return ERROR_INVALID_PARAMETER;
+
+   if(output == NULL && outputLen != 0)
+      return ERROR_INVALID_PARAMETER;
+
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Allocate a memory buffer to hold the IKE PRF context
    context = cryptoAllocMem(sizeof(IkePrfContext));
@@ -211,6 +238,9 @@ error_t ikePrfPlusEx(MacAlgo macAlgo, const HashAlgo *hashAlgo,
    if(context == NULL)
       return ERROR_OUT_OF_MEMORY;
 #endif
+
+   //The PRF context is not initialized yet
+   context->macAlgo = MAC_ALGO_NONE;
 
    //Initialize counter value
    c = 1;
@@ -294,10 +324,16 @@ error_t ikePrfPlusEx(MacAlgo macAlgo, const HashAlgo *hashAlgo,
       }
    }
 
+   //Release PRF context
+   ikePrfDeinit(context);
+
 #if (CRYPTO_STATIC_MEM_SUPPORT == DISABLED)
    //Free previously allocated memory
    cryptoFreeMem(context);
 #endif
+
+   //Erase working state
+   cryptoZeroizeMem(t, sizeof(t));
 
    //Return status code
    return error;
@@ -373,6 +409,9 @@ error_t ikePrfInit(IkePrfContext *context, MacAlgo macAlgo,
          //We apply the AES-CMAC algorithm using K as the key
          error = cmacInit(cmacContext, cipherAlgo, k, 16);
       }
+
+      //Erase working state
+      cryptoZeroizeMem(k, sizeof(k));
    }
    else
 #endif
@@ -471,6 +510,9 @@ error_t ikePrfInit(IkePrfContext *context, MacAlgo macAlgo,
          //We apply the XCBC-MAC algorithm using K as the key
          error = xcbcMacInit(xcbcMacContext, cipherAlgo, k, 16);
       }
+
+      //Erase working state
+      cryptoZeroizeMem(k, sizeof(k));
    }
    else
 #endif
@@ -599,6 +641,60 @@ error_t ikePrfFinal(IkePrfContext *context, uint8_t *output, size_t outputLen)
 
    //Return status code
    return error;
+}
+
+
+/**
+ * @brief Release PRF context
+ * @param[in] context Pointer to the PRF context
+ **/
+
+void ikePrfDeinit(IkePrfContext *context)
+{
+#if (CMAC_SUPPORT == ENABLED)
+   //CMAC PRF algorithm?
+   if(context->macAlgo == MAC_ALGO_CMAC)
+   {
+      //Release CMAC context
+      cmacDeinit(&context->macContext.cmacContext);
+   }
+   else
+#endif
+#if (HMAC_SUPPORT == ENABLED)
+   //HMAC PRF algorithm?
+   if(context->macAlgo == MAC_ALGO_HMAC)
+   {
+      //Release HMAC context
+      hmacDeinit(&context->macContext.hmacContext);
+   }
+   else
+#endif
+#if (KMAC_SUPPORT == ENABLED)
+   //KMAC PRF algorithm?
+   if(context->macAlgo == MAC_ALGO_KMAC128 ||
+      context->macAlgo == MAC_ALGO_KMAC256)
+   {
+      //Release KMAC context
+      kmacDeinit(&context->macContext.kmacContext);
+   }
+   else
+#endif
+#if (XCBC_MAC_SUPPORT == ENABLED)
+   //XCBC-MAC PRF algorithm?
+   if(context->macAlgo == MAC_ALGO_XCBC_MAC)
+   {
+      //Release XCBC-MAC context
+      xcbcMacDeinit(&context->macContext.xcbcMacContext);
+   }
+   else
+#endif
+   //Unknown PRF algorithm?
+   {
+      //Just for sanity
+   }
+
+   //Erase PRF context
+   cryptoZeroizeMem(context, sizeof(IkePrfContext));
 }
 
 #endif

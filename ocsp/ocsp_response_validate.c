@@ -51,12 +51,14 @@
  * @param[in] issuerCertInfo Issuer's certificate
  * @param[in] nonce Pointer to the random nonce (optional parameter)
  * @param[in] nonceLen Length of the nonce, in bytes (optional parameter)
+ * @param[in] validityCheck Specifies whether the validity period of the OCSP
+ *   response and of the responder's certificate is checked
  * @return Error code
  **/
 
 error_t ocspValidateResponse(const OcspResponse *response,
    const X509CertInfo *certInfo, const X509CertInfo *issuerCertInfo,
-   const uint8_t *nonce, size_t nonceLen)
+   const uint8_t *nonce, size_t nonceLen, bool_t validityCheck)
 {
    error_t error;
    const OcspBasicResponse *basicResponse;
@@ -99,13 +101,14 @@ error_t ocspValidateResponse(const OcspResponse *response,
       return error;
 
    //The OCSP client must confirm that the signature on the response is valid
-   error = ocspCheckResponseSignature(basicResponse, issuerCertInfo);
+   error = ocspCheckResponseSignature(basicResponse, issuerCertInfo,
+      validityCheck);
    //Any error to report?
    if(error)
       return error;
 
    //Check the validity interval of the OCSP response
-   error = ocspCheckValidity(singleResponse);
+   error = ocspCheckValidity(singleResponse, validityCheck);
    //Any error to report?
    if(error)
       return error;
@@ -124,11 +127,13 @@ error_t ocspValidateResponse(const OcspResponse *response,
  * @brief Verify response signature
  * @param[in] basicResponse Pointer to the basic response
  * @param[in] issuerCertInfo Issuer's certificate
+ * @param[in] validityCheck Specifies whether the validity period of the
+ *   responder's certificate is checked
  * @return Error code
  **/
 
 error_t ocspCheckResponseSignature(const OcspBasicResponse *basicResponse,
-   const X509CertInfo *issuerCertInfo)
+   const X509CertInfo *issuerCertInfo, bool_t validityCheck)
 {
    error_t error;
    const OcspResponderId *responderId;
@@ -189,7 +194,7 @@ error_t ocspCheckResponseSignature(const OcspBasicResponse *basicResponse,
                   //This certificate must be issued directly to the responder by
                   //the cognizant CA (refer to RFC 6960, section 2.6)
                   error = ocspCheckResponderCert(responderId, responderCertInfo,
-                     issuerCertInfo);
+                     issuerCertInfo, validityCheck);
                }
 
                //Check status code
@@ -242,14 +247,18 @@ error_t ocspCheckResponseSignature(const OcspBasicResponse *basicResponse,
  * @param[in] responderId Pointer to the responder identifier
  * @param[in] responderCertInfo Responder's certificate
  * @param[in] issuerCertInfo Issuer's certificate
+ * @param[in] validityCheck Specifies whether the validity period of the
+ *   responder's certificate is checked
  * @return Error code
  **/
 
 error_t ocspCheckResponderCert(const OcspResponderId *responderId,
-   const X509CertInfo *responderCertInfo, const X509CertInfo *issuerCertInfo)
+   const X509CertInfo *responderCertInfo, const X509CertInfo *issuerCertInfo,
+   bool_t validityCheck)
 {
    error_t error;
    const X509Extensions *extensions;
+   X509Options options;
 
    //Point to the list of extensions
    extensions = &responderCertInfo->tbsCert.extensions;
@@ -272,9 +281,14 @@ error_t ocspCheckResponderCert(const OcspResponderId *responderId,
    if((extensions->extKeyUsage.bitmap & X509_EXT_KEY_USAGE_OCSP_SIGNING) == 0)
       return ERROR_BAD_CERTIFICATE;
 
+   //Certificate validation options
+   options = X509_DEFAULT_OPTIONS;
+   options.disableValidityCheck = !validityCheck;
+
    //The certificate must be issued directly by the CA that is identified in
    //the request (refer to RFC 6960, section 4.2.2.2)
-   error = x509ValidateCertificate(responderCertInfo, issuerCertInfo, 0);
+   error = x509ValidateCertificateEx(responderCertInfo, issuerCertInfo, 0,
+      &options);
 
    //Return status code
    return error;
@@ -421,10 +435,13 @@ error_t ocspCheckCertId(const OcspCertId *certId, const X509CertInfo *certInfo,
 /**
  * @brief Check the validity interval of the OCSP response
  * @param[in] singleResponse Pointer to the OCSP response
+ * @param[in] validityCheck Specifies whether the validity interval of the
+ *   OCSP response is checked
  * @return Error code
  **/
 
-error_t ocspCheckValidity(const OcspSingleResponse *singleResponse)
+error_t ocspCheckValidity(const OcspSingleResponse *singleResponse,
+   bool_t validityCheck)
 {
    error_t error;
    time_t currentTime;
@@ -433,49 +450,60 @@ error_t ocspCheckValidity(const OcspSingleResponse *singleResponse)
    //Initialize status
    error = NO_ERROR;
 
-   //Retrieve current time
-   currentTime = getCurrentUnixTime();
-
-   //Any real-time clock implemented?
-   if(currentTime != 0)
+   //Check whether the validity interval of the OCSP response should be
+   //verified
+   if(validityCheck)
    {
-      //Tolerate a small clock skew between the client and the responder
-      convertUnixTimeToDate(currentTime + OCSP_MAX_CLOCK_SKEW, &date);
+      //Retrieve current time
+      currentTime = getCurrentUnixTime();
 
-      //Responses whose thisUpdate time is later than the local system time
-      //should be considered unreliable (refer to RFC 6960, section 4.2.2.1)
-      if(compareDateTime(&date, &singleResponse->thisUpdate) < 0)
-      {
-         error = ERROR_RESPONSE_EXPIRED;
-      }
-
-      //The NextUpdate field is optional
-      if(singleResponse->nextUpdate.year != 0)
+      //Any real-time clock implemented?
+      if(currentTime != 0)
       {
          //Tolerate a small clock skew between the client and the responder
-         convertUnixTimeToDate(currentTime - OCSP_MAX_CLOCK_SKEW, &date);
+         convertUnixTimeToDate(currentTime + OCSP_MAX_CLOCK_SKEW, &date);
 
-         //Responses whose nextUpdate value is earlier than the local system
-         //time value should be considered unreliable
-         if(compareDateTime(&date, &singleResponse->nextUpdate) > 0)
+         //Responses whose thisUpdate time is later than the local system time
+         //should be considered unreliable (refer to RFC 6960, section 4.2.2.1)
+         if(compareDateTime(&date, &singleResponse->thisUpdate) < 0)
          {
             error = ERROR_RESPONSE_EXPIRED;
+         }
+
+         //The NextUpdate field is optional
+         if(singleResponse->nextUpdate.year != 0)
+         {
+            //Tolerate a small clock skew between the client and the responder
+            convertUnixTimeToDate(currentTime - OCSP_MAX_CLOCK_SKEW, &date);
+
+            //Responses whose nextUpdate value is earlier than the local system
+            //time value should be considered unreliable
+            if(compareDateTime(&date, &singleResponse->nextUpdate) > 0)
+            {
+               error = ERROR_RESPONSE_EXPIRED;
+            }
+         }
+         else
+         {
+            //If nextUpdate is not set, the responder is indicating that newer
+            //revocation information is available all the time
+            convertUnixTimeToDate(currentTime - OCSP_MAX_CLOCK_SKEW -
+               OCSP_MAX_RESPONSE_AGE, &date);
+
+            //The time at which the status being indicated is known to be
+            //correct (thisUpdate) must be sufficiently recent (refer to
+            //RFC 6960, section 3.2)
+            if(compareDateTime(&date, &singleResponse->thisUpdate) > 0)
+            {
+               error = ERROR_RESPONSE_EXPIRED;
+            }
          }
       }
       else
       {
-         //If nextUpdate is not set, the responder is indicating that newer
-         //revocation information is available all the time
-         convertUnixTimeToDate(currentTime - OCSP_MAX_CLOCK_SKEW -
-            OCSP_MAX_RESPONSE_AGE, &date);
-   
-         //The time at which the status being indicated is known to be correct
-         //(thisUpdate) must be sufficiently recent (refer to RFC 6960,
-         //section 3.2)
-         if(compareDateTime(&date, &singleResponse->thisUpdate) > 0)
-         {
-            error = ERROR_RESPONSE_EXPIRED;
-         }
+         //The validity interval of the OCSP response cannot be verified
+         //without a real-time clock
+         error = ERROR_RESPONSE_EXPIRED;
       }
    }
 

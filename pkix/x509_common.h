@@ -446,6 +446,13 @@
    #error X509_MAX_RSA_MODULUS_SIZE parameter is not valid
 #endif
 
+//Maximum acceptable size for RSA public exponent
+#ifndef X509_MAX_RSA_PUBLIC_EXPONENT_SIZE
+   #define X509_MAX_RSA_PUBLIC_EXPONENT_SIZE 64
+#elif (X509_MAX_RSA_PUBLIC_EXPONENT_SIZE < 17)
+   #error X509_MAX_RSA_PUBLIC_EXPONENT_SIZE parameter is not valid
+#endif
+
 //Minimum acceptable size for DSA prime modulus
 #ifndef X509_MIN_DSA_MODULUS_SIZE
    #define X509_MIN_DSA_MODULUS_SIZE 2048
@@ -1426,6 +1433,7 @@ typedef struct
 typedef struct
 {
    bool_t ignoreUnknownExtensions; ///<Ignore unknown extensions
+   bool_t disableValidityCheck;    ///<Do not check the validity period
 } X509Options;
 
 

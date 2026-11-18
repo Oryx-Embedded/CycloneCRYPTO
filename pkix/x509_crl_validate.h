@@ -44,6 +44,9 @@ extern "C" {
 error_t x509ValidateCrl(const X509CrlInfo *crlInfo,
    const X509CertInfo *issuerCertInfo);
 
+error_t x509ValidateCrlEx(const X509CrlInfo *crlInfo,
+   const X509CertInfo *issuerCertInfo, const X509Options *options);
+
 error_t x509CheckRevokedCertificate(const X509CertInfo *certInfo,
    const X509CrlInfo *crlInfo);
 

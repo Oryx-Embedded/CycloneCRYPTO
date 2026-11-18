@@ -78,6 +78,7 @@ error_t ikePrfInit(IkePrfContext *context, MacAlgo macAlgo,
 
 void ikePrfUpdate(IkePrfContext *context, const uint8_t *data, size_t dataLen);
 error_t ikePrfFinal(IkePrfContext *context, uint8_t *output, size_t outputLen);
+void ikePrfDeinit(IkePrfContext *context);
 
 //C++ guard
 #ifdef __cplusplus

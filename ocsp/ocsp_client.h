@@ -144,6 +144,7 @@ struct _OcspClientContext
    OcspClientState state;                           ///<OCSP client state
    NetInterface *interface;                         ///<Underlying network interface
    systime_t timeout;                               ///<Timeout value
+   bool_t validityCheck;                            ///<Check the validity period of OCSP responses and certificates
    const PrngAlgo *prngAlgo;                        ///<Pseudo-random number generator to be used
    void *prngContext;                               ///<Pseudo-random number generator context
    HttpClientContext httpClientContext;             ///<HTTP client context
@@ -178,6 +179,9 @@ error_t ocspClientSetPrng(OcspClientContext *context, const PrngAlgo *prngAlgo,
    void *prngContext);
 
 error_t ocspClientSetTimeout(OcspClientContext *context, systime_t timeout);
+
+error_t ocspClientEnableValidityCheck(OcspClientContext *context,
+   bool_t enable);
 
 error_t ocspClientSetHost(OcspClientContext *context, const char_t *host);
 error_t ocspClientSetUri(OcspClientContext *context, const char_t *uri);

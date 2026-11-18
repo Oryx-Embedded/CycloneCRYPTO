@@ -105,6 +105,27 @@
    #error PKCS7_RSA_SUPPORT parameter is not valid
 #endif
 
+//Minimum acceptable size for RSA modulus
+#ifndef PKCS7_MIN_RSA_MODULUS_SIZE
+   #define PKCS7_MIN_RSA_MODULUS_SIZE 2048
+#elif (PKCS7_MIN_RSA_MODULUS_SIZE < 1024)
+   #error PKCS7_MIN_RSA_MODULUS_SIZE parameter is not valid
+#endif
+
+//Maximum acceptable size for RSA modulus
+#ifndef PKCS7_MAX_RSA_MODULUS_SIZE
+   #define PKCS7_MAX_RSA_MODULUS_SIZE 4096
+#elif (PKCS7_MAX_RSA_MODULUS_SIZE < PKCS7_MIN_RSA_MODULUS_SIZE)
+   #error PKCS7_MAX_RSA_MODULUS_SIZE parameter is not valid
+#endif
+
+//Maximum acceptable size for RSA public exponent
+#ifndef PKCS7_MAX_RSA_PUBLIC_EXPONENT_SIZE
+   #define PKCS7_MAX_RSA_PUBLIC_EXPONENT_SIZE 64
+#elif (PKCS7_MAX_RSA_PUBLIC_EXPONENT_SIZE < 17)
+   #error PKCS7_MAX_RSA_PUBLIC_EXPONENT_SIZE parameter is not valid
+#endif
+
 //Maximum number of digest algorithm identifiers
 #ifndef PKCS7_MAX_DIGEST_ALGO_IDENTIFIERS
    #define PKCS7_MAX_DIGEST_ALGO_IDENTIFIERS 2
